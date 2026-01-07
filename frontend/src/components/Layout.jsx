@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppBar from '@mui/material/AppBar';
@@ -24,9 +24,12 @@ import { useGame } from '../contexts/GameContext';
 export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
   const { user, logout, isAdmin } = useAuth();
-  const { exitToMenu, isInGame } = useGame();
+  const { exitToMenu, isInGame, saveGame } = useGame();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Check if we're currently on the game page
+  const isOnGamePage = location.pathname === '/game';
 
   const [anchorEl, setAnchorEl] = useState(null);
   const [langAnchorEl, setLangAnchorEl] = useState(null);
@@ -54,13 +57,21 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
-  const handleNavigate = (path) => {
+  const handleNavigate = async (path) => {
     handleClose();
+    // Save game if navigating away from game page
+    if (isOnGamePage && isInGame) {
+      try {
+        await saveGame();
+      } catch (error) {
+        console.error('Failed to save before navigation:', error);
+      }
+    }
     navigate(path);
   };
 
-  const handleBackToMenu = () => {
-    exitToMenu();
+  const handleBackToMenu = async () => {
+    await exitToMenu();
     navigate('/');
   };
 
@@ -95,7 +106,7 @@ export default function Layout({ children }) {
             <Button
               color="inherit"
               startIcon={<SettingsIcon />}
-              onClick={() => navigate('/settings')}
+              onClick={() => handleNavigate('/settings')}
               sx={{
                 backgroundColor: location.pathname === '/settings' ? 'rgba(255,255,255,0.1)' : 'transparent'
               }}
@@ -106,7 +117,7 @@ export default function Layout({ children }) {
               <Button
                 color="inherit"
                 startIcon={<AdminPanelSettingsIcon />}
-                onClick={() => navigate('/admin')}
+                onClick={() => handleNavigate('/admin')}
                 sx={{
                   backgroundColor: location.pathname === '/admin' ? 'rgba(255,255,255,0.1)' : 'transparent'
                 }}

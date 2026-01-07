@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import useGameStore from '../stores/gameStore';
 
 const GameContext = createContext(null);
+
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export function GameProvider({ children }) {
   const [saves, setSaves] = useState([]);
@@ -137,6 +139,53 @@ export function GameProvider({ children }) {
 
     return () => clearInterval(autoSaveInterval);
   }, [isInGame, saveId, saveGame]);
+
+  // Save on page unload (refresh, close tab, navigate away)
+  useEffect(() => {
+    const saveOnUnload = () => {
+      const currentSaveId = useGameStore.getState().saveId;
+      const currentEngineState = useGameStore.getState().engineState;
+
+      if (!currentSaveId || !currentEngineState) return;
+
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      // Use fetch with keepalive to allow request to complete after page unloads
+      fetch(`${API_URL}/game/saves/${currentSaveId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ data: currentEngineState }),
+        keepalive: true
+      }).catch(() => {
+        // Ignore errors on unload
+      });
+    };
+
+    const handleBeforeUnload = (event) => {
+      saveOnUnload();
+      // Note: Modern browsers ignore custom messages, but we still need to set returnValue
+      // to trigger the browser's default "unsaved changes" dialog if desired
+    };
+
+    const handleVisibilityChange = () => {
+      // Save when tab becomes hidden (user switches tabs, minimizes, etc.)
+      if (document.visibilityState === 'hidden') {
+        saveOnUnload();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []); // Empty deps - we read from store directly to avoid stale closures
 
   const value = {
     currentGame,

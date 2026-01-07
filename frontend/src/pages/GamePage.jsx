@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -185,7 +185,6 @@ function PlaceholderTab({ title, description, icon: Icon }) {
 
 export default function GamePage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { currentGame } = useGame();
 
   const engineState = useGameStore((state) => state.engineState);
@@ -198,8 +197,7 @@ export default function GamePage() {
 
   // If no game is loaded, redirect to menu
   if (!currentGame || !engineState) {
-    navigate('/');
-    return null;
+    return <Navigate to="/" replace />;
   }
 
   const handleTabChange = (event, newValue) => {
