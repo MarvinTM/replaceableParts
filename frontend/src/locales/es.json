@@ -77,7 +77,8 @@
       "noMachines": "Sin máquinas",
       "inventory": "Inventario",
       "capacity": "capacidad",
-      "emptyInventory": "El inventario está vacío"
+      "emptyInventory": "El inventario está vacío",
+      "zoomHint": "Desplaza para zoom, arrastra para mover"
     }
   },
   "admin": {

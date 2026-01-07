@@ -14,7 +14,9 @@ export const initialState = {
     height: 8,
     placements: [
       // Starting generator at position (0, 0)
-      { id: 'starter_crank', x: 0, y: 0, size: 1, type: 'generator' }
+      { id: 'starter_crank', x: 0, y: 0, size: 1, type: 'generator' },
+      // Starting machine at position (2, 2)
+      { id: 'starter_machine', x: 2, y: 2, size: 1, type: 'machine' }
     ]
   },
 
@@ -31,8 +33,19 @@ export const initialState = {
     production_machine: 1
   },
 
-  // No machines deployed initially (must be deployed from inventory)
-  machines: [],
+  // Starting machine for demonstration
+  machines: [
+    {
+      id: 'starter_machine',
+      recipeId: 'planks',
+      status: 'idle',
+      enabled: true,
+      spaceUsed: 1,
+      x: 2,
+      y: 2,
+      progress: 0
+    }
+  ],
 
   // Start with one manual crank generator for basic operation
   generators: [

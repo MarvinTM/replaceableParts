@@ -77,7 +77,8 @@
       "noMachines": "No machines placed",
       "inventory": "Inventory",
       "capacity": "capacity",
-      "emptyInventory": "Inventory is empty"
+      "emptyInventory": "Inventory is empty",
+      "zoomHint": "Scroll to zoom, drag to pan"
     }
   },
   "admin": {

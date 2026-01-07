@@ -24,6 +24,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
+import FactoryCanvas from '../components/factory/FactoryCanvas';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -64,94 +65,108 @@ function FactoryTab() {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>{t('game.factory.title')}</Typography>
-
-      {/* Floor Space Info */}
+      {/* Isometric Factory View */}
       <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="subtitle1" gutterBottom>{t('game.factory.floorSpace')}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('game.factory.structures', { count: floorSpace.placements.length })}
-          </Typography>
+        <CardContent sx={{ p: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 1 }}>
+            <Typography variant="subtitle1">{t('game.factory.title')}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })} | {t('game.factory.zoomHint')}
+            </Typography>
+          </Box>
+          <FactoryCanvas
+            floorSpace={floorSpace}
+            machines={machines}
+            generators={generators}
+          />
         </CardContent>
       </Card>
 
-      {/* Generators */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="subtitle1" gutterBottom>
-            {t('game.factory.generators')} ({generators.length})
-          </Typography>
-          {generators.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">{t('game.factory.noGenerators')}</Typography>
-          ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {generators.map((gen) => (
-                <Chip
-                  key={gen.id}
-                  icon={<BoltIcon />}
-                  label={`${gen.type} (+${gen.energyOutput})`}
-                  variant="outlined"
-                  color="warning"
-                />
-              ))}
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+      {/* Info panels in a row */}
+      <Grid container spacing={2}>
+        {/* Generators */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('game.factory.generators')} ({generators.length})
+              </Typography>
+              {generators.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">{t('game.factory.noGenerators')}</Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {generators.map((gen) => (
+                    <Chip
+                      key={gen.id}
+                      icon={<BoltIcon />}
+                      label={`${gen.type} (+${gen.energyOutput})`}
+                      variant="outlined"
+                      color="warning"
+                      size="small"
+                    />
+                  ))}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Machines */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="subtitle1" gutterBottom>
-            {t('game.factory.machines')} ({machines.length})
-          </Typography>
-          {machines.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">{t('game.factory.noMachines')}</Typography>
-          ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {machines.map((machine) => (
-                <Chip
-                  key={machine.id}
-                  icon={<FactoryIcon />}
-                  label={machine.recipeId || 'Idle'}
-                  variant="outlined"
-                  color={machine.status === 'working' ? 'success' : machine.status === 'blocked' ? 'error' : 'default'}
-                />
-              ))}
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+        {/* Machines */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('game.factory.machines')} ({machines.length})
+              </Typography>
+              {machines.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">{t('game.factory.noMachines')}</Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {machines.map((machine) => (
+                    <Chip
+                      key={machine.id}
+                      icon={<FactoryIcon />}
+                      label={machine.recipeId || 'Idle'}
+                      variant="outlined"
+                      color={machine.status === 'working' ? 'success' : machine.status === 'blocked' ? 'error' : 'default'}
+                      size="small"
+                    />
+                  ))}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
 
-      {/* Inventory */}
-      <Card>
-        <CardContent>
-          <Typography variant="subtitle1" gutterBottom>
-            {t('game.factory.inventory')} ({engineState.inventorySpace} {t('game.factory.capacity')})
-          </Typography>
-          {Object.keys(inventory).length === 0 ? (
-            <Typography variant="body2" color="text.secondary">{t('game.factory.emptyInventory')}</Typography>
-          ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-              {Object.entries(inventory).map(([itemId, quantity]) => {
-                const material = rules.materials.find(m => m.id === itemId);
-                return (
-                  <Chip
-                    key={itemId}
-                    icon={<InventoryIcon />}
-                    label={`${material?.name || itemId}: ${quantity}`}
-                    variant="outlined"
-                  />
-                );
-              })}
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+        {/* Inventory */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('game.factory.inventory')} ({engineState.inventorySpace} {t('game.factory.capacity')})
+              </Typography>
+              {Object.keys(inventory).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">{t('game.factory.emptyInventory')}</Typography>
+              ) : (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {Object.entries(inventory).map(([itemId, quantity]) => {
+                    const material = rules.materials.find(m => m.id === itemId);
+                    return (
+                      <Chip
+                        key={itemId}
+                        icon={<InventoryIcon />}
+                        label={`${material?.name || itemId}: ${quantity}`}
+                        variant="outlined"
+                        size="small"
+                      />
+                    );
+                  })}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
   );
 }
