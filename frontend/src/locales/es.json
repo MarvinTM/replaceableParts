@@ -54,6 +54,32 @@
     "researchDescription": "Desbloquea nuevas tecnologías y recetas",
     "marketDescription": "Comercia bienes y gestiona tu economía"
   },
+  "game": {
+    "tick": "Tick",
+    "controls": {
+      "play": "Iniciar simulación",
+      "pause": "Pausar simulación",
+      "singleTick": "Avanzar un tick"
+    },
+    "stats": {
+      "credits": "Créditos",
+      "energy": "Energía",
+      "items": "Objetos"
+    },
+    "factory": {
+      "title": "Vista de Fábrica",
+      "floorSpace": "Espacio de Planta",
+      "gridSize": "Cuadrícula: {{width}} x {{height}}",
+      "structures": "{{count}} estructuras colocadas",
+      "generators": "Generadores",
+      "noGenerators": "Sin generadores",
+      "machines": "Máquinas",
+      "noMachines": "Sin máquinas",
+      "inventory": "Inventario",
+      "capacity": "capacidad",
+      "emptyInventory": "El inventario está vacío"
+    }
+  },
   "admin": {
     "title": "Administración",
     "users": {

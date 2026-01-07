@@ -1,14 +1,27 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { api } from '../services/api';
+import useGameStore from '../stores/gameStore';
 
 const GameContext = createContext(null);
 
 export function GameProvider({ children }) {
-  const [currentGame, setCurrentGame] = useState(null);
   const [saves, setSaves] = useState([]);
   const [isLoadingSaves, setIsLoadingSaves] = useState(false);
 
-  const isInGame = !!currentGame;
+  // Get state and actions from Zustand store
+  const engineState = useGameStore((state) => state.engineState);
+  const saveId = useGameStore((state) => state.saveId);
+  const saveName = useGameStore((state) => state.saveName);
+  const initNewGame = useGameStore((state) => state.initNewGame);
+  const loadGameState = useGameStore((state) => state.loadGame);
+  const getStateForSave = useGameStore((state) => state.getStateForSave);
+  const setSaveInfo = useGameStore((state) => state.setSaveInfo);
+  const clearGame = useGameStore((state) => state.clearGame);
+
+  const isInGame = !!engineState;
+
+  // Current game info for compatibility with existing components
+  const currentGame = engineState ? { id: saveId, name: saveName, data: engineState } : null;
 
   const loadSaves = useCallback(async () => {
     setIsLoadingSaves(true);
@@ -33,38 +46,40 @@ export function GameProvider({ children }) {
 
   const startNewGame = useCallback(async (name = 'New Game') => {
     try {
+      // Initialize engine state
+      const newEngineState = initNewGame();
+
+      // Create save in backend with engine state
       const { save } = await api.createSave({
         name,
-        data: {
-          startedAt: new Date().toISOString(),
-          // Initial game state will go here
-          factory: {},
-          exploration: {},
-          research: {},
-          market: {},
-          resources: {},
-          credits: 1000
-        }
+        data: newEngineState
       });
-      setCurrentGame(save);
+
+      // Update store with save info
+      setSaveInfo(save.id, save.name);
+
       await loadSaves();
       return save;
     } catch (error) {
       console.error('Failed to create new game:', error);
+      clearGame();
       throw error;
     }
-  }, [loadSaves]);
+  }, [initNewGame, setSaveInfo, clearGame, loadSaves]);
 
-  const loadGame = useCallback(async (saveId) => {
+  const loadGame = useCallback(async (saveIdToLoad) => {
     try {
-      const { save } = await api.getSave(saveId);
-      setCurrentGame(save);
+      const { save } = await api.getSave(saveIdToLoad);
+
+      // Load engine state from saved data
+      loadGameState(save.id, save.name, save.data);
+
       return save;
     } catch (error) {
       console.error('Failed to load game:', error);
       throw error;
     }
-  }, []);
+  }, [loadGameState]);
 
   const continueLatestGame = useCallback(async () => {
     const latest = getLatestSave();
@@ -74,34 +89,54 @@ export function GameProvider({ children }) {
     return null;
   }, [getLatestSave, loadGame]);
 
-  const saveGame = useCallback(async (data) => {
-    if (!currentGame) return null;
+  const saveGame = useCallback(async () => {
+    if (!saveId || !engineState) return null;
     try {
-      const { save } = await api.updateSave(currentGame.id, { data });
-      setCurrentGame(save);
+      const currentState = getStateForSave();
+      const { save } = await api.updateSave(saveId, { data: currentState });
+      setSaveInfo(save.id, save.name);
       return save;
     } catch (error) {
       console.error('Failed to save game:', error);
       throw error;
     }
-  }, [currentGame]);
+  }, [saveId, engineState, getStateForSave, setSaveInfo]);
 
-  const exitToMenu = useCallback(() => {
-    setCurrentGame(null);
-  }, []);
+  const exitToMenu = useCallback(async () => {
+    // Auto-save before exiting if we have a game
+    if (saveId && engineState) {
+      try {
+        await saveGame();
+      } catch (error) {
+        console.error('Failed to auto-save on exit:', error);
+      }
+    }
+    clearGame();
+  }, [saveId, engineState, saveGame, clearGame]);
 
-  const deleteSave = useCallback(async (saveId) => {
+  const deleteSave = useCallback(async (saveIdToDelete) => {
     try {
-      await api.deleteSave(saveId);
+      await api.deleteSave(saveIdToDelete);
       await loadSaves();
-      if (currentGame?.id === saveId) {
-        setCurrentGame(null);
+      if (saveId === saveIdToDelete) {
+        clearGame();
       }
     } catch (error) {
       console.error('Failed to delete save:', error);
       throw error;
     }
-  }, [currentGame, loadSaves]);
+  }, [saveId, loadSaves, clearGame]);
+
+  // Auto-save every 30 seconds while in game
+  useEffect(() => {
+    if (!isInGame || !saveId) return;
+
+    const autoSaveInterval = setInterval(() => {
+      saveGame().catch(console.error);
+    }, 30000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [isInGame, saveId, saveGame]);
 
   const value = {
     currentGame,

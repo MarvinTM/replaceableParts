@@ -54,6 +54,32 @@
     "researchDescription": "Unlock new technologies and recipes",
     "marketDescription": "Trade goods and manage your economy"
   },
+  "game": {
+    "tick": "Tick",
+    "controls": {
+      "play": "Start simulation",
+      "pause": "Pause simulation",
+      "singleTick": "Advance one tick"
+    },
+    "stats": {
+      "credits": "Credits",
+      "energy": "Energy",
+      "items": "Items"
+    },
+    "factory": {
+      "title": "Factory Overview",
+      "floorSpace": "Floor Space",
+      "gridSize": "Grid: {{width}} x {{height}}",
+      "structures": "{{count}} structures placed",
+      "generators": "Generators",
+      "noGenerators": "No generators placed",
+      "machines": "Machines",
+      "noMachines": "No machines placed",
+      "inventory": "Inventory",
+      "capacity": "capacity",
+      "emptyInventory": "Inventory is empty"
+    }
+  },
   "admin": {
     "title": "Administration",
     "users": {

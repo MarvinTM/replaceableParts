@@ -7,11 +7,23 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Grid from '@mui/material/Grid';
+import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import FactoryIcon from '@mui/icons-material/Factory';
 import ExploreIcon from '@mui/icons-material/Explore';
 import ScienceIcon from '@mui/icons-material/Science';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
+import BoltIcon from '@mui/icons-material/Bolt';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import { useGame } from '../contexts/GameContext';
+import useGameStore from '../stores/gameStore';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -27,7 +39,124 @@ function TabPanel({ children, value, index, ...other }) {
   );
 }
 
-function PlaceholderContent({ title, description, icon: Icon }) {
+function StatCard({ icon: Icon, label, value, color = 'primary' }) {
+  return (
+    <Card sx={{ height: '100%' }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2 }}>
+        <Icon sx={{ fontSize: 32, color: `${color}.main` }} />
+        <Box>
+          <Typography variant="h5">{value}</Typography>
+          <Typography variant="body2" color="text.secondary">{label}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FactoryTab() {
+  const { t } = useTranslation();
+  const engineState = useGameStore((state) => state.engineState);
+  const rules = useGameStore((state) => state.rules);
+
+  if (!engineState) return null;
+
+  const { machines, generators, floorSpace, inventory } = engineState;
+
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>{t('game.factory.title')}</Typography>
+
+      {/* Floor Space Info */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="subtitle1" gutterBottom>{t('game.factory.floorSpace')}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t('game.factory.structures', { count: floorSpace.placements.length })}
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {/* Generators */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="subtitle1" gutterBottom>
+            {t('game.factory.generators')} ({generators.length})
+          </Typography>
+          {generators.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">{t('game.factory.noGenerators')}</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {generators.map((gen) => (
+                <Chip
+                  key={gen.id}
+                  icon={<BoltIcon />}
+                  label={`${gen.type} (+${gen.energyOutput})`}
+                  variant="outlined"
+                  color="warning"
+                />
+              ))}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Machines */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Typography variant="subtitle1" gutterBottom>
+            {t('game.factory.machines')} ({machines.length})
+          </Typography>
+          {machines.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">{t('game.factory.noMachines')}</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {machines.map((machine) => (
+                <Chip
+                  key={machine.id}
+                  icon={<FactoryIcon />}
+                  label={machine.recipeId || 'Idle'}
+                  variant="outlined"
+                  color={machine.status === 'working' ? 'success' : machine.status === 'blocked' ? 'error' : 'default'}
+                />
+              ))}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Inventory */}
+      <Card>
+        <CardContent>
+          <Typography variant="subtitle1" gutterBottom>
+            {t('game.factory.inventory')} ({engineState.inventorySpace} {t('game.factory.capacity')})
+          </Typography>
+          {Object.keys(inventory).length === 0 ? (
+            <Typography variant="body2" color="text.secondary">{t('game.factory.emptyInventory')}</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              {Object.entries(inventory).map(([itemId, quantity]) => {
+                const material = rules.materials.find(m => m.id === itemId);
+                return (
+                  <Chip
+                    key={itemId}
+                    icon={<InventoryIcon />}
+                    label={`${material?.name || itemId}: ${quantity}`}
+                    variant="outlined"
+                  />
+                );
+              })}
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
+  );
+}
+
+function PlaceholderTab({ title, description, icon: Icon }) {
   const { t } = useTranslation();
 
   return (
@@ -58,16 +187,31 @@ export default function GamePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentGame } = useGame();
+
+  const engineState = useGameStore((state) => state.engineState);
+  const isRunning = useGameStore((state) => state.isRunning);
+  const simulate = useGameStore((state) => state.simulate);
+  const startGameLoop = useGameStore((state) => state.startGameLoop);
+  const stopGameLoop = useGameStore((state) => state.stopGameLoop);
+
   const [tabValue, setTabValue] = useState(0);
 
   // If no game is loaded, redirect to menu
-  if (!currentGame) {
+  if (!currentGame || !engineState) {
     navigate('/');
     return null;
   }
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  const toggleGameLoop = () => {
+    if (isRunning) {
+      stopGameLoop();
+    } else {
+      startGameLoop(1000); // 1 tick per second
+    }
   };
 
   const tabs = [
@@ -79,15 +223,58 @@ export default function GamePage() {
 
   return (
     <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          {currentGame.name}
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {t('main.subtitle')}
-        </Typography>
+      {/* Header with stats */}
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box>
+            <Typography variant="h4">{currentGame.name}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('game.tick')}: {engineState.tick}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title={t('game.controls.singleTick')}>
+              <IconButton onClick={() => simulate()} disabled={isRunning}>
+                <SkipNextIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={isRunning ? t('game.controls.pause') : t('game.controls.play')}>
+              <IconButton onClick={toggleGameLoop} color={isRunning ? 'primary' : 'default'}>
+                {isRunning ? <PauseIcon /> : <PlayArrowIcon />}
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              icon={AccountBalanceIcon}
+              label={t('game.stats.credits')}
+              value={engineState.credits}
+              color="success"
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              icon={BoltIcon}
+              label={t('game.stats.energy')}
+              value={`${engineState.energy.produced - engineState.energy.consumed} / ${engineState.energy.produced}`}
+              color={engineState.energy.produced >= engineState.energy.consumed ? 'warning' : 'error'}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard
+              icon={InventoryIcon}
+              label={t('game.stats.items')}
+              value={Object.values(engineState.inventory).reduce((a, b) => a + b, 0)}
+              color="info"
+            />
+          </Grid>
+        </Grid>
       </Box>
 
+      {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
           value={tabValue}
@@ -110,15 +297,11 @@ export default function GamePage() {
       </Box>
 
       <TabPanel value={tabValue} index={0}>
-        <PlaceholderContent
-          title={t('main.tabs.factory')}
-          description={t('main.factoryDescription')}
-          icon={FactoryIcon}
-        />
+        <FactoryTab />
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
-        <PlaceholderContent
+        <PlaceholderTab
           title={t('main.tabs.exploration')}
           description={t('main.explorationDescription')}
           icon={ExploreIcon}
@@ -126,7 +309,7 @@ export default function GamePage() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>
-        <PlaceholderContent
+        <PlaceholderTab
           title={t('main.tabs.research')}
           description={t('main.researchDescription')}
           icon={ScienceIcon}
@@ -134,7 +317,7 @@ export default function GamePage() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={3}>
-        <PlaceholderContent
+        <PlaceholderTab
           title={t('main.tabs.market')}
           description={t('main.marketDescription')}
           icon={StorefrontIcon}
