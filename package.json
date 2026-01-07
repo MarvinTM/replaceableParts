@@ -1,0 +1,20 @@
+{
+  "name": "replaceableParts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A web-based manufacturing simulation game",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "db:migrate": "npm run db:migrate --prefix backend",
+    "db:generate": "npm run db:generate --prefix backend",
+    "db:studio": "npm run db:studio --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

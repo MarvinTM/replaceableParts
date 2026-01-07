@@ -1,0 +1,91 @@
+{
+  "app": {
+    "name": "replaceableParts",
+    "tagline": "Juego de Simulación de Manufactura"
+  },
+  "nav": {
+    "home": "Inicio",
+    "admin": "Admin",
+    "logout": "Cerrar Sesión"
+  },
+  "login": {
+    "title": "Bienvenido a replaceableParts",
+    "subtitle": "Inicia sesión para comenzar a jugar",
+    "googleButton": "Iniciar sesión con Google",
+    "error": "Error al iniciar sesión. Inténtalo de nuevo."
+  },
+  "pending": {
+    "title": "Cuenta Pendiente de Aprobación",
+    "message": "Tu cuenta está esperando la aprobación de un administrador. Por favor, vuelve más tarde.",
+    "logout": "Cerrar Sesión"
+  },
+  "main": {
+    "title": "Panel Principal",
+    "welcome": "¡Bienvenido, {{name}}!",
+    "subtitle": "Tu imperio manufacturero te espera",
+    "tabs": {
+      "factory": "Fábrica",
+      "exploration": "Exploración",
+      "research": "Investigación",
+      "market": "Mercado"
+    },
+    "comingSoon": "Próximamente...",
+    "factoryDescription": "Construye y gestiona tus líneas de producción",
+    "explorationDescription": "Descubre nuevos recursos y territorios",
+    "researchDescription": "Desbloquea nuevas tecnologías y recetas",
+    "marketDescription": "Comercia bienes y gestiona tu economía"
+  },
+  "admin": {
+    "title": "Administración",
+    "users": {
+      "title": "Gestión de Usuarios",
+      "email": "Correo",
+      "name": "Nombre",
+      "role": "Rol",
+      "status": "Estado",
+      "lastLogin": "Último Acceso",
+      "actions": "Acciones",
+      "approved": "Aprobado",
+      "pending": "Pendiente",
+      "approve": "Aprobar",
+      "revoke": "Revocar Acceso",
+      "makeAdmin": "Hacer Admin",
+      "removeAdmin": "Quitar Admin",
+      "delete": "Eliminar",
+      "never": "Nunca",
+      "you": "(Tú)"
+    },
+    "stats": {
+      "totalUsers": "Total Usuarios",
+      "approvedUsers": "Aprobados",
+      "pendingUsers": "Pendientes",
+      "adminCount": "Admins"
+    },
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este usuario? Esta acción no se puede deshacer.",
+    "confirmRoleChange": "¿Estás seguro de que quieres cambiar el rol de este usuario?",
+    "success": {
+      "approved": "Usuario aprobado exitosamente",
+      "revoked": "Acceso de usuario revocado",
+      "roleChanged": "Rol de usuario actualizado",
+      "deleted": "Usuario eliminado"
+    },
+    "error": {
+      "generic": "Ocurrió un error. Por favor, inténtalo de nuevo."
+    }
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "language": {
+    "select": "Idioma",
+    "en": "Inglés",
+    "es": "Español"
+  }
+}
