@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -10,7 +11,7 @@ import FactoryIcon from '@mui/icons-material/Factory';
 import ExploreIcon from '@mui/icons-material/Explore';
 import ScienceIcon from '@mui/icons-material/Science';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import { useAuth } from '../contexts/AuthContext';
+import { useGame } from '../contexts/GameContext';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -53,10 +54,17 @@ function PlaceholderContent({ title, description, icon: Icon }) {
   );
 }
 
-export default function MainPage() {
+export default function GamePage() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { currentGame } = useGame();
   const [tabValue, setTabValue] = useState(0);
+
+  // If no game is loaded, redirect to menu
+  if (!currentGame) {
+    navigate('/');
+    return null;
+  }
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -73,7 +81,7 @@ export default function MainPage() {
     <Box>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom>
-          {t('main.welcome', { name: user?.name || 'Player' })}
+          {currentGame.name}
         </Typography>
         <Typography variant="body1" color="text.secondary">
           {t('main.subtitle')}

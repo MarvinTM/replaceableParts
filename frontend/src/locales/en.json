@@ -6,7 +6,26 @@
   "nav": {
     "home": "Home",
     "admin": "Admin",
-    "logout": "Logout"
+    "logout": "Logout",
+    "mainMenu": "Main Menu"
+  },
+  "menu": {
+    "welcomeBack": "Welcome back, {{name}}!",
+    "continue": "Continue",
+    "newGame": "New Game",
+    "loadGame": "Load Game",
+    "settings": "Settings"
+  },
+  "saves": {
+    "noSaves": "No saved games found",
+    "lastPlayed": "Last played",
+    "created": "Created",
+    "confirmDelete": "Click again to confirm deletion"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": "General",
+    "moreComingSoon": "More settings coming soon..."
   },
   "login": {
     "title": "Welcome to replaceableParts",

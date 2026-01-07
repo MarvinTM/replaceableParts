@@ -6,7 +6,26 @@
   "nav": {
     "home": "Inicio",
     "admin": "Admin",
-    "logout": "Cerrar Sesión"
+    "logout": "Cerrar Sesión",
+    "mainMenu": "Menú Principal"
+  },
+  "menu": {
+    "welcomeBack": "¡Bienvenido de nuevo, {{name}}!",
+    "continue": "Continuar",
+    "newGame": "Nueva Partida",
+    "loadGame": "Cargar Partida",
+    "settings": "Configuración"
+  },
+  "saves": {
+    "noSaves": "No se encontraron partidas guardadas",
+    "lastPlayed": "Última vez jugado",
+    "created": "Creado",
+    "confirmDelete": "Haz clic de nuevo para confirmar"
+  },
+  "settings": {
+    "title": "Configuración",
+    "general": "General",
+    "moreComingSoon": "Más opciones próximamente..."
   },
   "login": {
     "title": "Bienvenido a replaceableParts",

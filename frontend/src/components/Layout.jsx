@@ -13,15 +13,18 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import HomeIcon from '@mui/icons-material/Home';
+import MenuIcon from '@mui/icons-material/Menu';
+import SettingsIcon from '@mui/icons-material/Settings';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useAuth } from '../contexts/AuthContext';
+import { useGame } from '../contexts/GameContext';
 
 export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
   const { user, logout, isAdmin } = useAuth();
+  const { exitToMenu, isInGame } = useGame();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,6 +49,7 @@ export default function Layout({ children }) {
 
   const handleLogout = async () => {
     handleClose();
+    exitToMenu();
     await logout();
     navigate('/login');
   };
@@ -53,6 +57,11 @@ export default function Layout({ children }) {
   const handleNavigate = (path) => {
     handleClose();
     navigate(path);
+  };
+
+  const handleBackToMenu = () => {
+    exitToMenu();
+    navigate('/');
   };
 
   const changeLanguage = (lng) => {
@@ -68,21 +77,30 @@ export default function Layout({ children }) {
             variant="h6"
             component="div"
             sx={{ cursor: 'pointer' }}
-            onClick={() => navigate('/')}
+            onClick={handleBackToMenu}
           >
             {t('app.name')}
           </Typography>
 
           <Box sx={{ flexGrow: 1, ml: 4, display: 'flex', gap: 1 }}>
+            {isInGame && (
+              <Button
+                color="inherit"
+                startIcon={<MenuIcon />}
+                onClick={handleBackToMenu}
+              >
+                {t('nav.mainMenu')}
+              </Button>
+            )}
             <Button
               color="inherit"
-              startIcon={<HomeIcon />}
-              onClick={() => navigate('/')}
+              startIcon={<SettingsIcon />}
+              onClick={() => navigate('/settings')}
               sx={{
-                backgroundColor: location.pathname === '/' ? 'rgba(255,255,255,0.1)' : 'transparent'
+                backgroundColor: location.pathname === '/settings' ? 'rgba(255,255,255,0.1)' : 'transparent'
               }}
             >
-              {t('nav.home')}
+              {t('menu.settings')}
             </Button>
             {isAdmin && (
               <Button
@@ -139,11 +157,17 @@ export default function Layout({ children }) {
               </Typography>
             </Box>
             <Divider />
-            <MenuItem onClick={() => handleNavigate('/')}>
+            <MenuItem onClick={handleBackToMenu}>
               <ListItemIcon>
-                <HomeIcon fontSize="small" />
+                <MenuIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>{t('nav.home')}</ListItemText>
+              <ListItemText>{t('nav.mainMenu')}</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={() => handleNavigate('/settings')}>
+              <ListItemIcon>
+                <SettingsIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>{t('menu.settings')}</ListItemText>
             </MenuItem>
             {isAdmin && (
               <MenuItem onClick={() => handleNavigate('/admin')}>

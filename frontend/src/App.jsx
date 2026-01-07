@@ -1,8 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
-import MainPage from './pages/MainPage';
+import MainMenuPage from './pages/MainMenuPage';
+import GamePage from './pages/GamePage';
 import AdminPage from './pages/AdminPage';
+import SettingsPage from './pages/SettingsPage';
 import PendingApprovalPage from './pages/PendingApprovalPage';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
@@ -68,8 +70,26 @@ export default function App() {
         path="/"
         element={
           <ProtectedRoute>
+            <MainMenuPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/game"
+        element={
+          <ProtectedRoute>
             <Layout>
-              <MainPage />
+              <GamePage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <SettingsPage />
             </Layout>
           </ProtectedRoute>
         }

@@ -6,6 +6,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
+import { GameProvider } from './contexts/GameContext';
 import { theme } from './theme';
 import './i18n';
 
@@ -18,7 +19,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthProvider>
-            <App />
+            <GameProvider>
+              <App />
+            </GameProvider>
           </AuthProvider>
         </ThemeProvider>
       </BrowserRouter>
