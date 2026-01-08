@@ -1,10 +1,9 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
-import { Application, Graphics, Container, Text, TextStyle } from 'pixi.js';
+import { useRef, useEffect } from 'react';
+import { Application, Graphics, Container } from 'pixi.js';
 import {
   TILE_WIDTH,
   TILE_HEIGHT,
-  gridToScreen,
-  getGridCenter
+  gridToScreen
 } from '../factory/useIsometric';
 
 // Fog of war color
@@ -13,14 +12,6 @@ const FOG_COLOR = 0x1a1a2e;
 // Node indicator colors
 const NODE_UNLOCKED_COLOR = 0x22c55e;  // Green - active
 const NODE_LOCKED_COLOR = 0xf59e0b;     // Orange - available to unlock
-
-/**
- * Calculate a unique hash from explored bounds for change detection
- */
-function getBoundsHash(bounds) {
-  if (!bounds) return '';
-  return `${bounds.minX},${bounds.minY},${bounds.maxX},${bounds.maxY}`;
-}
 
 /**
  * Draw an isometric tile (diamond shape)
@@ -62,10 +53,8 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
   const appRef = useRef(null);
   const worldRef = useRef(null);
   const dragRef = useRef({ isDragging: false, lastX: 0, lastY: 0 });
-  const prevBoundsHashRef = useRef('');
   const explorationMapRef = useRef(explorationMap);
   const onTileClickRef = useRef(onTileClick);
-  const [initialized, setInitialized] = useState(false);
 
   // Keep refs updated with latest props
   useEffect(() => {
@@ -76,149 +65,29 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
     onTileClickRef.current = onTileClick;
   }, [onTileClick]);
 
-  // Center the view on the explored area
-  const centerOnExploredArea = useCallback(() => {
-    if (!worldRef.current || !appRef.current || !explorationMap) return;
-
-    const world = worldRef.current;
-    const app = appRef.current;
-    const { exploredBounds } = explorationMap;
-
-    // Calculate center of explored area
-    const centerX = (exploredBounds.minX + exploredBounds.maxX) / 2;
-    const centerY = (exploredBounds.minY + exploredBounds.maxY) / 2;
-    const center = gridToScreen(centerX, centerY);
-
-    // Calculate appropriate zoom to fit the explored area plus padding
-    const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
-    const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
-    const padding = 4;
-    const totalWidth = (exploredWidth + padding * 2) * TILE_WIDTH;
-    const totalHeight = (exploredHeight + padding * 2) * TILE_HEIGHT;
-
-    // Calculate scale that fits the explored area in view
-    const scaleX = app.screen.width / totalWidth;
-    const scaleY = app.screen.height / totalHeight;
-    const targetScale = Math.min(scaleX, scaleY, 2); // Cap at 2x zoom
-    const newScale = Math.max(targetScale, 0.5); // Min 0.5x zoom
-
-    world.scale.set(newScale);
-    world.x = app.screen.width / 2 - center.x * newScale;
-    world.y = app.screen.height / 2 - center.y * newScale;
-
-    // Force PixiJS to render after view change
-    requestAnimationFrame(() => {
-      if (appRef.current && appRef.current.renderer) {
-        appRef.current.renderer.render(appRef.current.stage);
-      }
-    });
-  }, [explorationMap]);
-
-  const render = useCallback(() => {
-    if (!appRef.current || !explorationMap) return;
-
-    const app = appRef.current;
-    const terrainTypes = rules?.exploration?.terrainTypes || {};
-
-    // Remove old world container and create a new one
-    if (worldRef.current) {
-      app.stage.removeChild(worldRef.current);
-      worldRef.current.destroy({ children: true });
-    }
-
-    const world = new Container();
-    app.stage.addChild(world);
-    worldRef.current = world;
-
-    // Restore zoom/pan position
-    const { exploredBounds } = explorationMap;
-    const centerX = (exploredBounds.minX + exploredBounds.maxX) / 2;
-    const centerY = (exploredBounds.minY + exploredBounds.maxY) / 2;
-    const center = gridToScreen(centerX, centerY);
-
-    // Calculate appropriate zoom to fit the explored area
-    const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
-    const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
-    const padding = 4;
-    const totalWidth = (exploredWidth + padding * 2) * TILE_WIDTH;
-    const totalHeight = (exploredHeight + padding * 2) * TILE_HEIGHT;
-    const scaleX = app.screen.width / totalWidth;
-    const scaleY = app.screen.height / totalHeight;
-    const newScale = Math.max(Math.min(scaleX, scaleY, 2), 0.5);
-
-    world.scale.set(newScale);
-    world.x = app.screen.width / 2 - center.x * newScale;
-    world.y = app.screen.height / 2 - center.y * newScale;
-
-    const { generatedWidth, generatedHeight, tiles } = explorationMap;
-
-    // Create containers for different layers
-    const fogContainer = new Container();
-    const terrainContainer = new Container();
-    const nodeContainer = new Container();
-
-    // Calculate visible bounds (explored area plus some fog around it)
-    const fogPadding = 3; // Show a few fog tiles around explored area
-    const visibleBounds = {
-      minX: Math.max(0, exploredBounds.minX - fogPadding),
-      maxX: Math.min(generatedWidth - 1, exploredBounds.maxX + fogPadding),
-      minY: Math.max(0, exploredBounds.minY - fogPadding),
-      maxY: Math.min(generatedHeight - 1, exploredBounds.maxY + fogPadding)
-    };
-
-    // Draw visible tiles
-    for (let y = visibleBounds.minY; y <= visibleBounds.maxY; y++) {
-      for (let x = visibleBounds.minX; x <= visibleBounds.maxX; x++) {
-        const key = `${x},${y}`;
-        const tile = tiles[key];
-        if (!tile) continue;
-
-        const screenPos = gridToScreen(x, y);
-
-        if (tile.explored) {
-          // Draw terrain tile
-          const terrainGraphics = new Graphics();
-          const terrainConfig = terrainTypes[tile.terrain];
-          const color = terrainConfig?.color || 0x808080;
-          drawIsometricTile(terrainGraphics, screenPos.x, screenPos.y, color, 0x000000);
-          terrainContainer.addChild(terrainGraphics);
-
-          // Draw extraction node indicator if present
-          if (tile.extractionNode) {
-            const nodeGraphics = new Graphics();
-            const nodeColor = tile.extractionNode.unlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
-            drawNodeIndicator(nodeGraphics, screenPos.x, screenPos.y, nodeColor);
-            nodeContainer.addChild(nodeGraphics);
-          }
-        } else {
-          // Draw fog tile
-          const fogGraphics = new Graphics();
-          drawIsometricTile(fogGraphics, screenPos.x, screenPos.y, FOG_COLOR, 0x0a0a14);
-          fogContainer.addChild(fogGraphics);
-        }
-      }
-    }
-
-    world.addChild(terrainContainer);
-    world.addChild(fogContainer);
-    world.addChild(nodeContainer);
-
-  }, [explorationMap, rules]);
-
   // Initialize PixiJS Application
   useEffect(() => {
     if (!containerRef.current || appRef.current) return;
 
+    let isMounted = true;
+
     const initPixi = async () => {
       const app = new Application();
+      const container = containerRef.current;
 
       await app.init({
         background: FOG_COLOR,
-        resizeTo: containerRef.current,
+        resizeTo: container,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true
       });
+
+      // Check if component unmounted during async init
+      if (!isMounted || !containerRef.current) {
+        app.destroy(true);
+        return;
+      }
 
       containerRef.current.appendChild(app.canvas);
       appRef.current = app;
@@ -228,23 +97,80 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
       app.stage.addChild(world);
       worldRef.current = world;
 
-      // Center the world initially on the explored area
+      // Render the map if we have exploration data
       if (explorationMap) {
-        const { exploredBounds } = explorationMap;
+        const { exploredBounds, generatedWidth, generatedHeight, tiles } = explorationMap;
+        const terrainTypes = rules?.exploration?.terrainTypes || {};
+
+        // Calculate center and zoom to fit explored area
         const centerX = (exploredBounds.minX + exploredBounds.maxX) / 2;
         const centerY = (exploredBounds.minY + exploredBounds.maxY) / 2;
         const center = gridToScreen(centerX, centerY);
-        world.x = app.screen.width / 2 - center.x * 1.5;
-        world.y = app.screen.height / 2 - center.y * 1.5;
-        world.scale.set(1.5);
 
-        // Store initial bounds hash for change detection
-        prevBoundsHashRef.current = getBoundsHash(exploredBounds);
+        const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
+        const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
+        const padding = 4;
+        const totalWidth = (exploredWidth + padding * 2) * TILE_WIDTH;
+        const totalHeight = (exploredHeight + padding * 2) * TILE_HEIGHT;
+        const scaleX = app.screen.width / totalWidth;
+        const scaleY = app.screen.height / totalHeight;
+        const initialScale = Math.max(Math.min(scaleX, scaleY, 2), 0.5);
+
+        world.scale.set(initialScale);
+        world.x = app.screen.width / 2 - center.x * initialScale;
+        world.y = app.screen.height / 2 - center.y * initialScale;
+
+        // Create containers for different layers
+        const fogContainer = new Container();
+        const terrainContainer = new Container();
+        const nodeContainer = new Container();
+
+        // Calculate visible bounds (explored area plus some fog around it)
+        const fogPadding = 3;
+        const visibleBounds = {
+          minX: Math.max(0, exploredBounds.minX - fogPadding),
+          maxX: Math.min(generatedWidth - 1, exploredBounds.maxX + fogPadding),
+          minY: Math.max(0, exploredBounds.minY - fogPadding),
+          maxY: Math.min(generatedHeight - 1, exploredBounds.maxY + fogPadding)
+        };
+
+        // Draw visible tiles
+        for (let y = visibleBounds.minY; y <= visibleBounds.maxY; y++) {
+          for (let x = visibleBounds.minX; x <= visibleBounds.maxX; x++) {
+            const key = `${x},${y}`;
+            const tile = tiles[key];
+            if (!tile) continue;
+
+            const screenPos = gridToScreen(x, y);
+
+            if (tile.explored) {
+              // Draw terrain tile
+              const terrainGraphics = new Graphics();
+              const terrainConfig = terrainTypes[tile.terrain];
+              const color = terrainConfig?.color || 0x808080;
+              drawIsometricTile(terrainGraphics, screenPos.x, screenPos.y, color, 0x000000);
+              terrainContainer.addChild(terrainGraphics);
+
+              // Draw extraction node indicator if present
+              if (tile.extractionNode) {
+                const nodeGraphics = new Graphics();
+                const nodeColor = tile.extractionNode.unlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
+                drawNodeIndicator(nodeGraphics, screenPos.x, screenPos.y, nodeColor);
+                nodeContainer.addChild(nodeGraphics);
+              }
+            } else {
+              // Draw fog tile
+              const fogGraphics = new Graphics();
+              drawIsometricTile(fogGraphics, screenPos.x, screenPos.y, FOG_COLOR, 0x0a0a14);
+              fogContainer.addChild(fogGraphics);
+            }
+          }
+        }
+
+        world.addChild(terrainContainer);
+        world.addChild(fogContainer);
+        world.addChild(nodeContainer);
       }
-
-      // Initial render
-      render();
-      setInitialized(true);
 
       // Setup zoom (mouse wheel)
       const canvas = app.canvas;
@@ -337,6 +263,7 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
     initPixi();
 
     return () => {
+      isMounted = false;
       if (appRef.current) {
         const app = appRef.current;
         const canvas = app.canvas;
@@ -356,23 +283,6 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
       }
     };
   }, []);
-
-  // Re-render when map state changes and recenter if bounds changed
-  useEffect(() => {
-    if (initialized && explorationMap) {
-      const currentBoundsHash = getBoundsHash(explorationMap.exploredBounds);
-
-      // Render the new state
-      render();
-
-      // If bounds changed (expansion happened), recenter the view
-      if (prevBoundsHashRef.current && prevBoundsHashRef.current !== currentBoundsHash) {
-        centerOnExploredArea();
-      }
-
-      prevBoundsHashRef.current = currentBoundsHash;
-    }
-  }, [render, initialized, explorationMap, centerOnExploredArea]);
 
   // Handle resize
   useEffect(() => {
