@@ -261,12 +261,21 @@ export function getNextExplorationExpansion(explorationMap, rules) {
     targetSize *= 2;
   }
 
-  // Determine expansion direction
+  // Check how much room we have in each direction
+  const roomRight = generatedWidth - 1 - exploredBounds.maxX;
+  const roomDown = generatedHeight - 1 - exploredBounds.maxY;
+
+  // Determine expansion direction (prefer width first, but switch if blocked)
   let direction;
-  if (currentWidth < targetSize) {
-    direction = 'right'; // Expand width first
+  if (currentWidth < targetSize && roomRight > 0) {
+    direction = 'right';
+  } else if (roomDown > 0) {
+    direction = 'down';
+  } else if (roomRight > 0) {
+    direction = 'right';
   } else {
-    direction = 'down'; // Then expand height
+    // Both directions blocked - we're at the corner
+    direction = 'right'; // Doesn't matter, cellsToExplore will be 0
   }
 
   // Calculate new bounds
@@ -286,7 +295,7 @@ export function getNextExplorationExpansion(explorationMap, rules) {
     newBounds.maxY = newMaxY;
   }
 
-  // Check if we've hit map boundaries
+  // Check if we've hit map boundaries (both edges)
   const atMapEdge = (
     newBounds.maxX >= generatedWidth - 1 &&
     newBounds.maxY >= generatedHeight - 1

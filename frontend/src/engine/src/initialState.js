@@ -9,7 +9,7 @@ import { defaultRules } from './defaultRules.js';
 export const initialState = {
   tick: 0,
   rngSeed: 12345,
-  credits: 500,
+  credits: 5000000,
 
   // Floor Space (2D Grid)
   floorSpace: {

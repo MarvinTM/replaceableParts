@@ -186,12 +186,6 @@ function ExplorationTab() {
   if (!engineState?.explorationMap) return null;
 
   const { explorationMap, credits } = engineState;
-
-  // Debug logging
-  console.log('ExplorationTab render', {
-    exploredBounds: explorationMap.exploredBounds,
-    credits
-  });
   const { exploredBounds, tiles } = explorationMap;
 
   // Count stats
@@ -230,6 +224,7 @@ function ExplorationTab() {
             </Typography>
           </Box>
           <ExplorationCanvas
+            key={`${exploredBounds.minX}-${exploredBounds.maxX}-${exploredBounds.minY}-${exploredBounds.maxY}`}
             explorationMap={explorationMap}
             rules={rules}
             onTileClick={handleTileClick}

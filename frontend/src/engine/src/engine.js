@@ -712,15 +712,17 @@ function expandExploration(state, rules, payload) {
   }
 
   // Get expansion info
-  const expansion = getNextExplorationExpansion(newState.explorationMap, rules);
+  let expansion = getNextExplorationExpansion(newState.explorationMap, rules);
+
+  // If we're at the map edge with no cells to explore, expand the generated map first
+  if (expansion.cellsToExplore === 0 && expansion.atMapEdge) {
+    // Expand the generated map (create new quadrants)
+    newState.explorationMap = expandGeneratedMap(newState.explorationMap, rules);
+    // Recalculate expansion with the new larger map
+    expansion = getNextExplorationExpansion(newState.explorationMap, rules);
+  }
 
   if (expansion.cellsToExplore === 0) {
-    // Check if we need to expand the generated map
-    if (expansion.atMapEdge) {
-      // Expand the generated map (create new quadrants)
-      newState.explorationMap = expandGeneratedMap(newState.explorationMap, rules);
-      return { state: newState, error: null };
-    }
     return { state: newState, error: 'No new tiles to explore' };
   }
 

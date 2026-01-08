@@ -120,12 +120,6 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
     const app = appRef.current;
     const terrainTypes = rules?.exploration?.terrainTypes || {};
 
-    // Debug logging
-    console.log('ExplorationCanvas render called', {
-      exploredBounds: explorationMap.exploredBounds,
-      exploredCount: Object.values(explorationMap.tiles).filter(t => t.explored).length
-    });
-
     // Remove old world container and create a new one
     if (worldRef.current) {
       app.stage.removeChild(worldRef.current);
@@ -208,17 +202,6 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
     world.addChild(terrainContainer);
     world.addChild(fogContainer);
     world.addChild(nodeContainer);
-
-    // Ensure ticker is running and force render on next frame
-    if (app.ticker && !app.ticker.started) {
-      app.ticker.start();
-    }
-
-    requestAnimationFrame(() => {
-      if (appRef.current && appRef.current.renderer) {
-        appRef.current.renderer.render(appRef.current.stage);
-      }
-    });
 
   }, [explorationMap, rules]);
 
@@ -376,18 +359,14 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
 
   // Re-render when map state changes and recenter if bounds changed
   useEffect(() => {
-    console.log('ExplorationCanvas useEffect triggered', { initialized, hasMap: !!explorationMap });
-
     if (initialized && explorationMap) {
       const currentBoundsHash = getBoundsHash(explorationMap.exploredBounds);
-      console.log('Bounds hash:', { prev: prevBoundsHashRef.current, current: currentBoundsHash });
 
       // Render the new state
       render();
 
       // If bounds changed (expansion happened), recenter the view
       if (prevBoundsHashRef.current && prevBoundsHashRef.current !== currentBoundsHash) {
-        console.log('Bounds changed, recentering view');
         centerOnExploredArea();
       }
 
