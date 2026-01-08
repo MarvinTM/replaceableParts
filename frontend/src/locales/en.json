@@ -79,6 +79,25 @@
       "capacity": "capacity",
       "emptyInventory": "Inventory is empty",
       "zoomHint": "Scroll to zoom, drag to pan"
+    },
+    "exploration": {
+      "title": "Exploration Map",
+      "explored": "{{count}} tiles explored",
+      "stats": "Exploration Stats",
+      "exploredTiles": "Explored Tiles",
+      "mapSize": "Map Size",
+      "nodesFound": "Nodes Found",
+      "nodesUnlocked": "Nodes Unlocked",
+      "actions": "Actions",
+      "expand": "Explore More",
+      "selectedTile": "Selected Tile",
+      "terrain": "Terrain",
+      "position": "Position",
+      "resource": "Resource",
+      "rate": "Rate",
+      "unlock": "Unlock Node",
+      "active": "Active",
+      "clickToSelect": "Click a tile to view details"
     }
   },
   "admin": {

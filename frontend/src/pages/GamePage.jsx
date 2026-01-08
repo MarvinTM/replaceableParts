@@ -22,9 +22,12 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import BoltIcon from '@mui/icons-material/Bolt';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import TerrainIcon from '@mui/icons-material/Terrain';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
+import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -162,6 +165,191 @@ function FactoryTab() {
                     );
                   })}
                 </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+}
+
+function ExplorationTab() {
+  const { t } = useTranslation();
+  const engineState = useGameStore((state) => state.engineState);
+  const rules = useGameStore((state) => state.rules);
+  const expandExploration = useGameStore((state) => state.expandExploration);
+  const unlockExplorationNode = useGameStore((state) => state.unlockExplorationNode);
+
+  const [selectedTile, setSelectedTile] = useState(null);
+
+  if (!engineState?.explorationMap) return null;
+
+  const { explorationMap, credits } = engineState;
+
+  // Debug logging
+  console.log('ExplorationTab render', {
+    exploredBounds: explorationMap.exploredBounds,
+    credits
+  });
+  const { exploredBounds, tiles } = explorationMap;
+
+  // Count stats
+  const exploredCount = Object.values(tiles).filter(t => t.explored).length;
+  const totalNodes = Object.values(tiles).filter(t => t.explored && t.extractionNode).length;
+  const unlockedNodes = Object.values(tiles).filter(t => t.explored && t.extractionNode?.unlocked).length;
+
+  // Calculate expansion cost
+  const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
+  const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
+
+  const handleTileClick = (tile) => {
+    setSelectedTile(tile);
+  };
+
+  const handleExpand = () => {
+    expandExploration();
+  };
+
+  const handleUnlockNode = () => {
+    if (selectedTile?.extractionNode && !selectedTile.extractionNode.unlocked) {
+      unlockExplorationNode(selectedTile.x, selectedTile.y);
+      setSelectedTile(null);
+    }
+  };
+
+  return (
+    <Box>
+      {/* Exploration Map */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent sx={{ p: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1, px: 1 }}>
+            <Typography variant="subtitle1">{t('game.exploration.title')}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {t('game.exploration.explored', { count: exploredCount })} | {t('game.factory.zoomHint')}
+            </Typography>
+          </Box>
+          <ExplorationCanvas
+            explorationMap={explorationMap}
+            rules={rules}
+            onTileClick={handleTileClick}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Info panels */}
+      <Grid container spacing={2}>
+        {/* Exploration Stats */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('game.exploration.stats')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">{t('game.exploration.exploredTiles')}</Typography>
+                  <Typography variant="body2">{exploredCount}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">{t('game.exploration.mapSize')}</Typography>
+                  <Typography variant="body2">{exploredWidth} x {exploredHeight}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">{t('game.exploration.nodesFound')}</Typography>
+                  <Typography variant="body2">{totalNodes}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography variant="body2" color="text.secondary">{t('game.exploration.nodesUnlocked')}</Typography>
+                  <Typography variant="body2">{unlockedNodes}</Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Actions */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('game.exploration.actions')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<TerrainIcon />}
+                  onClick={handleExpand}
+                  disabled={credits < rules.exploration.baseCostPerCell}
+                >
+                  {t('game.exploration.expand')} ({rules.exploration.baseCostPerCell}+ {t('game.stats.credits')})
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Selected Tile Info */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('game.exploration.selectedTile')}
+              </Typography>
+              {selectedTile ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">{t('game.exploration.terrain')}</Typography>
+                    <Chip
+                      label={rules.exploration.terrainTypes[selectedTile.terrain]?.name || selectedTile.terrain}
+                      size="small"
+                      sx={{
+                        backgroundColor: `#${rules.exploration.terrainTypes[selectedTile.terrain]?.color.toString(16).padStart(6, '0')}`,
+                        color: 'white'
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">{t('game.exploration.position')}</Typography>
+                    <Typography variant="body2">({selectedTile.x}, {selectedTile.y})</Typography>
+                  </Box>
+                  {selectedTile.extractionNode && (
+                    <>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">{t('game.exploration.resource')}</Typography>
+                        <Typography variant="body2">{selectedTile.extractionNode.resourceType}</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">{t('game.exploration.rate')}</Typography>
+                        <Typography variant="body2">{selectedTile.extractionNode.rate}/tick</Typography>
+                      </Box>
+                      {!selectedTile.extractionNode.unlocked && (
+                        <Button
+                          variant="outlined"
+                          color="warning"
+                          startIcon={<LockOpenIcon />}
+                          onClick={handleUnlockNode}
+                          disabled={credits < rules.exploration.nodeUnlockCost}
+                          sx={{ mt: 1 }}
+                        >
+                          {t('game.exploration.unlock')} ({rules.exploration.nodeUnlockCost} {t('game.stats.credits')})
+                        </Button>
+                      )}
+                      {selectedTile.extractionNode.unlocked && (
+                        <Chip
+                          label={t('game.exploration.active')}
+                          color="success"
+                          size="small"
+                          sx={{ mt: 1 }}
+                        />
+                      )}
+                    </>
+                  )}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  {t('game.exploration.clickToSelect')}
+                </Typography>
               )}
             </CardContent>
           </Card>
@@ -314,11 +502,7 @@ export default function GamePage() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
-        <PlaceholderTab
-          title={t('main.tabs.exploration')}
-          description={t('main.explorationDescription')}
-          icon={ExploreIcon}
-        />
+        <ExplorationTab />
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>

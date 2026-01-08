@@ -131,6 +131,15 @@ const useGameStore = create(
         return get().dispatch({ type: 'BUY_INVENTORY_SPACE' });
       },
 
+      // Exploration actions
+      expandExploration: () => {
+        return get().dispatch({ type: 'EXPAND_EXPLORATION', payload: {} });
+      },
+
+      unlockExplorationNode: (x, y) => {
+        return get().dispatch({ type: 'UNLOCK_EXPLORATION_NODE', payload: { x, y } });
+      },
+
       // Game loop controls
       startGameLoop: (tickMs = 1000) => {
         const { isRunning, tickInterval } = get();

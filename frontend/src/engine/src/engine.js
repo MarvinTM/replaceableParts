@@ -3,6 +3,8 @@
  * A pure functional game engine for manufacturing simulation
  */
 
+import { getNextExplorationExpansion, expandGeneratedMap } from './mapGenerator.js';
+
 // ============================================================================
 // PRNG - Mulberry32 (deterministic random number generator)
 // ============================================================================
@@ -699,6 +701,109 @@ function buyInventorySpace(state, rules, payload) {
 }
 
 // ============================================================================
+// Exploration Actions
+// ============================================================================
+
+function expandExploration(state, rules, payload) {
+  const newState = deepClone(state);
+
+  if (!newState.explorationMap) {
+    return { state: newState, error: 'No exploration map available' };
+  }
+
+  // Get expansion info
+  const expansion = getNextExplorationExpansion(newState.explorationMap, rules);
+
+  if (expansion.cellsToExplore === 0) {
+    // Check if we need to expand the generated map
+    if (expansion.atMapEdge) {
+      // Expand the generated map (create new quadrants)
+      newState.explorationMap = expandGeneratedMap(newState.explorationMap, rules);
+      return { state: newState, error: null };
+    }
+    return { state: newState, error: 'No new tiles to explore' };
+  }
+
+  if (newState.credits < expansion.cost) {
+    return { state: newState, error: `Not enough credits (need ${expansion.cost})` };
+  }
+
+  // Deduct credits
+  newState.credits -= expansion.cost;
+
+  // Mark new tiles as explored
+  const oldBounds = newState.explorationMap.exploredBounds;
+  const newBounds = expansion.newBounds;
+
+  for (let y = newBounds.minY; y <= newBounds.maxY; y++) {
+    for (let x = newBounds.minX; x <= newBounds.maxX; x++) {
+      // Only mark tiles that weren't already explored
+      if (x < oldBounds.minX || x > oldBounds.maxX ||
+          y < oldBounds.minY || y > oldBounds.maxY) {
+        const key = `${x},${y}`;
+        if (newState.explorationMap.tiles[key]) {
+          newState.explorationMap.tiles[key].explored = true;
+        }
+      }
+    }
+  }
+
+  // Update explored bounds
+  newState.explorationMap.exploredBounds = newBounds;
+
+  return { state: newState, error: null };
+}
+
+function unlockExplorationNode(state, rules, payload) {
+  const newState = deepClone(state);
+  const { x, y } = payload;
+
+  if (!newState.explorationMap) {
+    return { state: newState, error: 'No exploration map available' };
+  }
+
+  const key = `${x},${y}`;
+  const tile = newState.explorationMap.tiles[key];
+
+  if (!tile) {
+    return { state: newState, error: 'Tile not found' };
+  }
+
+  if (!tile.explored) {
+    return { state: newState, error: 'Tile not explored yet' };
+  }
+
+  if (!tile.extractionNode) {
+    return { state: newState, error: 'No extraction node on this tile' };
+  }
+
+  if (tile.extractionNode.unlocked) {
+    return { state: newState, error: 'Extraction node already unlocked' };
+  }
+
+  const cost = rules.exploration.nodeUnlockCost;
+  if (newState.credits < cost) {
+    return { state: newState, error: `Not enough credits (need ${cost})` };
+  }
+
+  // Deduct credits
+  newState.credits -= cost;
+
+  // Mark node as unlocked
+  tile.extractionNode.unlocked = true;
+
+  // Add to main extraction nodes array (unified system)
+  newState.extractionNodes.push({
+    id: tile.extractionNode.id,
+    resourceType: tile.extractionNode.resourceType,
+    rate: tile.extractionNode.rate,
+    active: true
+  });
+
+  return { state: newState, error: null };
+}
+
+// ============================================================================
 // Main Engine Function
 // ============================================================================
 
@@ -743,6 +848,12 @@ export function engine(state, rules, action) {
     case 'BUY_INVENTORY_SPACE':
       return buyInventorySpace(state, rules, action.payload);
 
+    case 'EXPAND_EXPLORATION':
+      return expandExploration(state, rules, action.payload);
+
+    case 'UNLOCK_EXPLORATION_NODE':
+      return unlockExplorationNode(state, rules, action.payload);
+
     default:
       return { state, error: `Unknown action type: ${action.type}` };
   }
@@ -757,5 +868,6 @@ export {
   getMaxStack,
   getStructureSize,
   canPlaceAt,
-  getNextExpansionChunk
+  getNextExpansionChunk,
+  getNextExplorationExpansion
 };

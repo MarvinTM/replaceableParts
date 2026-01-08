@@ -3,6 +3,9 @@
  * Starting configuration with pre-defined extraction nodes and one generator
  */
 
+import { generateExplorationMap } from './mapGenerator.js';
+import { defaultRules } from './defaultRules.js';
+
 export const initialState = {
   tick: 0,
   rngSeed: 12345,
@@ -146,17 +149,30 @@ export const initialState = {
   },
 
   // Market popularity (empty = all at default 1.0)
-  marketPopularity: {}
+  marketPopularity: {},
+
+  // Exploration map (generated dynamically based on seed)
+  explorationMap: null
 };
 
 /**
  * Create a fresh copy of the initial state
  * Use this to start a new game
  */
-export function createInitialState(customSeed = null) {
+export function createInitialState(customSeed = null, rules = defaultRules) {
   const state = JSON.parse(JSON.stringify(initialState));
   if (customSeed !== null) {
     state.rngSeed = customSeed;
   }
+
+  // Generate exploration map using the game seed
+  const explorationRules = rules.exploration;
+  state.explorationMap = generateExplorationMap(
+    state.rngSeed,
+    explorationRules.initialGeneratedSize,
+    explorationRules.initialGeneratedSize,
+    rules
+  );
+
   return state;
 }

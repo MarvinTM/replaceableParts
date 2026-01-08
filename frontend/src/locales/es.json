@@ -79,6 +79,25 @@
       "capacity": "capacidad",
       "emptyInventory": "El inventario está vacío",
       "zoomHint": "Desplaza para zoom, arrastra para mover"
+    },
+    "exploration": {
+      "title": "Mapa de Exploración",
+      "explored": "{{count}} casillas exploradas",
+      "stats": "Estadísticas de Exploración",
+      "exploredTiles": "Casillas Exploradas",
+      "mapSize": "Tamaño del Mapa",
+      "nodesFound": "Nodos Encontrados",
+      "nodesUnlocked": "Nodos Desbloqueados",
+      "actions": "Acciones",
+      "expand": "Explorar Más",
+      "selectedTile": "Casilla Seleccionada",
+      "terrain": "Terreno",
+      "position": "Posición",
+      "resource": "Recurso",
+      "rate": "Tasa",
+      "unlock": "Desbloquear Nodo",
+      "active": "Activo",
+      "clickToSelect": "Haz clic en una casilla para ver detalles"
     }
   },
   "admin": {

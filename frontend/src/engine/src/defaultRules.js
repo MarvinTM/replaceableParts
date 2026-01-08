@@ -363,5 +363,42 @@ export const defaultRules = {
     baseCost: 50,            // Base cost for first upgrade
     costGrowth: 1.5,         // Exponential growth factor
     upgradeAmount: 50        // How much weight capacity each upgrade adds
+  },
+
+  // ============================================================================
+  // Exploration Map Configuration
+  // ============================================================================
+  exploration: {
+    initialExploredSize: 4,    // 4x4 starting explored area
+    initialGeneratedSize: 32,  // Initial pre-generated map size
+    baseCostPerCell: 15,       // Credits per cell to explore
+    nodeUnlockCost: 100,       // Base credits to unlock extraction node
+    nodeSpawnChance: 0.12,     // 12% chance per tile to have node
+
+    // Terrain generation parameters
+    terrainScale: 8,           // Noise scale (larger = bigger biomes)
+    moistureScale: 6,          // Moisture noise scale
+
+    // Terrain type definitions with colors for rendering
+    terrainTypes: {
+      water:     { id: 'water',     name: 'Water',     color: 0x3b82f6 },
+      plains:    { id: 'plains',    name: 'Plains',    color: 0xfbbf24 },
+      grassland: { id: 'grassland', name: 'Grassland', color: 0x84cc16 },
+      forest:    { id: 'forest',    name: 'Forest',    color: 0x16a34a },
+      jungle:    { id: 'jungle',    name: 'Jungle',    color: 0x15803d },
+      hills:     { id: 'hills',     name: 'Hills',     color: 0xa3a3a3 },
+      mountain:  { id: 'mountain',  name: 'Mountain',  color: 0x78716c }
+    },
+
+    // Resource spawn weights per terrain type
+    resourceAffinities: {
+      plains:    { clay: 0.6, sand: 0.4 },
+      grassland: { clay: 1.0 },
+      forest:    { wood: 1.0 },
+      jungle:    { wood: 1.0 },
+      hills:     { stone: 0.5, iron_ore: 0.3, copper_ore: 0.2 },
+      mountain:  { stone: 0.25, iron_ore: 0.3, copper_ore: 0.2, coal: 0.25 },
+      water:     {}  // No resources from water
+    }
   }
 };
