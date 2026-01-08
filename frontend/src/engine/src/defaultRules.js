@@ -371,6 +371,7 @@ export const defaultRules = {
   exploration: {
     initialExploredSize: 4,    // 4x4 starting explored area
     initialGeneratedSize: 32,  // Initial pre-generated map size
+    maxGeneratedSize: 128,     // Maximum map size (128x128 = 16,384 tiles)
     baseCostPerCell: 15,       // Credits per cell to explore
     nodeUnlockCost: 100,       // Base credits to unlock extraction node
     nodeSpawnChance: 0.12,     // 12% chance per tile to have node

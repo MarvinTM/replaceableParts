@@ -314,12 +314,20 @@ export function getNextExplorationExpansion(explorationMap, rules) {
 /**
  * Expand the generated map when player explores beyond current bounds
  * Creates 3 new quadrants to double the map size
+ * Returns null if already at max size
  */
 export function expandGeneratedMap(explorationMap, rules) {
   const { generatedWidth, generatedHeight, tiles, seed } = explorationMap;
+  const maxSize = rules.exploration.maxGeneratedSize || 256;
 
-  const newWidth = generatedWidth * 2;
-  const newHeight = generatedHeight * 2;
+  // Check if we're already at max size
+  if (generatedWidth >= maxSize || generatedHeight >= maxSize) {
+    return null;
+  }
+
+  // Cap the expansion to not exceed max size
+  const newWidth = Math.min(generatedWidth * 2, maxSize);
+  const newHeight = Math.min(generatedHeight * 2, maxSize);
 
   // Generate new tiles for the three new quadrants
   // (top-right, bottom-left, bottom-right)

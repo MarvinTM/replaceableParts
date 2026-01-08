@@ -717,7 +717,14 @@ function expandExploration(state, rules, payload) {
   // If we're at the map edge with no cells to explore, expand the generated map first
   if (expansion.cellsToExplore === 0 && expansion.atMapEdge) {
     // Expand the generated map (create new quadrants)
-    newState.explorationMap = expandGeneratedMap(newState.explorationMap, rules);
+    const expandedMap = expandGeneratedMap(newState.explorationMap, rules);
+
+    // Check if expansion is possible (null means at max size)
+    if (expandedMap === null) {
+      return { state: newState, error: 'Map has reached maximum size' };
+    }
+
+    newState.explorationMap = expandedMap;
     // Recalculate expansion with the new larger map
     expansion = getNextExplorationExpansion(newState.explorationMap, rules);
   }
