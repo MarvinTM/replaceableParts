@@ -41,12 +41,13 @@ export const initialState = {
     {
       id: 'starter_machine',
       recipeId: 'planks',
+      internalBuffer: {},
       status: 'idle',
       enabled: true,
       spaceUsed: 1,
+      energyConsumption: 1,
       x: 2,
-      y: 2,
-      progress: 0
+      y: 2
     }
   ],
 
