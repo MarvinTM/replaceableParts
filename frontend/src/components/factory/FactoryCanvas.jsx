@@ -179,6 +179,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
   const worldRef = useRef(null);
   const assetsRef = useRef(null);
   const dragRef = useRef({ isDragging: false, lastX: 0, lastY: 0 });
+  const minZoomRef = useRef(0.25); // Dynamic minimum zoom based on factory size
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   const render = useCallback(() => {
@@ -324,22 +325,39 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
   useEffect(() => {
     if (!containerRef.current || appRef.current) return;
 
+    let isMounted = true;
+
     const initPixi = async () => {
       const app = new Application();
+      const container = containerRef.current;
 
       await app.init({
         background: COLORS.empty,
-        resizeTo: containerRef.current,
+        resizeTo: container,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true
       });
+
+      // Check if component unmounted during async init
+      if (!isMounted || !containerRef.current) {
+        app.destroy(true);
+        return;
+      }
 
       containerRef.current.appendChild(app.canvas);
       appRef.current = app;
 
       // Load assets
       const assets = await loadAssets();
+
+      // Check again after asset loading
+      if (!isMounted) {
+        app.destroy(true);
+        appRef.current = null;
+        return;
+      }
+
       assetsRef.current = assets;
       setAssetsLoaded(true);
 
@@ -348,36 +366,27 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
       app.stage.addChild(world);
       worldRef.current = world;
 
-      // Center the world initially
-      if (floorSpace) {
-        const center = getGridCenter(floorSpace.width, floorSpace.height);
-        world.x = app.screen.width / 2 - center.x * 1.5;
-        world.y = app.screen.height / 2 - center.y * 1.5;
-        world.scale.set(1.5);
-      }
-
-      // Initial render
-      render();
-
       // Setup zoom (mouse wheel)
       const canvas = app.canvas;
       const handleWheel = (e) => {
+        const currentWorld = worldRef.current;
+        if (!currentWorld) return;
         e.preventDefault();
         const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(Math.max(world.scale.x * scaleFactor, 0.25), 4);
+        const newScale = Math.min(Math.max(currentWorld.scale.x * scaleFactor, minZoomRef.current), 4);
 
         const rect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
         const worldPos = {
-          x: (mouseX - world.x) / world.scale.x,
-          y: (mouseY - world.y) / world.scale.y
+          x: (mouseX - currentWorld.x) / currentWorld.scale.x,
+          y: (mouseY - currentWorld.y) / currentWorld.scale.y
         };
 
-        world.scale.set(newScale);
-        world.x = mouseX - worldPos.x * newScale;
-        world.y = mouseY - worldPos.y * newScale;
+        currentWorld.scale.set(newScale);
+        currentWorld.x = mouseX - worldPos.x * newScale;
+        currentWorld.y = mouseY - worldPos.y * newScale;
       };
 
       // Setup pan (mouse drag)
@@ -387,11 +396,12 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
       };
 
       const handleMouseMove = (e) => {
-        if (!dragRef.current.isDragging) return;
+        const currentWorld = worldRef.current;
+        if (!dragRef.current.isDragging || !currentWorld) return;
         const dx = e.clientX - dragRef.current.lastX;
         const dy = e.clientY - dragRef.current.lastY;
-        world.x += dx;
-        world.y += dy;
+        currentWorld.x += dx;
+        currentWorld.y += dy;
         dragRef.current.lastX = e.clientX;
         dragRef.current.lastY = e.clientY;
       };
@@ -413,6 +423,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
     initPixi();
 
     return () => {
+      isMounted = false;
       if (appRef.current) {
         const app = appRef.current;
         const canvas = app.canvas;
@@ -436,6 +447,31 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
   useEffect(() => {
     render();
   }, [render]);
+
+  // Re-center view when floor space dimensions change or when assets finish loading
+  useEffect(() => {
+    if (!appRef.current || !worldRef.current || !floorSpace || !assetsLoaded) return;
+
+    const app = appRef.current;
+    const world = worldRef.current;
+    const center = getGridCenter(floorSpace.width, floorSpace.height);
+
+    // Calculate scale to fit the factory in view with some padding
+    const factoryPixelWidth = floorSpace.width * TILE_WIDTH;
+    const factoryPixelHeight = floorSpace.height * TILE_HEIGHT;
+    const padding = 1.2; // 20% padding
+    const scaleX = app.screen.width / (factoryPixelWidth * padding);
+    const scaleY = app.screen.height / (factoryPixelHeight * padding);
+    const fitScale = Math.min(scaleX, scaleY, 2); // Cap at 2x zoom
+
+    // Update dynamic minimum zoom to allow seeing the whole factory
+    // Use a slightly smaller scale than fitScale to give some margin
+    minZoomRef.current = Math.min(fitScale * 0.8, 0.25);
+
+    world.scale.set(fitScale);
+    world.x = app.screen.width / 2 - center.x * fitScale;
+    world.y = app.screen.height / 2 - center.y * fitScale;
+  }, [floorSpace?.width, floorSpace?.height, assetsLoaded]);
 
   // Handle resize
   useEffect(() => {

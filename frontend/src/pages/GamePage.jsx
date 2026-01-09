@@ -67,7 +67,7 @@ function FactoryTab() {
 
   if (!engineState) return null;
 
-  const { machines, generators, floorSpace, inventory, credits } = engineState;
+  const { machines, generators, floorSpace, inventory, credits, rngSeed } = engineState;
 
   // Calculate next expansion info
   const expansion = getNextExpansionChunk(engineState, rules);
@@ -88,6 +88,7 @@ function FactoryTab() {
             </Typography>
           </Box>
           <FactoryCanvas
+            key={rngSeed}
             floorSpace={floorSpace}
             machines={machines}
             generators={generators}
