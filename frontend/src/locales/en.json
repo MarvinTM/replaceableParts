@@ -78,7 +78,11 @@
       "inventory": "Inventory",
       "capacity": "capacity",
       "emptyInventory": "Inventory is empty",
-      "zoomHint": "Scroll to zoom, drag to pan"
+      "zoomHint": "Scroll to zoom, drag to pan",
+      "actions": "Actions",
+      "expand": "Expand Factory",
+      "expandInfo": "Expand to {{width}} x {{height}}",
+      "cellsAdded": "+{{count}} cells"
     },
     "exploration": {
       "title": "Exploration Map",

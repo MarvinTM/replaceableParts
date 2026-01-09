@@ -24,8 +24,10 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import TerrainIcon from '@mui/icons-material/Terrain';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import GridViewIcon from '@mui/icons-material/GridView';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
+import { getNextExpansionChunk } from '../engine/src/engine.js';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
 import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 
@@ -61,10 +63,18 @@ function FactoryTab() {
   const { t } = useTranslation();
   const engineState = useGameStore((state) => state.engineState);
   const rules = useGameStore((state) => state.rules);
+  const buyFloorSpace = useGameStore((state) => state.buyFloorSpace);
 
   if (!engineState) return null;
 
-  const { machines, generators, floorSpace, inventory } = engineState;
+  const { machines, generators, floorSpace, inventory, credits } = engineState;
+
+  // Calculate next expansion info
+  const expansion = getNextExpansionChunk(engineState, rules);
+
+  const handleExpand = () => {
+    buyFloorSpace();
+  };
 
   return (
     <Box>
@@ -166,6 +176,33 @@ function FactoryTab() {
                   })}
                 </Box>
               )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Actions */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="subtitle1" gutterBottom>
+                {t('game.factory.actions')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<GridViewIcon />}
+                    onClick={handleExpand}
+                    disabled={credits < expansion.cost}
+                    fullWidth
+                  >
+                    {t('game.factory.expand')} ({expansion.cost} {t('game.stats.credits')})
+                  </Button>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    {t('game.factory.expandInfo', { width: expansion.newWidth, height: expansion.newHeight })} ({t('game.factory.cellsAdded', { count: expansion.cellsAdded })})
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>

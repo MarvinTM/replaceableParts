@@ -78,7 +78,11 @@
       "inventory": "Inventario",
       "capacity": "capacidad",
       "emptyInventory": "El inventario está vacío",
-      "zoomHint": "Desplaza para zoom, arrastra para mover"
+      "zoomHint": "Desplaza para zoom, arrastra para mover",
+      "actions": "Acciones",
+      "expand": "Expandir Fábrica",
+      "expandInfo": "Expandir a {{width}} x {{height}}",
+      "cellsAdded": "+{{count}} celdas"
     },
     "exploration": {
       "title": "Mapa de Exploración",
