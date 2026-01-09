@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { engine } from '../engine/src/engine.js';
-import { createInitialState } from '../engine/src/initialState.js';
-import { defaultRules } from '../engine/src/defaultRules.js';
+import { engine } from '../engine/engine.js';
+import { createInitialState } from '../engine/initialState.js';
+import { defaultRules } from '../engine/defaultRules.js';
 
 /**
  * Game Store using Zustand

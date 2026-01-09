@@ -27,7 +27,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import GridViewIcon from '@mui/icons-material/GridView';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
-import { getNextExpansionChunk } from '../engine/src/engine.js';
+import { getNextExpansionChunk } from '../engine/engine.js';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
 import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 
