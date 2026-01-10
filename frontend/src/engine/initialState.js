@@ -18,7 +18,7 @@ export const initialState = {
     chunks: [{ x: 0, y: 0, width: 8, height: 8 }],
     placements: [
       // Starting generator at position (0, 0)
-      { id: 'starter_crank', x: 0, y: 0, size: 1, type: 'generator' },
+      { id: 'starter_crank', x: 3, y: 3, size: 1, type: 'generator' },
       // Starting machine at position (2, 2)
       { id: 'starter_machine', x: 2, y: 2, size: 1, type: 'machine' }
     ]
@@ -59,8 +59,8 @@ export const initialState = {
       type: 'manual_crank',
       energyOutput: 3,
       spaceUsed: 1,
-      x: 0,
-      y: 0
+      x: 3,
+      y: 3
     }
   ],
 

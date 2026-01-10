@@ -16,6 +16,9 @@ const ASSET_MANIFEST = {
     light: `${ASSET_BASE}/floor_light.png`,
     dark: `${ASSET_BASE}/floor_dark.png`,
   },
+  walls: {
+    segment: `${ASSET_BASE}/wall.png`,
+  },
   machines: {
     idle: `${ASSET_BASE}/machine_idle.png`,
     working: `${ASSET_BASE}/machine_working.png`,
@@ -37,12 +40,19 @@ const ANIM_CONFIG = {
   generator: { frames: 4, speed: 0.08 }
 };
 
+// Wall positioning adjustments (tweak these values to fine-tune alignment)
+const WALL_CONFIG = {
+  offsetX: -19,  // Horizontal offset from tile edge (negative = left, positive = right)
+  offsetY: 2,   // Vertical offset (negative = up, positive = down/closer to floor)
+};
+
 /**
  * Load assets and return what's available
  */
 async function loadAssets() {
   const loaded = {
     floor: { light: null, dark: null },
+    walls: { segment: null },
     machines: { idle: null, working: null, blocked: null, workingAnim: null },
     generators: { default: null, anim: null }
   };
@@ -59,6 +69,9 @@ async function loadAssets() {
   // Load floor tiles
   loaded.floor.light = await tryLoad(ASSET_MANIFEST.floor.light);
   loaded.floor.dark = await tryLoad(ASSET_MANIFEST.floor.dark);
+
+  // Load wall sprites
+  loaded.walls.segment = await tryLoad(ASSET_MANIFEST.walls.segment);
 
   // Load machine sprites
   loaded.machines.idle = await tryLoad(ASSET_MANIFEST.machines.idle);
@@ -243,6 +256,28 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
     }
 
     world.addChild(floorContainer);
+
+    // === RENDER WALLS ===
+    if (assets?.walls.segment) {
+      const wallContainer = new Container();
+
+      // Upper-left wall: tiles where x = 0 (grows up-right as y increases)
+      for (let y = 0; y < height; y++) {
+        if (!isTileValid(0, y)) continue;
+
+        const screenPos = gridToScreen(0, y);
+        const wallSprite = new Sprite(assets.walls.segment);
+
+        // Position wall at the upper-left edge of the tile
+        wallSprite.anchor.set(0.5, 1); // Bottom-center anchor
+        wallSprite.x = screenPos.x + WALL_CONFIG.offsetX;
+        wallSprite.y = screenPos.y + WALL_CONFIG.offsetY;
+
+        wallContainer.addChild(wallSprite);
+      }
+
+      world.addChild(wallContainer);
+    }
 
     // === RENDER STRUCTURES ===
     const structuresContainer = new Container();
