@@ -42,8 +42,13 @@ const ANIM_CONFIG = {
 
 // Wall positioning adjustments (tweak these values to fine-tune alignment)
 const WALL_CONFIG = {
-  offsetX: -19,  // Horizontal offset from tile edge (negative = left, positive = right)
-  offsetY: 2,   // Vertical offset (negative = up, positive = down/closer to floor)
+  // Upper-left wall (along x=0)
+  leftOffsetX: -19,
+  leftOffsetY: 2,
+  // Upper-right wall (along y=0)
+  rightOffsetX: 19,
+  rightOffsetY: 2,
+  // Common settings
   wallRowVerticalOffset: 32,   // Vertical offset for subsequent wall rows
   baseNumberOfWallRows: 3,     // Base number of wall rows at initial factory size
   initialFactorySize: 8        // Initial factory size (8x8)
@@ -276,11 +281,10 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
     if (assets?.walls.segment) {
       const wallContainer = new Container();
 
-      // Upper-left wall: tiles where x = 0 (grows up-right as y increases)
-      // Render multiple rows of walls, scaling with factory expansion
       const wallHeight = assets.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset;
       const numberOfRows = getWallRowCount(width, height);
 
+      // Upper-left wall: tiles where x = 0 (grows up-right as y increases)
       for (let row = 0; row < numberOfRows; row++) {
         for (let y = 0; y < height; y++) {
           if (!isTileValid(0, y)) continue;
@@ -288,11 +292,26 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
           const screenPos = gridToScreen(0, y);
           const wallSprite = new Sprite(assets.walls.segment);
 
-          // Position wall at the upper-left edge of the tile
-          // Stack rows by offsetting Y by wall height
-          wallSprite.anchor.set(0.5, 1); // Bottom-center anchor
-          wallSprite.x = screenPos.x + WALL_CONFIG.offsetX;
-          wallSprite.y = screenPos.y + WALL_CONFIG.offsetY - (row * wallHeight);
+          wallSprite.anchor.set(0.5, 1);
+          wallSprite.x = screenPos.x + WALL_CONFIG.leftOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.leftOffsetY - (row * wallHeight);
+
+          wallContainer.addChild(wallSprite);
+        }
+      }
+
+      // Upper-right wall: tiles where y = height-1 (last row, along upper-right edge)
+      for (let row = 0; row < numberOfRows; row++) {
+        for (let x = 0; x < width; x++) {
+          if (!isTileValid(x, height - 1)) continue;
+
+          const screenPos = gridToScreen(x, height - 1);
+          const wallSprite = new Sprite(assets.walls.segment);
+
+          wallSprite.anchor.set(0.5, 1);
+          wallSprite.scale.x = -1; // Flip horizontally
+          wallSprite.x = screenPos.x + WALL_CONFIG.rightOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.rightOffsetY - (row * wallHeight);
 
           wallContainer.addChild(wallSprite);
         }
