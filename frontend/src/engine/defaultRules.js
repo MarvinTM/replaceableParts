@@ -312,13 +312,14 @@ export const defaultRules = {
   // ============================================================================
   machines: {
     itemId: 'production_machine',  // Item required to deploy a machine
-    baseSpace: 1,                  // Floor space units per machine (1x1)
+    baseSizeX: 2,                  // Floor space width (X dimension)
+    baseSizeY: 1,                  // Floor space height (Y dimension)
     baseEnergy: 2                  // Energy consumption per tick
   },
 
   // ============================================================================
   // Generator Types (deployed from inventory)
-  // All generators are perfect squares for grid placement
+  // Generators can have different X and Y dimensions
   // ============================================================================
   generators: {
     types: [
@@ -327,21 +328,24 @@ export const defaultRules = {
         itemId: 'manual_crank',    // Item required to deploy
         name: 'Manual Crank',
         energyOutput: 3,
-        spaceCost: 1               // 1x1 grid
+        sizeX: 2,                  // 1x1 grid
+        sizeY: 2
       },
       {
         id: 'water_wheel',
         itemId: 'water_wheel',
         name: 'Water Wheel',
         energyOutput: 8,
-        spaceCost: 4               // 2x2 grid
+        sizeX: 2,                  // 2x2 grid
+        sizeY: 2
       },
       {
         id: 'steam_engine',
         itemId: 'steam_engine',
         name: 'Steam Engine',
         energyOutput: 15,
-        spaceCost: 16              // 4x4 grid
+        sizeX: 4,                  // 4x4 grid
+        sizeY: 4
       }
     ]
   },

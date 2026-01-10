@@ -164,38 +164,42 @@ function drawIsometricTile(graphics, x, y, fillColor, lineColor = null) {
 
 /**
  * Draw a structure as an isometric box - fallback when no image
+ * Supports rectangular structures with different sizeX and sizeY
  */
-function drawStructure(graphics, x, y, size, height, color) {
-  const halfWidth = (TILE_WIDTH * size) / 2;
-  const halfHeight = (TILE_HEIGHT * size) / 2;
+function drawStructure(graphics, x, y, sizeX, sizeY, height, color) {
+  // For isometric projection, width and height are affected by both dimensions
+  const halfWidthX = (TILE_WIDTH * sizeX) / 4;
+  const halfWidthY = (TILE_WIDTH * sizeY) / 4;
+  const halfHeightX = (TILE_HEIGHT * sizeX) / 4;
+  const halfHeightY = (TILE_HEIGHT * sizeY) / 4;
   const boxHeight = height;
 
-  // Top face
+  // Top face (diamond shape based on both dimensions)
   graphics.poly([
-    x, y - halfHeight - boxHeight,
-    x + halfWidth, y - boxHeight,
-    x, y + halfHeight - boxHeight,
-    x - halfWidth, y - boxHeight
+    x, y - halfHeightX - halfHeightY - boxHeight,           // Top
+    x + halfWidthX + halfWidthY, y - boxHeight,             // Right
+    x, y + halfHeightX + halfHeightY - boxHeight,           // Bottom
+    x - halfWidthX - halfWidthY, y - boxHeight              // Left
   ]);
   graphics.fill(color);
 
   // Left face (darker)
   const darkerColor = darkenColor(color, 0.7);
   graphics.poly([
-    x - halfWidth, y - boxHeight,
-    x, y + halfHeight - boxHeight,
-    x, y + halfHeight,
-    x - halfWidth, y
+    x - halfWidthX - halfWidthY, y - boxHeight,
+    x, y + halfHeightX + halfHeightY - boxHeight,
+    x, y + halfHeightX + halfHeightY,
+    x - halfWidthX - halfWidthY, y
   ]);
   graphics.fill(darkerColor);
 
   // Right face (medium)
   const mediumColor = darkenColor(color, 0.85);
   graphics.poly([
-    x + halfWidth, y - boxHeight,
-    x, y + halfHeight - boxHeight,
-    x, y + halfHeight,
-    x + halfWidth, y
+    x + halfWidthX + halfWidthY, y - boxHeight,
+    x, y + halfHeightX + halfHeightY - boxHeight,
+    x, y + halfHeightX + halfHeightY,
+    x + halfWidthX + halfWidthY, y
   ]);
   graphics.fill(mediumColor);
 }
@@ -343,8 +347,9 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
     // Render generators
     generators?.forEach((gen) => {
-      const screenPos = getStructureScreenPosition(gen.x, gen.y, Math.sqrt(gen.spaceUsed));
-      const size = Math.sqrt(gen.spaceUsed);
+      const sizeX = gen.sizeX || 1;
+      const sizeY = gen.sizeY || 1;
+      const screenPos = getStructureScreenPosition(gen.x, gen.y, sizeX, sizeY);
 
       let displayObject;
 
@@ -366,14 +371,14 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         displayObject.anchor.set(0.5, 1); // Bottom center anchor for structures
         displayObject.x = screenPos.x;
         displayObject.y = screenPos.y + TILE_HEIGHT / 2;
-        displayObject.scale.set(size);
+        displayObject.scale.set(sizeX, sizeY);
         displayObject.zIndex = gen.x - gen.y;
         structuresContainer.addChild(displayObject);
       } else {
         // Fallback to graphics
         const genGraphics = new Graphics();
-        const boxHeight = 20 + size * 10;
-        drawStructure(genGraphics, screenPos.x, screenPos.y, size, boxHeight, COLORS.generator);
+        const boxHeight = 20 + Math.max(sizeX, sizeY) * 10;
+        drawStructure(genGraphics, screenPos.x, screenPos.y, sizeX, sizeY, boxHeight, COLORS.generator);
         genGraphics.zIndex = gen.x - gen.y;
         structuresContainer.addChild(genGraphics);
       }
@@ -381,8 +386,9 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
     // Render machines
     machines?.forEach((machine) => {
-      const screenPos = getStructureScreenPosition(machine.x, machine.y, Math.sqrt(machine.spaceUsed));
-      const size = Math.sqrt(machine.spaceUsed);
+      const sizeX = machine.sizeX || 1;
+      const sizeY = machine.sizeY || 1;
+      const screenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
       const status = machine.enabled ? machine.status : 'idle';
 
       let displayObject;
@@ -411,15 +417,15 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         displayObject.anchor.set(0.5, 1);
         displayObject.x = screenPos.x;
         displayObject.y = screenPos.y + TILE_HEIGHT / 2;
-        displayObject.scale.set(size);
+        displayObject.scale.set(sizeX, sizeY);
         displayObject.zIndex = machine.x - machine.y;
         structuresContainer.addChild(displayObject);
       } else {
         // Fallback to graphics
         const machineGraphics = new Graphics();
-        const boxHeight = 25 + size * 8;
+        const boxHeight = 25 + Math.max(sizeX, sizeY) * 8;
         const color = getMachineColor(machine.status, machine.enabled);
-        drawStructure(machineGraphics, screenPos.x, screenPos.y, size, boxHeight, color);
+        drawStructure(machineGraphics, screenPos.x, screenPos.y, sizeX, sizeY, boxHeight, color);
         machineGraphics.zIndex = machine.x - machine.y;
         structuresContainer.addChild(machineGraphics);
       }

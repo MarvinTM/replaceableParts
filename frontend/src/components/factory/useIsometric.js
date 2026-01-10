@@ -44,13 +44,15 @@ export function screenToGrid(screenX, screenY) {
  * Structures are positioned at their grid cell, centered on the tile
  * @param {number} gridX - Grid X position
  * @param {number} gridY - Grid Y position
- * @param {number} size - Size of the structure in grid cells
+ * @param {number} sizeX - Width of the structure in grid cells
+ * @param {number} sizeY - Height of the structure in grid cells (defaults to sizeX if not provided)
  * @returns {{ x: number, y: number }} Screen coordinates for the structure center
  */
-export function getStructureScreenPosition(gridX, gridY, size = 1) {
+export function getStructureScreenPosition(gridX, gridY, sizeX = 1, sizeY = sizeX) {
   // For multi-cell structures, we position at the center
-  const centerOffset = (size - 1) / 2;
-  return gridToScreen(gridX + centerOffset, gridY + centerOffset);
+  const centerOffsetX = (sizeX - 1) / 2;
+  const centerOffsetY = (sizeY - 1) / 2;
+  return gridToScreen(gridX + centerOffsetX, gridY + centerOffsetY);
 }
 
 /**

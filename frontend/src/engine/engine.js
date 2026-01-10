@@ -52,22 +52,17 @@ function getMaxStack(itemId, inventoryCapacity, rules) {
 // Grid Placement Utilities
 // ============================================================================
 
-function getStructureSize(spaceCost) {
-  // spaceCost is always a perfect square (1, 4, 9, 16, etc.)
-  return Math.sqrt(spaceCost);
-}
-
-function isWithinBounds(x, y, size, state) {
-  // Check if the rectangle defined by (x, y, size) is fully contained
+function isWithinBounds(x, y, sizeX, sizeY, state) {
+  // Check if the rectangle defined by (x, y, sizeX, sizeY) is fully contained
   // within the union of all purchased chunks.
-  
+
   // Quick check: must be within global bounds
   if (x < 0 || y < 0) return false;
-  if (x + size > state.floorSpace.width || y + size > state.floorSpace.height) return false;
+  if (x + sizeX > state.floorSpace.width || y + sizeY > state.floorSpace.height) return false;
 
   // Detailed check: Sum of intersection areas must equal structure area
   // This handles structures spanning multiple chunks
-  const rect = { x, y, width: size, height: size };
+  const rect = { x, y, width: sizeX, height: sizeY };
   let coveredArea = 0;
 
   for (const chunk of state.floorSpace.chunks) {
@@ -78,7 +73,7 @@ function isWithinBounds(x, y, size, state) {
   }
 
   // Floating point safety not needed for integers, but good practice
-  return coveredArea === size * size;
+  return coveredArea === sizeX * sizeY;
 }
 
 function getIntersection(r1, r2) {
@@ -92,16 +87,17 @@ function getIntersection(r1, r2) {
   return null;
 }
 
-function isColliding(x, y, size, placements) {
-  // Check if the square from (x,y) to (x+size-1, y+size-1) overlaps any existing placement
+function isColliding(x, y, sizeX, sizeY, placements) {
+  // Check if the rectangle from (x,y) to (x+sizeX-1, y+sizeY-1) overlaps any existing placement
   for (const placement of placements) {
-    const pSize = placement.size;
+    const pSizeX = placement.sizeX;
+    const pSizeY = placement.sizeY;
     // Check for rectangle overlap
     const noOverlap =
-      x + size <= placement.x ||      // New is fully left of existing
-      placement.x + pSize <= x ||     // Existing is fully left of new
-      y + size <= placement.y ||      // New is fully above existing
-      placement.y + pSize <= y;       // Existing is fully above new
+      x + sizeX <= placement.x ||       // New is fully left of existing
+      placement.x + pSizeX <= x ||      // Existing is fully left of new
+      y + sizeY <= placement.y ||       // New is fully above existing
+      placement.y + pSizeY <= y;        // Existing is fully above new
 
     if (!noOverlap) {
       return true; // Collision detected
@@ -110,13 +106,13 @@ function isColliding(x, y, size, placements) {
   return false;
 }
 
-function canPlaceAt(state, x, y, size) {
+function canPlaceAt(state, x, y, sizeX, sizeY) {
   // Pass state to isWithinBounds to access chunks
-  if (!isWithinBounds(x, y, size, state)) {
+  if (!isWithinBounds(x, y, sizeX, sizeY, state)) {
     return { valid: false, error: 'Position out of bounds (area not purchased)' };
   }
 
-  if (isColliding(x, y, size, state.floorSpace.placements)) {
+  if (isColliding(x, y, sizeX, sizeY, state.floorSpace.placements)) {
     return { valid: false, error: 'Position collides with existing structure' };
   }
 
@@ -485,10 +481,11 @@ function addMachine(state, rules, payload) {
     return { state: newState, error: 'Position (x, y) is required' };
   }
 
-  const size = getStructureSize(rules.machines.baseSpace);
+  const sizeX = rules.machines.baseSizeX;
+  const sizeY = rules.machines.baseSizeY;
 
   // Check if position is valid and not colliding
-  const placement = canPlaceAt(newState, x, y, size);
+  const placement = canPlaceAt(newState, x, y, sizeX, sizeY);
   if (!placement.valid) {
     return { state: newState, error: placement.error };
   }
@@ -518,7 +515,8 @@ function addMachine(state, rules, payload) {
     internalBuffer: {},
     status: 'idle',
     enabled: true,
-    spaceUsed: rules.machines.baseSpace,
+    sizeX,
+    sizeY,
     energyConsumption: rules.machines.baseEnergy,
     x,
     y
@@ -529,7 +527,8 @@ function addMachine(state, rules, payload) {
     id: machineId,
     x,
     y,
-    size,
+    sizeX,
+    sizeY,
     type: 'machine'
   });
 
@@ -610,10 +609,11 @@ function addGenerator(state, rules, payload) {
     return { state: newState, error: 'Generator type not found' };
   }
 
-  const size = getStructureSize(genConfig.spaceCost);
+  const sizeX = genConfig.sizeX;
+  const sizeY = genConfig.sizeY;
 
   // Check if position is valid and not colliding
-  const placement = canPlaceAt(newState, x, y, size);
+  const placement = canPlaceAt(newState, x, y, sizeX, sizeY);
   if (!placement.valid) {
     return { state: newState, error: placement.error };
   }
@@ -641,7 +641,8 @@ function addGenerator(state, rules, payload) {
     id: generatorId,
     type: generatorType,
     energyOutput: genConfig.energyOutput,
-    spaceUsed: genConfig.spaceCost,
+    sizeX,
+    sizeY,
     x,
     y
   });
@@ -651,7 +652,8 @@ function addGenerator(state, rules, payload) {
     id: generatorId,
     x,
     y,
-    size,
+    sizeX,
+    sizeY,
     type: 'generator'
   });
 
@@ -1015,7 +1017,6 @@ export {
   deepClone,
   getItemWeight,
   getMaxStack,
-  getStructureSize,
   canPlaceAt,
   getNextExpansionChunk,
   getNextExplorationExpansion
