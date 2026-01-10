@@ -72,18 +72,20 @@ function FactoryTab() {
   const addGenerator = useGameStore((state) => state.addGenerator);
   const assignRecipe = useGameStore((state) => state.assignRecipe);
   const toggleMachine = useGameStore((state) => state.toggleMachine);
+  const moveMachine = useGameStore((state) => state.moveMachine);
 
-  // Drag state for placing machines/generators
+  // Drag state for placing machines/generators or moving existing ones
   const [dragState, setDragState] = useState({
     isDragging: false,
     itemType: null,
     itemId: null,
     sizeX: 0,
-    sizeY: 0
+    sizeY: 0,
+    movingMachineId: null // If set, we're moving an existing machine
   });
 
-  // Selected machine for machine info popup
-  const [selectedMachine, setSelectedMachine] = useState(null);
+  // Selected machine ID for machine info popup (store ID, not object, to get fresh state)
+  const [selectedMachineId, setSelectedMachineId] = useState(null);
   const [machinePopupPosition, setMachinePopupPosition] = useState(null);
 
   // State for recipe selector (opened from machine info popup)
@@ -92,6 +94,11 @@ function FactoryTab() {
   if (!engineState) return null;
 
   const { machines, generators, floorSpace, inventory, credits, rngSeed, unlockedRecipes } = engineState;
+
+  // Get current machine state from engineState (ensures fresh data after toggle)
+  const selectedMachine = selectedMachineId
+    ? machines.find(m => m.id === selectedMachineId)
+    : null;
 
   // Calculate next expansion info
   const expansion = getNextExpansionChunk(engineState, rules);
@@ -102,15 +109,34 @@ function FactoryTab() {
 
   // Drag handlers for placing machines/generators
   const handleDragStart = (itemType, itemId, sizeX, sizeY) => {
-    setDragState({ isDragging: true, itemType, itemId, sizeX, sizeY });
+    setDragState({ isDragging: true, itemType, itemId, sizeX, sizeY, movingMachineId: null });
   };
 
   const handleDragEnd = () => {
-    setDragState({ isDragging: false, itemType: null, itemId: null, sizeX: 0, sizeY: 0 });
+    setDragState({ isDragging: false, itemType: null, itemId: null, sizeX: 0, sizeY: 0, movingMachineId: null });
+  };
+
+  // Handle starting a drag on an existing machine (for repositioning)
+  const handleMachineDragStart = (machine, sizeX, sizeY) => {
+    setDragState({
+      isDragging: true,
+      itemType: 'machine',
+      itemId: rules.machines.itemId,
+      sizeX,
+      sizeY,
+      movingMachineId: machine.id
+    });
   };
 
   const handleDrop = (itemType, itemId, gridX, gridY, generatorType) => {
-    if (itemType === 'machine') {
+    // Handle moving an existing machine
+    if (itemType === 'machine-move') {
+      const machineId = itemId; // In this case, itemId is the machine ID
+      const result = moveMachine(machineId, gridX, gridY);
+      if (result.error) {
+        console.warn('Failed to move machine:', result.error);
+      }
+    } else if (itemType === 'machine') {
       const result = addMachine(gridX, gridY);
       if (result.error) {
         console.warn('Failed to place machine:', result.error);
@@ -126,14 +152,14 @@ function FactoryTab() {
 
   // Machine click handler - opens machine info popup
   const handleMachineClick = (machine, screenPos) => {
-    setSelectedMachine(machine);
+    setSelectedMachineId(machine.id);
     setMachinePopupPosition(screenPos);
     setShowRecipeSelector(false);
   };
 
   // Close machine info popup
   const handleCloseMachinePopup = () => {
-    setSelectedMachine(null);
+    setSelectedMachineId(null);
     setMachinePopupPosition(null);
     setShowRecipeSelector(false);
   };
@@ -179,6 +205,7 @@ function FactoryTab() {
             dragState={dragState}
             onDrop={handleDrop}
             onMachineClick={handleMachineClick}
+            onMachineDragStart={handleMachineDragStart}
             engineState={engineState}
           />
         </CardContent>

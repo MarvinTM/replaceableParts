@@ -255,6 +255,7 @@ export default function FactoryCanvas({
   dragState,
   onDrop,
   onMachineClick,
+  onMachineDragStart,
   engineState
 }) {
   const containerRef = useRef(null);
@@ -270,6 +271,16 @@ export default function FactoryCanvas({
 
   // Drag-and-drop placement state
   const [hoverGridPos, setHoverGridPos] = useState({ x: -1, y: -1 });
+
+  // Machine drag tracking (for repositioning existing machines)
+  const machineDragRef = useRef({ machine: null, startX: 0, startY: 0, hasMoved: false });
+
+  // Clear hover position when drag ends
+  useEffect(() => {
+    if (!dragState?.isDragging) {
+      setHoverGridPos({ x: -1, y: -1 });
+    }
+  }, [dragState?.isDragging]);
 
   const render = useCallback(() => {
     if (!worldRef.current || !floorSpace) return;
@@ -554,12 +565,23 @@ export default function FactoryCanvas({
     // === RENDER PLACEMENT OVERLAY (when dragging) ===
     if (dragState?.isDragging && hoverGridPos.x >= 0 && hoverGridPos.y >= 0) {
       const overlayGraphics = new Graphics();
-      const { sizeX, sizeY } = dragState;
+      const { sizeX, sizeY, movingMachineId } = dragState;
 
-      // Check if placement is valid using the engine's canPlaceAt
-      const isValid = engineState
-        ? canPlaceAt(engineState, hoverGridPos.x, hoverGridPos.y, sizeX, sizeY, rules).valid
-        : false;
+      // Check if placement is valid
+      let isValid = false;
+      if (engineState) {
+        if (movingMachineId) {
+          // When moving a machine, exclude it from collision detection
+          const placementsWithoutThis = engineState.floorSpace.placements.filter(p => p.id !== movingMachineId);
+          const tempState = {
+            ...engineState,
+            floorSpace: { ...engineState.floorSpace, placements: placementsWithoutThis }
+          };
+          isValid = canPlaceAt(tempState, hoverGridPos.x, hoverGridPos.y, sizeX, sizeY, rules).valid;
+        } else {
+          isValid = canPlaceAt(engineState, hoverGridPos.x, hoverGridPos.y, sizeX, sizeY, rules).valid;
+        }
+      }
 
       const color = isValid ? 0x00ff00 : 0xff0000; // Green or Red
 
@@ -836,31 +858,155 @@ export default function FactoryCanvas({
     setHoverGridPos({ x: -1, y: -1 });
   }, []);
 
-  // Handle click to detect clicks on machines
-  const handleClick = useCallback((e) => {
-    if (!onMachineClick || !machines || !rules) return;
-
-    const gridPos = screenToGridCoords(e.clientX, e.clientY);
-    if (!gridPos) return;
+  // Find machine at world coordinates (for click/drag detection)
+  const findMachineAtWorldPos = useCallback((worldX, worldY) => {
+    if (!machines || !rules) return null;
 
     const sizeX = rules.machines?.baseSizeX || 1;
     const sizeY = rules.machines?.baseSizeY || 1;
 
-    // Check if click is within any machine's bounds
     for (const machine of machines) {
-      const machineX = machine.x;
-      const machineY = machine.y;
+      const structureScreenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
 
-      // Check if the clicked grid position falls within this machine's footprint
-      if (
-        gridPos.x >= machineX && gridPos.x < machineX + sizeX &&
-        gridPos.y >= machineY && gridPos.y < machineY + sizeY
-      ) {
-        // Calculate screen position for the dropdown
-        const world = worldRef.current;
+      // Define bounding box in world coordinates (including label)
+      const labelTop = structureScreenPos.y - 45;
+      const machineBottom = structureScreenPos.y + TILE_HEIGHT / 2 + 10;
+      const halfWidth = (sizeX + sizeY) * TILE_WIDTH / 4 + 20;
+
+      const left = structureScreenPos.x - halfWidth;
+      const right = structureScreenPos.x + halfWidth;
+
+      if (worldX >= left && worldX <= right && worldY >= labelTop && worldY <= machineBottom) {
+        return machine;
+      }
+    }
+    return null;
+  }, [machines, rules]);
+
+  // Handle mouse down to detect potential machine drag
+  const handleMouseDown = useCallback((e) => {
+    if (!containerRef.current || !worldRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const world = worldRef.current;
+
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
+    const worldX = (canvasX - world.x) / world.scale.x;
+    const worldY = (canvasY - world.y) / world.scale.y;
+
+    const machine = findMachineAtWorldPos(worldX, worldY);
+    if (machine) {
+      machineDragRef.current = {
+        machine,
+        startX: e.clientX,
+        startY: e.clientY,
+        hasMoved: false
+      };
+    }
+  }, [findMachineAtWorldPos]);
+
+  // Handle mouse move for machine drag
+  const handleMouseMove = useCallback((e) => {
+    const dragData = machineDragRef.current;
+    if (!dragData.machine) return;
+
+    const dx = Math.abs(e.clientX - dragData.startX);
+    const dy = Math.abs(e.clientY - dragData.startY);
+
+    // If moved more than 5px, start the machine drag
+    if (!dragData.hasMoved && (dx > 5 || dy > 5)) {
+      dragData.hasMoved = true;
+
+      const sizeX = rules?.machines?.baseSizeX || 1;
+      const sizeY = rules?.machines?.baseSizeY || 1;
+
+      // Notify parent to start machine move mode
+      onMachineDragStart?.(dragData.machine, sizeX, sizeY);
+    }
+
+    // Update hover position during drag
+    if (dragData.hasMoved && containerRef.current && worldRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const world = worldRef.current;
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+      const worldX = (canvasX - world.x) / world.scale.x;
+      const worldY = (canvasY - world.y) / world.scale.y;
+      const gridPos = screenToGrid(worldX, worldY);
+
+      setHoverGridPos({
+        x: Math.floor(gridPos.x),
+        y: Math.floor(gridPos.y)
+      });
+    }
+  }, [rules, onMachineDragStart]);
+
+  // Handle mouse up to end machine drag
+  const handleMouseUp = useCallback((e) => {
+    const dragData = machineDragRef.current;
+
+    if (dragData.machine && dragData.hasMoved) {
+      // Get the drop position
+      if (containerRef.current && worldRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        const structureScreenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
+        const world = worldRef.current;
+        const canvasX = e.clientX - rect.left;
+        const canvasY = e.clientY - rect.top;
+        const worldX = (canvasX - world.x) / world.scale.x;
+        const worldY = (canvasY - world.y) / world.scale.y;
+        const gridPos = screenToGrid(worldX, worldY);
 
+        // Call onDrop with machine move info
+        onDrop?.('machine-move', dragData.machine.id, Math.floor(gridPos.x), Math.floor(gridPos.y));
+      }
+    }
+
+    // Reset drag state
+    machineDragRef.current = { machine: null, startX: 0, startY: 0, hasMoved: false };
+    setHoverGridPos({ x: -1, y: -1 });
+  }, [onDrop]);
+
+  // Handle click to detect clicks on machines (using screen-space bounding box including label)
+  const handleClick = useCallback((e) => {
+    // Don't fire click if we just finished a drag
+    if (machineDragRef.current.hasMoved) {
+      return;
+    }
+
+    if (!onMachineClick || !machines || !rules) return;
+    if (!containerRef.current || !worldRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const world = worldRef.current;
+
+    // Convert click to world coordinates
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
+    const worldX = (canvasX - world.x) / world.scale.x;
+    const worldY = (canvasY - world.y) / world.scale.y;
+
+    const sizeX = rules.machines?.baseSizeX || 1;
+    const sizeY = rules.machines?.baseSizeY || 1;
+
+    // Check if click is within any machine's bounding box (including label area)
+    for (const machine of machines) {
+      const structureScreenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
+
+      // Define bounding box in world coordinates
+      // Label is at y - 30, machine extends down from screenPos
+      const labelTop = structureScreenPos.y - 45; // Label position with some padding
+      const machineBottom = structureScreenPos.y + TILE_HEIGHT / 2 + 10;
+      const halfWidth = (sizeX + sizeY) * TILE_WIDTH / 4 + 20; // Approximate width with padding
+
+      const left = structureScreenPos.x - halfWidth;
+      const right = structureScreenPos.x + halfWidth;
+      const top = labelTop;
+      const bottom = machineBottom;
+
+      // Check if click is within this bounding box
+      if (worldX >= left && worldX <= right && worldY >= top && worldY <= bottom) {
+        // Calculate screen position for the popup
         const screenX = structureScreenPos.x * world.scale.x + world.x + rect.left;
         const screenY = structureScreenPos.y * world.scale.y + world.y + rect.top;
 
@@ -868,7 +1014,7 @@ export default function FactoryCanvas({
         return;
       }
     }
-  }, [onMachineClick, machines, rules, screenToGridCoords]);
+  }, [onMachineClick, machines, rules]);
 
   return (
     <div
@@ -877,6 +1023,9 @@ export default function FactoryCanvas({
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
       onClick={handleClick}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
       style={{
         width: '100%',
         height: '400px',

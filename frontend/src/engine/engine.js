@@ -619,6 +619,41 @@ function removeMachine(state, rules, payload) {
   return { state: newState, error: null };
 }
 
+function moveMachine(state, rules, payload) {
+  const newState = deepClone(state);
+  const { machineId, x, y } = payload;
+
+  const machine = newState.machines.find(m => m.id === machineId);
+  if (!machine) {
+    return { state: newState, error: 'Machine not found' };
+  }
+
+  const sizeX = rules.machines.baseSizeX;
+  const sizeY = rules.machines.baseSizeY;
+
+  // Check if new position is valid (excluding the machine being moved)
+  const placementsWithoutThis = newState.floorSpace.placements.filter(p => p.id !== machineId);
+  const tempState = { ...newState, floorSpace: { ...newState.floorSpace, placements: placementsWithoutThis } };
+
+  const placement = canPlaceAt(tempState, x, y, sizeX, sizeY, rules);
+  if (!placement.valid) {
+    return { state: newState, error: placement.error };
+  }
+
+  // Update machine position
+  machine.x = x;
+  machine.y = y;
+
+  // Update floor placement
+  const placementEntry = newState.floorSpace.placements.find(p => p.id === machineId);
+  if (placementEntry) {
+    placementEntry.x = x;
+    placementEntry.y = y;
+  }
+
+  return { state: newState, error: null };
+}
+
 function assignRecipe(state, rules, payload) {
   const newState = deepClone(state);
   const { machineId, recipeId } = payload;
@@ -1019,6 +1054,9 @@ export function engine(state, rules, action) {
 
     case 'REMOVE_MACHINE':
       return removeMachine(state, rules, action.payload);
+
+    case 'MOVE_MACHINE':
+      return moveMachine(state, rules, action.payload);
 
     case 'ASSIGN_RECIPE':
       return assignRecipe(state, rules, action.payload);

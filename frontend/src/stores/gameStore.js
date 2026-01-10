@@ -91,6 +91,10 @@ const useGameStore = create(
         return get().dispatch({ type: 'REMOVE_MACHINE', payload: { machineId } });
       },
 
+      moveMachine: (machineId, x, y) => {
+        return get().dispatch({ type: 'MOVE_MACHINE', payload: { machineId, x, y } });
+      },
+
       assignRecipe: (machineId, recipeId) => {
         return get().dispatch({ type: 'ASSIGN_RECIPE', payload: { machineId, recipeId } });
       },
