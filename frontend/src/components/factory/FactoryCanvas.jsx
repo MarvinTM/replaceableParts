@@ -679,10 +679,9 @@ export default function FactoryCanvas({
       };
 
       // Setup pan (mouse drag)
-      const handleMouseDown = (e) => {
-        dragRef.current = { isDragging: true, lastX: e.clientX, lastY: e.clientY };
-        canvas.style.cursor = 'grabbing';
-      };
+      // Setup pan (mouse drag)
+      // Note: mousedown is now handled by the React handler to support priority
+
 
       const handleMouseMove = (e) => {
         const currentWorld = worldRef.current;
@@ -697,25 +696,8 @@ export default function FactoryCanvas({
           dragRef.current.lastY = e.clientY;
         }
 
-        // Check if mouse is over the factory area
-        if (currentWorld) {
-          const rect = canvas.getBoundingClientRect();
-          const mouseX = e.clientX - rect.left;
-          const mouseY = e.clientY - rect.top;
-
-          // Convert screen position to world position
-          const worldX = (mouseX - currentWorld.x) / currentWorld.scale.x;
-          const worldY = (mouseY - currentWorld.y) / currentWorld.scale.y;
-
-          // Convert world position to grid position
-          const gridPos = screenToGrid(worldX, worldY);
-          const { width, height } = floorDimensionsRef.current;
-
-          // Check if within factory bounds
-          const isOverFactory = gridPos.x >= 0 && gridPos.x < width &&
-                               gridPos.y >= 0 && gridPos.y < height;
-          setIsHovering(isOverFactory);
-        }
+          // Hover detection is now handled by the React onMouseMove handler (handleMouseMoveEnhanced)
+          // to use the accurate isPointOverFactory function.
       };
 
       const handleMouseUp = () => {
@@ -727,14 +709,16 @@ export default function FactoryCanvas({
         setIsHovering(false);
       };
 
+
+
       canvas.style.cursor = 'grab';
       canvas.addEventListener('wheel', handleWheel, { passive: false });
-      canvas.addEventListener('mousedown', handleMouseDown);
+      // canvas.addEventListener('mousedown', handleMouseDown); // Moved to React handler
       canvas.addEventListener('mouseleave', handleMouseLeave);
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
 
-      app._cleanupHandlers = { handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave };
+      app._cleanupHandlers = { handleWheel, handleMouseMove, handleMouseUp, handleMouseLeave };
     };
 
     initPixi();
@@ -748,7 +732,9 @@ export default function FactoryCanvas({
 
         if (handlers) {
           canvas.removeEventListener('wheel', handlers.handleWheel);
-          canvas.removeEventListener('mousedown', handlers.handleMouseDown);
+
+          // canvas.removeEventListener('mousedown', handlers.handleMouseDown);
+
           canvas.removeEventListener('mouseleave', handlers.handleMouseLeave);
           window.removeEventListener('mousemove', handlers.handleMouseMove);
           window.removeEventListener('mouseup', handlers.handleMouseUp);
@@ -801,8 +787,72 @@ export default function FactoryCanvas({
     };
 
     window.addEventListener('resize', handleResize);
+    
+    // Add global mouse move for hover detection that can access latest state/refs
+    // Note: The original useEffect implementation had stale closure issues or complexity regarding updated refs.
+    // We attach a listener to the window here, but we need access to isPointOverFactory which is a dependency.
+    // Instead of a global window listener here, we'll delegate Hover detection to the React onMouseMove prop
+    // which effectively covers the canvas area. For "leaving" the canvas, onMouseLeave is sufficient.
+    
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, []); // Keep empty deps for init
+
+  // Effect to handle hover updates via React event to ensure fresh access to isPointOverFactory
+  // We'll update the ref value that the PIXI render loop or other effects might need?
+  // Actually, setIsHovering is state. So we just need to call it.
+
+
+  // Check if a world-space point is over the factory (floor or upper walls)
+  const isPointOverFactory = useCallback((worldX, worldY) => {
+    if (!floorSpace) return false;
+    const { width, height } = floorSpace;
+
+    // 1. Check Floor
+    const gridPos = screenToGrid(worldX, worldY);
+    if (gridPos.x >= 0 && gridPos.x < width && gridPos.y >= 0 && gridPos.y < height) {
+      return true;
+    }
+
+    // Calculate wall height
+    let wallPixelHeight = 0;
+    if (assetsRef.current?.walls?.segment) {
+        const rows = getWallRowCount(width, height);
+        // Effective height of the wall stack
+        // The loop is: y = pos - row * wallHeight
+        // So the stack extends upwards by (rows-1) * wallHeight + segmentHeight
+        const wallHeight = assetsRef.current.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset;
+        wallPixelHeight = (rows - 1) * wallHeight + assetsRef.current.walls.segment.height;
+    }
+
+    if (wallPixelHeight <= 0) return false;
+
+    const halfW = TILE_WIDTH / 2;
+    const halfH = TILE_HEIGHT / 2;
+
+    // 2. Check Left Upper Wall (Plane X=0)
+    // Projection: sx = (0 + y) * halfW, sy = (0 - y) * halfH - z
+    // Solve for y: y = sx / halfW
+    // Solve for z: z = -y * halfH - sy
+    const leftWallY = worldX / halfW;
+    const leftWallZ = -leftWallY * halfH - worldY;
+
+    if (leftWallY >= 0 && leftWallY <= height && leftWallZ >= 0 && leftWallZ <= wallPixelHeight) {
+      return true;
+    }
+
+    // 3. Check Right Upper Wall (Plane Y=Height)
+    // Projection: sx = (x + height) * halfW, sy = (x - height) * halfH - z
+    // Solve for x: x = sx / halfW - height
+    // Solve for z: z = (x - height) * halfH - sy
+    const rightWallX = worldX / halfW - height;
+    const rightWallZ = (rightWallX - height) * halfH - worldY;
+
+    if (rightWallX >= 0 && rightWallX <= width && rightWallZ >= 0 && rightWallZ <= wallPixelHeight) {
+      return true;
+    }
+
+    return false;
+  }, [floorSpace]);
 
   // Convert screen coordinates to grid coordinates accounting for pan/zoom
   const screenToGridCoords = useCallback((clientX, clientY) => {
@@ -883,12 +933,24 @@ export default function FactoryCanvas({
     return null;
   }, [machines, rules]);
 
-  // Handle mouse down to detect potential machine drag
+  // Handle mouse down to detect potential machine drag OR start camera pan
   const handleMouseDown = useCallback((e) => {
     if (!containerRef.current || !worldRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const world = worldRef.current;
+    
+    // Check for Middle Click (Button 1) -> Always Pan
+    if (e.button === 1) {
+      dragRef.current = { isDragging: true, lastX: e.clientX, lastY: e.clientY };
+      if (appRef.current && appRef.current.canvas) {
+        appRef.current.canvas.style.cursor = 'grabbing';
+      }
+      return;
+    }
+
+    // Only proceed with Left Click (Button 0) for other interactions
+    if (e.button !== 0) return;
 
     const canvasX = e.clientX - rect.left;
     const canvasY = e.clientY - rect.top;
@@ -896,51 +958,82 @@ export default function FactoryCanvas({
     const worldY = (canvasY - world.y) / world.scale.y;
 
     const machine = findMachineAtWorldPos(worldX, worldY);
+    
+    // Check if click is inside factory bounds (floor OR upper walls)
+    const isInsideFactory = isPointOverFactory(worldX, worldY);
+
     if (machine) {
+      // Priority 1: Machine Drag (Left click on machine)
       machineDragRef.current = {
         machine,
         startX: e.clientX,
         startY: e.clientY,
         hasMoved: false
       };
+    } else if (!isInsideFactory) {
+      // Priority 2: Camera Pan (Left click OUTSIDE factory)
+      dragRef.current = { isDragging: true, lastX: e.clientX, lastY: e.clientY };
+      if (appRef.current && appRef.current.canvas) {
+        appRef.current.canvas.style.cursor = 'grabbing';
+      }
     }
-  }, [findMachineAtWorldPos]);
+    // Else: Left click on factory (floor or wall) -> Do Nothing (prevent pan)
+  }, [findMachineAtWorldPos, isPointOverFactory]);
 
   // Handle mouse move for machine drag
   const handleMouseMove = useCallback((e) => {
+    // Global mouse move for panning is handled by window listener in initPixi
+    // This handler is for machine dragging and hovering state
+
+    // Updating isHovering state logic moved here to use React state/refs correctly if needed
+    // But the original implementation used a window listener inside useEffect for hover
+    // We need to update that one or unify.
+    // The useEffect at line 734 adds 'mousemove' to window calling handleMouseMove (the one from initPixi).
+    // THAT handleMouseMove (line 687) is defined inside useEffect closure.
+    // It doesn't have access to the new isPointOverFactory unless we refactor.
+    
+    // However, this handleMouseMove (React hook) is attached to the DIV.
+    
+    // Let's rely on the React Handler for dragging machine, 
+    // but we need to fix the Hover detection in the useEffect or move it here.
+    
+    // The previous code had `setIsHovering` inside the PIXI loop.
+    // Let's move handling of `machineDragRef` here (it was already here).
+    
     const dragData = machineDragRef.current;
-    if (!dragData.machine) return;
+    if (dragData.machine) {
+      const dx = Math.abs(e.clientX - dragData.startX);
+      const dy = Math.abs(e.clientY - dragData.startY);
 
-    const dx = Math.abs(e.clientX - dragData.startX);
-    const dy = Math.abs(e.clientY - dragData.startY);
+      // If moved more than 5px, start the machine drag
+      if (!dragData.hasMoved && (dx > 5 || dy > 5)) {
+        dragData.hasMoved = true;
 
-    // If moved more than 5px, start the machine drag
-    if (!dragData.hasMoved && (dx > 5 || dy > 5)) {
-      dragData.hasMoved = true;
+        const sizeX = rules?.machines?.baseSizeX || 1;
+        const sizeY = rules?.machines?.baseSizeY || 1;
 
-      const sizeX = rules?.machines?.baseSizeX || 1;
-      const sizeY = rules?.machines?.baseSizeY || 1;
+        // Notify parent to start machine move mode
+        onMachineDragStart?.(dragData.machine, sizeX, sizeY);
+      }
 
-      // Notify parent to start machine move mode
-      onMachineDragStart?.(dragData.machine, sizeX, sizeY);
-    }
+      // Update hover position during drag
+      if (dragData.hasMoved && containerRef.current && worldRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const world = worldRef.current;
+        const canvasX = e.clientX - rect.left;
+        const canvasY = e.clientY - rect.top;
+        const worldX = (canvasX - world.x) / world.scale.x;
+        const worldY = (canvasY - world.y) / world.scale.y;
+        const gridPos = screenToGrid(worldX, worldY);
 
-    // Update hover position during drag
-    if (dragData.hasMoved && containerRef.current && worldRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const world = worldRef.current;
-      const canvasX = e.clientX - rect.left;
-      const canvasY = e.clientY - rect.top;
-      const worldX = (canvasX - world.x) / world.scale.x;
-      const worldY = (canvasY - world.y) / world.scale.y;
-      const gridPos = screenToGrid(worldX, worldY);
-
-      setHoverGridPos({
-        x: Math.floor(gridPos.x),
-        y: Math.floor(gridPos.y)
-      });
+        setHoverGridPos({
+          x: Math.floor(gridPos.x),
+          y: Math.floor(gridPos.y)
+        });
+      }
     }
   }, [rules, onMachineDragStart]);
+
 
   // Handle mouse up to end machine drag
   const handleMouseUp = useCallback((e) => {
@@ -967,9 +1060,11 @@ export default function FactoryCanvas({
     setHoverGridPos({ x: -1, y: -1 });
   }, [onDrop]);
 
-  // Handle click to detect clicks on machines (using screen-space bounding box including label)
-  const handleClick = useCallback((e) => {
-    // Don't fire click if we just finished a drag
+  // Handle right-click context menu to show machine popup
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault();
+
+    // Don't fire if we just finished a drag (though unlikely with right click, good safely)
     if (machineDragRef.current.hasMoved) {
       return;
     }
@@ -1016,16 +1111,38 @@ export default function FactoryCanvas({
     }
   }, [onMachineClick, machines, rules]);
 
+  // Enhanced Mouse Move to handle both machine drag AND hover detection
+  const handleMouseMoveEnhanced = useCallback((e) => {
+    // 1. Hover Detection
+    if (containerRef.current && worldRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const world = worldRef.current;
+        const canvasX = e.clientX - rect.left;
+        const canvasY = e.clientY - rect.top;
+        const worldX = (canvasX - world.x) / world.scale.x;
+        const worldY = (canvasY - world.y) / world.scale.y;
+        
+        const isOver = isPointOverFactory(worldX, worldY);
+        setIsHovering(isOver);
+    }
+
+    // 2. Machine Drag (delegate to existing logic)
+    handleMouseMove(e);
+  }, [isPointOverFactory, handleMouseMove]);
+
   return (
     <div
       ref={containerRef}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
-      onClick={handleClick}
+      onContextMenu={handleContextMenu}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
+      onMouseMove={handleMouseMoveEnhanced}
       onMouseUp={handleMouseUp}
+      onMouseLeave={() => {
+        setIsHovering(false);
+      }}
       style={{
         width: '100%',
         height: '400px',
