@@ -4,6 +4,7 @@ import {
   TILE_WIDTH,
   TILE_HEIGHT,
   gridToScreen,
+  screenToGrid,
   getStructureScreenPosition,
   getGridCenter,
   COLORS
@@ -223,6 +224,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
   const dragRef = useRef({ isDragging: false, lastX: 0, lastY: 0 });
   const minZoomRef = useRef(0.25); // Dynamic minimum zoom based on factory size
   const lowerWallSpritesRef = useRef([]); // Store lower wall sprites for alpha updates
+  const floorDimensionsRef = useRef({ width: 0, height: 0 }); // Store floor dimensions for hover check
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
 
@@ -236,6 +238,9 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
     world.removeChildren();
 
     const { width, height } = floorSpace;
+
+    // Store dimensions for hover detection
+    floorDimensionsRef.current = { width, height };
 
     // === RENDER FLOOR ===
     const floorContainer = new Container();
@@ -288,12 +293,12 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
     world.addChild(floorContainer);
 
-    // === RENDER WALLS ===
-    if (assets?.walls.segment) {
-      const wallContainer = new Container();
+    // === RENDER UPPER WALLS ===
+    const wallHeight = assets?.walls.segment ? assets.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset : 0;
+    const numberOfRows = getWallRowCount(width, height);
 
-      const wallHeight = assets.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset;
-      const numberOfRows = getWallRowCount(width, height);
+    if (assets?.walls.segment) {
+      const upperWallContainer = new Container();
 
       // Upper-left wall: along x=0 (grows up-right as y increases)
       for (let row = 0; row < numberOfRows; row++) {
@@ -307,7 +312,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
           wallSprite.x = screenPos.x + WALL_CONFIG.upperLeftOffsetX;
           wallSprite.y = screenPos.y + WALL_CONFIG.upperLeftOffsetY - (row * wallHeight);
 
-          wallContainer.addChild(wallSprite);
+          upperWallContainer.addChild(wallSprite);
         }
       }
 
@@ -325,57 +330,11 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
           wallSprite.x = screenPos.x + WALL_CONFIG.upperRightOffsetX;
           wallSprite.y = screenPos.y + WALL_CONFIG.upperRightOffsetY - (row * wallHeight);
 
-          wallContainer.addChild(wallSprite);
+          upperWallContainer.addChild(wallSprite);
         }
       }
 
-      // Clear lower wall sprites array for fresh tracking
-      const lowerWallSprites = [];
-      const currentAlpha = isHovering ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
-
-      // Lower-left wall: along y=0 (with transparency, upright but on lower edge)
-      for (let row = 0; row < numberOfRows; row++) {
-        for (let x = 0; x < width; x++) {
-          if (!isTileValid(x, 0)) continue;
-
-          const screenPos = gridToScreen(x, 0);
-          const wallSprite = new Sprite(assets.walls.segment);
-
-          wallSprite.anchor.set(0.5, 1);
-          wallSprite.scale.x = -1; // Flip horizontally to face the other direction
-          wallSprite.alpha = currentAlpha;
-          wallSprite.x = screenPos.x + WALL_CONFIG.lowerLeftOffsetX;
-          wallSprite.y = screenPos.y + WALL_CONFIG.lowerLeftOffsetY - (row * wallHeight);
-
-          wallContainer.addChild(wallSprite);
-          lowerWallSprites.push(wallSprite);
-        }
-      }
-
-      // Lower-right wall: along x=width-1 (with transparency, upright but on lower edge)
-      // Render in reverse order so overlapping is consistent
-      for (let row = 0; row < numberOfRows; row++) {
-        for (let y = height - 1; y >= 0; y--) {
-          if (!isTileValid(width - 1, y)) continue;
-
-          const screenPos = gridToScreen(width - 1, y);
-          const wallSprite = new Sprite(assets.walls.segment);
-
-          wallSprite.anchor.set(0.5, 1);
-          // No horizontal flip - faces same direction as upper-left
-          wallSprite.alpha = currentAlpha;
-          wallSprite.x = screenPos.x + WALL_CONFIG.lowerRightOffsetX;
-          wallSprite.y = screenPos.y + WALL_CONFIG.lowerRightOffsetY - (row * wallHeight);
-
-          wallContainer.addChild(wallSprite);
-          lowerWallSprites.push(wallSprite);
-        }
-      }
-
-      // Store sprites ref for hover alpha updates
-      lowerWallSpritesRef.current = lowerWallSprites;
-
-      world.addChild(wallContainer);
+      world.addChild(upperWallContainer);
     }
 
     // === RENDER STRUCTURES ===
@@ -468,7 +427,58 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
     world.addChild(structuresContainer);
 
-  }, [floorSpace, machines, generators, assetsLoaded]);
+    // === RENDER LOWER WALLS (after structures, so they appear on top) ===
+    if (assets?.walls.segment) {
+      const lowerWallContainer = new Container();
+      const lowerWallSprites = [];
+      const currentAlpha = isHovering ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
+
+      // Lower-left wall: along y=0 (with transparency, upright but on lower edge)
+      for (let row = 0; row < numberOfRows; row++) {
+        for (let x = 0; x < width; x++) {
+          if (!isTileValid(x, 0)) continue;
+
+          const screenPos = gridToScreen(x, 0);
+          const wallSprite = new Sprite(assets.walls.segment);
+
+          wallSprite.anchor.set(0.5, 1);
+          wallSprite.scale.x = -1; // Flip horizontally to face the other direction
+          wallSprite.alpha = currentAlpha;
+          wallSprite.x = screenPos.x + WALL_CONFIG.lowerLeftOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.lowerLeftOffsetY - (row * wallHeight);
+
+          lowerWallContainer.addChild(wallSprite);
+          lowerWallSprites.push(wallSprite);
+        }
+      }
+
+      // Lower-right wall: along x=width-1 (with transparency, upright but on lower edge)
+      // Render in reverse order so overlapping is consistent
+      for (let row = 0; row < numberOfRows; row++) {
+        for (let y = height - 1; y >= 0; y--) {
+          if (!isTileValid(width - 1, y)) continue;
+
+          const screenPos = gridToScreen(width - 1, y);
+          const wallSprite = new Sprite(assets.walls.segment);
+
+          wallSprite.anchor.set(0.5, 1);
+          // No horizontal flip - faces same direction as upper-left
+          wallSprite.alpha = currentAlpha;
+          wallSprite.x = screenPos.x + WALL_CONFIG.lowerRightOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.lowerRightOffsetY - (row * wallHeight);
+
+          lowerWallContainer.addChild(wallSprite);
+          lowerWallSprites.push(wallSprite);
+        }
+      }
+
+      // Store sprites ref for hover alpha updates
+      lowerWallSpritesRef.current = lowerWallSprites;
+
+      world.addChild(lowerWallContainer);
+    }
+
+  }, [floorSpace, machines, generators, assetsLoaded, isHovering]);
 
   // Update lower wall transparency on hover change
   useEffect(() => {
@@ -554,13 +564,36 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
       const handleMouseMove = (e) => {
         const currentWorld = worldRef.current;
-        if (!dragRef.current.isDragging || !currentWorld) return;
-        const dx = e.clientX - dragRef.current.lastX;
-        const dy = e.clientY - dragRef.current.lastY;
-        currentWorld.x += dx;
-        currentWorld.y += dy;
-        dragRef.current.lastX = e.clientX;
-        dragRef.current.lastY = e.clientY;
+
+        // Handle dragging
+        if (dragRef.current.isDragging && currentWorld) {
+          const dx = e.clientX - dragRef.current.lastX;
+          const dy = e.clientY - dragRef.current.lastY;
+          currentWorld.x += dx;
+          currentWorld.y += dy;
+          dragRef.current.lastX = e.clientX;
+          dragRef.current.lastY = e.clientY;
+        }
+
+        // Check if mouse is over the factory area
+        if (currentWorld) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Convert screen position to world position
+          const worldX = (mouseX - currentWorld.x) / currentWorld.scale.x;
+          const worldY = (mouseY - currentWorld.y) / currentWorld.scale.y;
+
+          // Convert world position to grid position
+          const gridPos = screenToGrid(worldX, worldY);
+          const { width, height } = floorDimensionsRef.current;
+
+          // Check if within factory bounds
+          const isOverFactory = gridPos.x >= 0 && gridPos.x < width &&
+                               gridPos.y >= 0 && gridPos.y < height;
+          setIsHovering(isOverFactory);
+        }
       };
 
       const handleMouseUp = () => {
@@ -568,13 +601,18 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         canvas.style.cursor = 'grab';
       };
 
+      const handleMouseLeave = () => {
+        setIsHovering(false);
+      };
+
       canvas.style.cursor = 'grab';
       canvas.addEventListener('wheel', handleWheel, { passive: false });
       canvas.addEventListener('mousedown', handleMouseDown);
+      canvas.addEventListener('mouseleave', handleMouseLeave);
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
 
-      app._cleanupHandlers = { handleWheel, handleMouseDown, handleMouseMove, handleMouseUp };
+      app._cleanupHandlers = { handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, handleMouseLeave };
     };
 
     initPixi();
@@ -589,6 +627,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         if (handlers) {
           canvas.removeEventListener('wheel', handlers.handleWheel);
           canvas.removeEventListener('mousedown', handlers.handleMouseDown);
+          canvas.removeEventListener('mouseleave', handlers.handleMouseLeave);
           window.removeEventListener('mousemove', handlers.handleMouseMove);
           window.removeEventListener('mouseup', handlers.handleMouseUp);
         }
@@ -646,8 +685,6 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
   return (
     <div
       ref={containerRef}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
       style={{
         width: '100%',
         height: '400px',
