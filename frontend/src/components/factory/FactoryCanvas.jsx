@@ -55,7 +55,8 @@ const WALL_CONFIG = {
   lowerRightOffsetX: 19,
   lowerRightOffsetY: 15,
   // Transparency for lower walls (0 = fully transparent, 1 = fully opaque)
-  lowerWallAlpha: 0.4,
+  lowerWallAlphaDefault: 0.85,  // When mouse is outside factory
+  lowerWallAlphaHover: 0.10,    // When mouse is over factory
   // Common settings
   wallRowVerticalOffset: 32,   // Vertical offset for subsequent wall rows
   baseNumberOfWallRows: 3,     // Base number of wall rows at initial factory size
@@ -221,7 +222,9 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
   const assetsRef = useRef(null);
   const dragRef = useRef({ isDragging: false, lastX: 0, lastY: 0 });
   const minZoomRef = useRef(0.25); // Dynamic minimum zoom based on factory size
+  const lowerWallSpritesRef = useRef([]); // Store lower wall sprites for alpha updates
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
 
   const render = useCallback(() => {
     if (!worldRef.current || !floorSpace) return;
@@ -326,6 +329,10 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         }
       }
 
+      // Clear lower wall sprites array for fresh tracking
+      const lowerWallSprites = [];
+      const currentAlpha = isHovering ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
+
       // Lower-left wall: along y=0 (with transparency, upright but on lower edge)
       for (let row = 0; row < numberOfRows; row++) {
         for (let x = 0; x < width; x++) {
@@ -336,11 +343,12 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
           wallSprite.anchor.set(0.5, 1);
           wallSprite.scale.x = -1; // Flip horizontally to face the other direction
-          wallSprite.alpha = WALL_CONFIG.lowerWallAlpha;
+          wallSprite.alpha = currentAlpha;
           wallSprite.x = screenPos.x + WALL_CONFIG.lowerLeftOffsetX;
           wallSprite.y = screenPos.y + WALL_CONFIG.lowerLeftOffsetY - (row * wallHeight);
 
           wallContainer.addChild(wallSprite);
+          lowerWallSprites.push(wallSprite);
         }
       }
 
@@ -355,13 +363,17 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
           wallSprite.anchor.set(0.5, 1);
           // No horizontal flip - faces same direction as upper-left
-          wallSprite.alpha = WALL_CONFIG.lowerWallAlpha;
+          wallSprite.alpha = currentAlpha;
           wallSprite.x = screenPos.x + WALL_CONFIG.lowerRightOffsetX;
           wallSprite.y = screenPos.y + WALL_CONFIG.lowerRightOffsetY - (row * wallHeight);
 
           wallContainer.addChild(wallSprite);
+          lowerWallSprites.push(wallSprite);
         }
       }
+
+      // Store sprites ref for hover alpha updates
+      lowerWallSpritesRef.current = lowerWallSprites;
 
       world.addChild(wallContainer);
     }
@@ -457,6 +469,14 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
     world.addChild(structuresContainer);
 
   }, [floorSpace, machines, generators, assetsLoaded]);
+
+  // Update lower wall transparency on hover change
+  useEffect(() => {
+    const alpha = isHovering ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
+    lowerWallSpritesRef.current.forEach(sprite => {
+      sprite.alpha = alpha;
+    });
+  }, [isHovering]);
 
   // Initialize PixiJS Application
   useEffect(() => {
@@ -626,6 +646,8 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
   return (
     <div
       ref={containerRef}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
       style={{
         width: '100%',
         height: '400px',
