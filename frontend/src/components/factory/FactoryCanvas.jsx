@@ -43,11 +43,19 @@ const ANIM_CONFIG = {
 // Wall positioning adjustments (tweak these values to fine-tune alignment)
 const WALL_CONFIG = {
   // Upper-left wall (along x=0)
-  leftOffsetX: -19,
-  leftOffsetY: 2,
-  // Upper-right wall (along y=0)
-  rightOffsetX: 19,
-  rightOffsetY: 2,
+  upperLeftOffsetX: -19,
+  upperLeftOffsetY: 2,
+  // Upper-right wall (along y=height-1)
+  upperRightOffsetX: 19,
+  upperRightOffsetY: 2,
+  // Lower-left wall (along y=0)
+  lowerLeftOffsetX: -19,
+  lowerLeftOffsetY: 15,
+  // Lower-right wall (along x=width-1)
+  lowerRightOffsetX: 19,
+  lowerRightOffsetY: 15,
+  // Transparency for lower walls (0 = fully transparent, 1 = fully opaque)
+  lowerWallAlpha: 0.4,
   // Common settings
   wallRowVerticalOffset: 32,   // Vertical offset for subsequent wall rows
   baseNumberOfWallRows: 3,     // Base number of wall rows at initial factory size
@@ -284,7 +292,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
       const wallHeight = assets.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset;
       const numberOfRows = getWallRowCount(width, height);
 
-      // Upper-left wall: tiles where x = 0 (grows up-right as y increases)
+      // Upper-left wall: along x=0 (grows up-right as y increases)
       for (let row = 0; row < numberOfRows; row++) {
         for (let y = 0; y < height; y++) {
           if (!isTileValid(0, y)) continue;
@@ -293,14 +301,14 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
           const wallSprite = new Sprite(assets.walls.segment);
 
           wallSprite.anchor.set(0.5, 1);
-          wallSprite.x = screenPos.x + WALL_CONFIG.leftOffsetX;
-          wallSprite.y = screenPos.y + WALL_CONFIG.leftOffsetY - (row * wallHeight);
+          wallSprite.x = screenPos.x + WALL_CONFIG.upperLeftOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.upperLeftOffsetY - (row * wallHeight);
 
           wallContainer.addChild(wallSprite);
         }
       }
 
-      // Upper-right wall: tiles where y = height-1 (last row, along upper-right edge)
+      // Upper-right wall: along y=height-1 (last row)
       // Render in reverse order so overlapping matches the left wall
       for (let row = 0; row < numberOfRows; row++) {
         for (let x = width - 1; x >= 0; x--) {
@@ -310,9 +318,46 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
           const wallSprite = new Sprite(assets.walls.segment);
 
           wallSprite.anchor.set(0.5, 1);
-          wallSprite.scale.x = -1; // Flip horizontally
-          wallSprite.x = screenPos.x + WALL_CONFIG.rightOffsetX;
-          wallSprite.y = screenPos.y + WALL_CONFIG.rightOffsetY - (row * wallHeight);
+          wallSprite.scale.x = -1;
+          wallSprite.x = screenPos.x + WALL_CONFIG.upperRightOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.upperRightOffsetY - (row * wallHeight);
+
+          wallContainer.addChild(wallSprite);
+        }
+      }
+
+      // Lower-left wall: along y=0 (with transparency, upright but on lower edge)
+      for (let row = 0; row < numberOfRows; row++) {
+        for (let x = 0; x < width; x++) {
+          if (!isTileValid(x, 0)) continue;
+
+          const screenPos = gridToScreen(x, 0);
+          const wallSprite = new Sprite(assets.walls.segment);
+
+          wallSprite.anchor.set(0.5, 1);
+          wallSprite.scale.x = -1; // Flip horizontally to face the other direction
+          wallSprite.alpha = WALL_CONFIG.lowerWallAlpha;
+          wallSprite.x = screenPos.x + WALL_CONFIG.lowerLeftOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.lowerLeftOffsetY - (row * wallHeight);
+
+          wallContainer.addChild(wallSprite);
+        }
+      }
+
+      // Lower-right wall: along x=width-1 (with transparency, upright but on lower edge)
+      // Render in reverse order so overlapping is consistent
+      for (let row = 0; row < numberOfRows; row++) {
+        for (let y = height - 1; y >= 0; y--) {
+          if (!isTileValid(width - 1, y)) continue;
+
+          const screenPos = gridToScreen(width - 1, y);
+          const wallSprite = new Sprite(assets.walls.segment);
+
+          wallSprite.anchor.set(0.5, 1);
+          // No horizontal flip - faces same direction as upper-left
+          wallSprite.alpha = WALL_CONFIG.lowerWallAlpha;
+          wallSprite.x = screenPos.x + WALL_CONFIG.lowerRightOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.lowerRightOffsetY - (row * wallHeight);
 
           wallContainer.addChild(wallSprite);
         }
