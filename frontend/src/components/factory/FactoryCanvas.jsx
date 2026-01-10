@@ -44,6 +44,8 @@ const ANIM_CONFIG = {
 const WALL_CONFIG = {
   offsetX: -19,  // Horizontal offset from tile edge (negative = left, positive = right)
   offsetY: 2,   // Vertical offset (negative = up, positive = down/closer to floor)
+  wallRowVerticalOffset: 32,   //Vertical offset for subsequent wall rows
+  numberOfWallRows: 3
 };
 
 /**
@@ -262,18 +264,24 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
       const wallContainer = new Container();
 
       // Upper-left wall: tiles where x = 0 (grows up-right as y increases)
-      for (let y = 0; y < height; y++) {
-        if (!isTileValid(0, y)) continue;
+      // Render multiple rows of walls
+      const wallHeight = assets.walls.segment.height-WALL_CONFIG.wallRowVerticalOffset;
 
-        const screenPos = gridToScreen(0, y);
-        const wallSprite = new Sprite(assets.walls.segment);
+      for (let row = 0; row < WALL_CONFIG.numberOfWallRows; row++) {
+        for (let y = 0; y < height; y++) {
+          if (!isTileValid(0, y)) continue;
 
-        // Position wall at the upper-left edge of the tile
-        wallSprite.anchor.set(0.5, 1); // Bottom-center anchor
-        wallSprite.x = screenPos.x + WALL_CONFIG.offsetX;
-        wallSprite.y = screenPos.y + WALL_CONFIG.offsetY;
+          const screenPos = gridToScreen(0, y);
+          const wallSprite = new Sprite(assets.walls.segment);
 
-        wallContainer.addChild(wallSprite);
+          // Position wall at the upper-left edge of the tile
+          // Stack rows by offsetting Y by wall height
+          wallSprite.anchor.set(0.5, 1); // Bottom-center anchor
+          wallSprite.x = screenPos.x + WALL_CONFIG.offsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.offsetY - (row * wallHeight);
+
+          wallContainer.addChild(wallSprite);
+        }
       }
 
       world.addChild(wallContainer);
