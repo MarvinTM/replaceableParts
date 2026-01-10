@@ -50,11 +50,11 @@ const WALL_CONFIG = {
   upperRightOffsetX: 19,
   upperRightOffsetY: 2,
   // Lower-left wall (along y=0)
-  lowerLeftOffsetX: -19,
-  lowerLeftOffsetY: 15,
+  lowerLeftOffsetX: -13,
+  lowerLeftOffsetY: 18,
   // Lower-right wall (along x=width-1)
-  lowerRightOffsetX: 19,
-  lowerRightOffsetY: 15,
+  lowerRightOffsetX: 13,
+  lowerRightOffsetY: 18,
   // Transparency for lower walls (0 = fully transparent, 1 = fully opaque)
   lowerWallAlphaDefault: 0.85,  // When mouse is outside factory
   lowerWallAlphaHover: 0.10,    // When mouse is over factory
