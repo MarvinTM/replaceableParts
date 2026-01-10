@@ -167,39 +167,56 @@ function drawIsometricTile(graphics, x, y, fillColor, lineColor = null) {
  * Supports rectangular structures with different sizeX and sizeY
  */
 function drawStructure(graphics, x, y, sizeX, sizeY, height, color) {
-  // For isometric projection, width and height are affected by both dimensions
-  const halfWidthX = (TILE_WIDTH * sizeX) / 4;
-  const halfWidthY = (TILE_WIDTH * sizeY) / 4;
-  const halfHeightX = (TILE_HEIGHT * sizeX) / 4;
-  const halfHeightY = (TILE_HEIGHT * sizeY) / 4;
-  const boxHeight = height;
+  const halfW = TILE_WIDTH / 2;
+  const halfH = TILE_HEIGHT / 2;
+  
+  // Calculate corners relative to center
+  // logic derived from gridToScreen: x=(gx+gy)*halfW, y=(gx-gy)*halfH
+  const halfX = sizeX / 2;
+  const halfY = sizeY / 2;
 
-  // Top face (diamond shape based on both dimensions)
+  // C1: Right (+X, +Y grid relative to center)
+  const c1x = (halfX + halfY) * halfW;
+  const c1y = (halfX - halfY) * halfH;
+
+  // C2: Bottom (+X, -Y grid relative to center) 
+  const c2x = (halfX - halfY) * halfW;
+  const c2y = (halfX + halfY) * halfH;
+
+  // C3: Left (-X, -Y) -> -C1
+  const c3x = -c1x;
+  const c3y = -c1y;
+
+  // C4: Top (-X, +Y) -> -C2
+  const c4x = -c2x;
+  const c4y = -c2y;
+
+  // Top Face (at y - height)
   graphics.poly([
-    x, y - halfHeightX - halfHeightY - boxHeight,           // Top
-    x + halfWidthX + halfWidthY, y - boxHeight,             // Right
-    x, y + halfHeightX + halfHeightY - boxHeight,           // Bottom
-    x - halfWidthX - halfWidthY, y - boxHeight              // Left
+    x + c4x, y + c4y - height,
+    x + c1x, y + c1y - height,
+    x + c2x, y + c2y - height,
+    x + c3x, y + c3y - height
   ]);
   graphics.fill(color);
 
-  // Left face (darker)
+  // Left Face (C3 to C2) - Darker
   const darkerColor = darkenColor(color, 0.7);
   graphics.poly([
-    x - halfWidthX - halfWidthY, y - boxHeight,
-    x, y + halfHeightX + halfHeightY - boxHeight,
-    x, y + halfHeightX + halfHeightY,
-    x - halfWidthX - halfWidthY, y
+    x + c3x, y + c3y - height,
+    x + c2x, y + c2y - height,
+    x + c2x, y + c2y,
+    x + c3x, y + c3y
   ]);
   graphics.fill(darkerColor);
 
-  // Right face (medium)
+  // Right Face (C2 to C1) - Medium
   const mediumColor = darkenColor(color, 0.85);
   graphics.poly([
-    x + halfWidthX + halfWidthY, y - boxHeight,
-    x, y + halfHeightX + halfHeightY - boxHeight,
-    x, y + halfHeightX + halfHeightY,
-    x + halfWidthX + halfWidthY, y
+    x + c2x, y + c2y - height,
+    x + c1x, y + c1y - height,
+    x + c1x, y + c1y,
+    x + c2x, y + c2y
   ]);
   graphics.fill(mediumColor);
 }

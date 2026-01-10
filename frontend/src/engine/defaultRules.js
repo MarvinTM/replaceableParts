@@ -312,8 +312,8 @@ export const defaultRules = {
   // ============================================================================
   machines: {
     itemId: 'production_machine',  // Item required to deploy a machine
-    baseSizeX: 2,                  // Floor space width (X dimension)
-    baseSizeY: 1,                  // Floor space height (Y dimension)
+    baseSizeX: 1,                  // Floor space width (X dimension)
+    baseSizeY: 3,                  // Floor space height (Y dimension)
     baseEnergy: 2                  // Energy consumption per tick
   },
 

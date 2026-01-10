@@ -46,8 +46,8 @@ export const initialState = {
       internalBuffer: {},
       status: 'idle',
       enabled: true,
-      x: 1,
-      y: 1
+      x: 0,
+      y: 0
     }
   ],
 
