@@ -110,16 +110,20 @@ function FactoryTab() {
                 <Typography variant="body2" color="text.secondary">{t('game.factory.noGenerators')}</Typography>
               ) : (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {generators.map((gen) => (
-                    <Chip
-                      key={gen.id}
-                      icon={<BoltIcon />}
-                      label={`${gen.type} (+${gen.energyOutput})`}
-                      variant="outlined"
-                      color="warning"
-                      size="small"
-                    />
-                  ))}
+                  {generators.map((gen) => {
+                    const genConfig = rules.generators.types.find(g => g.id === gen.type);
+                    const output = genConfig ? genConfig.energyOutput : '?';
+                    return (
+                      <Chip
+                        key={gen.id}
+                        icon={<BoltIcon />}
+                        label={`${genConfig ? genConfig.name : gen.type} (+${output})`}
+                        variant="outlined"
+                        color="warning"
+                        size="small"
+                      />
+                    );
+                  })}
                 </Box>
               )}
             </CardContent>

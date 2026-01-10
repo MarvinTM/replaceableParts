@@ -46,7 +46,6 @@ export const initialState = {
       internalBuffer: {},
       status: 'idle',
       enabled: true,
-      energyConsumption: 1,
       x: 1,
       y: 1
     }
@@ -57,7 +56,6 @@ export const initialState = {
     {
       id: 'starter_crank',
       type: 'manual_crank',
-      energyOutput: 3,
       x: 3,
       y: 3
     }

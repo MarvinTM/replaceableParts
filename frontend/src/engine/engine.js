@@ -82,6 +82,17 @@ function getStructureDimensions(structureType, rules) {
   return { sizeX: 1, sizeY: 1 };
 }
 
+/**
+ * Get the energy output of a generator based on its type.
+ * @param {string} type - The generator type (e.g. 'manual_crank')
+ * @param {Object} rules - The game rules
+ * @returns {number} Energy output per tick
+ */
+function getGeneratorOutput(type, rules) {
+  const genConfig = rules.generators.types.find(g => g.id === type);
+  return genConfig ? genConfig.energyOutput : 0;
+}
+
 // ============================================================================
 // Grid Placement Utilities
 // ============================================================================
@@ -322,14 +333,14 @@ function buyFloorSpace(state, rules, payload) {
 }
 
 function calculateEnergy(state, rules) {
-  const produced = state.generators.reduce((sum, g) => sum + g.energyOutput, 0);
+  const produced = state.generators.reduce((sum, g) => sum + getGeneratorOutput(g.type, rules), 0);
 
   let consumed = 0;
 
   // Machine consumption only (research is checked separately)
   for (const machine of state.machines) {
     if (machine.enabled && machine.recipeId && machine.status !== 'blocked') {
-      consumed += machine.energyConsumption;
+      consumed += rules.machines.baseEnergy;
     }
   }
 
@@ -359,7 +370,7 @@ function simulateTick(state, rules) {
       // Only block enabled machines that are not already blocked
       if (machine.enabled && machine.recipeId && machine.status !== 'blocked') {
         machine.status = 'blocked';
-        deficit -= machine.energyConsumption;
+        deficit -= rules.machines.baseEnergy;
       }
     }
     // Recalculate energy after blocking
@@ -565,7 +576,6 @@ function addMachine(state, rules, payload) {
     internalBuffer: {},
     status: 'idle',
     enabled: true,
-    energyConsumption: rules.machines.baseEnergy,
     x,
     y
   });
@@ -686,7 +696,6 @@ function addGenerator(state, rules, payload) {
   newState.generators.push({
     id: generatorId,
     type: generatorType,
-    energyOutput: genConfig.energyOutput,
     x,
     y
   });
