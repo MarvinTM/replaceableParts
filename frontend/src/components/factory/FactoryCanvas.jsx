@@ -44,9 +44,22 @@ const ANIM_CONFIG = {
 const WALL_CONFIG = {
   offsetX: -19,  // Horizontal offset from tile edge (negative = left, positive = right)
   offsetY: 2,   // Vertical offset (negative = up, positive = down/closer to floor)
-  wallRowVerticalOffset: 32,   //Vertical offset for subsequent wall rows
-  numberOfWallRows: 3
+  wallRowVerticalOffset: 32,   // Vertical offset for subsequent wall rows
+  baseNumberOfWallRows: 3,     // Base number of wall rows at initial factory size
+  initialFactorySize: 8        // Initial factory size (8x8)
 };
+
+/**
+ * Calculate the number of wall rows based on factory expansion level
+ * Scales only when both dimensions form a complete square at the next level
+ * 8x8 = 1x, 16x16 = 2x, 32x32 = 3x, etc.
+ */
+function getWallRowCount(factoryWidth, factoryHeight) {
+  // Use the minimum dimension - scaling only happens when full square is formed
+  const minDimension = Math.min(factoryWidth, factoryHeight);
+  const expansionLevel = Math.floor(Math.log2(minDimension / WALL_CONFIG.initialFactorySize)) + 1;
+  return WALL_CONFIG.baseNumberOfWallRows * expansionLevel;
+}
 
 /**
  * Load assets and return what's available
@@ -264,10 +277,11 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
       const wallContainer = new Container();
 
       // Upper-left wall: tiles where x = 0 (grows up-right as y increases)
-      // Render multiple rows of walls
-      const wallHeight = assets.walls.segment.height-WALL_CONFIG.wallRowVerticalOffset;
+      // Render multiple rows of walls, scaling with factory expansion
+      const wallHeight = assets.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset;
+      const numberOfRows = getWallRowCount(width, height);
 
-      for (let row = 0; row < WALL_CONFIG.numberOfWallRows; row++) {
+      for (let row = 0; row < numberOfRows; row++) {
         for (let y = 0; y < height; y++) {
           if (!isTileValid(0, y)) continue;
 
