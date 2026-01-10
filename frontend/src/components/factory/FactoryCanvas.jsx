@@ -301,8 +301,9 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
       }
 
       // Upper-right wall: tiles where y = height-1 (last row, along upper-right edge)
+      // Render in reverse order so overlapping matches the left wall
       for (let row = 0; row < numberOfRows; row++) {
-        for (let x = 0; x < width; x++) {
+        for (let x = width - 1; x >= 0; x--) {
           if (!isTileValid(x, height - 1)) continue;
 
           const screenPos = gridToScreen(x, height - 1);
