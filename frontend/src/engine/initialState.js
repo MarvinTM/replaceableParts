@@ -35,7 +35,8 @@ export const initialState = {
 
   // Inventory starts with 1 production machine so player can build more
   inventory: {
-    production_machine: 1
+    production_machine: 5,
+    manual_crank: 5
   },
 
   // Starting machine for demonstration

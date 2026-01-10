@@ -30,6 +30,10 @@ import useGameStore from '../stores/gameStore';
 import { getNextExpansionChunk } from '../engine/engine.js';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
 import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
+import PlaceableMachinesPanel from '../components/factory/PlaceableMachinesPanel';
+import PlaceableGeneratorsPanel from '../components/factory/PlaceableGeneratorsPanel';
+import RecipeDropdown from '../components/factory/RecipeDropdown';
+import MachineInfoPopup from '../components/factory/MachineInfoPopup';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -64,16 +68,95 @@ function FactoryTab() {
   const engineState = useGameStore((state) => state.engineState);
   const rules = useGameStore((state) => state.rules);
   const buyFloorSpace = useGameStore((state) => state.buyFloorSpace);
+  const addMachine = useGameStore((state) => state.addMachine);
+  const addGenerator = useGameStore((state) => state.addGenerator);
+  const assignRecipe = useGameStore((state) => state.assignRecipe);
+  const toggleMachine = useGameStore((state) => state.toggleMachine);
+
+  // Drag state for placing machines/generators
+  const [dragState, setDragState] = useState({
+    isDragging: false,
+    itemType: null,
+    itemId: null,
+    sizeX: 0,
+    sizeY: 0
+  });
+
+  // Selected machine for machine info popup
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  const [machinePopupPosition, setMachinePopupPosition] = useState(null);
+
+  // State for recipe selector (opened from machine info popup)
+  const [showRecipeSelector, setShowRecipeSelector] = useState(false);
 
   if (!engineState) return null;
 
-  const { machines, generators, floorSpace, inventory, credits, rngSeed } = engineState;
+  const { machines, generators, floorSpace, inventory, credits, rngSeed, unlockedRecipes } = engineState;
 
   // Calculate next expansion info
   const expansion = getNextExpansionChunk(engineState, rules);
 
   const handleExpand = () => {
     buyFloorSpace();
+  };
+
+  // Drag handlers for placing machines/generators
+  const handleDragStart = (itemType, itemId, sizeX, sizeY) => {
+    setDragState({ isDragging: true, itemType, itemId, sizeX, sizeY });
+  };
+
+  const handleDragEnd = () => {
+    setDragState({ isDragging: false, itemType: null, itemId: null, sizeX: 0, sizeY: 0 });
+  };
+
+  const handleDrop = (itemType, itemId, gridX, gridY, generatorType) => {
+    if (itemType === 'machine') {
+      const result = addMachine(gridX, gridY);
+      if (result.error) {
+        console.warn('Failed to place machine:', result.error);
+      }
+    } else if (itemType === 'generator') {
+      const result = addGenerator(generatorType, gridX, gridY);
+      if (result.error) {
+        console.warn('Failed to place generator:', result.error);
+      }
+    }
+    handleDragEnd();
+  };
+
+  // Machine click handler - opens machine info popup
+  const handleMachineClick = (machine, screenPos) => {
+    setSelectedMachine(machine);
+    setMachinePopupPosition(screenPos);
+    setShowRecipeSelector(false);
+  };
+
+  // Close machine info popup
+  const handleCloseMachinePopup = () => {
+    setSelectedMachine(null);
+    setMachinePopupPosition(null);
+    setShowRecipeSelector(false);
+  };
+
+  // Toggle machine enabled/disabled
+  const handleToggleMachine = (machineId) => {
+    toggleMachine(machineId);
+  };
+
+  // Open recipe selector from machine info popup
+  const handleOpenRecipeSelector = () => {
+    setShowRecipeSelector(true);
+  };
+
+  // Select a recipe
+  const handleRecipeSelect = (machineId, recipeId) => {
+    assignRecipe(machineId, recipeId);
+    setShowRecipeSelector(false);
+  };
+
+  // Close recipe selector (go back to machine info popup)
+  const handleCloseRecipeSelector = () => {
+    setShowRecipeSelector(false);
   };
 
   return (
@@ -93,68 +176,34 @@ function FactoryTab() {
             machines={machines}
             generators={generators}
             rules={rules}
+            dragState={dragState}
+            onDrop={handleDrop}
+            onMachineClick={handleMachineClick}
+            engineState={engineState}
           />
         </CardContent>
       </Card>
 
       {/* Info panels in a row */}
       <Grid container spacing={2}>
-        {/* Generators */}
+        {/* Placeable Generators */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="subtitle1" gutterBottom>
-                {t('game.factory.generators')} ({generators.length})
-              </Typography>
-              {generators.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">{t('game.factory.noGenerators')}</Typography>
-              ) : (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {generators.map((gen) => {
-                    const genConfig = rules.generators.types.find(g => g.id === gen.type);
-                    const output = genConfig ? genConfig.energyOutput : '?';
-                    return (
-                      <Chip
-                        key={gen.id}
-                        icon={<BoltIcon />}
-                        label={`${genConfig ? genConfig.name : gen.type} (+${output})`}
-                        variant="outlined"
-                        color="warning"
-                        size="small"
-                      />
-                    );
-                  })}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+          <PlaceableGeneratorsPanel
+            inventory={inventory}
+            rules={rules}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          />
         </Grid>
 
-        {/* Machines */}
+        {/* Placeable Machines */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Typography variant="subtitle1" gutterBottom>
-                {t('game.factory.machines')} ({machines.length})
-              </Typography>
-              {machines.length === 0 ? (
-                <Typography variant="body2" color="text.secondary">{t('game.factory.noMachines')}</Typography>
-              ) : (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {machines.map((machine) => (
-                    <Chip
-                      key={machine.id}
-                      icon={<FactoryIcon />}
-                      label={machine.recipeId || 'Idle'}
-                      variant="outlined"
-                      color={machine.status === 'working' ? 'success' : machine.status === 'blocked' ? 'error' : 'default'}
-                      size="small"
-                    />
-                  ))}
-                </Box>
-              )}
-            </CardContent>
-          </Card>
+          <PlaceableMachinesPanel
+            inventory={inventory}
+            rules={rules}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          />
         </Grid>
 
         {/* Inventory */}
@@ -213,6 +262,30 @@ function FactoryTab() {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Machine Info Popup */}
+      {selectedMachine && machinePopupPosition && !showRecipeSelector && (
+        <MachineInfoPopup
+          machine={selectedMachine}
+          position={machinePopupPosition}
+          rules={rules}
+          onToggleEnabled={handleToggleMachine}
+          onOpenRecipeSelector={handleOpenRecipeSelector}
+          onClose={handleCloseMachinePopup}
+        />
+      )}
+
+      {/* Recipe Dropdown (opened from machine info popup) */}
+      {selectedMachine && machinePopupPosition && showRecipeSelector && (
+        <RecipeDropdown
+          machine={selectedMachine}
+          position={machinePopupPosition}
+          unlockedRecipes={unlockedRecipes}
+          rules={rules}
+          onSelectRecipe={handleRecipeSelect}
+          onClose={handleCloseRecipeSelector}
+        />
+      )}
     </Box>
   );
 }

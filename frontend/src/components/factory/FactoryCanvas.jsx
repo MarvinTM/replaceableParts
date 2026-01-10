@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { Application, Graphics, Container, Sprite, Assets, AnimatedSprite, Texture } from 'pixi.js';
+import { Application, Graphics, Container, Sprite, Assets, AnimatedSprite, Texture, Text, TextStyle } from 'pixi.js';
 import {
   TILE_WIDTH,
   TILE_HEIGHT,
@@ -9,6 +9,7 @@ import {
   getGridCenter,
   COLORS
 } from './useIsometric';
+import { canPlaceAt } from '../../engine/engine.js';
 
 // Asset paths - place your images in frontend/public/assets/factory/
 const ASSET_BASE = '/assets/factory';
@@ -40,6 +41,15 @@ const ANIM_CONFIG = {
   machine: { frames: 4, speed: 0.1 },
   generator: { frames: 4, speed: 0.08 }
 };
+
+// Text style for machine labels
+const MACHINE_LABEL_STYLE = new TextStyle({
+  fontFamily: 'Arial, sans-serif',
+  fontSize: 10,
+  fill: 0xffffff,
+  stroke: { color: 0x000000, width: 2 },
+  align: 'center'
+});
 
 // Wall positioning adjustments (tweak these values to fine-tune alignment)
 const WALL_CONFIG = {
@@ -237,7 +247,16 @@ function getMachineColor(status, enabled) {
   }
 }
 
-export default function FactoryCanvas({ floorSpace, machines, generators, rules }) {
+export default function FactoryCanvas({
+  floorSpace,
+  machines,
+  generators,
+  rules,
+  dragState,
+  onDrop,
+  onMachineClick,
+  engineState
+}) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const worldRef = useRef(null);
@@ -248,6 +267,9 @@ export default function FactoryCanvas({ floorSpace, machines, generators, rules 
   const floorDimensionsRef = useRef({ width: 0, height: 0 }); // Store floor dimensions for hover check
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+
+  // Drag-and-drop placement state
+  const [hoverGridPos, setHoverGridPos] = useState({ x: -1, y: -1 });
 
   const render = useCallback(() => {
     if (!worldRef.current || !floorSpace) return;
@@ -416,7 +438,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators, rules 
       // Look up size from rules (machines have base size)
       let sizeX = 1;
       let sizeY = 1;
-      
+
       if (rules && rules.machines) {
         sizeX = rules.machines.baseSizeX;
         sizeY = rules.machines.baseSizeY;
@@ -463,6 +485,17 @@ export default function FactoryCanvas({ floorSpace, machines, generators, rules 
         machineGraphics.zIndex = machine.x - machine.y;
         structuresContainer.addChild(machineGraphics);
       }
+
+      // Add recipe label above the machine
+      const labelText = machine.recipeId
+        ? machine.recipeId.replace(/_/g, ' ')
+        : (machine.enabled ? 'No Recipe' : 'Disabled');
+      const label = new Text({ text: labelText, style: MACHINE_LABEL_STYLE });
+      label.anchor.set(0.5, 1);
+      label.x = screenPos.x;
+      label.y = screenPos.y - 30; // Position above the machine
+      label.zIndex = machine.x - machine.y + 0.1; // Slightly above the machine
+      structuresContainer.addChild(label);
     });
 
     world.addChild(structuresContainer);
@@ -518,7 +551,34 @@ export default function FactoryCanvas({ floorSpace, machines, generators, rules 
       world.addChild(lowerWallContainer);
     }
 
-  }, [floorSpace, machines, generators, assetsLoaded, isHovering]);
+    // === RENDER PLACEMENT OVERLAY (when dragging) ===
+    if (dragState?.isDragging && hoverGridPos.x >= 0 && hoverGridPos.y >= 0) {
+      const overlayGraphics = new Graphics();
+      const { sizeX, sizeY } = dragState;
+
+      // Check if placement is valid using the engine's canPlaceAt
+      const isValid = engineState
+        ? canPlaceAt(engineState, hoverGridPos.x, hoverGridPos.y, sizeX, sizeY, rules).valid
+        : false;
+
+      const color = isValid ? 0x00ff00 : 0xff0000; // Green or Red
+
+      // Draw each tile the structure would occupy
+      for (let dx = 0; dx < sizeX; dx++) {
+        for (let dy = 0; dy < sizeY; dy++) {
+          const tileX = hoverGridPos.x + dx;
+          const tileY = hoverGridPos.y + dy;
+          const screenPos = gridToScreen(tileX, tileY);
+          drawIsometricTile(overlayGraphics, screenPos.x, screenPos.y, color, null);
+        }
+      }
+
+      overlayGraphics.alpha = 0.4;
+      overlayGraphics.zIndex = 9999;
+      world.addChild(overlayGraphics);
+    }
+
+  }, [floorSpace, machines, generators, assetsLoaded, isHovering, dragState, hoverGridPos, engineState, rules]);
 
   // Update lower wall transparency on hover change
   useEffect(() => {
@@ -722,9 +782,101 @@ export default function FactoryCanvas({ floorSpace, machines, generators, rules 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Convert screen coordinates to grid coordinates accounting for pan/zoom
+  const screenToGridCoords = useCallback((clientX, clientY) => {
+    if (!containerRef.current || !worldRef.current) return null;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+
+    const world = worldRef.current;
+    const worldX = (canvasX - world.x) / world.scale.x;
+    const worldY = (canvasY - world.y) / world.scale.y;
+
+    const gridPos = screenToGrid(worldX, worldY);
+    return {
+      x: Math.floor(gridPos.x),
+      y: Math.floor(gridPos.y)
+    };
+  }, []);
+
+  // Handle drag over to update hover position
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+
+    const gridPos = screenToGridCoords(e.clientX, e.clientY);
+    if (gridPos) {
+      setHoverGridPos(gridPos);
+    }
+  }, [screenToGridCoords]);
+
+  // Handle drop to place machine/generator
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('application/json'));
+      const { itemType, itemId, generatorType } = data;
+
+      const gridPos = screenToGridCoords(e.clientX, e.clientY);
+      if (gridPos && onDrop) {
+        onDrop(itemType, itemId, gridPos.x, gridPos.y, generatorType);
+      }
+    } catch (err) {
+      console.warn('Failed to parse drop data:', err);
+    }
+
+    setHoverGridPos({ x: -1, y: -1 });
+  }, [screenToGridCoords, onDrop]);
+
+  // Handle drag leave to clear hover
+  const handleDragLeave = useCallback(() => {
+    setHoverGridPos({ x: -1, y: -1 });
+  }, []);
+
+  // Handle click to detect clicks on machines
+  const handleClick = useCallback((e) => {
+    if (!onMachineClick || !machines || !rules) return;
+
+    const gridPos = screenToGridCoords(e.clientX, e.clientY);
+    if (!gridPos) return;
+
+    const sizeX = rules.machines?.baseSizeX || 1;
+    const sizeY = rules.machines?.baseSizeY || 1;
+
+    // Check if click is within any machine's bounds
+    for (const machine of machines) {
+      const machineX = machine.x;
+      const machineY = machine.y;
+
+      // Check if the clicked grid position falls within this machine's footprint
+      if (
+        gridPos.x >= machineX && gridPos.x < machineX + sizeX &&
+        gridPos.y >= machineY && gridPos.y < machineY + sizeY
+      ) {
+        // Calculate screen position for the dropdown
+        const world = worldRef.current;
+        const rect = containerRef.current.getBoundingClientRect();
+        const structureScreenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
+
+        const screenX = structureScreenPos.x * world.scale.x + world.x + rect.left;
+        const screenY = structureScreenPos.y * world.scale.y + world.y + rect.top;
+
+        onMachineClick(machine, { left: screenX, top: screenY });
+        return;
+      }
+    }
+  }, [onMachineClick, machines, rules, screenToGridCoords]);
+
   return (
     <div
       ref={containerRef}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragLeave={handleDragLeave}
+      onClick={handleClick}
       style={{
         width: '100%',
         height: '400px',

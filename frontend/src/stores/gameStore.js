@@ -84,23 +84,23 @@ const useGameStore = create(
       },
 
       addMachine: (x, y) => {
-        return get().dispatch({ type: 'ADD_MACHINE', x, y });
+        return get().dispatch({ type: 'ADD_MACHINE', payload: { x, y } });
       },
 
       removeMachine: (machineId) => {
-        return get().dispatch({ type: 'REMOVE_MACHINE', machineId });
+        return get().dispatch({ type: 'REMOVE_MACHINE', payload: { machineId } });
       },
 
       assignRecipe: (machineId, recipeId) => {
-        return get().dispatch({ type: 'ASSIGN_RECIPE', machineId, recipeId });
+        return get().dispatch({ type: 'ASSIGN_RECIPE', payload: { machineId, recipeId } });
       },
 
       addGenerator: (generatorType, x, y) => {
-        return get().dispatch({ type: 'ADD_GENERATOR', generatorType, x, y });
+        return get().dispatch({ type: 'ADD_GENERATOR', payload: { generatorType, x, y } });
       },
 
       removeGenerator: (generatorId) => {
-        return get().dispatch({ type: 'REMOVE_GENERATOR', generatorId });
+        return get().dispatch({ type: 'REMOVE_GENERATOR', payload: { generatorId } });
       },
 
       buyFloorSpace: () => {
@@ -108,7 +108,7 @@ const useGameStore = create(
       },
 
       sellGoods: (itemId, quantity) => {
-        return get().dispatch({ type: 'SELL_GOODS', itemId, quantity });
+        return get().dispatch({ type: 'SELL_GOODS', payload: { itemId, quantity } });
       },
 
       toggleResearch: () => {
@@ -116,15 +116,15 @@ const useGameStore = create(
       },
 
       unlockRecipe: (recipeId) => {
-        return get().dispatch({ type: 'UNLOCK_RECIPE', recipeId });
+        return get().dispatch({ type: 'UNLOCK_RECIPE', payload: { recipeId } });
       },
 
       unblockMachine: (machineId) => {
-        return get().dispatch({ type: 'UNBLOCK_MACHINE', machineId });
+        return get().dispatch({ type: 'UNBLOCK_MACHINE', payload: { machineId } });
       },
 
       toggleMachine: (machineId) => {
-        return get().dispatch({ type: 'TOGGLE_MACHINE', machineId });
+        return get().dispatch({ type: 'TOGGLE_MACHINE', payload: { machineId } });
       },
 
       buyInventorySpace: () => {
