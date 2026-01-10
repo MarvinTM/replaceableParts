@@ -220,7 +220,7 @@ function getMachineColor(status, enabled) {
   }
 }
 
-export default function FactoryCanvas({ floorSpace, machines, generators }) {
+export default function FactoryCanvas({ floorSpace, machines, generators, rules }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const worldRef = useRef(null);
@@ -347,8 +347,18 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
     // Render generators
     generators?.forEach((gen) => {
-      const sizeX = gen.sizeX || 1;
-      const sizeY = gen.sizeY || 1;
+      // Look up size from rules based on generator type
+      let sizeX = 1;
+      let sizeY = 1;
+      
+      if (rules && rules.generators && rules.generators.types) {
+        const genConfig = rules.generators.types.find(g => g.id === gen.type);
+        if (genConfig) {
+          sizeX = genConfig.sizeX;
+          sizeY = genConfig.sizeY;
+        }
+      }
+
       const screenPos = getStructureScreenPosition(gen.x, gen.y, sizeX, sizeY);
 
       let displayObject;
@@ -386,8 +396,15 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
     // Render machines
     machines?.forEach((machine) => {
-      const sizeX = machine.sizeX || 1;
-      const sizeY = machine.sizeY || 1;
+      // Look up size from rules (machines have base size)
+      let sizeX = 1;
+      let sizeY = 1;
+      
+      if (rules && rules.machines) {
+        sizeX = rules.machines.baseSizeX;
+        sizeY = rules.machines.baseSizeY;
+      }
+
       const screenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
       const status = machine.enabled ? machine.status : 'idle';
 

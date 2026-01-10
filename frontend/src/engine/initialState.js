@@ -16,11 +16,12 @@ export const initialState = {
     width: 8,
     height: 8,
     chunks: [{ x: 0, y: 0, width: 8, height: 8 }],
+    chunks: [{ x: 0, y: 0, width: 8, height: 8 }],
     placements: [
       // Starting generator at position (3, 3)
-      { id: 'starter_crank', x: 3, y: 3, sizeX: 1, sizeY: 1, type: 'generator' },
+      { id: 'starter_crank', x: 3, y: 3, structureType: 'manual_crank' },
       // Starting machine at position (2, 2)
-      { id: 'starter_machine', x: 2, y: 2, sizeX: 1, sizeY: 1, type: 'machine' }
+      { id: 'starter_machine', x: 2, y: 2, structureType: 'machine' }
     ]
   },
 
@@ -45,11 +46,9 @@ export const initialState = {
       internalBuffer: {},
       status: 'idle',
       enabled: true,
-      sizeX: 2,
-      sizeY: 2,
       energyConsumption: 1,
-      x: 4,
-      y: 4
+      x: 1,
+      y: 1
     }
   ],
 
@@ -59,8 +58,6 @@ export const initialState = {
       id: 'starter_crank',
       type: 'manual_crank',
       energyOutput: 3,
-      sizeX: 1,
-      sizeY: 1,
       x: 3,
       y: 3
     }

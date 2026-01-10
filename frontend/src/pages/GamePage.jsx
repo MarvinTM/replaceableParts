@@ -92,6 +92,7 @@ function FactoryTab() {
             floorSpace={floorSpace}
             machines={machines}
             generators={generators}
+            rules={rules}
           />
         </CardContent>
       </Card>

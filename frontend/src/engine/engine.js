@@ -49,6 +49,40 @@ function getMaxStack(itemId, inventoryCapacity, rules) {
 }
 
 // ============================================================================
+// Structure Dimension Utilities
+// ============================================================================
+
+/**
+ * Get the dimensions of a structure based on its structureType.
+ * - 'machine' uses rules.machines.baseSizeX/baseSizeY
+ * - Generator types (e.g., 'manual_crank') use rules.generators.types
+ * @param {string} structureType - The structure type identifier
+ * @param {Object} rules - The game rules
+ * @returns {{ sizeX: number, sizeY: number }} The structure dimensions
+ */
+function getStructureDimensions(structureType, rules) {
+  if (structureType === 'machine') {
+    return {
+      sizeX: rules.machines.baseSizeX,
+      sizeY: rules.machines.baseSizeY
+    };
+  }
+  
+  // Check if it's a generator type
+  const genConfig = rules.generators.types.find(g => g.id === structureType);
+  if (genConfig) {
+    return {
+      sizeX: genConfig.sizeX,
+      sizeY: genConfig.sizeY
+    };
+  }
+  
+  // Default fallback for unknown types
+  // console.warn(`Unknown structureType: ${structureType}, defaulting to 1x1`);
+  return { sizeX: 1, sizeY: 1 };
+}
+
+// ============================================================================
 // Grid Placement Utilities
 // ============================================================================
 
@@ -87,11 +121,27 @@ function getIntersection(r1, r2) {
   return null;
 }
 
-function isColliding(x, y, sizeX, sizeY, placements) {
+function isColliding(x, y, sizeX, sizeY, placements, rules) {
   // Check if the rectangle from (x,y) to (x+sizeX-1, y+sizeY-1) overlaps any existing placement
   for (const placement of placements) {
-    const pSizeX = placement.sizeX;
-    const pSizeY = placement.sizeY;
+    // If no structureType is present (legacy), we might need a fallback or fail safely. 
+    // Ideally all placements have structureType now.
+    // However, if sizeX/sizeY are still there (legacy), we could use them, but we want to force rule usage.
+    
+    // Default to 1x1 if we can't determine type (shouldn't happen with correct data)
+    let pSizeX = 1;
+    let pSizeY = 1;
+
+    if (placement.structureType) {
+       const dims = getStructureDimensions(placement.structureType, rules);
+       pSizeX = dims.sizeX;
+       pSizeY = dims.sizeY;
+    } else if (placement.sizeX && placement.sizeY) {
+       // Legacy fallback if data hasn't been migrated fully in runtime state
+       pSizeX = placement.sizeX;
+       pSizeY = placement.sizeY;
+    }
+
     // Check for rectangle overlap
     const noOverlap =
       x + sizeX <= placement.x ||       // New is fully left of existing
@@ -106,13 +156,13 @@ function isColliding(x, y, sizeX, sizeY, placements) {
   return false;
 }
 
-function canPlaceAt(state, x, y, sizeX, sizeY) {
+function canPlaceAt(state, x, y, sizeX, sizeY, rules) {
   // Pass state to isWithinBounds to access chunks
   if (!isWithinBounds(x, y, sizeX, sizeY, state)) {
     return { valid: false, error: 'Position out of bounds (area not purchased)' };
   }
 
-  if (isColliding(x, y, sizeX, sizeY, state.floorSpace.placements)) {
+  if (isColliding(x, y, sizeX, sizeY, state.floorSpace.placements, rules)) {
     return { valid: false, error: 'Position collides with existing structure' };
   }
 
@@ -485,7 +535,7 @@ function addMachine(state, rules, payload) {
   const sizeY = rules.machines.baseSizeY;
 
   // Check if position is valid and not colliding
-  const placement = canPlaceAt(newState, x, y, sizeX, sizeY);
+  const placement = canPlaceAt(newState, x, y, sizeX, sizeY, rules);
   if (!placement.valid) {
     return { state: newState, error: placement.error };
   }
@@ -515,8 +565,6 @@ function addMachine(state, rules, payload) {
     internalBuffer: {},
     status: 'idle',
     enabled: true,
-    sizeX,
-    sizeY,
     energyConsumption: rules.machines.baseEnergy,
     x,
     y
@@ -527,9 +575,7 @@ function addMachine(state, rules, payload) {
     id: machineId,
     x,
     y,
-    sizeX,
-    sizeY,
-    type: 'machine'
+    structureType: 'machine'
   });
 
   return { state: newState, error: null };
@@ -613,7 +659,7 @@ function addGenerator(state, rules, payload) {
   const sizeY = genConfig.sizeY;
 
   // Check if position is valid and not colliding
-  const placement = canPlaceAt(newState, x, y, sizeX, sizeY);
+  const placement = canPlaceAt(newState, x, y, sizeX, sizeY, rules);
   if (!placement.valid) {
     return { state: newState, error: placement.error };
   }
@@ -641,8 +687,6 @@ function addGenerator(state, rules, payload) {
     id: generatorId,
     type: generatorType,
     energyOutput: genConfig.energyOutput,
-    sizeX,
-    sizeY,
     x,
     y
   });
@@ -652,9 +696,7 @@ function addGenerator(state, rules, payload) {
     id: generatorId,
     x,
     y,
-    sizeX,
-    sizeY,
-    type: 'generator'
+    structureType: generatorType
   });
 
   // Recalculate energy
