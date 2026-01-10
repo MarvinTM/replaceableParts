@@ -8,12 +8,19 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import SettingsIcon from '@mui/icons-material/Settings';
+import useGameStore from '../stores/gameStore';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
+  const rules = useGameStore((state) => state.rules);
+  const setExpansionType = useGameStore((state) => state.setExpansionType);
 
   const handleLanguageChange = (event) => {
     i18n.changeLanguage(event.target.value);
+  };
+
+  const handleExpansionChange = (event) => {
+    setExpansionType(event.target.value);
   };
 
   return (
@@ -38,6 +45,19 @@ export default function SettingsPage() {
             >
               <MenuItem value="en">{t('language.en')}</MenuItem>
               <MenuItem value="es">{t('language.es')}</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth sx={{ mt: 3 }}>
+            <InputLabel id="expansion-select-label">Expansion Logic</InputLabel>
+            <Select
+              labelId="expansion-select-label"
+              value={rules.floorSpace.expansionType}
+              label="Expansion Logic"
+              onChange={handleExpansionChange}
+            >
+              <MenuItem value="spiral">Spiral (Chunks)</MenuItem>
+              <MenuItem value="fractal">Fractal (Strips)</MenuItem>
             </Select>
           </FormControl>
 

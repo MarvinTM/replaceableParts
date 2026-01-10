@@ -57,8 +57,39 @@ function getStructureSize(spaceCost) {
   return Math.sqrt(spaceCost);
 }
 
-function isWithinBounds(x, y, size, width, height) {
-  return x >= 0 && y >= 0 && x + size <= width && y + size <= height;
+function isWithinBounds(x, y, size, state) {
+  // Check if the rectangle defined by (x, y, size) is fully contained
+  // within the union of all purchased chunks.
+  
+  // Quick check: must be within global bounds
+  if (x < 0 || y < 0) return false;
+  if (x + size > state.floorSpace.width || y + size > state.floorSpace.height) return false;
+
+  // Detailed check: Sum of intersection areas must equal structure area
+  // This handles structures spanning multiple chunks
+  const rect = { x, y, width: size, height: size };
+  let coveredArea = 0;
+
+  for (const chunk of state.floorSpace.chunks) {
+    const intersect = getIntersection(rect, chunk);
+    if (intersect) {
+      coveredArea += intersect.width * intersect.height;
+    }
+  }
+
+  // Floating point safety not needed for integers, but good practice
+  return coveredArea === size * size;
+}
+
+function getIntersection(r1, r2) {
+  const x1 = Math.max(r1.x, r2.x);
+  const y1 = Math.max(r1.y, r2.y);
+  const x2 = Math.min(r1.x + r1.width, r2.x + r2.width);
+  const y2 = Math.min(r1.y + r1.height, r2.y + r2.height);
+  if (x2 > x1 && y2 > y1) {
+    return { width: x2 - x1, height: y2 - y1 };
+  }
+  return null;
 }
 
 function isColliding(x, y, size, placements) {
@@ -80,28 +111,88 @@ function isColliding(x, y, size, placements) {
 }
 
 function canPlaceAt(state, x, y, size) {
-  const { width, height, placements } = state.floorSpace;
-
-  if (!isWithinBounds(x, y, size, width, height)) {
-    return { valid: false, error: 'Position out of bounds' };
+  // Pass state to isWithinBounds to access chunks
+  if (!isWithinBounds(x, y, size, state)) {
+    return { valid: false, error: 'Position out of bounds (area not purchased)' };
   }
 
-  if (isColliding(x, y, size, placements)) {
+  if (isColliding(x, y, size, state.floorSpace.placements)) {
     return { valid: false, error: 'Position collides with existing structure' };
   }
 
   return { valid: true, error: null };
 }
 
-function getNextExpansionChunk(state, rules) {
+function isChunkPurchased(chunks, x, y) {
+  return chunks.some(c => c.x === x && c.y === y);
+}
+
+function getNextExpansionSpiral(state, rules) {
+  const { width, height } = state.floorSpace;
+  const chunks = state.floorSpace.chunks || [];
+  const { costPerCell, initialWidth } = rules.floorSpace;
+
+  // Calculate cycle based on number of chunks
+  // Each expansion cycle (doubling dimensions) strictly requires 12 chunks
+  // Base state is 1 chunk.
+  const expansionsDone = Math.max(0, chunks.length - 1);
+  const completedCycles = Math.floor(expansionsDone / 12);
+  
+  // Base size for current cycle
+  // Cycle 0: initialWidth (e.g. 8)
+  // Cycle 1: initialWidth * 2 (e.g. 16)
+  const cycleBase = (initialWidth || 8) * Math.pow(2, completedCycles);
+  
+  const N = cycleBase;
+  const target = N * 2;
+  const chunkSize = N / 2;
+  
+  // Generate expansion sequence for this cycle
+  // 1. Fill Right Wing (Quadrant B)
+  for (let y = 0; y < N; y += chunkSize) {
+    for (let x = N; x < target; x += chunkSize) {
+      if (!isChunkPurchased(chunks, x, y)) {
+        return {
+          x,
+          y,
+          width: chunkSize,
+          height: chunkSize,
+          newWidth: Math.max(width, x + chunkSize),
+          newHeight: Math.max(height, y + chunkSize),
+          cellsAdded: chunkSize * chunkSize,
+          cost: chunkSize * chunkSize * costPerCell
+        };
+      }
+    }
+  }
+  
+  // 2. Fill Top Wing (Quadrants C+D)
+  for (let y = N; y < target; y += chunkSize) {
+    for (let x = 0; x < target; x += chunkSize) {
+      if (!isChunkPurchased(chunks, x, y)) {
+        return {
+          x,
+          y,
+          width: chunkSize,
+          height: chunkSize,
+          newWidth: Math.max(width, x + chunkSize),
+          newHeight: Math.max(height, y + chunkSize),
+          cellsAdded: chunkSize * chunkSize,
+          cost: chunkSize * chunkSize * costPerCell
+        };
+      }
+    }
+  }
+  
+  return null; 
+}
+
+function getNextExpansionFractal(state, rules) {
   const { width, height } = state.floorSpace;
   const { initialWidth, initialChunkSize, costPerCell } = rules.floorSpace;
 
-  // Calculate current chunk size based on completed squares
-  // Chunk doubles each time a perfect square is formed
-  // Initial: 8x8, target 16x16, then 32x32, then 64x64, etc.
   let chunkSize = initialChunkSize;
-  let targetSquare = initialWidth * 2; // First target: 16x16
+  let targetSquare = initialWidth * 2;
 
   // Find the current target square based on completed squares
   while (width >= targetSquare && height >= targetSquare) {
@@ -109,43 +200,80 @@ function getNextExpansionChunk(state, rules) {
     targetSquare *= 2;
   }
 
-  // Determine expansion direction:
-  // 1. Expand width until it reaches targetSquare
-  // 2. Then expand height until it reaches targetSquare (forming a square)
-  // 3. Repeat with doubled chunk size
-  let expandWidth;
-  if (width < targetSquare) {
-    expandWidth = true;
-  } else {
-    expandWidth = false;
-  }
+  // Determine expansion direction
+  const expandWidth = width < targetSquare;
 
   // Calculate new dimensions
-  let newWidth = width;
-  let newHeight = height;
+  const newWidth = expandWidth ? width + chunkSize : width;
+  const newHeight = !expandWidth ? height + chunkSize : height;
 
-  if (expandWidth) {
-    newWidth = width + chunkSize;
-  } else {
-    newHeight = height + chunkSize;
-  }
+  // Calculate the added strip dimensions
+  const stripX = expandWidth ? width : 0;
+  const stripY = expandWidth ? 0 : height;
+  const stripWidth = expandWidth ? chunkSize : width;
+  const stripHeight = !expandWidth ? chunkSize : height;
 
-  const cellsAdded = chunkSize * chunkSize;
+  const cellsAdded = stripWidth * stripHeight;
   const cost = cellsAdded * costPerCell;
 
   return {
-    chunkSize,
+    x: stripX,
+    y: stripY,
+    width: stripWidth,
+    height: stripHeight,
     newWidth,
     newHeight,
     cellsAdded,
-    cost,
-    expandWidth
+    cost
   };
 }
 
-// ============================================================================
-// Energy Calculations
-// ============================================================================
+function getNextExpansionChunk(state, rules) {
+  const type = rules.floorSpace.expansionType || 'spiral';
+  
+  if (type === 'fractal') {
+    return getNextExpansionFractal(state, rules);
+  }
+  
+  return getNextExpansionSpiral(state, rules);
+}
+
+// ... existing code ...
+
+function buyFloorSpace(state, rules, payload) {
+  const newState = deepClone(state);
+
+  // Get the next expansion chunk based on current grid size
+  const expansion = getNextExpansionChunk(newState, rules);
+
+  if (!expansion) {
+    return { state: newState, error: 'Maximum expansion reached or error in calculation' };
+  }
+
+  if (newState.credits < expansion.cost) {
+    return { state: newState, error: `Not enough credits (need ${expansion.cost})` };
+  }
+
+  newState.credits -= expansion.cost;
+  
+  // Add new chunk
+  if (!newState.floorSpace.chunks) {
+    newState.floorSpace.chunks = [];
+  }
+  
+  newState.floorSpace.chunks.push({
+    x: expansion.x,
+    y: expansion.y,
+    width: expansion.width,   // Use explicit dimensions
+    height: expansion.height  // Use explicit dimensions
+  });
+
+  // Update max bounds
+  newState.floorSpace.width = expansion.newWidth;
+  newState.floorSpace.height = expansion.newHeight;
+
+  return { state: newState, error: null };
+}
 
 function calculateEnergy(state, rules) {
   const produced = state.generators.reduce((sum, g) => sum + g.energyOutput, 0);
@@ -557,22 +685,7 @@ function removeGenerator(state, rules, payload) {
   return { state: newState, error: null };
 }
 
-function buyFloorSpace(state, rules, payload) {
-  const newState = deepClone(state);
 
-  // Get the next expansion chunk based on current grid size
-  const expansion = getNextExpansionChunk(newState, rules);
-
-  if (newState.credits < expansion.cost) {
-    return { state: newState, error: `Not enough credits (need ${expansion.cost})` };
-  }
-
-  newState.credits -= expansion.cost;
-  newState.floorSpace.width = expansion.newWidth;
-  newState.floorSpace.height = expansion.newHeight;
-
-  return { state: newState, error: null };
-}
 
 function sellGoods(state, rules, payload) {
   const newState = deepClone(state);
@@ -740,25 +853,52 @@ function expandExploration(state, rules, payload) {
   // Deduct credits
   newState.credits -= expansion.cost;
 
-  // Mark new tiles as explored
-  const oldBounds = newState.explorationMap.exploredBounds;
-  const newBounds = expansion.newBounds;
-
-  for (let y = newBounds.minY; y <= newBounds.maxY; y++) {
-    for (let x = newBounds.minX; x <= newBounds.maxX; x++) {
-      // Only mark tiles that weren't already explored
-      if (x < oldBounds.minX || x > oldBounds.maxX ||
-          y < oldBounds.minY || y > oldBounds.maxY) {
+  // Mark new tiles as explored using the defined chunk
+  if (expansion.chunkRect) {
+    const { x: startX, y: startY, width: w, height: h } = expansion.chunkRect;
+    
+    for (let y = startY; y < startY + h; y++) {
+      for (let x = startX; x < startX + w; x++) {
         const key = `${x},${y}`;
         if (newState.explorationMap.tiles[key]) {
           newState.explorationMap.tiles[key].explored = true;
         }
       }
     }
+
+    // Track the chunk
+    if (!newState.explorationMap.exploredChunks) {
+      newState.explorationMap.exploredChunks = [];
+      // Initialize with base if missing (legacy support)
+      const oldBounds = newState.explorationMap.exploredBounds;
+      newState.explorationMap.exploredChunks.push({
+        x: oldBounds.minX,
+        y: oldBounds.minY,
+        width: oldBounds.maxX - oldBounds.minX + 1,
+        height: oldBounds.maxY - oldBounds.minY + 1
+      });
+    }
+    newState.explorationMap.exploredChunks.push(expansion.chunkRect);
+  } else {
+    // Fallback for legacy behavior if chunkRect is missing (should not happen with new logic)
+    const oldBounds = newState.explorationMap.exploredBounds;
+    const newBounds = expansion.newBounds;
+
+    for (let y = newBounds.minY; y <= newBounds.maxY; y++) {
+      for (let x = newBounds.minX; x <= newBounds.maxX; x++) {
+        if (x < oldBounds.minX || x > oldBounds.maxX ||
+            y < oldBounds.minY || y > oldBounds.maxY) {
+          const key = `${x},${y}`;
+          if (newState.explorationMap.tiles[key]) {
+            newState.explorationMap.tiles[key].explored = true;
+          }
+        }
+      }
+    }
   }
 
   // Update explored bounds
-  newState.explorationMap.exploredBounds = newBounds;
+  newState.explorationMap.exploredBounds = expansion.newBounds;
 
   return { state: newState, error: null };
 }

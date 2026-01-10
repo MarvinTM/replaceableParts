@@ -15,6 +15,7 @@ export const initialState = {
   floorSpace: {
     width: 8,
     height: 8,
+    chunks: [{ x: 0, y: 0, width: 8, height: 8 }],
     placements: [
       // Starting generator at position (0, 0)
       { id: 'starter_crank', x: 0, y: 0, size: 1, type: 'generator' },

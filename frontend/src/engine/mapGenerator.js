@@ -231,20 +231,131 @@ export function generateExplorationMap(seed, width, height, rules) {
     }
   }
 
+  const exploredChunks = [{
+    x: exploredBounds.minX,
+    y: exploredBounds.minY,
+    width: exploredBounds.maxX - exploredBounds.minX + 1,
+    height: exploredBounds.maxY - exploredBounds.minY + 1
+  }];
+
   return {
     generatedWidth: width,
     generatedHeight: height,
     exploredBounds,
+    exploredChunks,
     tiles,
     seed // Store seed for potential map expansion later
   };
 }
 
-/**
- * Get the next exploration expansion info
- * Similar to floor space expansion - fractal pattern
- */
-export function getNextExplorationExpansion(explorationMap, rules) {
+function isChunkExplored(chunks, x, y) {
+  return chunks.some(c => c.x === x && c.y === y);
+}
+
+function getNextExplorationSpiral(explorationMap, rules) {
+  const { exploredBounds, generatedWidth, generatedHeight, exploredChunks: rawChunks } = explorationMap;
+  const { baseCostPerCell, initialExploredSize, maxGeneratedSize } = rules.exploration;
+  const maxMapSize = maxGeneratedSize || 256;
+
+  // Polyfill chunks if missing (legacy save support)
+  const chunks = rawChunks || [{
+    x: exploredBounds.minX,
+    y: exploredBounds.minY,
+    width: exploredBounds.maxX - exploredBounds.minX + 1,
+    height: exploredBounds.maxY - exploredBounds.minY + 1
+  }];
+
+  // Base origin for spiral expansion (Top-Left of initial exploration)
+  const originX = chunks[0].x;
+  const originY = chunks[0].y;
+
+  const expansionsDone = Math.max(0, chunks.length - 1);
+  const completedCycles = Math.floor(expansionsDone / 12);
+  
+  const cycleBase = (initialExploredSize || 4) * Math.pow(2, completedCycles);
+  const N = cycleBase;
+  const target = N * 2;
+  const chunkSize = N / 2;
+
+  // 1. Right Wing
+  for (let dy = 0; dy < N; dy += chunkSize) {
+    for (let dx = N; dx < target; dx += chunkSize) {
+      const x = originX + dx;
+      const y = originY + dy;
+      
+      // Check boundaries
+      // If chunk extends beyond generated map, force expansion if possible
+      if (x + chunkSize > generatedWidth) {
+        if (generatedWidth < maxMapSize) {
+          return { cellsToExplore: 0, atMapEdge: true };
+        }
+        // If maxed out, allow partial chunk (clamped by expandExploration logic implicitly)
+      }
+      
+      // If start is completely out, we must expand
+      if (x >= generatedWidth) {
+         return { cellsToExplore: 0, atMapEdge: true };
+      }
+
+      if (!isChunkExplored(chunks, x, y)) {
+        return {
+          chunkRect: { x, y, width: chunkSize, height: chunkSize },
+          newBounds: {
+            minX: Math.min(exploredBounds.minX, x),
+            maxX: Math.max(exploredBounds.maxX, x + chunkSize - 1),
+            minY: Math.min(exploredBounds.minY, y),
+            maxY: Math.max(exploredBounds.maxY, y + chunkSize - 1)
+          },
+          cellsToExplore: chunkSize * chunkSize,
+          cost: chunkSize * chunkSize * baseCostPerCell,
+          atMapEdge: x + chunkSize >= generatedWidth && y + chunkSize >= generatedHeight
+        };
+      }
+    }
+  }
+
+  // 2. Top Wing (Down in map coords)
+  for (let dy = N; dy < target; dy += chunkSize) {
+    for (let dx = 0; dx < target; dx += chunkSize) {
+      const x = originX + dx;
+      const y = originY + dy;
+
+      // Check boundaries
+      if (y + chunkSize > generatedHeight) {
+        if (generatedHeight < maxMapSize) {
+          return { cellsToExplore: 0, atMapEdge: true };
+        }
+      }
+      
+      if (y >= generatedHeight) {
+         return { cellsToExplore: 0, atMapEdge: true };
+      }
+
+      if (!isChunkExplored(chunks, x, y)) {
+        return {
+          chunkRect: { x, y, width: chunkSize, height: chunkSize },
+          newBounds: {
+            minX: Math.min(exploredBounds.minX, x),
+            maxX: Math.max(exploredBounds.maxX, x + chunkSize - 1),
+            minY: Math.min(exploredBounds.minY, y),
+            maxY: Math.max(exploredBounds.maxY, y + chunkSize - 1)
+          },
+          cellsToExplore: chunkSize * chunkSize,
+          cost: chunkSize * chunkSize * baseCostPerCell,
+          atMapEdge: x + chunkSize >= generatedWidth && y + chunkSize >= generatedHeight
+        };
+      }
+    }
+  }
+  
+  // If no chunks found, return edge status
+  return {
+    cellsToExplore: 0,
+    atMapEdge: true 
+  };
+}
+
+function getNextExplorationFractal(explorationMap, rules) {
   const { exploredBounds, generatedWidth, generatedHeight } = explorationMap;
   const { baseCostPerCell } = rules.exploration;
 
@@ -275,11 +386,12 @@ export function getNextExplorationExpansion(explorationMap, rules) {
     direction = 'right';
   } else {
     // Both directions blocked - we're at the corner
-    direction = 'right'; // Doesn't matter, cellsToExplore will be 0
+    direction = 'right'; 
   }
 
   // Calculate new bounds
   let newBounds = { ...exploredBounds };
+  let chunkRect = null;
   let cellsToExplore = 0;
 
   if (direction === 'right') {
@@ -287,28 +399,52 @@ export function getNextExplorationExpansion(explorationMap, rules) {
     const actualChunk = newMaxX - exploredBounds.maxX;
     cellsToExplore = actualChunk * currentHeight;
     newBounds.maxX = newMaxX;
+    chunkRect = {
+      x: exploredBounds.maxX + 1,
+      y: exploredBounds.minY,
+      width: actualChunk,
+      height: currentHeight
+    };
   } else {
     const newMaxY = Math.min(exploredBounds.maxY + chunkSize, generatedHeight - 1);
     const actualChunk = newMaxY - exploredBounds.maxY;
     const newWidth = exploredBounds.maxX - exploredBounds.minX + 1;
     cellsToExplore = actualChunk * newWidth;
     newBounds.maxY = newMaxY;
+    chunkRect = {
+      x: exploredBounds.minX,
+      y: exploredBounds.maxY + 1,
+      width: newWidth,
+      height: actualChunk
+    };
   }
 
-  // Check if we've hit map boundaries (both edges)
   const atMapEdge = (
     newBounds.maxX >= generatedWidth - 1 &&
     newBounds.maxY >= generatedHeight - 1
   );
 
   return {
-    direction,
-    chunkSize,
+    chunkRect,
     newBounds,
     cellsToExplore,
     cost: cellsToExplore * baseCostPerCell,
     atMapEdge
   };
+}
+
+/**
+ * Get the next exploration expansion info
+ */
+export function getNextExplorationExpansion(explorationMap, rules) {
+  // Use same setting as floor space for consistency
+  const type = rules.floorSpace.expansionType || 'spiral';
+
+  if (type === 'fractal') {
+    return getNextExplorationFractal(explorationMap, rules);
+  }
+
+  return getNextExplorationSpiral(explorationMap, rules);
 }
 
 /**

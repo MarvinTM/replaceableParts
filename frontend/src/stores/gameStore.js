@@ -140,6 +140,18 @@ const useGameStore = create(
         return get().dispatch({ type: 'UNLOCK_EXPLORATION_NODE', payload: { x, y } });
       },
 
+      setExpansionType: (type) => {
+        set((state) => ({
+          rules: {
+            ...state.rules,
+            floorSpace: {
+              ...state.rules.floorSpace,
+              expansionType: type
+            }
+          }
+        }), false, 'setExpansionType');
+      },
+
       // Game loop controls
       startGameLoop: (tickMs = 1000) => {
         const { isRunning, tickInterval } = get();

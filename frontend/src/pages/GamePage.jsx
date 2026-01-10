@@ -262,7 +262,6 @@ function ExplorationTab() {
             </Typography>
           </Box>
           <ExplorationCanvas
-            key={`${exploredBounds.minX}-${exploredBounds.maxX}-${exploredBounds.minY}-${exploredBounds.maxY}`}
             explorationMap={explorationMap}
             rules={rules}
             onTileClick={handleTileClick}

@@ -65,6 +65,97 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
     onTileClickRef.current = onTileClick;
   }, [onTileClick]);
 
+  const render = () => {
+    if (!worldRef.current || !explorationMap) return;
+
+    const app = appRef.current;
+    const world = worldRef.current;
+    const { exploredBounds, generatedWidth, generatedHeight, tiles } = explorationMap;
+    const terrainTypes = rules?.exploration?.terrainTypes || {};
+
+    // Clear previous content
+    world.removeChildren();
+
+    // Calculate center and zoom to fit explored area
+    // Only re-center if we haven't manipulated the view? 
+    // For now, let's keep the re-centering behavior as it ensures new chunks are visible
+    // Ideally we might want to preserve user pan/zoom unless bounds change significantly.
+    // Given the 'key' behavior previously forced re-center, this preserves existing UX.
+    
+    const centerX = (exploredBounds.minX + exploredBounds.maxX) / 2;
+    const centerY = (exploredBounds.minY + exploredBounds.maxY) / 2;
+    const center = gridToScreen(centerX, centerY);
+
+    const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
+    const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
+    const padding = 4;
+    const totalWidth = (exploredWidth + padding * 2) * TILE_WIDTH;
+    const totalHeight = (exploredHeight + padding * 2) * TILE_HEIGHT;
+    const scaleX = app.screen.width / totalWidth;
+    const scaleY = app.screen.height / totalHeight;
+    const initialScale = Math.max(Math.min(scaleX, scaleY, 2), 0.5);
+
+    world.scale.set(initialScale);
+    world.x = app.screen.width / 2 - center.x * initialScale;
+    world.y = app.screen.height / 2 - center.y * initialScale;
+
+    // Create containers for different layers
+    const fogContainer = new Container();
+    const terrainContainer = new Container();
+    const nodeContainer = new Container();
+
+    // Calculate visible bounds (explored area plus some fog around it)
+    const fogPadding = 3;
+    const visibleBounds = {
+      minX: Math.max(0, exploredBounds.minX - fogPadding),
+      maxX: Math.min(generatedWidth - 1, exploredBounds.maxX + fogPadding),
+      minY: Math.max(0, exploredBounds.minY - fogPadding),
+      maxY: Math.min(generatedHeight - 1, exploredBounds.maxY + fogPadding)
+    };
+
+    // Draw visible tiles
+    for (let y = visibleBounds.minY; y <= visibleBounds.maxY; y++) {
+      for (let x = visibleBounds.minX; x <= visibleBounds.maxX; x++) {
+        const key = `${x},${y}`;
+        const tile = tiles[key];
+        if (!tile) continue;
+
+        const screenPos = gridToScreen(x, y);
+
+        if (tile.explored) {
+          // Draw terrain tile
+          const terrainGraphics = new Graphics();
+          const terrainConfig = terrainTypes[tile.terrain];
+          const color = terrainConfig?.color || 0x808080;
+          drawIsometricTile(terrainGraphics, screenPos.x, screenPos.y, color, 0x000000);
+          terrainContainer.addChild(terrainGraphics);
+
+          // Draw extraction node indicator if present
+          if (tile.extractionNode) {
+            const nodeGraphics = new Graphics();
+            const nodeColor = tile.extractionNode.unlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
+            drawNodeIndicator(nodeGraphics, screenPos.x, screenPos.y, nodeColor);
+            nodeContainer.addChild(nodeGraphics);
+          }
+        } else {
+          // Draw fog tile
+          const fogGraphics = new Graphics();
+          drawIsometricTile(fogGraphics, screenPos.x, screenPos.y, FOG_COLOR, 0x0a0a14);
+          fogContainer.addChild(fogGraphics);
+        }
+      }
+    }
+
+    world.addChild(terrainContainer);
+    world.addChild(fogContainer);
+    world.addChild(nodeContainer);
+  };
+
+  // Re-render when map changes
+  useEffect(() => {
+    render();
+  }, [explorationMap]);
+
   // Initialize PixiJS Application
   useEffect(() => {
     if (!containerRef.current || appRef.current) return;
@@ -97,80 +188,8 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
       app.stage.addChild(world);
       worldRef.current = world;
 
-      // Render the map if we have exploration data
-      if (explorationMap) {
-        const { exploredBounds, generatedWidth, generatedHeight, tiles } = explorationMap;
-        const terrainTypes = rules?.exploration?.terrainTypes || {};
-
-        // Calculate center and zoom to fit explored area
-        const centerX = (exploredBounds.minX + exploredBounds.maxX) / 2;
-        const centerY = (exploredBounds.minY + exploredBounds.maxY) / 2;
-        const center = gridToScreen(centerX, centerY);
-
-        const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
-        const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
-        const padding = 4;
-        const totalWidth = (exploredWidth + padding * 2) * TILE_WIDTH;
-        const totalHeight = (exploredHeight + padding * 2) * TILE_HEIGHT;
-        const scaleX = app.screen.width / totalWidth;
-        const scaleY = app.screen.height / totalHeight;
-        const initialScale = Math.max(Math.min(scaleX, scaleY, 2), 0.5);
-
-        world.scale.set(initialScale);
-        world.x = app.screen.width / 2 - center.x * initialScale;
-        world.y = app.screen.height / 2 - center.y * initialScale;
-
-        // Create containers for different layers
-        const fogContainer = new Container();
-        const terrainContainer = new Container();
-        const nodeContainer = new Container();
-
-        // Calculate visible bounds (explored area plus some fog around it)
-        const fogPadding = 3;
-        const visibleBounds = {
-          minX: Math.max(0, exploredBounds.minX - fogPadding),
-          maxX: Math.min(generatedWidth - 1, exploredBounds.maxX + fogPadding),
-          minY: Math.max(0, exploredBounds.minY - fogPadding),
-          maxY: Math.min(generatedHeight - 1, exploredBounds.maxY + fogPadding)
-        };
-
-        // Draw visible tiles
-        for (let y = visibleBounds.minY; y <= visibleBounds.maxY; y++) {
-          for (let x = visibleBounds.minX; x <= visibleBounds.maxX; x++) {
-            const key = `${x},${y}`;
-            const tile = tiles[key];
-            if (!tile) continue;
-
-            const screenPos = gridToScreen(x, y);
-
-            if (tile.explored) {
-              // Draw terrain tile
-              const terrainGraphics = new Graphics();
-              const terrainConfig = terrainTypes[tile.terrain];
-              const color = terrainConfig?.color || 0x808080;
-              drawIsometricTile(terrainGraphics, screenPos.x, screenPos.y, color, 0x000000);
-              terrainContainer.addChild(terrainGraphics);
-
-              // Draw extraction node indicator if present
-              if (tile.extractionNode) {
-                const nodeGraphics = new Graphics();
-                const nodeColor = tile.extractionNode.unlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
-                drawNodeIndicator(nodeGraphics, screenPos.x, screenPos.y, nodeColor);
-                nodeContainer.addChild(nodeGraphics);
-              }
-            } else {
-              // Draw fog tile
-              const fogGraphics = new Graphics();
-              drawIsometricTile(fogGraphics, screenPos.x, screenPos.y, FOG_COLOR, 0x0a0a14);
-              fogContainer.addChild(fogGraphics);
-            }
-          }
-        }
-
-        world.addChild(terrainContainer);
-        world.addChild(fogContainer);
-        world.addChild(nodeContainer);
-      }
+      // Initial render
+      render();
 
       // Setup zoom (mouse wheel)
       const canvas = app.canvas;

@@ -350,6 +350,7 @@ export const defaultRules = {
   // Floor Space (2D Grid with fractal expansion)
   // ============================================================================
   floorSpace: {
+    expansionType: 'spiral', // 'spiral' (chunks) or 'fractal' (classic strips)
     initialWidth: 8,         // Starting grid width
     initialHeight: 8,        // Starting grid height
     initialChunkSize: 2,     // Starting expansion chunk size (2x2)

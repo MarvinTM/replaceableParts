@@ -198,10 +198,23 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
 
     const hasFloorSprites = assets?.floor.light && assets?.floor.dark;
 
+    // Helper to check if a tile is valid
+    const isTileValid = (tx, ty) => {
+      if (!floorSpace.chunks) return true; // Legacy support or initial load
+      // Simple check: is (tx, ty) inside any chunk?
+      // Since tiles are 1x1, we just check point inclusion
+      return floorSpace.chunks.some(c => 
+        tx >= c.x && tx < c.x + c.width && 
+        ty >= c.y && ty < c.y + c.height
+      );
+    };
+
     if (hasFloorSprites) {
       // Use sprite tiles
       for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
+          if (!isTileValid(x, y)) continue;
+
           const screenPos = gridToScreen(x, y);
           const texture = (x + y) % 2 === 0 ? assets.floor.light : assets.floor.dark;
           const sprite = new Sprite(texture);
@@ -219,6 +232,8 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
       const floorGraphics = new Graphics();
       for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
+          if (!isTileValid(x, y)) continue;
+
           const screenPos = gridToScreen(x, y);
           const fillColor = (x + y) % 2 === 0 ? COLORS.floorLight : COLORS.floorDark;
           drawIsometricTile(floorGraphics, screenPos.x, screenPos.y, fillColor, COLORS.floorLine);
@@ -259,14 +274,14 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         displayObject.x = screenPos.x;
         displayObject.y = screenPos.y + TILE_HEIGHT / 2;
         displayObject.scale.set(size);
-        displayObject.zIndex = gen.x + gen.y;
+        displayObject.zIndex = gen.x - gen.y;
         structuresContainer.addChild(displayObject);
       } else {
         // Fallback to graphics
         const genGraphics = new Graphics();
         const boxHeight = 20 + size * 10;
         drawStructure(genGraphics, screenPos.x, screenPos.y, size, boxHeight, COLORS.generator);
-        genGraphics.zIndex = gen.x + gen.y;
+        genGraphics.zIndex = gen.x - gen.y;
         structuresContainer.addChild(genGraphics);
       }
     });
@@ -304,7 +319,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         displayObject.x = screenPos.x;
         displayObject.y = screenPos.y + TILE_HEIGHT / 2;
         displayObject.scale.set(size);
-        displayObject.zIndex = machine.x + machine.y;
+        displayObject.zIndex = machine.x - machine.y;
         structuresContainer.addChild(displayObject);
       } else {
         // Fallback to graphics
@@ -312,7 +327,7 @@ export default function FactoryCanvas({ floorSpace, machines, generators }) {
         const boxHeight = 25 + size * 8;
         const color = getMachineColor(machine.status, machine.enabled);
         drawStructure(machineGraphics, screenPos.x, screenPos.y, size, boxHeight, color);
-        machineGraphics.zIndex = machine.x + machine.y;
+        machineGraphics.zIndex = machine.x - machine.y;
         structuresContainer.addChild(machineGraphics);
       }
     });

@@ -16,9 +16,12 @@ export const TILE_HEIGHT = 32;
  * @returns {{ x: number, y: number }} Screen coordinates
  */
 export function gridToScreen(gridX, gridY) {
+  // Rotated 90 degrees clockwise
+  // +X -> Down Right
+  // +Y -> Up Right
   return {
-    x: (gridX - gridY) * (TILE_WIDTH / 2),
-    y: (gridX + gridY) * (TILE_HEIGHT / 2)
+    x: (gridX + gridY) * (TILE_WIDTH / 2),
+    y: (gridX - gridY) * (TILE_HEIGHT / 2)
   };
 }
 
@@ -29,9 +32,10 @@ export function gridToScreen(gridX, gridY) {
  * @returns {{ x: number, y: number }} Grid coordinates (may need rounding)
  */
 export function screenToGrid(screenX, screenY) {
+  // Inverse of rotated projection
   return {
     x: (screenX / (TILE_WIDTH / 2) + screenY / (TILE_HEIGHT / 2)) / 2,
-    y: (screenY / (TILE_HEIGHT / 2) - screenX / (TILE_WIDTH / 2)) / 2
+    y: (screenX / (TILE_WIDTH / 2) - screenY / (TILE_HEIGHT / 2)) / 2
   };
 }
 
