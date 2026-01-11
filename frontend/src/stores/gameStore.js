@@ -107,6 +107,10 @@ const useGameStore = create(
         return get().dispatch({ type: 'REMOVE_GENERATOR', payload: { generatorId } });
       },
 
+      moveGenerator: (generatorId, x, y) => {
+        return get().dispatch({ type: 'MOVE_GENERATOR', payload: { generatorId, x, y } });
+      },
+
       buyFloorSpace: () => {
         return get().dispatch({ type: 'BUY_FLOOR_SPACE' });
       },

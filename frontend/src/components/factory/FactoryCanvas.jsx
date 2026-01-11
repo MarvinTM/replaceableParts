@@ -255,7 +255,7 @@ export default function FactoryCanvas({
   dragState,
   onDrop,
   onMachineClick,
-  onMachineDragStart,
+  onStructureDragStart,
   engineState
 }) {
   const containerRef = useRef(null);
@@ -272,8 +272,8 @@ export default function FactoryCanvas({
   // Drag-and-drop placement state
   const [hoverGridPos, setHoverGridPos] = useState({ x: -1, y: -1 });
 
-  // Machine drag tracking (for repositioning existing machines)
-  const machineDragRef = useRef({ machine: null, startX: 0, startY: 0, hasMoved: false });
+  // Structure drag tracking (machines and generators)
+  const structureDragRef = useRef({ type: null, item: null, startX: 0, startY: 0, hasMoved: false });
 
   // Clear hover position when drag ends
   useEffect(() => {
@@ -565,14 +565,14 @@ export default function FactoryCanvas({
     // === RENDER PLACEMENT OVERLAY (when dragging) ===
     if (dragState?.isDragging && hoverGridPos.x >= 0 && hoverGridPos.y >= 0) {
       const overlayGraphics = new Graphics();
-      const { sizeX, sizeY, movingMachineId } = dragState;
+      const { sizeX, sizeY, movingStructureId } = dragState;
 
       // Check if placement is valid
       let isValid = false;
       if (engineState) {
-        if (movingMachineId) {
-          // When moving a machine, exclude it from collision detection
-          const placementsWithoutThis = engineState.floorSpace.placements.filter(p => p.id !== movingMachineId);
+        if (movingStructureId) {
+          // When moving a structure, exclude it from collision detection
+          const placementsWithoutThis = engineState.floorSpace.placements.filter(p => p.id !== movingStructureId);
           const tempState = {
             ...engineState,
             floorSpace: { ...engineState.floorSpace, placements: placementsWithoutThis }
@@ -908,30 +908,57 @@ export default function FactoryCanvas({
     setHoverGridPos({ x: -1, y: -1 });
   }, []);
 
-  // Find machine at world coordinates (for click/drag detection)
-  const findMachineAtWorldPos = useCallback((worldX, worldY) => {
-    if (!machines || !rules) return null;
+  // Find structure (machine or generator) at world coordinates
+  const findStructureAtWorldPos = useCallback((worldX, worldY) => {
+    if (!rules) return null;
 
-    const sizeX = rules.machines?.baseSizeX || 1;
-    const sizeY = rules.machines?.baseSizeY || 1;
+    // Helper to check collision with a list of items
+    const checkItems = (items, type) => {
+      if (!items) return null;
+      for (const item of items) {
+        let sizeX = 1;
+        let sizeY = 1;
 
-    for (const machine of machines) {
-      const structureScreenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
+        if (type === 'machine') {
+           sizeX = rules.machines?.baseSizeX || 1;
+           sizeY = rules.machines?.baseSizeY || 1;
+        } else if (type === 'generator') {
+           // Look up generator size
+           if (rules.generators && rules.generators.types) {
+             const genConfig = rules.generators.types.find(g => g.id === item.type);
+             if (genConfig) {
+               sizeX = genConfig.sizeX;
+               sizeY = genConfig.sizeY;
+             }
+           }
+        }
 
-      // Define bounding box in world coordinates (including label)
-      const labelTop = structureScreenPos.y - 45;
-      const machineBottom = structureScreenPos.y + TILE_HEIGHT / 2 + 10;
-      const halfWidth = (sizeX + sizeY) * TILE_WIDTH / 4 + 20;
+        const structureScreenPos = getStructureScreenPosition(item.x, item.y, sizeX, sizeY);
 
-      const left = structureScreenPos.x - halfWidth;
-      const right = structureScreenPos.x + halfWidth;
+        // Define bounding box in world coordinates (including label area for machines roughly)
+        // Note: Generators might be smaller, but similar hit box logic is fine
+        const labelTop = structureScreenPos.y - 45;
+        const structureBottom = structureScreenPos.y + TILE_HEIGHT / 2 + 10;
+        const halfWidth = (sizeX + sizeY) * TILE_WIDTH / 4 + 20;
 
-      if (worldX >= left && worldX <= right && worldY >= labelTop && worldY <= machineBottom) {
-        return machine;
+        const left = structureScreenPos.x - halfWidth;
+        const right = structureScreenPos.x + halfWidth;
+
+        if (worldX >= left && worldX <= right && worldY >= labelTop && worldY <= structureBottom) {
+          return item;
+        }
       }
-    }
+      return null;
+    };
+
+    const machine = checkItems(machines, 'machine');
+    if (machine) return { type: 'machine', item: machine };
+
+    const generator = checkItems(generators, 'generator');
+    if (generator) return { type: 'generator', item: generator };
+
     return null;
-  }, [machines, rules]);
+  }, [machines, generators, rules]);
 
   // Handle mouse down to detect potential machine drag OR start camera pan
   const handleMouseDown = useCallback((e) => {
@@ -957,15 +984,16 @@ export default function FactoryCanvas({
     const worldX = (canvasX - world.x) / world.scale.x;
     const worldY = (canvasY - world.y) / world.scale.y;
 
-    const machine = findMachineAtWorldPos(worldX, worldY);
+    const structureFound = findStructureAtWorldPos(worldX, worldY);
     
     // Check if click is inside factory bounds (floor OR upper walls)
     const isInsideFactory = isPointOverFactory(worldX, worldY);
 
-    if (machine) {
-      // Priority 1: Machine Drag (Left click on machine)
-      machineDragRef.current = {
-        machine,
+    if (structureFound) {
+      // Priority 1: Structure Drag (Left click on machine/generator)
+      structureDragRef.current = {
+        type: structureFound.type,
+        item: structureFound.item,
         startX: e.clientX,
         startY: e.clientY,
         hasMoved: false
@@ -978,69 +1006,65 @@ export default function FactoryCanvas({
       }
     }
     // Else: Left click on factory (floor or wall) -> Do Nothing (prevent pan)
-  }, [findMachineAtWorldPos, isPointOverFactory]);
+  }, [findStructureAtWorldPos, isPointOverFactory]);
 
-  // Handle mouse move for machine drag
+  // Handle mouse move for structure drag
   const handleMouseMove = useCallback((e) => {
-    // Global mouse move for panning is handled by window listener in initPixi
-    // This handler is for machine dragging and hovering state
+    const dragData = structureDragRef.current;
+    if (!dragData.item) return;
 
-    // Updating isHovering state logic moved here to use React state/refs correctly if needed
-    // But the original implementation used a window listener inside useEffect for hover
-    // We need to update that one or unify.
-    // The useEffect at line 734 adds 'mousemove' to window calling handleMouseMove (the one from initPixi).
-    // THAT handleMouseMove (line 687) is defined inside useEffect closure.
-    // It doesn't have access to the new isPointOverFactory unless we refactor.
-    
-    // However, this handleMouseMove (React hook) is attached to the DIV.
-    
-    // Let's rely on the React Handler for dragging machine, 
-    // but we need to fix the Hover detection in the useEffect or move it here.
-    
-    // The previous code had `setIsHovering` inside the PIXI loop.
-    // Let's move handling of `machineDragRef` here (it was already here).
-    
-    const dragData = machineDragRef.current;
-    if (dragData.machine) {
-      const dx = Math.abs(e.clientX - dragData.startX);
-      const dy = Math.abs(e.clientY - dragData.startY);
+    const dx = Math.abs(e.clientX - dragData.startX);
+    const dy = Math.abs(e.clientY - dragData.startY);
 
-      // If moved more than 5px, start the machine drag
-      if (!dragData.hasMoved && (dx > 5 || dy > 5)) {
-        dragData.hasMoved = true;
+    // If moved more than 5px, start the drag
+    if (!dragData.hasMoved && (dx > 5 || dy > 5)) {
+      dragData.hasMoved = true;
 
-        const sizeX = rules?.machines?.baseSizeX || 1;
-        const sizeY = rules?.machines?.baseSizeY || 1;
-
-        // Notify parent to start machine move mode
-        onMachineDragStart?.(dragData.machine, sizeX, sizeY);
-      }
-
-      // Update hover position during drag
-      if (dragData.hasMoved && containerRef.current && worldRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const world = worldRef.current;
-        const canvasX = e.clientX - rect.left;
-        const canvasY = e.clientY - rect.top;
-        const worldX = (canvasX - world.x) / world.scale.x;
-        const worldY = (canvasY - world.y) / world.scale.y;
-        const gridPos = screenToGrid(worldX, worldY);
-
-        setHoverGridPos({
-          x: Math.floor(gridPos.x),
-          y: Math.floor(gridPos.y)
-        });
+      // Determine size for drag feedback
+      let sizeX = 1;
+      let sizeY = 1;
+      
+      if (dragData.type === 'machine') {
+         sizeX = rules?.machines?.baseSizeX || 1;
+         sizeY = rules?.machines?.baseSizeY || 1;
+         onStructureDragStart?.(dragData.item, 'machine', sizeX, sizeY);
+      } else if (dragData.type === 'generator') {
+         // Determine generator size
+         if (rules.generators && rules.generators.types) {
+             const genConfig = rules.generators.types.find(g => g.id === dragData.item.type);
+             if (genConfig) {
+               sizeX = genConfig.sizeX;
+               sizeY = genConfig.sizeY;
+             }
+         }
+         onStructureDragStart?.(dragData.item, 'generator', sizeX, sizeY);
       }
     }
-  }, [rules, onMachineDragStart]);
+
+    // Update hover position during drag
+    if (dragData.hasMoved && containerRef.current && worldRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const world = worldRef.current;
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+      const worldX = (canvasX - world.x) / world.scale.x;
+      const worldY = (canvasY - world.y) / world.scale.y;
+      const gridPos = screenToGrid(worldX, worldY);
+
+      setHoverGridPos({
+        x: Math.floor(gridPos.x),
+        y: Math.floor(gridPos.y)
+      });
+    }
+  }, [rules, onStructureDragStart]);
 
 
-  // Handle mouse up to end machine drag
+  // Handle mouse up to end drag OR click (popup)
   const handleMouseUp = useCallback((e) => {
-    const dragData = machineDragRef.current;
+    const dragData = structureDragRef.current;
 
-    if (dragData.machine && dragData.hasMoved) {
-      // Get the drop position
+    // 1. Handle Drag End (Drop)
+    if (dragData.item && dragData.hasMoved) {
       if (containerRef.current && worldRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const world = worldRef.current;
@@ -1050,66 +1074,32 @@ export default function FactoryCanvas({
         const worldY = (canvasY - world.y) / world.scale.y;
         const gridPos = screenToGrid(worldX, worldY);
 
-        // Call onDrop with machine move info
-        onDrop?.('machine-move', dragData.machine.id, Math.floor(gridPos.x), Math.floor(gridPos.y));
+        // Call onDrop with appropriate move info
+        const moveType = dragData.type === 'machine' ? 'machine-move' : 'generator-move';
+        onDrop?.(moveType, dragData.item.id, Math.floor(gridPos.x), Math.floor(gridPos.y));
       }
+    } 
+    // 2. Handle Click (No Move) - Open Popup
+    else if (dragData.item && !dragData.hasMoved) {
+        if (dragData.type === 'machine' && onMachineClick && containerRef.current && worldRef.current) {
+            // Re-calculate screen position for popup
+            const rect = containerRef.current.getBoundingClientRect();
+            const world = worldRef.current;
+            const sizeX = rules?.machines?.baseSizeX || 1;
+            const sizeY = rules?.machines?.baseSizeY || 1;
+            const structureScreenPos = getStructureScreenPosition(dragData.item.x, dragData.item.y, sizeX, sizeY);
+            
+            const screenX = structureScreenPos.x * world.scale.x + world.x + rect.left;
+            const screenY = structureScreenPos.y * world.scale.y + world.y + rect.top;
+
+            onMachineClick(dragData.item, { left: screenX, top: screenY });
+        }
     }
 
     // Reset drag state
-    machineDragRef.current = { machine: null, startX: 0, startY: 0, hasMoved: false };
+    structureDragRef.current = { type: null, item: null, startX: 0, startY: 0, hasMoved: false };
     setHoverGridPos({ x: -1, y: -1 });
-  }, [onDrop]);
-
-  // Handle right-click context menu to show machine popup
-  const handleContextMenu = useCallback((e) => {
-    e.preventDefault();
-
-    // Don't fire if we just finished a drag (though unlikely with right click, good safely)
-    if (machineDragRef.current.hasMoved) {
-      return;
-    }
-
-    if (!onMachineClick || !machines || !rules) return;
-    if (!containerRef.current || !worldRef.current) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const world = worldRef.current;
-
-    // Convert click to world coordinates
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    const worldX = (canvasX - world.x) / world.scale.x;
-    const worldY = (canvasY - world.y) / world.scale.y;
-
-    const sizeX = rules.machines?.baseSizeX || 1;
-    const sizeY = rules.machines?.baseSizeY || 1;
-
-    // Check if click is within any machine's bounding box (including label area)
-    for (const machine of machines) {
-      const structureScreenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
-
-      // Define bounding box in world coordinates
-      // Label is at y - 30, machine extends down from screenPos
-      const labelTop = structureScreenPos.y - 45; // Label position with some padding
-      const machineBottom = structureScreenPos.y + TILE_HEIGHT / 2 + 10;
-      const halfWidth = (sizeX + sizeY) * TILE_WIDTH / 4 + 20; // Approximate width with padding
-
-      const left = structureScreenPos.x - halfWidth;
-      const right = structureScreenPos.x + halfWidth;
-      const top = labelTop;
-      const bottom = machineBottom;
-
-      // Check if click is within this bounding box
-      if (worldX >= left && worldX <= right && worldY >= top && worldY <= bottom) {
-        // Calculate screen position for the popup
-        const screenX = structureScreenPos.x * world.scale.x + world.x + rect.left;
-        const screenY = structureScreenPos.y * world.scale.y + world.y + rect.top;
-
-        onMachineClick(machine, { left: screenX, top: screenY });
-        return;
-      }
-    }
-  }, [onMachineClick, machines, rules]);
+  }, [onDrop, onMachineClick, rules]);
 
   // Enhanced Mouse Move to handle both machine drag AND hover detection
   const handleMouseMoveEnhanced = useCallback((e) => {
@@ -1136,7 +1126,7 @@ export default function FactoryCanvas({
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onDragLeave={handleDragLeave}
-      onContextMenu={handleContextMenu}
+      onContextMenu={(e) => e.preventDefault()}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMoveEnhanced}
       onMouseUp={handleMouseUp}

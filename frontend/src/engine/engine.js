@@ -773,7 +773,48 @@ function removeGenerator(state, rules, payload) {
   return { state: newState, error: null };
 }
 
+function moveGenerator(state, rules, payload) {
+  const newState = deepClone(state);
+  const { generatorId, x, y } = payload;
 
+  const generator = newState.generators.find(g => g.id === generatorId);
+  if (!generator) {
+    return { state: newState, error: 'Generator not found' };
+  }
+
+  // Get size from rules
+  const genConfig = rules.generators.types.find(g => g.id === generator.type);
+  if (!genConfig) {
+      // Should not happen if data is consistent
+      return { state: newState, error: 'Generator type configuration not found' };
+  }
+  const sizeX = genConfig.sizeX;
+  const sizeY = genConfig.sizeY;
+
+  // Check if new position is valid (excluding the generator being moved)
+  const placementsWithoutThis = newState.floorSpace.placements.filter(p => p.id !== generatorId);
+  
+  // Create temp state with placements removed for collision check
+  const tempState = { ...newState, floorSpace: { ...newState.floorSpace, placements: placementsWithoutThis } };
+
+  const placement = canPlaceAt(tempState, x, y, sizeX, sizeY, rules);
+  if (!placement.valid) {
+    return { state: newState, error: placement.error };
+  }
+
+  // Update generator position
+  generator.x = x;
+  generator.y = y;
+
+  // Update floor placement
+  const placementEntry = newState.floorSpace.placements.find(p => p.id === generatorId);
+  if (placementEntry) {
+    placementEntry.x = x;
+    placementEntry.y = y;
+  }
+
+  return { state: newState, error: null };
+}
 
 function sellGoods(state, rules, payload) {
   const newState = deepClone(state);
@@ -1066,6 +1107,12 @@ export function engine(state, rules, action) {
 
     case 'REMOVE_GENERATOR':
       return removeGenerator(state, rules, action.payload);
+
+    case 'MOVE_GENERATOR':
+      return moveGenerator(state, rules, action.payload);
+
+    case 'MOVE_GENERATOR':
+      return moveGenerator(state, rules, action.payload);
 
     case 'BUY_FLOOR_SPACE':
       return buyFloorSpace(state, rules, action.payload);

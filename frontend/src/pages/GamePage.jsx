@@ -73,6 +73,7 @@ function FactoryTab() {
   const assignRecipe = useGameStore((state) => state.assignRecipe);
   const toggleMachine = useGameStore((state) => state.toggleMachine);
   const moveMachine = useGameStore((state) => state.moveMachine);
+  const moveGenerator = useGameStore((state) => state.moveGenerator);
 
   // Drag state for placing machines/generators or moving existing ones
   const [dragState, setDragState] = useState({
@@ -81,7 +82,9 @@ function FactoryTab() {
     itemId: null,
     sizeX: 0,
     sizeY: 0,
-    movingMachineId: null // If set, we're moving an existing machine
+    sizeX: 0,
+    sizeY: 0,
+    movingStructureId: null // If set, we're moving an existing structure (machine or generator)
   });
 
   // Selected machine ID for machine info popup (store ID, not object, to get fresh state)
@@ -109,22 +112,26 @@ function FactoryTab() {
 
   // Drag handlers for placing machines/generators
   const handleDragStart = (itemType, itemId, sizeX, sizeY) => {
-    setDragState({ isDragging: true, itemType, itemId, sizeX, sizeY, movingMachineId: null });
+    setDragState({ isDragging: true, itemType, itemId, sizeX, sizeY, movingStructureId: null });
   };
 
   const handleDragEnd = () => {
-    setDragState({ isDragging: false, itemType: null, itemId: null, sizeX: 0, sizeY: 0, movingMachineId: null });
+    setDragState({ isDragging: false, itemType: null, itemId: null, sizeX: 0, sizeY: 0, movingStructureId: null });
   };
 
-  // Handle starting a drag on an existing machine (for repositioning)
-  const handleMachineDragStart = (machine, sizeX, sizeY) => {
+  // Handle starting a drag on an existing structure (for repositioning)
+  const handleStructureDragStart = (item, type, sizeX, sizeY) => {
+    // Map internal type to drag itemType
+    const itemType = type === 'machine' ? 'machine-move' : 'generator-move';
+    const itemId = item.id;
+
     setDragState({
       isDragging: true,
-      itemType: 'machine',
-      itemId: rules.machines.itemId,
+      itemType,
+      itemId,
       sizeX,
       sizeY,
-      movingMachineId: machine.id
+      movingStructureId: item.id
     });
   };
 
@@ -135,6 +142,12 @@ function FactoryTab() {
       const result = moveMachine(machineId, gridX, gridY);
       if (result.error) {
         console.warn('Failed to move machine:', result.error);
+      }
+    } else if (itemType === 'generator-move') {
+      const generatorId = itemId;
+      const result = moveGenerator(generatorId, gridX, gridY);
+      if (result.error) {
+        console.warn('Failed to move generator:', result.error);
       }
     } else if (itemType === 'machine') {
       const result = addMachine(gridX, gridY);
@@ -205,7 +218,7 @@ function FactoryTab() {
             dragState={dragState}
             onDrop={handleDrop}
             onMachineClick={handleMachineClick}
-            onMachineDragStart={handleMachineDragStart}
+            onStructureDragStart={handleStructureDragStart}
             engineState={engineState}
           />
         </CardContent>
