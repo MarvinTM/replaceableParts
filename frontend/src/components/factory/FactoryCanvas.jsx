@@ -36,10 +36,18 @@ const ASSET_MANIFEST = {
   }
 };
 
-// Animation config (frames per sprite sheet, animation speed)
+// Animation config (frames per sprite sheet, animation speed, random intervals)
 const ANIM_CONFIG = {
-  machine: { frames: 4, speed: 0.1 },
-  generator: { frames: 4, speed: 0.08 }
+  machine: {
+    frames: 4,
+    speed: 0.1,
+    randomInterval: { min: 10000, max: 20000 } // milliseconds between animations
+  },
+  generator: {
+    frames: 4,
+    speed: 0.08,
+    randomInterval: { min: 1000, max: 2000 } // milliseconds between animations
+  }
 };
 
 // Text style for machine labels
@@ -278,11 +286,36 @@ export default function FactoryCanvas({
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
 
+  // Force re-render when animation states change
+  const [, setAnimationTrigger] = useState(0);
+  const forceRender = useCallback(() => setAnimationTrigger(t => t + 1), []);
+  const forceRenderRef = useRef(forceRender);
+  forceRenderRef.current = forceRender;
+
   // Drag-and-drop placement state
   const [hoverGridPos, setHoverGridPos] = useState({ x: -1, y: -1 });
 
   // Structure drag tracking (machines and generators)
   const structureDragRef = useRef({ type: null, item: null, startX: 0, startY: 0, hasMoved: false });
+
+  // Animation state tracking: stores nextTriggerTime for each machine/generator by ID
+  const animationStateRef = useRef({});
+
+  // Store AnimatedSprite references for controlling playback
+  const animatedSpritesRef = useRef({});
+
+  // Track which machines/generators are currently playing animation
+  const currentlyAnimatingRef = useRef({});
+
+  // Store latest machines/generators for ticker access
+  const machinesRef = useRef(machines);
+  const generatorsRef = useRef(generators);
+
+  // Update refs when machines/generators change
+  useEffect(() => {
+    machinesRef.current = machines;
+    generatorsRef.current = generators;
+  }, [machines, generators]);
 
   // Clear hover position when drag ends
   useEffect(() => {
@@ -290,6 +323,38 @@ export default function FactoryCanvas({
       setHoverGridPos({ x: -1, y: -1 });
     }
   }, [dragState?.isDragging]);
+
+  // Helper to determine if an animation should be triggered
+  const shouldTriggerAnimation = useCallback((id, structureType) => {
+    const now = Date.now();
+    const state = animationStateRef.current[id];
+
+    // Get interval config based on structure type
+    const intervalConfig = structureType === 'machine'
+      ? ANIM_CONFIG.machine.randomInterval
+      : ANIM_CONFIG.generator.randomInterval;
+
+    // Initialize if first time
+    if (!state) {
+      const randomDelay = Math.random() * (intervalConfig.max - intervalConfig.min) + intervalConfig.min;
+      animationStateRef.current[id] = {
+        nextTriggerTime: now + randomDelay
+      };
+      return false;
+    }
+
+    // Check if it's time to trigger
+    if (now >= state.nextTriggerTime) {
+      // Schedule next trigger
+      const randomDelay = Math.random() * (intervalConfig.max - intervalConfig.min) + intervalConfig.min;
+      animationStateRef.current[id] = {
+        nextTriggerTime: now + randomDelay
+      };
+      return true;
+    }
+
+    return false;
+  }, []);
 
   const render = useCallback(() => {
     if (!worldRef.current || !floorSpace) return;
@@ -299,6 +364,19 @@ export default function FactoryCanvas({
 
     // Clear previous content
     world.removeChildren();
+
+    // Clean up animated sprite refs for removed machines/generators
+    const currentKeys = new Set([
+      ...(machines || []).map(m => `machine-${m.id}`),
+      ...(generators || []).map(g => `generator-${g.id}`)
+    ]);
+    Object.keys(animatedSpritesRef.current).forEach(key => {
+      if (!currentKeys.has(key)) {
+        delete animatedSpritesRef.current[key];
+        delete currentlyAnimatingRef.current[key];
+        delete animationStateRef.current[key.split('-')[1]];
+      }
+    });
 
     const { width, height } = floorSpace;
 
@@ -428,28 +506,52 @@ export default function FactoryCanvas({
       // Get type-specific assets
       const genAssets = assets?.generators[gen.type];
 
-      // Try animated sprite first, then static, then fallback to graphics
-      if (genAssets?.anim) {
-        // Use config from rules or fallback to default
-        let framesToUse = ANIM_CONFIG.generator.frames;
-        let speedToUse = ANIM_CONFIG.generator.speed;
-        
-        if (rules && rules.generators) {
-          const genConfig = rules.generators.find(g => g.id === gen.type);
-          if (genConfig?.animation) {
-             framesToUse = genConfig.animation.frames;
-             speedToUse = genConfig.animation.speed;
-          }
-        }
+      // Check if this generator is currently animating
+      const genKey = `generator-${gen.id}`;
+      const isAnimating = currentlyAnimatingRef.current[genKey];
 
-        const frames = createAnimationFrames(genAssets.anim, framesToUse);
-        if (frames) {
-          displayObject = new AnimatedSprite(frames);
-          displayObject.animationSpeed = speedToUse;
-          displayObject.play();
+      // Only use animated sprite if currently animating
+      if (isAnimating && genAssets?.anim) {
+        // Reuse existing sprite if available, otherwise create new one
+        let existingSprite = animatedSpritesRef.current[genKey];
+
+        if (existingSprite) {
+          // Reuse existing sprite to preserve animation state
+          displayObject = existingSprite;
+        } else {
+          // Create new animated sprite
+          let framesToUse = ANIM_CONFIG.generator.frames;
+          let speedToUse = ANIM_CONFIG.generator.speed;
+
+          if (rules && rules.generators) {
+            const genConfig = rules.generators.find(g => g.id === gen.type);
+            if (genConfig?.animation) {
+               framesToUse = genConfig.animation.frames;
+               speedToUse = genConfig.animation.speed;
+            }
+          }
+
+          const frames = createAnimationFrames(genAssets.anim, framesToUse);
+          if (frames) {
+            displayObject = new AnimatedSprite(frames);
+            displayObject.animationSpeed = speedToUse;
+            displayObject.loop = false; // Play once per trigger
+            displayObject.stop(); // Don't auto-play
+
+            // Add completion handler to reset animation state
+            displayObject.onComplete = () => {
+              currentlyAnimatingRef.current[genKey] = false;
+              delete animatedSpritesRef.current[genKey]; // Remove ref when done
+              forceRenderRef.current(); // Re-render to show static sprite
+            };
+
+            // Store reference for ticker control
+            animatedSpritesRef.current[genKey] = displayObject;
+          }
         }
       }
 
+      // Use static sprite when not animating
       if (!displayObject && genAssets?.static) {
         displayObject = new Sprite(genAssets.static);
       }
@@ -497,33 +599,63 @@ export default function FactoryCanvas({
       // Get type-specific assets
       const machineAssets = assets?.machines[machine.type];
 
-      // For working machines, try animation first
-      if (status === 'working' && machineAssets?.workingAnim) {
-        // Use config from rules or fallback to default
-        let framesToUse = ANIM_CONFIG.machine.frames;
-        let speedToUse = ANIM_CONFIG.machine.speed;
-        
-        if (rules && rules.machines) {
-          const machineConfig = rules.machines.find(m => m.id === machine.type);
-          if (machineConfig?.animation) {
-             framesToUse = machineConfig.animation.frames;
-             speedToUse = machineConfig.animation.speed;
-          }
-        }
+      // Check if this machine is currently animating
+      const machineKey = `machine-${machine.id}`;
+      const isAnimating = currentlyAnimatingRef.current[machineKey];
 
-        const frames = createAnimationFrames(machineAssets.workingAnim, framesToUse);
-        if (frames) {
-          displayObject = new AnimatedSprite(frames);
-          displayObject.animationSpeed = speedToUse;
-          displayObject.play();
+      // For working machines that are currently animating, use animation
+      if (status === 'working' && isAnimating && machineAssets?.workingAnim) {
+        // Reuse existing sprite if available, otherwise create new one
+        let existingSprite = animatedSpritesRef.current[machineKey];
+
+        if (existingSprite) {
+          // Reuse existing sprite to preserve animation state
+          displayObject = existingSprite;
+        } else {
+          // Create new animated sprite
+          let framesToUse = ANIM_CONFIG.machine.frames;
+          let speedToUse = ANIM_CONFIG.machine.speed;
+
+          if (rules && rules.machines) {
+            const machineConfig = rules.machines.find(m => m.id === machine.type);
+            if (machineConfig?.animation) {
+               framesToUse = machineConfig.animation.frames;
+               speedToUse = machineConfig.animation.speed;
+            }
+          }
+
+          const frames = createAnimationFrames(machineAssets.workingAnim, framesToUse);
+          if (frames) {
+            displayObject = new AnimatedSprite(frames);
+            displayObject.animationSpeed = speedToUse;
+            displayObject.loop = false; // Play once per trigger
+            displayObject.stop(); // Don't auto-play
+
+            // Add completion handler to reset animation state
+            displayObject.onComplete = () => {
+              currentlyAnimatingRef.current[machineKey] = false;
+              delete animatedSpritesRef.current[machineKey]; // Remove ref when done
+              forceRenderRef.current(); // Re-render to show idle sprite
+            };
+
+            // Store reference for ticker control
+            animatedSpritesRef.current[machineKey] = displayObject;
+          }
         }
       }
 
-      // Try static sprite based on status
+      // Try static sprite based on status (or idle if working but not animating)
       if (!displayObject) {
-        const texture = status === 'working' ? machineAssets?.working :
-                       status === 'blocked' ? machineAssets?.blocked :
-                       machineAssets?.idle;
+        let texture;
+        if (status === 'working' && !isAnimating) {
+          // Working but not animating: show idle
+          texture = machineAssets?.idle;
+        } else {
+          // Use appropriate texture for status
+          texture = status === 'working' ? machineAssets?.working :
+                   status === 'blocked' ? machineAssets?.blocked :
+                   machineAssets?.idle;
+        }
         if (texture) {
           displayObject = new Sprite(texture);
         }
@@ -706,6 +838,32 @@ export default function FactoryCanvas({
       const world = new Container();
       app.stage.addChild(world);
       worldRef.current = world;
+
+      // Setup animation ticker to trigger random animations
+      app.ticker.add(() => {
+        // Check all machines and generators to see if any should start animating
+        const allItems = [
+          ...(machinesRef.current || []).map(m => ({ key: `machine-${m.id}`, type: 'machine', id: m.id })),
+          ...(generatorsRef.current || []).map(g => ({ key: `generator-${g.id}`, type: 'generator', id: g.id }))
+        ];
+
+        allItems.forEach(({ key, type, id }) => {
+          // Check if should trigger
+          if (shouldTriggerAnimation(id, type)) {
+            // Mark as animating
+            currentlyAnimatingRef.current[key] = true;
+            // Trigger re-render to create AnimatedSprite
+            forceRenderRef.current();
+          }
+        });
+
+        // Play any sprites that are marked as animating
+        Object.entries(animatedSpritesRef.current).forEach(([key, sprite]) => {
+          if (currentlyAnimatingRef.current[key] && !sprite.playing) {
+            sprite.gotoAndPlay(0);
+          }
+        });
+      });
 
       // Setup zoom (mouse wheel)
       const canvas = app.canvas;
