@@ -37,7 +37,8 @@ export const initialState = {
   inventory: {
     production_machine: 5,
     manual_crank: 5,
-    ore_crusher: 5
+    ore_crusher: 5,
+    windmill: 5
   },
 
   // Starting machine for demonstration

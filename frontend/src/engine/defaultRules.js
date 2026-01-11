@@ -193,6 +193,22 @@ export const defaultRules = {
       ticksToComplete: 1,
       tier: 2
     },
+    {
+      id: 'heavy_linen',
+      inputs: { flux: 5, linen_thread: 1 },
+      outputs: { heavy_linen: 1 },
+      energyRequired: 2,
+      ticksToComplete: 1,
+      tier: 2
+    },
+    {
+      id: 'linen_thread',
+      inputs: { flux: 2 },
+      outputs: { linen_thread: 1 },
+      energyRequired: 2,
+      ticksToComplete: 1,
+      tier: 2
+    },
 
     // Tier 3: Final goods (7 recipes)
     {
@@ -278,19 +294,11 @@ export const defaultRules = {
       tier: 4
     },
     {
-      id: 'water_wheel',
-      inputs: { wooden_beam: 4, iron_gear: 2, iron_rod: 3 },
-      outputs: { water_wheel: 1 },
+      id: 'windmill',
+      inputs: { wooden_beam: 10, iron_gear: 4, iron_rod: 4, stone_bricks: 15, heavy_linen: 20 },
+      outputs: { windmill: 1 },
       energyRequired: 4,
       ticksToComplete: 2,
-      tier: 4
-    },
-    {
-      id: 'steam_engine',
-      inputs: { iron_plate: 6, copper_plate: 3, iron_gear: 4, simple_motor: 1 },
-      outputs: { steam_engine: 1 },
-      energyRequired: 8,
-      ticksToComplete: 3,
       tier: 4
     },
   ],
@@ -376,27 +384,15 @@ export const defaultRules = {
       }
     },
     {
-      id: 'water_wheel',
-      itemId: 'water_wheel',
-      name: 'Water Wheel',
-      sizeX: 2,                    // 2x2 grid
-      sizeY: 2,
-      energyOutput: 8,
-      animation: {
-        frames: 4,
-        speed: 0.08
-      }
-    },
-    {
-      id: 'steam_engine',
-      itemId: 'steam_engine',
-      name: 'Steam Engine',
-      sizeX: 4,                    // 4x4 grid
+      id: 'windmill',
+      itemId: 'windmill',
+      name: 'Windmill',
+      sizeX: 4,                    
       sizeY: 4,
-      energyOutput: 15,
+      energyOutput: 12,
       animation: {
         frames: 4,
-        speed: 0.08
+        speed: 0.02
       }
     }
   ],

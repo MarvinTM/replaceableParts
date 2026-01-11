@@ -22,6 +22,9 @@ const useGameStore = create(
       isRunning: false,
       tickInterval: null,
 
+      // UI preferences
+      animationsEnabled: true,
+
       // Initialize a new game
       initNewGame: (seed = null) => {
         const newState = createInitialState(seed ?? Date.now());
@@ -158,6 +161,12 @@ const useGameStore = create(
             }
           }
         }), false, 'setExpansionType');
+      },
+
+      toggleAnimations: () => {
+        set((state) => ({
+          animationsEnabled: !state.animationsEnabled
+        }), false, 'toggleAnimations');
       },
 
       // Game loop controls

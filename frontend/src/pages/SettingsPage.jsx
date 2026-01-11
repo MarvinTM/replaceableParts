@@ -4,16 +4,20 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Switch from '@mui/material/Switch';
 import SettingsIcon from '@mui/icons-material/Settings';
 import useGameStore from '../stores/gameStore';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const rules = useGameStore((state) => state.rules);
+  const animationsEnabled = useGameStore((state) => state.animationsEnabled);
   const setExpansionType = useGameStore((state) => state.setExpansionType);
+  const toggleAnimations = useGameStore((state) => state.toggleAnimations);
 
   const handleLanguageChange = (event) => {
     i18n.changeLanguage(event.target.value);
@@ -21,6 +25,10 @@ export default function SettingsPage() {
 
   const handleExpansionChange = (event) => {
     setExpansionType(event.target.value);
+  };
+
+  const handleAnimationsToggle = () => {
+    toggleAnimations();
   };
 
   return (
@@ -60,6 +68,18 @@ export default function SettingsPage() {
               <MenuItem value="fractal">Fractal (Strips)</MenuItem>
             </Select>
           </FormControl>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={animationsEnabled}
+                onChange={handleAnimationsToggle}
+                color="primary"
+              />
+            }
+            label="Enable Animations"
+            sx={{ mt: 3 }}
+          />
 
           <Box sx={{ mt: 4, textAlign: 'center', py: 4 }}>
             <SettingsIcon sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />

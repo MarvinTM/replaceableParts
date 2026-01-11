@@ -45,8 +45,8 @@ const ANIM_CONFIG = {
   },
   generator: {
     frames: 4,
-    speed: 0.08,
-    randomInterval: { min: 1000, max: 2000 } // milliseconds between animations
+    speed: 0.08
+    // Generators animate continuously when enabled - no random intervals
   }
 };
 
@@ -275,7 +275,8 @@ export default function FactoryCanvas({
   onStructureDragStart,
   onMachineRightClick,
   onGeneratorRightClick,
-  engineState
+  engineState,
+  animationsEnabled = true
 }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
@@ -285,6 +286,7 @@ export default function FactoryCanvas({
   const minZoomRef = useRef(0.25); // Dynamic minimum zoom based on factory size
   const lowerWallSpritesRef = useRef([]); // Store lower wall sprites for alpha updates
   const floorDimensionsRef = useRef({ width: 0, height: 0 }); // Store floor dimensions for hover check
+  const animationsEnabledRef = useRef(animationsEnabled); // Track animations enabled state
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
 
@@ -318,6 +320,11 @@ export default function FactoryCanvas({
     machinesRef.current = machines;
     generatorsRef.current = generators;
   }, [machines, generators]);
+
+  // Update animationsEnabled ref when it changes
+  useEffect(() => {
+    animationsEnabledRef.current = animationsEnabled;
+  }, [animationsEnabled]);
 
   // Clear hover position when drag ends
   useEffect(() => {
@@ -507,13 +514,10 @@ export default function FactoryCanvas({
 
       // Get type-specific assets
       const genAssets = assets?.generators[gen.type];
-
-      // Check if this generator is currently animating
       const genKey = `generator-${gen.id}`;
-      const isAnimating = currentlyAnimatingRef.current[genKey];
 
-      // Only use animated sprite if currently animating
-      if (isAnimating && genAssets?.anim) {
+      // Generators animate continuously once placed (if animations are enabled)
+      if (animationsEnabled && genAssets?.anim) {
         // Reuse existing sprite if available, otherwise create new one
         let existingSprite = animatedSpritesRef.current[genKey];
 
@@ -537,23 +541,16 @@ export default function FactoryCanvas({
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse;
-            displayObject.loop = false; // Play once per trigger
-            displayObject.stop(); // Don't auto-play
+            displayObject.loop = true; // Loop continuously
+            displayObject.play(); // Start playing immediately
 
-            // Add completion handler to reset animation state
-            displayObject.onComplete = () => {
-              currentlyAnimatingRef.current[genKey] = false;
-              delete animatedSpritesRef.current[genKey]; // Remove ref when done
-              forceRenderRef.current(); // Re-render to show static sprite
-            };
-
-            // Store reference for ticker control
+            // Store reference for cleanup
             animatedSpritesRef.current[genKey] = displayObject;
           }
         }
       }
 
-      // Use static sprite when not animating
+      // Use static sprite when animations are disabled or no animation available
       if (!displayObject && genAssets?.static) {
         displayObject = new Sprite(genAssets.static);
       }
@@ -605,8 +602,8 @@ export default function FactoryCanvas({
       const machineKey = `machine-${machine.id}`;
       const isAnimating = currentlyAnimatingRef.current[machineKey];
 
-      // For working machines that are currently animating, use animation
-      if (status === 'working' && isAnimating && machineAssets?.workingAnim) {
+      // For working machines that are currently animating, use animation (if animations enabled)
+      if (animationsEnabled && status === 'working' && isAnimating && machineAssets?.workingAnim) {
         // Reuse existing sprite if available, otherwise create new one
         let existingSprite = animatedSpritesRef.current[machineKey];
 
@@ -841,15 +838,20 @@ export default function FactoryCanvas({
       app.stage.addChild(world);
       worldRef.current = world;
 
-      // Setup animation ticker to trigger random animations
+      // Setup animation ticker to trigger random animations for machines only
+      // Generators animate continuously when enabled
       app.ticker.add(() => {
-        // Check all machines and generators to see if any should start animating
-        const allItems = [
-          ...(machinesRef.current || []).map(m => ({ key: `machine-${m.id}`, type: 'machine', id: m.id })),
-          ...(generatorsRef.current || []).map(g => ({ key: `generator-${g.id}`, type: 'generator', id: g.id }))
-        ];
+        // Skip animation logic if animations are disabled
+        if (!animationsEnabledRef.current) return;
 
-        allItems.forEach(({ key, type, id }) => {
+        // Only check machines for random animation triggers
+        const machineItems = (machinesRef.current || []).map(m => ({
+          key: `machine-${m.id}`,
+          type: 'machine',
+          id: m.id
+        }));
+
+        machineItems.forEach(({ key, type, id }) => {
           // Check if should trigger
           if (shouldTriggerAnimation(id, type)) {
             // Mark as animating
@@ -859,9 +861,9 @@ export default function FactoryCanvas({
           }
         });
 
-        // Play any sprites that are marked as animating
+        // Play any machine sprites that are marked as animating
         Object.entries(animatedSpritesRef.current).forEach(([key, sprite]) => {
-          if (currentlyAnimatingRef.current[key] && !sprite.playing) {
+          if (key.startsWith('machine-') && currentlyAnimatingRef.current[key] && !sprite.playing) {
             sprite.gotoAndPlay(0);
           }
         });

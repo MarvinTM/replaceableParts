@@ -38,8 +38,13 @@ export default function RecipeDropdown({
 
   if (!machine || !position) return null;
 
-  // Get available recipes (only unlocked ones)
+  // Get the machine configuration to find allowed recipes
+  const machineConfig = rules?.machines?.find(m => m.id === machine.type);
+  const allowedRecipes = machineConfig?.allowedRecipes || [];
+
+  // Get available recipes (only unlocked ones that this machine type supports)
   const availableRecipes = (unlockedRecipes || [])
+    .filter(recipeId => allowedRecipes.includes(recipeId)) // Filter by machine's allowed recipes
     .map(recipeId => rules?.recipes?.find(r => r.id === recipeId))
     .filter(Boolean);
 
