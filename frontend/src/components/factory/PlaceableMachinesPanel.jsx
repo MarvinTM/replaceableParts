@@ -9,29 +9,37 @@ import BoltIcon from '@mui/icons-material/Bolt';
 export default function PlaceableMachinesPanel({ inventory, rules, onDragStart, onDragEnd }) {
   const { t } = useTranslation();
 
-  const machineItemId = rules.machines.itemId;
-  const machineCount = inventory[machineItemId] || 0;
-  const machineEnergy = rules.machines.baseEnergy;
-  const machineSizeX = rules.machines.baseSizeX;
-  const machineSizeY = rules.machines.baseSizeY;
+  // Get all machine types that have items in inventory
+  const availableMachines = rules.machines
+    .map(machineType => ({
+      ...machineType,
+      count: inventory[machineType.itemId] || 0
+    }))
+    .filter(machine => machine.count > 0);
 
-  // Get material name for display
-  const material = rules.materials.find(m => m.id === machineItemId);
-  const machineName = material?.name || 'Production Machine';
-
-  const handleDragStart = (e) => {
+  const handleDragStart = (e, machine) => {
     e.dataTransfer.setData('application/json', JSON.stringify({
       itemType: 'machine',
-      itemId: machineItemId,
-      sizeX: machineSizeX,
-      sizeY: machineSizeY
+      itemId: machine.itemId,
+      machineType: machine.id,
+      sizeX: machine.sizeX,
+      sizeY: machine.sizeY
     }));
     e.dataTransfer.effectAllowed = 'move';
-    onDragStart?.('machine', machineItemId, machineSizeX, machineSizeY);
+    onDragStart?.('machine', machine.itemId, machine.sizeX, machine.sizeY);
   };
 
   const handleDragEnd = () => {
     onDragEnd?.();
+  };
+
+  // Calculate preview box size based on machine dimensions
+  const getPreviewSize = (sizeX, sizeY) => {
+    const baseSize = 16;
+    return {
+      width: sizeX * baseSize,
+      height: sizeY * baseSize
+    };
   };
 
   return (
@@ -40,65 +48,70 @@ export default function PlaceableMachinesPanel({ inventory, rules, onDragStart, 
         <Typography variant="subtitle1" gutterBottom>
           {t('game.factory.machines')}
         </Typography>
-        {machineCount === 0 ? (
+        {availableMachines.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             {t('game.factory.noMachinesInInventory', 'No machines in inventory')}
           </Typography>
         ) : (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            <Box
-              draggable={true}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                p: 1,
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1,
-                cursor: 'grab',
-                backgroundColor: 'background.paper',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  borderColor: 'primary.main'
-                },
-                '&:active': {
-                  cursor: 'grabbing'
-                }
-              }}
-            >
-              {/* Machine preview - colored box representing 1x3 machine */}
-              <Box
-                sx={{
-                  width: 16,
-                  height: 48,
-                  backgroundColor: 'grey.500',
-                  borderRadius: 0.5,
-                  border: '1px solid',
-                  borderColor: 'grey.700',
-                  flexShrink: 0
-                }}
-              />
-              <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                <Typography variant="body2" noWrap>
-                  {machineName}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-                  <Typography variant="caption" color="text.secondary">
-                    -{machineEnergy}
-                  </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {availableMachines.map((machine) => {
+              const previewSize = getPreviewSize(machine.sizeX, machine.sizeY);
+              return (
+                <Box
+                  key={machine.id}
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, machine)}
+                  onDragEnd={handleDragEnd}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    p: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    cursor: 'grab',
+                    backgroundColor: 'background.paper',
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                      borderColor: 'primary.main'
+                    },
+                    '&:active': {
+                      cursor: 'grabbing'
+                    }
+                  }}
+                >
+                  {/* Machine preview - colored box based on size */}
+                  <Box
+                    sx={{
+                      width: previewSize.width,
+                      height: previewSize.height,
+                      backgroundColor: 'grey.500',
+                      borderRadius: 0.5,
+                      border: '1px solid',
+                      borderColor: 'grey.700',
+                      flexShrink: 0
+                    }}
+                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                    <Typography variant="body2" noWrap>
+                      {machine.name}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                      <Typography variant="caption" color="text.secondary">
+                        -{machine.energyConsumption}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Chip
+                    label={`x${machine.count}`}
+                    size="small"
+                    color="primary"
+                  />
                 </Box>
-              </Box>
-              <Chip
-                label={`x${machineCount}`}
-                size="small"
-                color="primary"
-                sx={{ ml: 'auto' }}
-              />
-            </Box>
+              );
+            })}
           </Box>
         )}
       </CardContent>

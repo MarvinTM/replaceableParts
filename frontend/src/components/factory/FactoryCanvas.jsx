@@ -88,13 +88,14 @@ function getWallRowCount(factoryWidth, factoryHeight) {
 
 /**
  * Load assets and return what's available
+ * @param {Object} rules - Game rules containing machine and generator types
  */
-async function loadAssets() {
+async function loadAssets(rules) {
   const loaded = {
     floor: { light: null, dark: null },
     walls: { segment: null },
-    machines: { idle: null, working: null, blocked: null, workingAnim: null },
-    generators: { default: null, anim: null }
+    machines: {},
+    generators: {}
   };
 
   // Try loading each asset, silently fail if not found
@@ -113,15 +114,23 @@ async function loadAssets() {
   // Load wall sprites
   loaded.walls.segment = await tryLoad(ASSET_MANIFEST.walls.segment);
 
-  // Load machine sprites
-  loaded.machines.idle = await tryLoad(ASSET_MANIFEST.machines.idle);
-  loaded.machines.working = await tryLoad(ASSET_MANIFEST.machines.working);
-  loaded.machines.blocked = await tryLoad(ASSET_MANIFEST.machines.blocked);
-  loaded.machines.workingAnim = await tryLoad(ASSET_MANIFEST.machines.workingAnim);
+  // Load per-type machine sprites
+  for (const machineType of rules.machines) {
+    loaded.machines[machineType.id] = {
+      idle: await tryLoad(`${ASSET_BASE}/${machineType.id}_idle.png`),
+      working: await tryLoad(`${ASSET_BASE}/${machineType.id}_working.png`),
+      blocked: await tryLoad(`${ASSET_BASE}/${machineType.id}_blocked.png`),
+      workingAnim: await tryLoad(`${ASSET_BASE}/${machineType.id}_working_anim.png`)
+    };
+  }
 
-  // Load generator sprites
-  loaded.generators.default = await tryLoad(ASSET_MANIFEST.generators.default);
-  loaded.generators.anim = await tryLoad(ASSET_MANIFEST.generators.anim);
+  // Load per-type generator sprites
+  for (const generatorType of rules.generators) {
+    loaded.generators[generatorType.id] = {
+      static: await tryLoad(`${ASSET_BASE}/${generatorType.id}.png`),
+      anim: await tryLoad(`${ASSET_BASE}/${generatorType.id}_anim.png`)
+    };
+  }
 
   return loaded;
 }
@@ -397,12 +406,15 @@ export default function FactoryCanvas({
 
     // Render generators
     generators?.forEach((gen) => {
+      // Skip if generator type is not set (backwards compatibility)
+      if (!gen.type) return;
+
       // Look up size from rules based on generator type
       let sizeX = 1;
       let sizeY = 1;
-      
-      if (rules && rules.generators && rules.generators.types) {
-        const genConfig = rules.generators.types.find(g => g.id === gen.type);
+
+      if (rules && rules.generators) {
+        const genConfig = rules.generators.find(g => g.id === gen.type);
         if (genConfig) {
           sizeX = genConfig.sizeX;
           sizeY = genConfig.sizeY;
@@ -413,9 +425,12 @@ export default function FactoryCanvas({
 
       let displayObject;
 
+      // Get type-specific assets
+      const genAssets = assets?.generators[gen.type];
+
       // Try animated sprite first, then static, then fallback to graphics
-      if (assets?.generators.anim) {
-        const frames = createAnimationFrames(assets.generators.anim, ANIM_CONFIG.generator.frames);
+      if (genAssets?.anim) {
+        const frames = createAnimationFrames(genAssets.anim, ANIM_CONFIG.generator.frames);
         if (frames) {
           displayObject = new AnimatedSprite(frames);
           displayObject.animationSpeed = ANIM_CONFIG.generator.speed;
@@ -423,15 +438,15 @@ export default function FactoryCanvas({
         }
       }
 
-      if (!displayObject && assets?.generators.default) {
-        displayObject = new Sprite(assets.generators.default);
+      if (!displayObject && genAssets?.static) {
+        displayObject = new Sprite(genAssets.static);
       }
 
       if (displayObject) {
         displayObject.anchor.set(0.5, 1); // Bottom center anchor for structures
         displayObject.x = screenPos.x;
-        displayObject.y = screenPos.y + TILE_HEIGHT / 2;
-        displayObject.scale.set(sizeX, sizeY);
+        displayObject.y = screenPos.y;
+        // Don't scale - custom images should already be at correct size
         displayObject.zIndex = gen.x - gen.y;
         structuresContainer.addChild(displayObject);
       } else {
@@ -446,13 +461,19 @@ export default function FactoryCanvas({
 
     // Render machines
     machines?.forEach((machine) => {
-      // Look up size from rules (machines have base size)
+      // Skip if machine type is not set (backwards compatibility)
+      if (!machine.type) return;
+
+      // Look up size from rules based on machine type
       let sizeX = 1;
       let sizeY = 1;
 
       if (rules && rules.machines) {
-        sizeX = rules.machines.baseSizeX;
-        sizeY = rules.machines.baseSizeY;
+        const machineConfig = rules.machines.find(m => m.id === machine.type);
+        if (machineConfig) {
+          sizeX = machineConfig.sizeX;
+          sizeY = machineConfig.sizeY;
+        }
       }
 
       const screenPos = getStructureScreenPosition(machine.x, machine.y, sizeX, sizeY);
@@ -460,9 +481,12 @@ export default function FactoryCanvas({
 
       let displayObject;
 
+      // Get type-specific assets
+      const machineAssets = assets?.machines[machine.type];
+
       // For working machines, try animation first
-      if (status === 'working' && assets?.machines.workingAnim) {
-        const frames = createAnimationFrames(assets.machines.workingAnim, ANIM_CONFIG.machine.frames);
+      if (status === 'working' && machineAssets?.workingAnim) {
+        const frames = createAnimationFrames(machineAssets.workingAnim, ANIM_CONFIG.machine.frames);
         if (frames) {
           displayObject = new AnimatedSprite(frames);
           displayObject.animationSpeed = ANIM_CONFIG.machine.speed;
@@ -472,9 +496,9 @@ export default function FactoryCanvas({
 
       // Try static sprite based on status
       if (!displayObject) {
-        const texture = status === 'working' ? assets?.machines.working :
-                       status === 'blocked' ? assets?.machines.blocked :
-                       assets?.machines.idle;
+        const texture = status === 'working' ? machineAssets?.working :
+                       status === 'blocked' ? machineAssets?.blocked :
+                       machineAssets?.idle;
         if (texture) {
           displayObject = new Sprite(texture);
         }
@@ -483,8 +507,8 @@ export default function FactoryCanvas({
       if (displayObject) {
         displayObject.anchor.set(0.5, 1);
         displayObject.x = screenPos.x;
-        displayObject.y = screenPos.y + TILE_HEIGHT / 2;
-        displayObject.scale.set(sizeX, sizeY);
+        displayObject.y = screenPos.y;
+        // Don't scale - custom images should already be at correct size
         displayObject.zIndex = machine.x - machine.y;
         structuresContainer.addChild(displayObject);
       } else {
@@ -638,7 +662,7 @@ export default function FactoryCanvas({
       appRef.current = app;
 
       // Load assets
-      const assets = await loadAssets();
+      const assets = await loadAssets(rules);
 
       // Check again after asset loading
       if (!isMounted) {
@@ -890,11 +914,11 @@ export default function FactoryCanvas({
 
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
-      const { itemType, itemId, generatorType } = data;
+      const { itemType, itemId, generatorType, machineType } = data;
 
       const gridPos = screenToGridCoords(e.clientX, e.clientY);
       if (gridPos && onDrop) {
-        onDrop(itemType, itemId, gridPos.x, gridPos.y, generatorType);
+        onDrop(itemType, itemId, gridPos.x, gridPos.y, generatorType, machineType);
       }
     } catch (err) {
       console.warn('Failed to parse drop data:', err);
@@ -920,12 +944,18 @@ export default function FactoryCanvas({
         let sizeY = 1;
 
         if (type === 'machine') {
-           sizeX = rules.machines?.baseSizeX || 1;
-           sizeY = rules.machines?.baseSizeY || 1;
+           // Look up machine size based on type
+           if (rules.machines && item.type) {
+             const machineConfig = rules.machines.find(m => m.id === item.type);
+             if (machineConfig) {
+               sizeX = machineConfig.sizeX;
+               sizeY = machineConfig.sizeY;
+             }
+           }
         } else if (type === 'generator') {
            // Look up generator size
-           if (rules.generators && rules.generators.types) {
-             const genConfig = rules.generators.types.find(g => g.id === item.type);
+           if (rules.generators && item.type) {
+             const genConfig = rules.generators.find(g => g.id === item.type);
              if (genConfig) {
                sizeX = genConfig.sizeX;
                sizeY = genConfig.sizeY;
@@ -1025,13 +1055,19 @@ export default function FactoryCanvas({
       let sizeY = 1;
       
       if (dragData.type === 'machine') {
-         sizeX = rules?.machines?.baseSizeX || 1;
-         sizeY = rules?.machines?.baseSizeY || 1;
+         // Look up machine size based on type
+         if (rules?.machines && dragData.item.type) {
+           const machineConfig = rules.machines.find(m => m.id === dragData.item.type);
+           if (machineConfig) {
+             sizeX = machineConfig.sizeX;
+             sizeY = machineConfig.sizeY;
+           }
+         }
          onStructureDragStart?.(dragData.item, 'machine', sizeX, sizeY);
       } else if (dragData.type === 'generator') {
          // Determine generator size
-         if (rules.generators && rules.generators.types) {
-             const genConfig = rules.generators.types.find(g => g.id === dragData.item.type);
+         if (rules?.generators && dragData.item.type) {
+             const genConfig = rules.generators.find(g => g.id === dragData.item.type);
              if (genConfig) {
                sizeX = genConfig.sizeX;
                sizeY = genConfig.sizeY;

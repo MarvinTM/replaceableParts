@@ -308,47 +308,59 @@ export const defaultRules = {
   },
 
   // ============================================================================
-  // Machine Configuration (deployed from inventory)
+  // Machine Types (deployed from inventory)
+  // Each machine type can process specific recipes
   // ============================================================================
-  machines: {
-    itemId: 'production_machine',  // Item required to deploy a machine
-    baseSizeX: 1,                  // Floor space width (X dimension)
-    baseSizeY: 3,                  // Floor space height (Y dimension)
-    baseEnergy: 2                  // Energy consumption per tick
-  },
+  machines: [
+    {
+      id: 'basic_assembler',           // Used for image filenames
+      itemId: 'production_machine',    // Recipe ID to produce this machine
+      name: 'Basic Assembler',
+      sizeX: 1,                        // Floor space width (X dimension)
+      sizeY: 3,                        // Floor space height (Y dimension)
+      energyConsumption: 2,            // Energy consumption per tick
+      allowedRecipes: [                // Recipes this machine can process
+        'planks', 'charcoal', 'stone_bricks', 'gravel', 'bricks', 'glass',
+        'iron_ingot', 'copper_ingot', 'iron_plate', 'iron_rod', 'iron_gear',
+        'copper_wire', 'copper_plate', 'wooden_beam', 'wooden_crate',
+        'iron_ingot_charcoal', 'copper_ingot_charcoal', 'tool_handle',
+        'basic_tools', 'simple_motor', 'window_frame', 'foundation_block',
+        'reinforced_wall', 'mechanical_arm', 'production_machine',
+        'manual_crank', 'water_wheel', 'steam_engine'
+      ]
+    }
+  ],
 
   // ============================================================================
   // Generator Types (deployed from inventory)
   // Generators can have different X and Y dimensions
   // ============================================================================
-  generators: {
-    types: [
-      {
-        id: 'manual_crank',
-        itemId: 'manual_crank',    // Item required to deploy
-        name: 'Manual Crank',
-        energyOutput: 3,
-        sizeX: 2,                  // 1x1 grid
-        sizeY: 2
-      },
-      {
-        id: 'water_wheel',
-        itemId: 'water_wheel',
-        name: 'Water Wheel',
-        energyOutput: 8,
-        sizeX: 2,                  // 2x2 grid
-        sizeY: 2
-      },
-      {
-        id: 'steam_engine',
-        itemId: 'steam_engine',
-        name: 'Steam Engine',
-        energyOutput: 15,
-        sizeX: 4,                  // 4x4 grid
-        sizeY: 4
-      }
-    ]
-  },
+  generators: [
+    {
+      id: 'manual_crank',
+      itemId: 'manual_crank',      // Item required to deploy
+      name: 'Manual Crank',
+      sizeX: 2,                    // 2x2 grid
+      sizeY: 2,
+      energyOutput: 3
+    },
+    {
+      id: 'water_wheel',
+      itemId: 'water_wheel',
+      name: 'Water Wheel',
+      sizeX: 2,                    // 2x2 grid
+      sizeY: 2,
+      energyOutput: 8
+    },
+    {
+      id: 'steam_engine',
+      itemId: 'steam_engine',
+      name: 'Steam Engine',
+      sizeX: 4,                    // 4x4 grid
+      sizeY: 4,
+      energyOutput: 15
+    }
+  ],
 
   // ============================================================================
   // Floor Space (2D Grid with fractal expansion)

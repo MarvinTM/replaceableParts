@@ -83,8 +83,8 @@ const useGameStore = create(
         return get().dispatch({ type: 'SIMULATE' });
       },
 
-      addMachine: (x, y) => {
-        return get().dispatch({ type: 'ADD_MACHINE', payload: { x, y } });
+      addMachine: (machineType, x, y) => {
+        return get().dispatch({ type: 'ADD_MACHINE', payload: { machineType, x, y } });
       },
 
       removeMachine: (machineId) => {

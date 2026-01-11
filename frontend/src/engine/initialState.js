@@ -20,8 +20,8 @@ export const initialState = {
     placements: [
       // Starting generator at position (3, 3)
       { id: 'starter_crank', x: 3, y: 3, structureType: 'manual_crank' },
-      // Starting machine at position (2, 2)
-      { id: 'starter_machine', x: 2, y: 2, structureType: 'machine' }
+      // Starting machine at position (0, 0)
+      { id: 'starter_machine', x: 0, y: 0, structureType: 'basic_assembler' }
     ]
   },
 
@@ -43,6 +43,7 @@ export const initialState = {
   machines: [
     {
       id: 'starter_machine',
+      type: 'basic_assembler',
       recipeId: 'planks',
       internalBuffer: {},
       status: 'idle',

@@ -135,7 +135,7 @@ function FactoryTab() {
     });
   };
 
-  const handleDrop = (itemType, itemId, gridX, gridY, generatorType) => {
+  const handleDrop = (itemType, itemId, gridX, gridY, generatorType, machineType) => {
     // Handle moving an existing machine
     if (itemType === 'machine-move') {
       const machineId = itemId; // In this case, itemId is the machine ID
@@ -150,7 +150,7 @@ function FactoryTab() {
         console.warn('Failed to move generator:', result.error);
       }
     } else if (itemType === 'machine') {
-      const result = addMachine(gridX, gridY);
+      const result = addMachine(machineType, gridX, gridY);
       if (result.error) {
         console.warn('Failed to place machine:', result.error);
       }

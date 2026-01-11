@@ -10,7 +10,7 @@ export default function PlaceableGeneratorsPanel({ inventory, rules, onDragStart
   const { t } = useTranslation();
 
   // Get all generator types that have items in inventory
-  const availableGenerators = rules.generators.types
+  const availableGenerators = rules.generators
     .map(genType => ({
       ...genType,
       count: inventory[genType.itemId] || 0

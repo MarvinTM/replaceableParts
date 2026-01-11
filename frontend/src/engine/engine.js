@@ -54,29 +54,31 @@ function getMaxStack(itemId, inventoryCapacity, rules) {
 
 /**
  * Get the dimensions of a structure based on its structureType.
- * - 'machine' uses rules.machines.baseSizeX/baseSizeY
- * - Generator types (e.g., 'manual_crank') use rules.generators.types
- * @param {string} structureType - The structure type identifier
+ * - Machine types (e.g., 'basic_assembler') use rules.machines array
+ * - Generator types (e.g., 'manual_crank') use rules.generators array
+ * @param {string} structureType - The structure type identifier (machine or generator type ID)
  * @param {Object} rules - The game rules
  * @returns {{ sizeX: number, sizeY: number }} The structure dimensions
  */
 function getStructureDimensions(structureType, rules) {
-  if (structureType === 'machine') {
+  // Check if it's a machine type
+  const machineConfig = rules.machines.find(m => m.id === structureType);
+  if (machineConfig) {
     return {
-      sizeX: rules.machines.baseSizeX,
-      sizeY: rules.machines.baseSizeY
+      sizeX: machineConfig.sizeX,
+      sizeY: machineConfig.sizeY
     };
   }
-  
+
   // Check if it's a generator type
-  const genConfig = rules.generators.types.find(g => g.id === structureType);
+  const genConfig = rules.generators.find(g => g.id === structureType);
   if (genConfig) {
     return {
       sizeX: genConfig.sizeX,
       sizeY: genConfig.sizeY
     };
   }
-  
+
   // Default fallback for unknown types
   // console.warn(`Unknown structureType: ${structureType}, defaulting to 1x1`);
   return { sizeX: 1, sizeY: 1 };
@@ -89,7 +91,7 @@ function getStructureDimensions(structureType, rules) {
  * @returns {number} Energy output per tick
  */
 function getGeneratorOutput(type, rules) {
-  const genConfig = rules.generators.types.find(g => g.id === type);
+  const genConfig = rules.generators.find(g => g.id === type);
   return genConfig ? genConfig.energyOutput : 0;
 }
 
@@ -340,7 +342,9 @@ function calculateEnergy(state, rules) {
   // Machine consumption only (research is checked separately)
   for (const machine of state.machines) {
     if (machine.enabled && machine.recipeId && machine.status !== 'blocked') {
-      consumed += rules.machines.baseEnergy;
+      const machineConfig = rules.machines.find(m => m.id === machine.type);
+      const energyConsumption = machineConfig ? machineConfig.energyConsumption : 0;
+      consumed += energyConsumption;
     }
   }
 
@@ -370,7 +374,9 @@ function simulateTick(state, rules) {
       // Only block enabled machines that are not already blocked
       if (machine.enabled && machine.recipeId && machine.status !== 'blocked') {
         machine.status = 'blocked';
-        deficit -= rules.machines.baseEnergy;
+        const machineConfig = rules.machines.find(m => m.id === machine.type);
+        const energyConsumption = machineConfig ? machineConfig.energyConsumption : 0;
+        deficit -= energyConsumption;
       }
     }
     // Recalculate energy after blocking
@@ -535,15 +541,21 @@ function simulateTick(state, rules) {
 
 function addMachine(state, rules, payload) {
   const newState = deepClone(state);
-  const { x, y } = payload;
+  const { machineType, x, y } = payload;
 
   // Validate position is provided
   if (typeof x !== 'number' || typeof y !== 'number') {
     return { state: newState, error: 'Position (x, y) is required' };
   }
 
-  const sizeX = rules.machines.baseSizeX;
-  const sizeY = rules.machines.baseSizeY;
+  // Look up machine configuration
+  const machineConfig = rules.machines.find(m => m.id === machineType);
+  if (!machineConfig) {
+    return { state: newState, error: 'Machine type not found' };
+  }
+
+  const sizeX = machineConfig.sizeX;
+  const sizeY = machineConfig.sizeY;
 
   // Check if position is valid and not colliding
   const placement = canPlaceAt(newState, x, y, sizeX, sizeY, rules);
@@ -552,7 +564,7 @@ function addMachine(state, rules, payload) {
   }
 
   // Check if we have the required item in inventory
-  const requiredItemId = rules.machines.itemId;
+  const requiredItemId = machineConfig.itemId;
   const available = newState.inventory[requiredItemId] || 0;
 
   if (available < 1) {
@@ -572,6 +584,7 @@ function addMachine(state, rules, payload) {
   // Add to machines array
   newState.machines.push({
     id: machineId,
+    type: machineType,
     recipeId: null,
     internalBuffer: {},
     status: 'idle',
@@ -585,7 +598,7 @@ function addMachine(state, rules, payload) {
     id: machineId,
     x,
     y,
-    structureType: 'machine'
+    structureType: machineType
   });
 
   return { state: newState, error: null };
@@ -628,8 +641,14 @@ function moveMachine(state, rules, payload) {
     return { state: newState, error: 'Machine not found' };
   }
 
-  const sizeX = rules.machines.baseSizeX;
-  const sizeY = rules.machines.baseSizeY;
+  // Get size from rules based on machine type
+  const machineConfig = rules.machines.find(m => m.id === machine.type);
+  if (!machineConfig) {
+    // Should not happen if data is consistent
+    return { state: newState, error: 'Machine type configuration not found' };
+  }
+  const sizeX = machineConfig.sizeX;
+  const sizeY = machineConfig.sizeY;
 
   // Check if new position is valid (excluding the machine being moved)
   const placementsWithoutThis = newState.floorSpace.placements.filter(p => p.id !== machineId);
@@ -672,6 +691,12 @@ function assignRecipe(state, rules, payload) {
     if (!newState.unlockedRecipes.includes(recipeId)) {
       return { state: newState, error: 'Recipe not unlocked' };
     }
+
+    // Check if machine type supports this recipe
+    const machineConfig = rules.machines.find(m => m.id === machine.type);
+    if (machineConfig && !machineConfig.allowedRecipes.includes(recipeId)) {
+      return { state: newState, error: 'This machine type cannot process this recipe' };
+    }
   }
 
   // Return items in buffer to inventory when changing recipe
@@ -695,7 +720,7 @@ function addGenerator(state, rules, payload) {
     return { state: newState, error: 'Position (x, y) is required' };
   }
 
-  const genConfig = rules.generators.types.find(g => g.id === generatorType);
+  const genConfig = rules.generators.find(g => g.id === generatorType);
   if (!genConfig) {
     return { state: newState, error: 'Generator type not found' };
   }
@@ -783,7 +808,7 @@ function moveGenerator(state, rules, payload) {
   }
 
   // Get size from rules
-  const genConfig = rules.generators.types.find(g => g.id === generator.type);
+  const genConfig = rules.generators.find(g => g.id === generator.type);
   if (!genConfig) {
       // Should not happen if data is consistent
       return { state: newState, error: 'Generator type configuration not found' };
