@@ -372,15 +372,15 @@ export const defaultRules = {
   // ============================================================================
   generators: [
     {
-      id: 'manual_crank',
-      itemId: 'manual_crank',      // Item required to deploy
-      name: 'Manual Crank',
+      id: 'treadwheel',
+      itemId: 'treadwheel',      // Item required to deploy
+      name: 'Treadwheel',
       sizeX: 2,                    // 2x2 grid
-      sizeY: 2,
+      sizeY: 3,
       energyOutput: 3,
       animation: {
         frames: 4,
-        speed: 0.08
+        speed: 0.02
       }
     },
     {

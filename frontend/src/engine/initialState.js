@@ -36,7 +36,7 @@ export const initialState = {
   // Inventory starts with 1 production machine so player can build more
   inventory: {
     production_machine: 5,
-    manual_crank: 5,
+    treadwheel: 5,
     ore_crusher: 5,
     windmill: 5
   },
@@ -55,15 +55,7 @@ export const initialState = {
     }
   ],
 
-  // Start with one manual crank generator for basic operation
-  generators: [
-    {
-      id: 'starter_crank',
-      type: 'manual_crank',
-      x: 3,
-      y: 3
-    }
-  ],
+  generators: [],
 
   // Pre-defined extraction nodes (active from start)
   extractionNodes: [
