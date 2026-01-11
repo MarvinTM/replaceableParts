@@ -262,6 +262,14 @@ export const defaultRules = {
       tier: 4
     },
     {
+      id: 'ore_crusher',
+      inputs: { iron_plate: 4, iron_gear: 3, wooden_beam: 2 },
+      outputs: { ore_crusher: 1 },
+      energyRequired: 6,
+      ticksToComplete: 2,
+      tier: 4
+    },
+    {
       id: 'manual_crank',
       inputs: { wood: 5, iron_rod: 2 },
       outputs: { manual_crank: 1 },
@@ -331,6 +339,21 @@ export const defaultRules = {
         'basic_tools', 'simple_motor', 'window_frame', 'foundation_block',
         'reinforced_wall', 'mechanical_arm', 'production_machine',
         'manual_crank', 'water_wheel', 'steam_engine'
+      ]
+    },
+    {
+      id: 'ore_crusher',           // Used for image filenames
+      itemId: 'ore_crusher',    // Recipe ID to produce this machine
+      name: 'Ore Crusher',
+      sizeX: 1,                        // Floor space width (X dimension)
+      sizeY: 1,                        // Floor space height (Y dimension)
+      energyConsumption: 1,            // Energy consumption per tick
+      animation: {
+        frames: 4,
+        speed: 0.1
+      },
+      allowedRecipes: [                // Recipes this machine can process
+        'charcoal', 'stone_bricks'
       ]
     }
   ],
