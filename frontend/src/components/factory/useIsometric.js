@@ -64,19 +64,21 @@ export function getStructureScreenPosition(gridX, gridY, sizeX = 1, sizeY = size
 export function getGridBounds(gridWidth, gridHeight) {
   // In isometric view, the grid forms a diamond shape
   // Top corner is (0, 0)
-  // Left corner is (gridWidth-1, 0)
-  // Right corner is (0, gridHeight-1)
-  // Bottom corner is (gridWidth-1, gridHeight-1)
+  // Left visual corner is (0, gridHeight-1)
+  // Right visual corner is (gridWidth-1, 0)
+  // Bottom visual corner is (gridWidth-1, gridHeight-1)
+  
+  const cTop = gridToScreen(0, 0);
+  const cLeft = gridToScreen(0, gridHeight - 1);
+  const cRight = gridToScreen(gridWidth - 1, 0);
+  const cBottom = gridToScreen(gridWidth - 1, gridHeight - 1);
 
-  const topCorner = gridToScreen(0, 0);
-  const leftCorner = gridToScreen(gridWidth - 1, 0);
-  const rightCorner = gridToScreen(0, gridHeight - 1);
-  const bottomCorner = gridToScreen(gridWidth - 1, gridHeight - 1);
-
-  const minX = leftCorner.x;
-  const maxX = rightCorner.x + TILE_WIDTH;
-  const minY = topCorner.y;
-  const maxY = bottomCorner.y + TILE_HEIGHT;
+  // The visual extremities are based on tile centers +/- half tile dimensions
+  const centers = [cTop, cLeft, cRight, cBottom];
+  const minX = Math.min(...centers.map(p => p.x)) - TILE_WIDTH / 2;
+  const maxX = Math.max(...centers.map(p => p.x)) + TILE_WIDTH / 2;
+  const minY = Math.min(...centers.map(p => p.y)) - TILE_HEIGHT / 2;
+  const maxY = Math.max(...centers.map(p => p.y)) + TILE_HEIGHT / 2;
 
   return {
     minX,

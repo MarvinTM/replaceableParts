@@ -445,16 +445,17 @@ export default function FactoryCanvas({
       if (displayObject) {
         displayObject.anchor.set(0.5, 1); // Bottom center anchor for structures
         displayObject.x = screenPos.x;
-        displayObject.y = screenPos.y;
-        // Don't scale - custom images should already be at correct size
-        displayObject.zIndex = gen.x - gen.y;
+        // Position at the visual bottom of the footprint diamond to avoid "floating"
+        displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+        // zIndex should be based on visual screen Y for correct isometric sorting
+        displayObject.zIndex = screenPos.y;
         structuresContainer.addChild(displayObject);
       } else {
         // Fallback to graphics
         const genGraphics = new Graphics();
         const boxHeight = 20 + Math.max(sizeX, sizeY) * 10;
         drawStructure(genGraphics, screenPos.x, screenPos.y, sizeX, sizeY, boxHeight, COLORS.generator);
-        genGraphics.zIndex = gen.x - gen.y;
+        genGraphics.zIndex = screenPos.y;
         structuresContainer.addChild(genGraphics);
       }
     });
@@ -507,9 +508,10 @@ export default function FactoryCanvas({
       if (displayObject) {
         displayObject.anchor.set(0.5, 1);
         displayObject.x = screenPos.x;
-        displayObject.y = screenPos.y;
-        // Don't scale - custom images should already be at correct size
-        displayObject.zIndex = machine.x - machine.y;
+        // Position at the visual bottom of the footprint diamond to avoid "floating"
+        displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+        // zIndex based on screen Y
+        displayObject.zIndex = screenPos.y;
         structuresContainer.addChild(displayObject);
       } else {
         // Fallback to graphics
@@ -517,7 +519,7 @@ export default function FactoryCanvas({
         const boxHeight = 25 + Math.max(sizeX, sizeY) * 8;
         const color = getMachineColor(machine.status, machine.enabled);
         drawStructure(machineGraphics, screenPos.x, screenPos.y, sizeX, sizeY, boxHeight, color);
-        machineGraphics.zIndex = machine.x - machine.y;
+        machineGraphics.zIndex = screenPos.y;
         structuresContainer.addChild(machineGraphics);
       }
 
@@ -528,8 +530,10 @@ export default function FactoryCanvas({
       const label = new Text({ text: labelText, style: MACHINE_LABEL_STYLE });
       label.anchor.set(0.5, 1);
       label.x = screenPos.x;
-      label.y = screenPos.y - 30; // Position above the machine
-      label.zIndex = machine.x - machine.y + 0.1; // Slightly above the machine
+      // Position label relative to the machine top
+      const machineVisualTop = (screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4)) - (machineAssets?.idle?.height || 30);
+      label.y = machineVisualTop - 5; 
+      label.zIndex = screenPos.y + 0.1; // Slightly above the machine
       structuresContainer.addChild(label);
     });
 
@@ -964,17 +968,30 @@ export default function FactoryCanvas({
         }
 
         const structureScreenPos = getStructureScreenPosition(item.x, item.y, sizeX, sizeY);
+        const baseOffset = (sizeX + sizeY) * (TILE_HEIGHT / 4);
+        const visualBottom = structureScreenPos.y + baseOffset;
+        
+        // Approximate height based on assets or defaults
+        let visualHeight = 40;
+        if (type === 'machine') {
+            const assets = assetsRef.current?.machines[item.type];
+            visualHeight = assets?.idle?.height || 40;
+        } else {
+            const assets = assetsRef.current?.generators[item.type];
+            visualHeight = assets?.static?.height || 40;
+        }
 
-        // Define bounding box in world coordinates (including label area for machines roughly)
-        // Note: Generators might be smaller, but similar hit box logic is fine
-        const labelTop = structureScreenPos.y - 45;
-        const structureBottom = structureScreenPos.y + TILE_HEIGHT / 2 + 10;
-        const halfWidth = (sizeX + sizeY) * TILE_WIDTH / 4 + 20;
+        const visualTop = visualBottom - visualHeight;
+        const halfWidth = (sizeX + sizeY) * (TILE_WIDTH / 4) + 10;
 
         const left = structureScreenPos.x - halfWidth;
         const right = structureScreenPos.x + halfWidth;
 
-        if (worldX >= left && worldX <= right && worldY >= labelTop && worldY <= structureBottom) {
+        // Add some padding for the label area
+        const clickTop = visualTop - 20;
+        const clickBottom = visualBottom + 5;
+
+        if (worldX >= left && worldX <= right && worldY >= clickTop && worldY <= clickBottom) {
           return item;
         }
       }
@@ -1118,11 +1135,21 @@ export default function FactoryCanvas({
     // 2. Handle Click (No Move) - Open Popup
     else if (dragData.item && !dragData.hasMoved) {
         if (dragData.type === 'machine' && onMachineClick && containerRef.current && worldRef.current) {
-            // Re-calculate screen position for popup
+            // Re-calculate screen position for popup using actual machine size
             const rect = containerRef.current.getBoundingClientRect();
             const world = worldRef.current;
-            const sizeX = rules?.machines?.baseSizeX || 1;
-            const sizeY = rules?.machines?.baseSizeY || 1;
+            
+            let sizeX = 1;
+            let sizeY = 1;
+
+            if (rules?.machines && dragData.item.type) {
+                const machineConfig = rules.machines.find(m => m.id === dragData.item.type);
+                if (machineConfig) {
+                    sizeX = machineConfig.sizeX;
+                    sizeY = machineConfig.sizeY;
+                }
+            }
+
             const structureScreenPos = getStructureScreenPosition(dragData.item.x, dragData.item.y, sizeX, sizeY);
             
             const screenX = structureScreenPos.x * world.scale.x + world.x + rect.left;
