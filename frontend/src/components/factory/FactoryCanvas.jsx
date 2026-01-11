@@ -430,10 +430,22 @@ export default function FactoryCanvas({
 
       // Try animated sprite first, then static, then fallback to graphics
       if (genAssets?.anim) {
-        const frames = createAnimationFrames(genAssets.anim, ANIM_CONFIG.generator.frames);
+        // Use config from rules or fallback to default
+        let framesToUse = ANIM_CONFIG.generator.frames;
+        let speedToUse = ANIM_CONFIG.generator.speed;
+        
+        if (rules && rules.generators) {
+          const genConfig = rules.generators.find(g => g.id === gen.type);
+          if (genConfig?.animation) {
+             framesToUse = genConfig.animation.frames;
+             speedToUse = genConfig.animation.speed;
+          }
+        }
+
+        const frames = createAnimationFrames(genAssets.anim, framesToUse);
         if (frames) {
           displayObject = new AnimatedSprite(frames);
-          displayObject.animationSpeed = ANIM_CONFIG.generator.speed;
+          displayObject.animationSpeed = speedToUse;
           displayObject.play();
         }
       }
@@ -487,10 +499,22 @@ export default function FactoryCanvas({
 
       // For working machines, try animation first
       if (status === 'working' && machineAssets?.workingAnim) {
-        const frames = createAnimationFrames(machineAssets.workingAnim, ANIM_CONFIG.machine.frames);
+        // Use config from rules or fallback to default
+        let framesToUse = ANIM_CONFIG.machine.frames;
+        let speedToUse = ANIM_CONFIG.machine.speed;
+        
+        if (rules && rules.machines) {
+          const machineConfig = rules.machines.find(m => m.id === machine.type);
+          if (machineConfig?.animation) {
+             framesToUse = machineConfig.animation.frames;
+             speedToUse = machineConfig.animation.speed;
+          }
+        }
+
+        const frames = createAnimationFrames(machineAssets.workingAnim, framesToUse);
         if (frames) {
           displayObject = new AnimatedSprite(frames);
-          displayObject.animationSpeed = ANIM_CONFIG.machine.speed;
+          displayObject.animationSpeed = speedToUse;
           displayObject.play();
         }
       }

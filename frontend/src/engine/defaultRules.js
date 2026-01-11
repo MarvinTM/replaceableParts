@@ -319,6 +319,10 @@ export const defaultRules = {
       sizeX: 1,                        // Floor space width (X dimension)
       sizeY: 3,                        // Floor space height (Y dimension)
       energyConsumption: 2,            // Energy consumption per tick
+      animation: {
+        frames: 4,
+        speed: 0.1
+      },
       allowedRecipes: [                // Recipes this machine can process
         'planks', 'charcoal', 'stone_bricks', 'gravel', 'bricks', 'glass',
         'iron_ingot', 'copper_ingot', 'iron_plate', 'iron_rod', 'iron_gear',
@@ -342,7 +346,11 @@ export const defaultRules = {
       name: 'Manual Crank',
       sizeX: 2,                    // 2x2 grid
       sizeY: 2,
-      energyOutput: 3
+      energyOutput: 3,
+      animation: {
+        frames: 4,
+        speed: 0.08
+      }
     },
     {
       id: 'water_wheel',
@@ -350,7 +358,11 @@ export const defaultRules = {
       name: 'Water Wheel',
       sizeX: 2,                    // 2x2 grid
       sizeY: 2,
-      energyOutput: 8
+      energyOutput: 8,
+      animation: {
+        frames: 4,
+        speed: 0.08
+      }
     },
     {
       id: 'steam_engine',
@@ -358,7 +370,11 @@ export const defaultRules = {
       name: 'Steam Engine',
       sizeX: 4,                    // 4x4 grid
       sizeY: 4,
-      energyOutput: 15
+      energyOutput: 15,
+      animation: {
+        frames: 4,
+        speed: 0.08
+      }
     }
   ],
 
