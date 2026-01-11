@@ -273,6 +273,8 @@ export default function FactoryCanvas({
   onDrop,
   onMachineClick,
   onStructureDragStart,
+  onMachineRightClick,
+  onGeneratorRightClick,
   engineState
 }) {
   const containerRef = useRef(null);
@@ -1195,7 +1197,26 @@ export default function FactoryCanvas({
 
     const rect = containerRef.current.getBoundingClientRect();
     const world = worldRef.current;
-    
+
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
+    const worldX = (canvasX - world.x) / world.scale.x;
+    const worldY = (canvasY - world.y) / world.scale.y;
+
+    const structureFound = findStructureAtWorldPos(worldX, worldY);
+
+    // Check for Right Click (Button 2) -> Remove machine/generator
+    if (e.button === 2) {
+      if (structureFound) {
+        if (structureFound.type === 'machine' && onMachineRightClick) {
+          onMachineRightClick(structureFound.item);
+        } else if (structureFound.type === 'generator' && onGeneratorRightClick) {
+          onGeneratorRightClick(structureFound.item);
+        }
+      }
+      return;
+    }
+
     // Check for Middle Click (Button 1) -> Always Pan
     if (e.button === 1) {
       dragRef.current = { isDragging: true, lastX: e.clientX, lastY: e.clientY };
@@ -1208,13 +1229,6 @@ export default function FactoryCanvas({
     // Only proceed with Left Click (Button 0) for other interactions
     if (e.button !== 0) return;
 
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    const worldX = (canvasX - world.x) / world.scale.x;
-    const worldY = (canvasY - world.y) / world.scale.y;
-
-    const structureFound = findStructureAtWorldPos(worldX, worldY);
-    
     // Check if click is inside factory bounds (floor OR upper walls)
     const isInsideFactory = isPointOverFactory(worldX, worldY);
 
@@ -1235,7 +1249,7 @@ export default function FactoryCanvas({
       }
     }
     // Else: Left click on factory (floor or wall) -> Do Nothing (prevent pan)
-  }, [findStructureAtWorldPos, isPointOverFactory]);
+  }, [findStructureAtWorldPos, isPointOverFactory, onMachineRightClick, onGeneratorRightClick]);
 
   // Handle mouse move for structure drag
   const handleMouseMove = useCallback((e) => {

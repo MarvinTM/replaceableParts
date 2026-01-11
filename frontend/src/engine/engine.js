@@ -620,6 +620,12 @@ function removeMachine(state, rules, payload) {
     newState.inventory[itemId] = (newState.inventory[itemId] || 0) + quantity;
   }
 
+  // Return machine itself to inventory
+  const machineConfig = rules.machines.find(m => m.id === machine.type);
+  if (machineConfig && machineConfig.itemId) {
+    newState.inventory[machineConfig.itemId] = (newState.inventory[machineConfig.itemId] || 0) + 1;
+  }
+
   // Remove from machines array
   newState.machines.splice(machineIndex, 1);
 
@@ -781,6 +787,14 @@ function removeGenerator(state, rules, payload) {
   const genIndex = newState.generators.findIndex(g => g.id === generatorId);
   if (genIndex === -1) {
     return { state: newState, error: 'Generator not found' };
+  }
+
+  const generator = newState.generators[genIndex];
+
+  // Return generator itself to inventory
+  const genConfig = rules.generators.find(g => g.id === generator.type);
+  if (genConfig && genConfig.itemId) {
+    newState.inventory[genConfig.itemId] = (newState.inventory[genConfig.itemId] || 0) + 1;
   }
 
   // Remove from generators array

@@ -70,6 +70,8 @@ function FactoryTab() {
   const buyFloorSpace = useGameStore((state) => state.buyFloorSpace);
   const addMachine = useGameStore((state) => state.addMachine);
   const addGenerator = useGameStore((state) => state.addGenerator);
+  const removeMachine = useGameStore((state) => state.removeMachine);
+  const removeGenerator = useGameStore((state) => state.removeGenerator);
   const assignRecipe = useGameStore((state) => state.assignRecipe);
   const toggleMachine = useGameStore((state) => state.toggleMachine);
   const moveMachine = useGameStore((state) => state.moveMachine);
@@ -198,6 +200,26 @@ function FactoryTab() {
     setShowRecipeSelector(false);
   };
 
+  // Handle right-click on machine to remove it
+  const handleMachineRightClick = (machine) => {
+    const result = removeMachine(machine.id);
+    if (result.error) {
+      console.warn('Failed to remove machine:', result.error);
+    }
+    // Close popup if this machine was selected
+    if (selectedMachineId === machine.id) {
+      handleCloseMachinePopup();
+    }
+  };
+
+  // Handle right-click on generator to remove it
+  const handleGeneratorRightClick = (generator) => {
+    const result = removeGenerator(generator.id);
+    if (result.error) {
+      console.warn('Failed to remove generator:', result.error);
+    }
+  };
+
   return (
     <Box>
       {/* Isometric Factory View */}
@@ -219,6 +241,8 @@ function FactoryTab() {
             onDrop={handleDrop}
             onMachineClick={handleMachineClick}
             onStructureDragStart={handleStructureDragStart}
+            onMachineRightClick={handleMachineRightClick}
+            onGeneratorRightClick={handleGeneratorRightClick}
             engineState={engineState}
           />
         </CardContent>
