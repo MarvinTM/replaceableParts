@@ -383,18 +383,12 @@ function simulateTick(state, rules) {
     newState.energy = calculateEnergy(newState, rules);
   }
 
-  // 2. Extraction Phase (respecting per-item limit)
+  // 2. Extraction Supply Calculation (Raw materials flow directly to machines)
+  const rawMaterialSupply = {};
   for (const node of newState.extractionNodes) {
     if (node.active) {
       const resourceId = node.resourceType;
-      const currentAmount = newState.inventory[resourceId] || 0;
-      const maxStack = getMaxStack(resourceId, newState.inventorySpace, rules);
-      const spaceLeft = maxStack - currentAmount;
-      const toAdd = Math.min(node.rate, spaceLeft);
-      if (toAdd > 0) {
-        newState.inventory[resourceId] = currentAmount + toAdd;
-      }
-      // Excess is wasted (not added)
+      rawMaterialSupply[resourceId] = (rawMaterialSupply[resourceId] || 0) + node.rate;
     }
   }
 
@@ -418,19 +412,34 @@ function simulateTick(state, rules) {
 
     machine.status = 'working';
 
-    // Pull Phase: Try to pull needed ingredients from inventory
+    // Pull Phase: Try to pull needed ingredients
     let canProgress = true;
     for (const [itemId, needed] of Object.entries(recipe.inputs)) {
       const inBuffer = machine.internalBuffer[itemId] || 0;
       const stillNeeded = needed - inBuffer;
 
       if (stillNeeded > 0) {
-        const available = newState.inventory[itemId] || 0;
+        // Determine source based on material category
+        const material = rules.materials.find(m => m.id === itemId);
+        const isRaw = material && material.category === 'raw';
+
+        let available = 0;
+        if (isRaw) {
+           available = rawMaterialSupply[itemId] || 0;
+        } else {
+           available = newState.inventory[itemId] || 0;
+        }
+
         const toPull = Math.min(stillNeeded, available);
 
         if (toPull > 0) {
           machine.internalBuffer[itemId] = inBuffer + toPull;
-          newState.inventory[itemId] -= toPull;
+          
+          if (isRaw) {
+            rawMaterialSupply[itemId] -= toPull;
+          } else {
+            newState.inventory[itemId] -= toPull;
+          }
         }
 
         if (machine.internalBuffer[itemId] < needed) {
@@ -497,7 +506,18 @@ function simulateTick(state, rules) {
       const weighted = undiscovered.map(recipe => {
         let weight = 1;
         for (const itemId of Object.keys(recipe.inputs)) {
-          if ((newState.inventory[itemId] || 0) > 0) {
+          const material = rules.materials.find(m => m.id === itemId);
+          const isRaw = material && material.category === 'raw';
+          
+          let hasItem = false;
+          if (isRaw) {
+             // For raw materials, check if we are currently producing them (any active node)
+             hasItem = newState.extractionNodes.some(n => n.active && n.resourceType === itemId);
+          } else {
+             hasItem = (newState.inventory[itemId] || 0) > 0;
+          }
+
+          if (hasItem) {
             weight += rules.research.proximityWeight;
           }
         }
