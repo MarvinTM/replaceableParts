@@ -138,7 +138,7 @@ function FactoryTab() {
     });
   };
 
-  const handleDrop = (itemType, itemId, gridX, gridY, generatorType, machineType) => {
+  const handleDrop = (itemType, itemId, gridX, gridY, generatorType, machineType, screenPos) => {
     // Handle moving an existing machine
     if (itemType === 'machine-move') {
       const machineId = itemId; // In this case, itemId is the machine ID
@@ -156,6 +156,16 @@ function FactoryTab() {
       const result = addMachine(machineType, gridX, gridY);
       if (result.error) {
         console.warn('Failed to place machine:', result.error);
+      } else if (result.state && screenPos) {
+        // Machine was successfully placed - find the newly added machine and open recipe selector
+        const newMachine = result.state.machines.find(
+          m => m.x === gridX && m.y === gridY && m.type === machineType
+        );
+        if (newMachine) {
+          setSelectedMachineId(newMachine.id);
+          setMachinePopupPosition(screenPos);
+          setShowRecipeSelector(true);
+        }
       }
     } else if (itemType === 'generator') {
       const result = addGenerator(generatorType, gridX, gridY);
@@ -190,14 +200,18 @@ function FactoryTab() {
     setShowRecipeSelector(true);
   };
 
-  // Select a recipe
+  // Select a recipe (close everything after selection)
   const handleRecipeSelect = (machineId, recipeId) => {
     assignRecipe(machineId, recipeId);
+    setSelectedMachineId(null);
+    setMachinePopupPosition(null);
     setShowRecipeSelector(false);
   };
 
-  // Close recipe selector (go back to machine info popup)
+  // Close recipe selector (close everything)
   const handleCloseRecipeSelector = () => {
+    setSelectedMachineId(null);
+    setMachinePopupPosition(null);
     setShowRecipeSelector(false);
   };
 

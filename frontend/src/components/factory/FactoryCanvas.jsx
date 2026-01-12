@@ -1212,11 +1212,24 @@ export default function FactoryCanvas({
 
     try {
       const data = JSON.parse(e.dataTransfer.getData('application/json'));
-      const { itemType, itemId, generatorType, machineType } = data;
+      const { itemType, itemId, generatorType, machineType, sizeX, sizeY } = data;
 
       const gridPos = screenToGridCoords(e.clientX, e.clientY);
       if (gridPos && onDrop) {
-        onDrop(itemType, itemId, gridPos.x, gridPos.y, generatorType, machineType);
+        // Calculate screen position for popup (based on where the machine will be placed)
+        let screenPos = null;
+        if (containerRef.current && worldRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const world = worldRef.current;
+          const structureSizeX = sizeX || 1;
+          const structureSizeY = sizeY || 1;
+          const structureScreenPos = getStructureScreenPosition(gridPos.x, gridPos.y, structureSizeX, structureSizeY);
+          screenPos = {
+            left: structureScreenPos.x * world.scale.x + world.x + rect.left,
+            top: structureScreenPos.y * world.scale.y + world.y + rect.top
+          };
+        }
+        onDrop(itemType, itemId, gridPos.x, gridPos.y, generatorType, machineType, screenPos);
       }
     } catch (err) {
       console.warn('Failed to parse drop data:', err);
