@@ -26,21 +26,15 @@ export default function PlaceableMachinesPanel({ inventory, rules, onDragStart, 
       sizeY: machine.sizeY
     }));
     e.dataTransfer.effectAllowed = 'move';
-    onDragStart?.('machine', machine.itemId, machine.sizeX, machine.sizeY);
+    onDragStart?.('machine', machine.itemId, machine.id, machine.sizeX, machine.sizeY);
   };
 
   const handleDragEnd = () => {
     onDragEnd?.();
   };
 
-  // Calculate preview box size based on machine dimensions
-  const getPreviewSize = (sizeX, sizeY) => {
-    const baseSize = 16;
-    return {
-      width: sizeX * baseSize,
-      height: sizeY * baseSize
-    };
-  };
+  // Fixed preview size for all machines (equivalent to 2x2 building)
+  const PREVIEW_SIZE = 48;
 
   return (
     <Card sx={{ height: '100%' }}>
@@ -55,7 +49,6 @@ export default function PlaceableMachinesPanel({ inventory, rules, onDragStart, 
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {availableMachines.map((machine) => {
-              const previewSize = getPreviewSize(machine.sizeX, machine.sizeY);
               return (
                 <Box
                   key={machine.id}
@@ -81,16 +74,21 @@ export default function PlaceableMachinesPanel({ inventory, rules, onDragStart, 
                     }
                   }}
                 >
-                  {/* Machine preview - colored box based on size */}
+                  {/* Machine preview - actual machine image at fixed size */}
                   <Box
+                    component="img"
+                    src={`/assets/factory/${machine.id}_idle.png`}
+                    alt={machine.name}
                     sx={{
-                      width: previewSize.width,
-                      height: previewSize.height,
-                      backgroundColor: 'grey.500',
-                      borderRadius: 0.5,
-                      border: '1px solid',
-                      borderColor: 'grey.700',
-                      flexShrink: 0
+                      width: PREVIEW_SIZE,
+                      height: PREVIEW_SIZE,
+                      objectFit: 'contain',
+                      flexShrink: 0,
+                      imageRendering: 'pixelated'
+                    }}
+                    onError={(e) => {
+                      // Fallback to a colored box if image fails to load
+                      e.target.style.display = 'none';
                     }}
                   />
                   <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>

@@ -26,21 +26,15 @@ export default function PlaceableGeneratorsPanel({ inventory, rules, onDragStart
       sizeY: generator.sizeY
     }));
     e.dataTransfer.effectAllowed = 'move';
-    onDragStart?.('generator', generator.itemId, generator.sizeX, generator.sizeY);
+    onDragStart?.('generator', generator.itemId, generator.id, generator.sizeX, generator.sizeY);
   };
 
   const handleDragEnd = () => {
     onDragEnd?.();
   };
 
-  // Calculate preview box size based on generator dimensions
-  const getPreviewSize = (sizeX, sizeY) => {
-    const baseSize = 16;
-    return {
-      width: sizeX * baseSize,
-      height: sizeY * baseSize
-    };
-  };
+  // Fixed preview size for all generators (equivalent to 2x2 building)
+  const PREVIEW_SIZE = 48;
 
   return (
     <Card sx={{ height: '100%' }}>
@@ -55,7 +49,6 @@ export default function PlaceableGeneratorsPanel({ inventory, rules, onDragStart
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {availableGenerators.map((generator) => {
-              const previewSize = getPreviewSize(generator.sizeX, generator.sizeY);
               return (
                 <Box
                   key={generator.id}
@@ -81,23 +74,23 @@ export default function PlaceableGeneratorsPanel({ inventory, rules, onDragStart
                     }
                   }}
                 >
-                  {/* Generator preview - colored box based on size */}
+                  {/* Generator preview - actual generator image at fixed size */}
                   <Box
+                    component="img"
+                    src={`/assets/factory/${generator.id}.png`}
+                    alt={generator.name}
                     sx={{
-                      width: previewSize.width,
-                      height: previewSize.height,
-                      backgroundColor: 'warning.dark',
-                      borderRadius: 0.5,
-                      border: '1px solid',
-                      borderColor: 'warning.main',
+                      width: PREVIEW_SIZE,
+                      height: PREVIEW_SIZE,
+                      objectFit: 'contain',
                       flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
+                      imageRendering: 'pixelated'
                     }}
-                  >
-                    <BoltIcon sx={{ fontSize: Math.min(previewSize.width, previewSize.height) * 0.6, color: 'warning.light' }} />
-                  </Box>
+                    onError={(e) => {
+                      // Fallback if image fails to load
+                      e.target.style.display = 'none';
+                    }}
+                  />
                   <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
                     <Typography variant="body2" noWrap>
                       {generator.name}

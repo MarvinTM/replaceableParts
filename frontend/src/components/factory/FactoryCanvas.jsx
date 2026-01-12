@@ -910,8 +910,7 @@ export default function FactoryCanvas({
 
     // === RENDER PLACEMENT OVERLAY (when dragging) ===
     if (dragState?.isDragging && hoverGridPos.x >= 0 && hoverGridPos.y >= 0) {
-      const overlayGraphics = new Graphics();
-      const { sizeX, sizeY, movingStructureId } = dragState;
+      const { sizeX, sizeY, movingStructureId, typeId, itemType } = dragState;
 
       // Check if placement is valid
       let isValid = false;
@@ -929,21 +928,70 @@ export default function FactoryCanvas({
         }
       }
 
-      const color = isValid ? 0x00ff00 : 0xff0000; // Green or Red
+      // Get the center position of the structure footprint
+      const screenPos = getStructureScreenPosition(hoverGridPos.x, hoverGridPos.y, sizeX, sizeY);
 
-      // Draw each tile the structure would occupy
-      for (let dx = 0; dx < sizeX; dx++) {
-        for (let dy = 0; dy < sizeY; dy++) {
-          const tileX = hoverGridPos.x + dx;
-          const tileY = hoverGridPos.y + dy;
-          const screenPos = gridToScreen(tileX, tileY);
-          drawIsometricTile(overlayGraphics, screenPos.x, screenPos.y, color, null);
+      // Try to render a fixed-size sprite preview
+      let previewRendered = false;
+      const previewContainer = new Container();
+      previewContainer.zIndex = 9999;
+
+      // Get the appropriate texture based on item type
+      let texture = null;
+      const isMachine = itemType === 'machine' || itemType === 'machine-move';
+      const isGenerator = itemType === 'generator' || itemType === 'generator-move';
+
+      if (typeId && assets) {
+        if (isMachine && assets.machines?.[typeId]?.idle) {
+          texture = assets.machines[typeId].idle;
+        } else if (isGenerator && assets.generators?.[typeId]?.static) {
+          texture = assets.generators[typeId].static;
         }
       }
 
-      overlayGraphics.alpha = 0.4;
-      overlayGraphics.zIndex = 9999;
-      world.addChild(overlayGraphics);
+      if (texture) {
+        const sprite = new Sprite(texture);
+        sprite.anchor.set(0.5, 1); // Bottom center anchor
+
+        // Scale to actual building size: (sizeX + sizeY) * TILE_WIDTH / 2
+        const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+        const spriteWidth = texture.width;
+        if (spriteWidth > 0) {
+          const scale = expectedWidth / spriteWidth;
+          sprite.scale.set(scale);
+        }
+
+        // Position at the center of the footprint
+        sprite.x = screenPos.x;
+        sprite.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+
+        // Apply tint based on validity (green = valid, red = invalid)
+        sprite.tint = isValid ? 0x88ff88 : 0xff8888;
+        sprite.alpha = 0.8;
+
+        previewContainer.addChild(sprite);
+        previewRendered = true;
+      }
+
+      // Fallback to polygon tiles if no sprite available
+      if (!previewRendered) {
+        const overlayGraphics = new Graphics();
+        const color = isValid ? 0x00ff00 : 0xff0000;
+
+        for (let dx = 0; dx < sizeX; dx++) {
+          for (let dy = 0; dy < sizeY; dy++) {
+            const tileX = hoverGridPos.x + dx;
+            const tileY = hoverGridPos.y + dy;
+            const tileScreenPos = gridToScreen(tileX, tileY);
+            drawIsometricTile(overlayGraphics, tileScreenPos.x, tileScreenPos.y, color, null);
+          }
+        }
+
+        overlayGraphics.alpha = 0.4;
+        previewContainer.addChild(overlayGraphics);
+      }
+
+      world.addChild(previewContainer);
     }
 
   }, [floorSpace, machines, generators, assetsLoaded, isHovering, dragState, hoverGridPos, engineState, rules]);
@@ -1454,7 +1502,7 @@ export default function FactoryCanvas({
              sizeY = machineConfig.sizeY;
            }
          }
-         onStructureDragStart?.(dragData.item, 'machine', sizeX, sizeY);
+         onStructureDragStart?.(dragData.item, 'machine', dragData.item.type, sizeX, sizeY);
       } else if (dragData.type === 'generator') {
          // Determine generator size
          if (rules?.generators && dragData.item.type) {
@@ -1464,7 +1512,7 @@ export default function FactoryCanvas({
                sizeY = genConfig.sizeY;
              }
          }
-         onStructureDragStart?.(dragData.item, 'generator', sizeX, sizeY);
+         onStructureDragStart?.(dragData.item, 'generator', dragData.item.type, sizeX, sizeY);
       }
     }
 

@@ -83,8 +83,7 @@ function FactoryTab() {
     isDragging: false,
     itemType: null,
     itemId: null,
-    sizeX: 0,
-    sizeY: 0,
+    typeId: null, // The machine/generator type ID for sprite lookup
     sizeX: 0,
     sizeY: 0,
     movingStructureId: null // If set, we're moving an existing structure (machine or generator)
@@ -114,16 +113,16 @@ function FactoryTab() {
   };
 
   // Drag handlers for placing machines/generators
-  const handleDragStart = (itemType, itemId, sizeX, sizeY) => {
-    setDragState({ isDragging: true, itemType, itemId, sizeX, sizeY, movingStructureId: null });
+  const handleDragStart = (itemType, itemId, typeId, sizeX, sizeY) => {
+    setDragState({ isDragging: true, itemType, itemId, typeId, sizeX, sizeY, movingStructureId: null });
   };
 
   const handleDragEnd = () => {
-    setDragState({ isDragging: false, itemType: null, itemId: null, sizeX: 0, sizeY: 0, movingStructureId: null });
+    setDragState({ isDragging: false, itemType: null, itemId: null, typeId: null, sizeX: 0, sizeY: 0, movingStructureId: null });
   };
 
   // Handle starting a drag on an existing structure (for repositioning)
-  const handleStructureDragStart = (item, type, sizeX, sizeY) => {
+  const handleStructureDragStart = (item, type, typeId, sizeX, sizeY) => {
     // Map internal type to drag itemType
     const itemType = type === 'machine' ? 'machine-move' : 'generator-move';
     const itemId = item.id;
@@ -132,6 +131,7 @@ function FactoryTab() {
       isDragging: true,
       itemType,
       itemId,
+      typeId,
       sizeX,
       sizeY,
       movingStructureId: item.id
