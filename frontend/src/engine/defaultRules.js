@@ -394,6 +394,19 @@ export const defaultRules = {
         frames: 4,
         speed: 0.02
       }
+    },
+    {
+      id: 'nuclear_power_plant',
+      itemId: 'nuclear_power_plant',
+      name: 'nuclear_power_plant',
+      sizeX: 32,                    
+      sizeY: 32,
+      energyOutput: 1000000000,
+      animation: {
+        frames: 4,
+        speed: 0.02,
+        frameDisposition: 'matrix'
+      }
     }
   ],
 

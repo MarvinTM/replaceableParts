@@ -38,7 +38,8 @@ export const initialState = {
     production_machine: 5,
     treadwheel: 5,
     ore_crusher: 5,
-    windmill: 5
+    windmill: 5,
+    nuclear_power_plant: 5
   },
 
   // Starting machine for demonstration

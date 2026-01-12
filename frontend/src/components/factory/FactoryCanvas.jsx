@@ -144,21 +144,48 @@ async function loadAssets(rules) {
 }
 
 /**
- * Create animation frames from a horizontal sprite sheet
+ * Create animation frames from a sprite sheet
+ * @param {Texture} texture - The sprite sheet texture
+ * @param {number} frameCount - Number of frames in the animation
+ * @param {string} frameDisposition - 'horizontal' (single row) or 'matrix' (grid layout)
+ * @param {number} [explicitCols] - Optional explicit column count for matrix layouts
  */
-function createAnimationFrames(texture, frameCount) {
+function createAnimationFrames(texture, frameCount, frameDisposition = 'horizontal', explicitCols = null) {
   if (!texture) return null;
 
-  const frameWidth = texture.width / frameCount;
-  const frameHeight = texture.height;
+  let cols, rows;
+
+  if (frameDisposition === 'matrix') {
+    if (explicitCols !== null && explicitCols > 0) {
+      // Use explicitly provided column count
+      cols = explicitCols;
+    } else {
+      // Assume frames form a square grid: 4 frames -> 2x2, 9 frames -> 3x3, etc.
+      // This is more reliable than aspect ratio calculation which can fail
+      // due to image dimensions not matching expected ratios
+      cols = Math.ceil(Math.sqrt(frameCount));
+    }
+    rows = Math.ceil(frameCount / cols);
+  } else {
+    // Default: horizontal strip (all frames in a single row)
+    cols = frameCount;
+    rows = 1;
+  }
+
+  const frameWidth = texture.width / cols;
+  const frameHeight = texture.height / rows;
   const frames = [];
 
+  // Extract frames left-to-right, top-to-bottom
   for (let i = 0; i < frameCount; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+
     const frame = new Texture({
       source: texture.source,
       frame: {
-        x: i * frameWidth,
-        y: 0,
+        x: col * frameWidth,
+        y: row * frameHeight,
         width: frameWidth,
         height: frameHeight
       }
@@ -547,16 +574,20 @@ export default function FactoryCanvas({
           // Create new animated sprite
           let framesToUse = ANIM_CONFIG.generator.frames;
           let speedToUse = ANIM_CONFIG.generator.speed;
+          let frameDispositionToUse = 'horizontal';
+          let colsToUse = null;
 
           if (rules && rules.generators) {
             const genConfig = rules.generators.find(g => g.id === gen.type);
             if (genConfig?.animation) {
                framesToUse = genConfig.animation.frames;
                speedToUse = genConfig.animation.speed;
+               frameDispositionToUse = genConfig.animation.frameDisposition || 'horizontal';
+               colsToUse = genConfig.animation.cols || null;
             }
           }
 
-          const frames = createAnimationFrames(genAssets.anim, framesToUse);
+          const frames = createAnimationFrames(genAssets.anim, framesToUse, frameDispositionToUse, colsToUse);
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse;
@@ -579,6 +610,16 @@ export default function FactoryCanvas({
         displayObject.x = screenPos.x;
         // Position at the visual bottom of the footprint diamond to avoid "floating"
         displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+
+        // Scale sprite to fit the isometric footprint
+        // Expected width for a sizeX × sizeY structure: (sizeX + sizeY) * TILE_WIDTH / 2
+        const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+        const spriteWidth = displayObject.texture.width;
+        if (spriteWidth > 0) {
+          const scale = expectedWidth / spriteWidth;
+          displayObject.scale.set(scale);
+        }
+
         // zIndex should be based on visual screen Y for correct isometric sorting
         displayObject.zIndex = screenPos.y;
         structuresContainer.addChild(displayObject);
@@ -633,16 +674,20 @@ export default function FactoryCanvas({
           // Create new animated sprite
           let framesToUse = ANIM_CONFIG.machine.frames;
           let speedToUse = ANIM_CONFIG.machine.speed;
+          let frameDispositionToUse = 'horizontal';
+          let colsToUse = null;
 
           if (rules && rules.machines) {
             const machineConfig = rules.machines.find(m => m.id === machine.type);
             if (machineConfig?.animation) {
                framesToUse = machineConfig.animation.frames;
                speedToUse = machineConfig.animation.speed;
+               frameDispositionToUse = machineConfig.animation.frameDisposition || 'horizontal';
+               colsToUse = machineConfig.animation.cols || null;
             }
           }
 
-          const frames = createAnimationFrames(machineAssets.workingAnim, framesToUse);
+          const frames = createAnimationFrames(machineAssets.workingAnim, framesToUse, frameDispositionToUse, colsToUse);
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse;
@@ -684,6 +729,16 @@ export default function FactoryCanvas({
         displayObject.x = screenPos.x;
         // Position at the visual bottom of the footprint diamond to avoid "floating"
         displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+
+        // Scale sprite to fit the isometric footprint
+        // Expected width for a sizeX × sizeY structure: (sizeX + sizeY) * TILE_WIDTH / 2
+        const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+        const spriteWidth = displayObject.texture.width;
+        if (spriteWidth > 0) {
+          const scale = expectedWidth / spriteWidth;
+          displayObject.scale.set(scale);
+        }
+
         // zIndex based on screen Y
         displayObject.zIndex = screenPos.y;
         structuresContainer.addChild(displayObject);
