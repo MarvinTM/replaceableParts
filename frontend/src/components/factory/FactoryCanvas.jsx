@@ -950,6 +950,22 @@ export default function FactoryCanvas({
       }
 
       if (texture) {
+        // First, draw the tile indicators underneath to show exact footprint
+        const tileGraphics = new Graphics();
+        const tileColor = isValid ? 0x00ff00 : 0xff0000;
+
+        for (let dx = 0; dx < sizeX; dx++) {
+          for (let dy = 0; dy < sizeY; dy++) {
+            const tileX = hoverGridPos.x + dx;
+            const tileY = hoverGridPos.y + dy;
+            const tileScreenPos = gridToScreen(tileX, tileY);
+            drawIsometricTile(tileGraphics, tileScreenPos.x, tileScreenPos.y, tileColor, null);
+          }
+        }
+        tileGraphics.alpha = 0.3;
+        previewContainer.addChild(tileGraphics);
+
+        // Then add the sprite on top
         const sprite = new Sprite(texture);
         sprite.anchor.set(0.5, 1); // Bottom center anchor
 
