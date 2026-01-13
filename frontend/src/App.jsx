@@ -6,6 +6,7 @@ import GamePage from './pages/GamePage';
 import AdminPage from './pages/AdminPage';
 import SettingsPage from './pages/SettingsPage';
 import PendingApprovalPage from './pages/PendingApprovalPage';
+import DebugGraphPage from './pages/DebugGraphPage';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
 
@@ -104,6 +105,8 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      {/* Debug route - no auth required */}
+      <Route path="/debug/graph" element={<DebugGraphPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
