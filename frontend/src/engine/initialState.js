@@ -38,6 +38,7 @@ export const initialState = {
     production_machine: 5,
     treadwheel: 5,
     ore_crusher: 5,
+    tailoring_table: 5,
     windmill: 5,
     nuclear_power_plant: 5
   },
@@ -101,6 +102,12 @@ export const initialState = {
       resourceType: 'sand',
       rate: 1,
       active: true
+    },
+    {
+      id: 'node_flux_1',
+      resourceType: 'flux',
+      rate: 1,
+      active: true
     }
   ],
 
@@ -115,11 +122,10 @@ export const initialState = {
     'glass',
     'iron_ingot',
     'copper_ingot',
+    'linen_thread',
+    
     // Equipment (so player can build machines and generators from start)
-    'production_machine',
-    'manual_crank',
-    'water_wheel',
-    'steam_engine'
+    'production_machine'
   ],
 
   unlockedRecipes: [
@@ -132,11 +138,9 @@ export const initialState = {
     'glass',
     'iron_ingot',
     'copper_ingot',
+    'linen_thread',
     // Equipment
-    'production_machine',
-    'manual_crank',
-    'water_wheel',
-    'steam_engine'
+    'production_machine'
   ],
 
   // Research starts inactive (cost defined in rules)

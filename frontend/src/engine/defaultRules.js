@@ -16,6 +16,7 @@ export const defaultRules = {
     { id: 'coal', name: 'Coal', basePrice: 2, category: 'raw', weight: 1 },
     { id: 'clay', name: 'Clay', basePrice: 2, category: 'raw', weight: 1 },
     { id: 'sand', name: 'Sand', basePrice: 1, category: 'raw', weight: 1 },
+    { id: 'flux', name: 'flux', basePrice: 1, category: 'raw', weight: 1 },
 
     // Intermediate products - weight: 2-4
     { id: 'planks', name: 'Planks', basePrice: 5, category: 'intermediate', weight: 2 },
@@ -33,6 +34,8 @@ export const defaultRules = {
     { id: 'copper_plate', name: 'Copper Plate', basePrice: 15, category: 'intermediate', weight: 4 },
     { id: 'wooden_beam', name: 'Wooden Beam', basePrice: 8, category: 'intermediate', weight: 3 },
     { id: 'wooden_crate', name: 'Wooden Crate', basePrice: 12, category: 'intermediate', weight: 4 },
+    { id: 'linen_thread', name: 'Linen Thread', basePrice: 12, category: 'intermediate', weight: 4 },
+    { id: 'heavy_linen', name: 'Heavy Linen', basePrice: 12, category: 'intermediate', weight: 4 },
 
     // Final goods - weight: 5-10
     { id: 'tool_handle', name: 'Tool Handle', basePrice: 25, category: 'final', weight: 5 },
@@ -45,9 +48,7 @@ export const defaultRules = {
 
     // Equipment (machines and generators as craftable items) - weight: 15-30
     { id: 'production_machine', name: 'Production Machine', basePrice: 100, category: 'equipment', weight: 20 },
-    { id: 'manual_crank', name: 'Manual Crank', basePrice: 30, category: 'equipment', weight: 8 },
-    { id: 'water_wheel', name: 'Water Wheel', basePrice: 80, category: 'equipment', weight: 15 },
-    { id: 'steam_engine', name: 'Steam Engine', basePrice: 150, category: 'equipment', weight: 25 },
+    { id: 'tailoring_table', name: 'Tailoring Table', basePrice: 100, category: 'equipment', weight: 20 },
   ],
 
   // ============================================================================
@@ -194,17 +195,17 @@ export const defaultRules = {
       tier: 2
     },
     {
-      id: 'heavy_linen',
-      inputs: { flux: 5, linen_thread: 1 },
-      outputs: { heavy_linen: 1 },
+      id: 'linen_thread',
+      inputs: { flux: 2 },
+      outputs: { linen_thread: 1 },
       energyRequired: 2,
       ticksToComplete: 1,
       tier: 2
     },
     {
-      id: 'linen_thread',
-      inputs: { flux: 2 },
-      outputs: { linen_thread: 1 },
+      id: 'heavy_linen',
+      inputs: { flux: 5, linen_thread: 1 },
+      outputs: { heavy_linen: 1 },
       energyRequired: 2,
       ticksToComplete: 1,
       tier: 2
@@ -278,26 +279,10 @@ export const defaultRules = {
       tier: 4
     },
     {
-      id: 'ore_crusher',
-      inputs: { iron_plate: 4, iron_gear: 3, wooden_beam: 2 },
-      outputs: { ore_crusher: 1 },
+      id: 'tailoring_table',
+      inputs: { planks: 4, iron_gear: 3, iron_rod: 2, wooden_beam: 8 },
+      outputs: { tailoring_table: 1 },
       energyRequired: 6,
-      ticksToComplete: 2,
-      tier: 4
-    },
-    {
-      id: 'manual_crank',
-      inputs: { wood: 5, iron_rod: 2 },
-      outputs: { manual_crank: 1 },
-      energyRequired: 2,
-      ticksToComplete: 1,
-      tier: 4
-    },
-    {
-      id: 'windmill',
-      inputs: { wooden_beam: 10, iron_gear: 4, iron_rod: 4, stone_bricks: 15, heavy_linen: 20 },
-      outputs: { windmill: 1 },
-      energyRequired: 4,
       ticksToComplete: 2,
       tier: 4
     },
@@ -329,7 +314,7 @@ export const defaultRules = {
   // ============================================================================
   machines: [
     {
-      id: 'basic_assembler',           // Used for image filenames
+      id: 'production_machine',           // Used for image filenames
       itemId: 'production_machine',    // Recipe ID to produce this machine
       name: 'Basic Assembler',
       sizeX: 1,                        // Floor space width (X dimension)
@@ -345,8 +330,7 @@ export const defaultRules = {
         'copper_wire', 'copper_plate', 'wooden_beam', 'wooden_crate',
         'iron_ingot_charcoal', 'copper_ingot_charcoal', 'tool_handle',
         'basic_tools', 'simple_motor', 'window_frame', 'foundation_block',
-        'reinforced_wall', 'mechanical_arm', 'production_machine',
-        'manual_crank', 'water_wheel', 'steam_engine'
+        'reinforced_wall', 'mechanical_arm', 'production_machine'
       ]
     },
     {
@@ -363,7 +347,22 @@ export const defaultRules = {
       allowedRecipes: [                // Recipes this machine can process
         'charcoal', 'stone_bricks'
       ]
-    }
+    },
+    {
+      id: 'tailoring_table',           // Used for image filenames
+      itemId: 'tailoring_table',    // Recipe ID to produce this machine
+      name: 'Tailoring Table',
+      sizeX: 1,                        // Floor space width (X dimension)
+      sizeY: 2,                        // Floor space height (Y dimension)
+      energyConsumption: 2,            // Energy consumption per tick
+      animation: {
+        frames: 4,
+        speed: 0.1
+      },
+      allowedRecipes: [                // Recipes this machine can process
+        'linen_thread', 'heavy_linen'
+      ]
+    },
   ],
 
   // ============================================================================
