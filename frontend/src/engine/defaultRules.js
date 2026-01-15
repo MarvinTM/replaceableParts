@@ -22,8 +22,6 @@ export const defaultRules = {
     { id: 'oil', name: 'Crude Oil', basePrice: 5, category: 'raw', weight: 2, age: 4 },
     { id: 'bauxite', name: 'Bauxite', basePrice: 4, category: 'raw', weight: 2, age: 5 }, // Aluminum source
     { id: 'rare_earth_ore', name: 'Rare Earth Ore', basePrice: 10, category: 'raw', weight: 2, age: 7 }, // High tech source
-    { id: 'water', name: 'Water', basePrice: 1, category: 'raw', weight: 1, age: 1 },
-    { id: 'hydrogen', name: 'Hydrogen', basePrice: 8, category: 'raw', weight: 0.5, age: 7 },
 
     // ========================
     // AGE 1: PRIMITIVE (Wood, Stone, Iron)
@@ -89,6 +87,10 @@ export const defaultRules = {
     { id: 'tool_rack', name: 'Tool Rack', basePrice: 18, category: 'final', weight: 5, age: 1 },
     { id: 'shield_rack', name: 'Weapon Rack', basePrice: 22, category: 'final', weight: 6, age: 1 },
     { id: 'iron_grate', name: 'Iron Grate', basePrice: 20, category: 'final', weight: 8, age: 1 },
+    { id: 'coat_hanger', name: 'Coat Hanger', basePrice: 8, category: 'final', weight: 2, age: 1 },
+    { id: 'shingled_roof', name: 'Shingled Roof Section', basePrice: 24, category: 'final', weight: 12, age: 1 },
+    { id: 'wagon', name: 'Wooden Wagon', basePrice: 55, category: 'final', weight: 35, age: 1 },
+    { id: 'water_wheel', name: 'Water Wheel', basePrice: 48, category: 'final', weight: 30, age: 1 },
 
     // ========================
     // AGE 2: REFINEMENT (Copper, Clay, Glass)
@@ -140,6 +142,7 @@ export const defaultRules = {
     { id: 'copper_statue', name: 'Copper Statue', basePrice: 75, category: 'final', weight: 15, age: 2 },
     { id: 'magnifying_glass', name: 'Magnifying Glass', basePrice: 42, category: 'final', weight: 1, age: 2 },
     { id: 'sundial', name: 'Stone Sundial', basePrice: 38, category: 'final', weight: 8, age: 2 },
+    { id: 'bronze_armor', name: 'Bronze Armor', basePrice: 85, category: 'final', weight: 20, age: 2 },
 
     // ========================
     // AGE 3: INDUSTRIAL (Steel, Steam)
@@ -196,6 +199,10 @@ export const defaultRules = {
     { id: 'wrench', name: 'Steel Wrench', basePrice: 28, category: 'final', weight: 2, age: 3 },
     { id: 'pipe_organ', name: 'Pipe Organ', basePrice: 450, category: 'final', weight: 150, age: 3 },
     { id: 'industrial_boiler', name: 'Industrial Boiler', basePrice: 310, category: 'final', weight: 95, age: 3 },
+    { id: 'conveyor_belt', name: 'Conveyor Belt', basePrice: 180, category: 'final', weight: 50, age: 3 },
+    { id: 'pressure_cooker', name: 'Pressure Cooker', basePrice: 95, category: 'final', weight: 15, age: 3 },
+    { id: 'plumbing_system', name: 'Plumbing System', basePrice: 140, category: 'final', weight: 35, age: 3 },
+    { id: 'rotary_engine', name: 'Rotary Engine', basePrice: 320, category: 'final', weight: 110, age: 3 },
 
     // ========================
     // AGE 4: COMBUSTION (Oil, Plastic, Rubber, Concrete)
@@ -249,6 +256,9 @@ export const defaultRules = {
     { id: 'flashlight', name: 'Flashlight', basePrice: 35, category: 'final', weight: 1, age: 4 },
     { id: 'automobile', name: 'Automobile', basePrice: 1200, category: 'final', weight: 250, age: 4 },
     { id: 'road_segment', name: 'Paved Road Section', basePrice: 180, category: 'final', weight: 100, age: 4 },
+    { id: 'leather_jacket', name: 'Leather Jacket', basePrice: 120, category: 'final', weight: 3, age: 4 },
+    { id: 'amplifier', name: 'Tube Amplifier', basePrice: 140, category: 'final', weight: 8, age: 4 },
+    { id: 'diesel_truck', name: 'Diesel Truck', basePrice: 1500, category: 'final', weight: 350, age: 4 },
 
     // ========================
     // AGE 5: ELECTRIC (Aluminum, Electronics v1)
@@ -298,6 +308,11 @@ export const defaultRules = {
     { id: 'water_heater', name: 'Water Heater', basePrice: 280, category: 'final', weight: 40, age: 5 },
     { id: 'sander', name: 'Electric Sander', basePrice: 85, category: 'final', weight: 3, age: 5 },
     { id: 'elevator_motor', name: 'Elevator Motor', basePrice: 360, category: 'final', weight: 45, age: 5 },
+    { id: 'motor_housing_unit', name: 'Motor Housing Unit', basePrice: 85, category: 'final', weight: 12, age: 5 },
+    { id: 'insulated_pipe', name: 'Insulated Pipe', basePrice: 45, category: 'final', weight: 8, age: 5 },
+    { id: 'relay_panel', name: 'Relay Control Panel', basePrice: 130, category: 'final', weight: 15, age: 5 },
+    { id: 'wire_spool', name: 'Steel Wire Spool', basePrice: 38, category: 'final', weight: 6, age: 5 },
+    { id: 'lamp_fixture', name: 'Lamp Fixture', basePrice: 42, category: 'final', weight: 3, age: 5 },
 
     // ========================
     // AGE 6: DIGITAL (Silicon, Chips)
@@ -343,6 +358,9 @@ export const defaultRules = {
     { id: 'led_display', name: 'LED Display Panel', basePrice: 420, category: 'final', weight: 15, age: 6 },
     { id: 'surveillance_camera', name: 'Security Camera', basePrice: 140, category: 'final', weight: 2, age: 6 },
     { id: 'tablet', name: 'Tablet Computer', basePrice: 450, category: 'final', weight: 1, age: 6 },
+    { id: 'bracket_assembly', name: 'Bracket Assembly', basePrice: 65, category: 'final', weight: 5, age: 6 },
+    { id: 'computer_station', name: 'Computer Workstation', basePrice: 950, category: 'final', weight: 35, age: 6 },
+    { id: 'cable_organizer', name: 'Cable Management System', basePrice: 55, category: 'final', weight: 3, age: 6 },
 
     // ========================
     // AGE 7: FUTURE (Rare Earths, Advanced)
@@ -388,6 +406,10 @@ export const defaultRules = {
     { id: 'energy_shield', name: 'Energy Shield Generator', basePrice: 3800, category: 'final', weight: 30, age: 7 },
     { id: 'weather_control', name: 'Weather Control Device', basePrice: 12000, category: 'final', weight: 150, age: 7 },
     { id: 'replicator', name: 'Matter Replicator', basePrice: 18000, category: 'final', weight: 100, age: 7 },
+    { id: 'cryogenic_chamber', name: 'Cryogenic Chamber', basePrice: 3200, category: 'final', weight: 180, age: 7 },
+    { id: 'space_helmet', name: 'Space Helmet', basePrice: 850, category: 'final', weight: 5, age: 7 },
+    { id: 'graphene_armor', name: 'Graphene Armor', basePrice: 2400, category: 'final', weight: 8, age: 7 },
+    { id: 'neural_implant', name: 'Neural Implant', basePrice: 1800, category: 'final', weight: 0.5, age: 7 },
 
     // ========================
     // EQUIPMENT (Machines & Generators)
@@ -474,6 +496,10 @@ export const defaultRules = {
     { id: 'tool_rack', inputs: { planks: 3, nails: 3 }, outputs: { tool_rack: 1 }, energyRequired: 2, ticksToComplete: 2, tier: 1, age: 1 },
     { id: 'shield_rack', inputs: { planks: 4, nails: 4 }, outputs: { shield_rack: 1 }, energyRequired: 2, ticksToComplete: 2, tier: 1, age: 1 },
     { id: 'iron_grate', inputs: { iron_rod: 6 }, outputs: { iron_grate: 1 }, energyRequired: 3, ticksToComplete: 3, tier: 1, age: 1 },
+    { id: 'coat_hanger', inputs: { wooden_dowel: 4, iron_wire: 2 }, outputs: { coat_hanger: 1 }, energyRequired: 1, ticksToComplete: 1, tier: 1, age: 1 },
+    { id: 'shingled_roof', inputs: { wooden_shingle: 20, nails: 10 }, outputs: { shingled_roof: 1 }, energyRequired: 4, ticksToComplete: 5, tier: 1, age: 1 },
+    { id: 'wagon', inputs: { planks: 6, iron_axle: 2, wheel: 4, iron_bracket: 4 }, outputs: { wagon: 1 }, energyRequired: 8, ticksToComplete: 10, tier: 1, age: 1 },
+    { id: 'water_wheel', inputs: { wooden_beam: 8, iron_axle: 1, iron_bracket: 6 }, outputs: { water_wheel: 1 }, energyRequired: 6, ticksToComplete: 8, tier: 1, age: 1 },
 
     // --- AGE 2: REFINEMENT ---
     // Intermediates
@@ -523,6 +549,7 @@ export const defaultRules = {
     { id: 'copper_statue', inputs: { copper_ingot: 3, copper_sheet: 2 }, outputs: { copper_statue: 1 }, energyRequired: 6, ticksToComplete: 6, tier: 2, age: 2 },
     { id: 'magnifying_glass', inputs: { glass_lens: 1, brass_sheet: 1 }, outputs: { magnifying_glass: 1 }, energyRequired: 4, ticksToComplete: 4, tier: 2, age: 2 },
     { id: 'sundial', inputs: { stone_slab: 1, brass_sheet: 1 }, outputs: { sundial: 1 }, energyRequired: 3, ticksToComplete: 3, tier: 2, age: 2 },
+    { id: 'bronze_armor', inputs: { bronze_ingot: 6, iron_chain: 4 }, outputs: { bronze_armor: 1 }, energyRequired: 12, ticksToComplete: 10, tier: 2, age: 2 },
 
     // --- AGE 3: INDUSTRIAL ---
     // Intermediates
@@ -577,6 +604,10 @@ export const defaultRules = {
     { id: 'wrench', inputs: { steel_ingot: 1 }, outputs: { wrench: 1 }, energyRequired: 4, ticksToComplete: 2, tier: 3, age: 3 },
     { id: 'pipe_organ', inputs: { steel_pipe: 8, planks: 4, bellows: 1 }, outputs: { pipe_organ: 1 }, energyRequired: 30, ticksToComplete: 25, tier: 3, age: 3 },
     { id: 'industrial_boiler', inputs: { boiler: 2, steel_plate: 4, steel_pipe: 4 }, outputs: { industrial_boiler: 1 }, energyRequired: 40, ticksToComplete: 15, tier: 3, age: 3 },
+    { id: 'conveyor_belt', inputs: { ball_bearing: 8, steel_chain: 4, steel_beam: 2, electric_motor: 1 }, outputs: { conveyor_belt: 1 }, energyRequired: 25, ticksToComplete: 12, tier: 3, age: 3 },
+    { id: 'pressure_cooker', inputs: { steel_plate: 2, pressure_gauge: 1, steam_valve: 1 }, outputs: { pressure_cooker: 1 }, energyRequired: 15, ticksToComplete: 8, tier: 3, age: 3 },
+    { id: 'plumbing_system', inputs: { steel_pipe: 6, coupling: 4, steam_valve: 2 }, outputs: { plumbing_system: 1 }, energyRequired: 18, ticksToComplete: 10, tier: 3, age: 3 },
+    { id: 'rotary_engine', inputs: { steel_ingot: 4, camshaft: 1, crankshaft: 1, ball_bearing: 4, gear: 3 }, outputs: { rotary_engine: 1 }, energyRequired: 50, ticksToComplete: 20, tier: 3, age: 3 },
 
     // --- AGE 4: COMBUSTION ---
     // - Updated with new logic for Age 4
@@ -631,6 +662,9 @@ export const defaultRules = {
     { id: 'oil_drum', inputs: { steel_plate: 2 }, outputs: { oil_drum: 1 }, energyRequired: 10, ticksToComplete: 3, tier: 4, age: 4 },
     { id: 'flashlight', inputs: { plastic: 1, light_bulb: 1, battery: 1 }, outputs: { flashlight: 1 }, energyRequired: 8, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'road_segment', inputs: { asphalt: 4, concrete: 2 }, outputs: { road_segment: 1 }, energyRequired: 20, ticksToComplete: 5, tier: 4, age: 4 },
+    { id: 'leather_jacket', inputs: { leather: 3, synthetic_fabric: 2 }, outputs: { leather_jacket: 1 }, energyRequired: 12, ticksToComplete: 6, tier: 4, age: 4 },
+    { id: 'amplifier', inputs: { vacuum_tube: 4, copper_wire: 6, steel_plate: 1 }, outputs: { amplifier: 1 }, energyRequired: 20, ticksToComplete: 8, tier: 4, age: 4 },
+    { id: 'diesel_truck', inputs: { car_engine: 1, car_tire: 6, steel_plate: 8, diesel_fuel: 4 }, outputs: { diesel_truck: 1 }, energyRequired: 180, ticksToComplete: 50, tier: 4, age: 4 },
 
     // --- AGE 5: ELECTRIC ---
     // - Updated with new logic for Age 5
@@ -679,6 +713,11 @@ export const defaultRules = {
     { id: 'water_heater', inputs: { heating_element: 2, steel_plate: 3 }, outputs: { water_heater: 1 }, energyRequired: 40, ticksToComplete: 8, tier: 5, age: 5 },
     { id: 'sander', inputs: { electric_motor: 1, plastic: 1 }, outputs: { sander: 1 }, energyRequired: 20, ticksToComplete: 4, tier: 5, age: 5 },
     { id: 'elevator_motor', inputs: { electric_motor: 2, steel_gear: 4, steel_beam: 2 }, outputs: { elevator_motor: 1 }, energyRequired: 60, ticksToComplete: 12, tier: 5, age: 5 },
+    { id: 'motor_housing_unit', inputs: { housing: 2, electric_motor: 1, aluminum_sheet: 1 }, outputs: { motor_housing_unit: 1 }, energyRequired: 18, ticksToComplete: 6, tier: 5, age: 5 },
+    { id: 'insulated_pipe', inputs: { steel_pipe: 2, insulation: 1 }, outputs: { insulated_pipe: 1 }, energyRequired: 10, ticksToComplete: 4, tier: 5, age: 5 },
+    { id: 'relay_panel', inputs: { relay: 6, circuit_board: 1, steel_plate: 1 }, outputs: { relay_panel: 1 }, energyRequired: 22, ticksToComplete: 8, tier: 5, age: 5 },
+    { id: 'wire_spool', inputs: { steel_wire: 10, aluminum_rod: 1 }, outputs: { wire_spool: 1 }, energyRequired: 8, ticksToComplete: 3, tier: 5, age: 5 },
+    { id: 'lamp_fixture', inputs: { bulb_socket: 3, aluminum_sheet: 1, steel_bracket: 2 }, outputs: { lamp_fixture: 1 }, energyRequired: 10, ticksToComplete: 4, tier: 5, age: 5 },
 
     // --- AGE 6: DIGITAL ---
     // - Updated with new logic for Age 6
@@ -723,6 +762,9 @@ export const defaultRules = {
     { id: 'led_display', inputs: { led: 8, circuit_board: 2, aluminum_sheet: 2 }, outputs: { led_display: 1 }, energyRequired: 80, ticksToComplete: 10, tier: 6, age: 6 },
     { id: 'surveillance_camera', inputs: { digital_camera: 1, electric_motor: 1 }, outputs: { surveillance_camera: 1 }, energyRequired: 70, ticksToComplete: 10, tier: 6, age: 6 },
     { id: 'tablet', inputs: { screen: 1, motherboard: 1, battery: 1, aluminum_sheet: 1 }, outputs: { tablet: 1 }, energyRequired: 90, ticksToComplete: 12, tier: 6, age: 6 },
+    { id: 'bracket_assembly', inputs: { steel_bracket: 6, steel_plate: 1 }, outputs: { bracket_assembly: 1 }, energyRequired: 15, ticksToComplete: 5, tier: 6, age: 6 },
+    { id: 'computer_station', inputs: { computer: 1, monitor: 2, mouse: 1, keyboard: 1 }, outputs: { computer_station: 1 }, energyRequired: 120, ticksToComplete: 20, tier: 6, age: 6 },
+    { id: 'cable_organizer', inputs: { usb_cable: 4, plastic: 2 }, outputs: { cable_organizer: 1 }, energyRequired: 12, ticksToComplete: 4, tier: 6, age: 6 },
 
     // --- AGE 7: FUTURE ---
     // - Updated with new logic for Age 7
@@ -767,6 +809,10 @@ export const defaultRules = {
     { id: 'energy_shield', inputs: { plasma_containment: 2, fusion_core: 1 }, outputs: { energy_shield: 1 }, energyRequired: 1000, ticksToComplete: 80, tier: 7, age: 7 },
     { id: 'weather_control', inputs: { quantum_computer: 1, digital_sensor: 20, anti_grav_unit: 4 }, outputs: { weather_control: 1 }, energyRequired: 3000, ticksToComplete: 150, tier: 7, age: 7 },
     { id: 'replicator', inputs: { quantum_computer: 1, teleporter_pad: 1, nano_material: 20 }, outputs: { replicator: 1 }, energyRequired: 8000, ticksToComplete: 300, tier: 7, age: 7 },
+    { id: 'cryogenic_chamber', inputs: { liquid_nitrogen: 6, composite: 4, digital_sensor: 2 }, outputs: { cryogenic_chamber: 1 }, energyRequired: 600, ticksToComplete: 60, tier: 7, age: 7 },
+    { id: 'space_helmet', inputs: { helmet: 1, composite: 2, glass: 1 }, outputs: { space_helmet: 1 }, energyRequired: 120, ticksToComplete: 15, tier: 7, age: 7 },
+    { id: 'graphene_armor', inputs: { graphene_sheet: 8, composite: 4, nano_material: 2 }, outputs: { graphene_armor: 1 }, energyRequired: 400, ticksToComplete: 40, tier: 7, age: 7 },
+    { id: 'neural_implant', inputs: { neural_interface: 1, ai_core: 1, adv_battery: 1 }, outputs: { neural_implant: 1 }, energyRequired: 350, ticksToComplete: 35, tier: 7, age: 7 },
 
     // --- MACHINES & GENERATORS ---
     { id: 'basic_assembler', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { basic_assembler: 1 }, energyRequired: 10, ticksToComplete: 5, tier: 1, age: 1 },
@@ -817,7 +863,11 @@ export const defaultRules = {
       energyConsumption: 1,
       animation: { frames: 4, speed: 0.1 },
       allowedRecipes: [
-        'iron_ingot', 'copper_ingot', 'bricks', 'glass', 'stone_bricks', 'aluminum_ingot', 'silicon' // Added advanced smelting
+        'iron_ingot', 'copper_ingot', 'bricks', 'glass', 'stone_bricks', 'aluminum_ingot', 'silicon', // Added advanced smelting
+        // Age 1 stone/ceramic processing
+        'stone_slab', 'stone_tile', 'mortar',
+        // Age 2 ceramics and glass
+        'ceramic_tile', 'terracotta', 'porcelain', 'glass_pane', 'glass_lens', 'decorative_glass'
       ]
     },
     {
@@ -828,12 +878,21 @@ export const defaultRules = {
       energyConsumption: 2,
       animation: { frames: 4, speed: 0.1 },
       allowedRecipes: [
-        // Age 1
+        // Age 1 - Intermediates
         'planks', 'wooden_beam', 'iron_plate', 'iron_rod', 'nails',
+        'rope', 'wooden_dowel', 'iron_wire', 'iron_bracket', 'hinges', 'iron_chain', 'wooden_shingle', 'iron_axle', 'wheel', 'wooden_handle',
+        // Age 1 - Final Goods
         'chair', 'table', 'wardrobe', 'chest', 'bucket', 'hammer', 'pickaxe', 'shovel', 'fence', 'door', 'stone_wall',
-        // Age 2
-        'copper_sheet', 'pipe',
+        'bed', 'bench', 'ladder', 'wheelbarrow', 'cart', 'barrel', 'anvil', 'bellows', 'axe', 'saw', 'chisel', 'mallet',
+        'shield', 'spear', 'gate', 'staircase', 'roof_tile_section', 'well', 'workbench', 'forge', 'crate', 'bridge_section',
+        'plow', 'stone_pillar', 'tool_rack', 'shield_rack', 'iron_grate', 'coat_hanger', 'shingled_roof', 'wagon', 'water_wheel',
+        // Age 2 - Intermediates
+        'copper_sheet', 'pipe', 'copper_tubing', 'copper_rod', 'brass_sheet',
+        // Age 2 - Final Goods
         'vase', 'pot', 'mirror', 'window', 'lantern', 'kettle', 'fountain', 'aqueduct_section', 'spyglass',
+        'chandelier', 'stained_glass', 'telescope', 'compass', 'plate_set', 'tile_floor', 'bathtub', 'sink',
+        'decorative_urn', 'chimney', 'greenhouse_panel', 'church_bell', 'candelabra', 'pottery_wheel', 'barometer',
+        'hourglass', 'ceramic_bowl', 'copper_statue', 'magnifying_glass', 'sundial', 'bronze_armor',
         // Machine Self-build
         'basic_assembler', 'stone_furnace', 'treadwheel'
       ]
@@ -858,9 +917,12 @@ export const defaultRules = {
       animation: { frames: 4, speed: 0.1 },
       allowedRecipes: [
         // Age 4 Chemical
-        'gasoline', 'diesel_fuel', 'lubricant', 'plastic', 'rubber', 'asphalt', 'concrete', 
-        'plastic_sheet', 'vinyl', 'fiberglass', 'synthetic_fabric', 'glass_bottle',
-        'composite', 'nano_material' // Age 7 advanced chem
+        'gasoline', 'diesel_fuel', 'lubricant', 'plastic', 'rubber', 'asphalt', 'concrete',
+        'plastic_sheet', 'vinyl', 'fiberglass', 'synthetic_fabric', 'glass_bottle', 'leather',
+        // Age 5
+        'insulation',
+        // Age 7 advanced chem
+        'composite', 'nano_material', 'liquid_nitrogen'
       ]
     },
     {
@@ -880,22 +942,27 @@ export const defaultRules = {
         'locomotive', 'industrial_furnace', 'lathe', 'milling_machine', 'safe', 'crane', 'elevator',
         'mechanical_loom', 'pocket_watch', 'manhole_cover', 'steel_bridge', 'water_tower', 'industrial_press',
         'steam_hammer', 'rail_track', 'padlock', 'wrench', 'pipe_organ', 'industrial_boiler',
+        'conveyor_belt', 'pressure_cooker', 'plumbing_system', 'rotary_engine',
         
         // Age 4
-        'copper_wire', 'carburetor', 'spark_plug', 'engine_block', 'tire', 'battery', 'light_bulb',
-        'car_tire', 'car_engine', 'lawn_mower', 'chainsaw', 'generator', 'scooter', 'motorcycle', 
-        'automobile', 'industrial_pump', 'power_saw', 'jackhammer', 'concrete_mixer', 'traffic_light', 
-        'street_lamp', 'telephone', 'vinyl_record', 'plastic_container', 'garden_hose', 'fuel_tank', 
+        'copper_wire', 'carburetor', 'spark_plug', 'engine_block', 'tire', 'battery', 'light_bulb', 'vacuum_tube',
+        'car_tire', 'car_engine', 'lawn_mower', 'chainsaw', 'generator', 'scooter', 'motorcycle',
+        'automobile', 'industrial_pump', 'power_saw', 'jackhammer', 'concrete_mixer', 'traffic_light',
+        'street_lamp', 'telephone', 'vinyl_record', 'plastic_container', 'garden_hose', 'fuel_tank',
         'oil_drum', 'flashlight', 'road_segment', 'radio_transmitter', 'typewriter', 'camera',
+        'leather_jacket', 'amplifier', 'diesel_truck',
 
         // Age 5 (Electric / Appliances)
-        'aluminum_sheet', 'aluminum_rod', 'insulated_wire', 'electric_coil', 'electric_motor', 
-        'heating_element', 'electric_switch', 'transformer', 'capacitor', 'resistor', 'bulb_socket', 
-        'relay', 'thermostat', 'compressor',
-        'fan', 'toaster', 'vacuum', 'fridge', 'washer', 'dishwasher', 'air_conditioner', 
-        'electric_oven', 'radio', 'drill', 'mixer', 'blender', 'food_processor', 'hair_dryer', 
-        'electric_heater', 'electric_kettle', 'electric_saw', 'arc_welder', 'electric_guitar', 
+        'aluminum_sheet', 'aluminum_rod', 'insulated_wire', 'electric_coil', 'electric_motor',
+        'heating_element', 'electric_switch', 'transformer', 'capacitor', 'resistor', 'bulb_socket',
+        'relay', 'thermostat', 'compressor', 'housing', 'steel_wire',
+        'fan', 'toaster', 'vacuum', 'fridge', 'washer', 'dishwasher', 'air_conditioner',
+        'electric_oven', 'radio', 'drill', 'mixer', 'blender', 'food_processor', 'hair_dryer',
+        'electric_heater', 'electric_kettle', 'electric_saw', 'arc_welder', 'electric_guitar',
         'jukebox', 'ceiling_fan', 'water_heater', 'sander', 'elevator_motor',
+
+        // Age 6
+        'steel_bracket',
 
         // Machines
         'foundry', 'steam_engine_gen', 'chemical_plant', 'diesel_gen', 'precision_assembler'
@@ -919,9 +986,9 @@ export const defaultRules = {
         'led_display', 'surveillance_camera', 'tablet',
 
         // Age 7 (Future) - Intermediates
-        'adv_battery', 'graphene_sheet', 'superconductor', 'quantum_processor', 'ai_core', 
-        'plasma_containment', 'fusion_core', 'neural_interface', 'holographic_projector', 
-        'smart_fabric', 'anti_grav_unit',
+        'adv_battery', 'graphene_sheet', 'superconductor', 'quantum_processor', 'ai_core',
+        'plasma_containment', 'fusion_core', 'neural_interface', 'holographic_projector',
+        'smart_fabric', 'anti_grav_unit', 'helmet',
         // Age 7 - Final Goods
         'smartphone', 'drone', 'robot', 'vr_headset', 'electric_car', 'laser', 'solar_panel_item', 
         'flying_car', 'hoverboard', 'printer_3d', 'holographic_display', 'ar_glasses', 'exoskeleton', 
