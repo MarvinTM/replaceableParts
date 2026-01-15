@@ -169,6 +169,18 @@ function getIssuesForMaterial(materialId, issues) {
     materialIssues.push({ type: 'noMachine', message: 'No machine can produce this' });
   }
 
+  // Check if this material is an intermediate not used in its own age
+  const ageIssue = issues.intermediateNotUsedInAge?.find(issue => issue.id === materialId);
+  if (ageIssue) {
+    const usedAgesStr = ageIssue.usedInAges.length > 0
+      ? `Used in ages: ${ageIssue.usedInAges.sort((a, b) => a - b).join(', ')}`
+      : 'Not used in any age';
+    materialIssues.push({
+      type: 'notUsedInAge',
+      message: `Not used in own age (${ageIssue.age}). ${usedAgesStr}`
+    });
+  }
+
   return materialIssues;
 }
 
@@ -247,13 +259,61 @@ export function analyzeIssues(rules) {
       });
     });
 
+  // Find intermediate parts not used in their own age
+  const intermediateNotUsedInAge = findIntermediatePartsNotUsedInAge(rules);
+
   return {
     unusedParts,
     missingMaterials: Array.from(missingMaterials),
     unproduceable,
     recipesMissingMachine,
     noMachineOutputs,
+    intermediateNotUsedInAge,
   };
+}
+
+/**
+ * Find intermediate parts that are not used in any recipe for their own age
+ */
+function findIntermediatePartsNotUsedInAge(rules) {
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const issuesMap = new Map(); // materialId -> { material, usedInAges: Set }
+
+  // Get all intermediate parts
+  const intermediateParts = rules.materials.filter(m => m.category === 'intermediate');
+
+  // For each intermediate part, track which ages use it
+  intermediateParts.forEach(part => {
+    const usedInAges = new Set();
+
+    // Check all recipes that use this part as input
+    rules.recipes.forEach(recipe => {
+      if (recipe.inputs[part.id] !== undefined) {
+        // This recipe uses the part, check the ages of outputs
+        Object.keys(recipe.outputs).forEach(outputId => {
+          const outputMaterial = materialMap.get(outputId);
+          if (outputMaterial && outputMaterial.age !== undefined) {
+            usedInAges.add(outputMaterial.age);
+          }
+        });
+      }
+    });
+
+    // Check if the part's own age is in the usedInAges set
+    if (part.age !== undefined && !usedInAges.has(part.age)) {
+      issuesMap.set(part.id, {
+        material: part,
+        usedInAges: Array.from(usedInAges),
+      });
+    }
+  });
+
+  return Array.from(issuesMap.entries()).map(([id, data]) => ({
+    id,
+    name: data.material.name,
+    age: data.material.age,
+    usedInAges: data.usedInAges,
+  }));
 }
 
 /**

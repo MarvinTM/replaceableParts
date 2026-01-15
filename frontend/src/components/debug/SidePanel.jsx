@@ -84,7 +84,8 @@ export default function SidePanel({
                 issues.unusedParts.length +
                 issues.missingMaterials.length +
                 issues.unproduceable.length +
-                issues.recipesMissingMachine.length
+                issues.recipesMissingMachine.length +
+                (issues.intermediateNotUsedInAge?.length || 0)
               }
               size="small"
               color="warning"
@@ -97,7 +98,7 @@ export default function SidePanel({
             <>
               <Typography
                 variant="caption"
-                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fef2f2' }}
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fef2f2', color: '#7f1d1d', fontWeight: 600 }}
               >
                 Missing Materials ({issues.missingMaterials.length})
               </Typography>
@@ -125,7 +126,7 @@ export default function SidePanel({
             <>
               <Typography
                 variant="caption"
-                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fef2f2' }}
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fef2f2', color: '#7f1d1d', fontWeight: 600 }}
               >
                 Unproduceable ({issues.unproduceable.length})
               </Typography>
@@ -153,7 +154,7 @@ export default function SidePanel({
             <>
               <Typography
                 variant="caption"
-                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fefce8' }}
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fefce8', color: '#713f12', fontWeight: 600 }}
               >
                 No Machine ({issues.recipesMissingMachine.length})
               </Typography>
@@ -180,12 +181,44 @@ export default function SidePanel({
             </>
           )}
 
+          {/* Intermediate Not Used in Age */}
+          {issues.intermediateNotUsedInAge && issues.intermediateNotUsedInAge.length > 0 && (
+            <>
+              <Typography
+                variant="caption"
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fef3c7', color: '#78350f', fontWeight: 600 }}
+              >
+                Not Used in Own Age ({issues.intermediateNotUsedInAge.length})
+              </Typography>
+              <List dense disablePadding>
+                {issues.intermediateNotUsedInAge.map((issue) => (
+                  <ListItemButton
+                    key={issue.id}
+                    onClick={() => handleIssueClick([issue.id])}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <WarningIcon fontSize="small" color="warning" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={issue.name}
+                      secondary={
+                        issue.usedInAges.length > 0
+                          ? `Age ${issue.age}, used in: ${issue.usedInAges.sort((a, b) => a - b).join(', ')}`
+                          : `Age ${issue.age}, not used in any age`
+                      }
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            </>
+          )}
+
           {/* Unused Parts */}
           {issues.unusedParts.length > 0 && (
             <>
               <Typography
                 variant="caption"
-                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#f3f4f6' }}
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#f3f4f6', color: '#1f2937', fontWeight: 600 }}
               >
                 Unused Parts ({issues.unusedParts.length})
               </Typography>
@@ -211,7 +244,8 @@ export default function SidePanel({
           {issues.unusedParts.length === 0 &&
             issues.missingMaterials.length === 0 &&
             issues.unproduceable.length === 0 &&
-            issues.recipesMissingMachine.length === 0 && (
+            issues.recipesMissingMachine.length === 0 &&
+            (!issues.intermediateNotUsedInAge || issues.intermediateNotUsedInAge.length === 0) && (
               <Typography sx={{ p: 2, color: 'success.main' }}>
                 No issues found
               </Typography>

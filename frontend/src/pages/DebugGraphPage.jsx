@@ -66,7 +66,8 @@ export default function DebugGraphPage() {
     issues.unusedParts.length +
     issues.missingMaterials.length +
     issues.unproduceable.length +
-    issues.recipesMissingMachine.length;
+    issues.recipesMissingMachine.length +
+    (issues.intermediateNotUsedInAge?.length || 0);
 
   // Generate issues text log
   const generateIssuesLog = () => {
@@ -93,6 +94,17 @@ export default function DebugGraphPage() {
       log += `Recipes Missing Machine (${issues.recipesMissingMachine.length}):\n`;
       issues.recipesMissingMachine.forEach(recipeId => {
         log += `  - ${recipeId} (Recipe has no machine)\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.intermediateNotUsedInAge && issues.intermediateNotUsedInAge.length > 0) {
+      log += `Intermediate Parts Not Used in Their Age (${issues.intermediateNotUsedInAge.length}):\n`;
+      issues.intermediateNotUsedInAge.forEach(issue => {
+        const usedAgesStr = issue.usedInAges.length > 0
+          ? `Used in ages: ${issue.usedInAges.sort((a, b) => a - b).join(', ')}`
+          : 'Not used in any age';
+        log += `  - ${issue.name} (Age ${issue.age}) - ${usedAgesStr}\n`;
       });
       log += '\n';
     }
