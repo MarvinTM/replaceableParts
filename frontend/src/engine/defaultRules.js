@@ -516,13 +516,28 @@ export const defaultRules = {
 
     // --- AGE 3: INDUSTRIAL ---
     // Intermediates
-    { id: 'gear', inputs: { iron_plate: 1 }, outputs: { gear: 2 }, energyRequired: 2, ticksToComplete: 2, tier: 3, age: 3 },
     { id: 'bricks', inputs: { clay: 2 }, outputs: { bricks: 3 }, energyRequired: 2, ticksToComplete: 2, tier: 3, age: 3 },
     { id: 'steel_ingot', inputs: { iron_ingot: 2, coal: 2 }, outputs: { steel_ingot: 1 }, energyRequired: 8, ticksToComplete: 4, tier: 3, age: 3 },
     { id: 'steel_beam', inputs: { steel_ingot: 3 }, outputs: { steel_beam: 1 }, energyRequired: 6, ticksToComplete: 3, tier: 3, age: 3 },
     { id: 'steel_plate', inputs: { steel_ingot: 2 }, outputs: { steel_plate: 1 }, energyRequired: 6, ticksToComplete: 3, tier: 3, age: 3 },
+    { id: 'steel_rod', inputs: { steel_ingot: 1 }, outputs: { steel_rod: 2 }, energyRequired: 4, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'gear', inputs: { iron_plate: 1 }, outputs: { gear: 2 }, energyRequired: 2, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'steel_gear', inputs: { steel_plate: 1 }, outputs: { steel_gear: 2 }, energyRequired: 4, ticksToComplete: 3, tier: 3, age: 3 },
+    { id: 'steel_cable', inputs: { steel_rod: 1 }, outputs: { steel_cable: 2 }, energyRequired: 3, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'steel_rivet', inputs: { steel_rod: 1 }, outputs: { steel_rivet: 8 }, energyRequired: 2, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'steel_spring', inputs: { steel_rod: 1 }, outputs: { steel_spring: 2 }, energyRequired: 3, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'ball_bearing', inputs: { steel_rod: 1, steel_rivet: 2 }, outputs: { ball_bearing: 2 }, energyRequired: 4, ticksToComplete: 3, tier: 3, age: 3 },
+    { id: 'steel_chain', inputs: { steel_rod: 2 }, outputs: { steel_chain: 1 }, energyRequired: 4, ticksToComplete: 3, tier: 3, age: 3 },
+    { id: 'steel_pipe', inputs: { steel_plate: 1 }, outputs: { steel_pipe: 2 }, energyRequired: 4, ticksToComplete: 3, tier: 3, age: 3 },
+    { id: 'coupling', inputs: { steel_pipe: 1 }, outputs: { coupling: 2 }, energyRequired: 3, ticksToComplete: 2, tier: 3, age: 3 },
     { id: 'piston', inputs: { steel_ingot: 1, iron_rod: 1 }, outputs: { piston: 1 }, energyRequired: 5, ticksToComplete: 3, tier: 3, age: 3 },
-    { id: 'boiler', inputs: { steel_plate: 4, pipe: 2 }, outputs: { boiler: 1 }, energyRequired: 10, ticksToComplete: 6, tier: 3, age: 3 },
+    { id: 'steam_valve', inputs: { brass_ingot: 1, steel_rod: 1 }, outputs: { steam_valve: 1 }, energyRequired: 5, ticksToComplete: 3, tier: 3, age: 3 },
+    { id: 'drive_shaft', inputs: { steel_rod: 2, steel_ingot: 1 }, outputs: { drive_shaft: 1 }, energyRequired: 6, ticksToComplete: 4, tier: 3, age: 3 },
+    { id: 'flywheel', inputs: { steel_plate: 4 }, outputs: { flywheel: 1 }, energyRequired: 8, ticksToComplete: 5, tier: 3, age: 3 },
+    { id: 'pressure_gauge', inputs: { glass_pane: 1, brass_sheet: 1, steel_spring: 1 }, outputs: { pressure_gauge: 1 }, energyRequired: 5, ticksToComplete: 4, tier: 3, age: 3 },
+    { id: 'boiler', inputs: { steel_plate: 4, steel_pipe: 2 }, outputs: { boiler: 1 }, energyRequired: 10, ticksToComplete: 6, tier: 3, age: 3 },
+    { id: 'camshaft', inputs: { drive_shaft: 1, steel_gear: 2 }, outputs: { camshaft: 1 }, energyRequired: 12, ticksToComplete: 6, tier: 3, age: 3 },
+    { id: 'crankshaft', inputs: { drive_shaft: 1, steel_rod: 2 }, outputs: { crankshaft: 1 }, energyRequired: 12, ticksToComplete: 6, tier: 3, age: 3 },
 
     // Final Goods
     { id: 'vault_door', inputs: { steel_plate: 6, gear: 4 }, outputs: { vault_door: 1 }, energyRequired: 15, ticksToComplete: 8, tier: 3, age: 3 },
@@ -532,7 +547,26 @@ export const defaultRules = {
     { id: 'printing_press', inputs: { steel_plate: 5, gear: 10, piston: 2 }, outputs: { printing_press: 1 }, energyRequired: 25, ticksToComplete: 15, tier: 3, age: 3 },
     { id: 'sewing_machine', inputs: { iron_plate: 3, gear: 4, iron_rod: 2 }, outputs: { sewing_machine: 1 }, energyRequired: 15, ticksToComplete: 8, tier: 3, age: 3 },
     { id: 'tool_box', inputs: { steel_plate: 2, hammer: 1, shovel: 1 }, outputs: { tool_box: 1 }, energyRequired: 8, ticksToComplete: 5, tier: 3, age: 3 },
-    { id: 'radiator', inputs: { pipe: 4, steel_plate: 2 }, outputs: { radiator: 1 }, energyRequired: 10, ticksToComplete: 6, tier: 3, age: 3 },
+    { id: 'radiator', inputs: { steel_pipe: 4, steel_plate: 2 }, outputs: { radiator: 1 }, energyRequired: 10, ticksToComplete: 6, tier: 3, age: 3 },
+    { id: 'locomotive', inputs: { boiler: 1, piston: 2, steel_beam: 4, wheel: 4 }, outputs: { locomotive: 1 }, energyRequired: 60, ticksToComplete: 30, tier: 3, age: 3 },
+    { id: 'industrial_furnace', inputs: { bricks: 8, steel_plate: 4, steel_pipe: 2 }, outputs: { industrial_furnace: 1 }, energyRequired: 30, ticksToComplete: 12, tier: 3, age: 3 },
+    { id: 'lathe', inputs: { steel_beam: 2, drive_shaft: 1, chisel: 1, flywheel: 1 }, outputs: { lathe: 1 }, energyRequired: 35, ticksToComplete: 15, tier: 3, age: 3 },
+    { id: 'milling_machine', inputs: { steel_beam: 2, steel_gear: 4, steel_rod: 2 }, outputs: { milling_machine: 1 }, energyRequired: 35, ticksToComplete: 15, tier: 3, age: 3 },
+    { id: 'safe', inputs: { steel_plate: 6, vault_door: 1 }, outputs: { safe: 1 }, energyRequired: 20, ticksToComplete: 10, tier: 3, age: 3 },
+    { id: 'crane', inputs: { steel_beam: 6, steel_cable: 4, gear: 4 }, outputs: { crane: 1 }, energyRequired: 45, ticksToComplete: 20, tier: 3, age: 3 },
+    { id: 'elevator', inputs: { steel_beam: 4, steel_cable: 6, piston: 1 }, outputs: { elevator: 1 }, energyRequired: 40, ticksToComplete: 18, tier: 3, age: 3 },
+    { id: 'mechanical_loom', inputs: { steel_beam: 2, gear: 6, steel_rod: 4 }, outputs: { mechanical_loom: 1 }, energyRequired: 25, ticksToComplete: 12, tier: 3, age: 3 },
+    { id: 'pocket_watch', inputs: { glass_lens: 1, brass_sheet: 2, steel_spring: 4, steel_gear: 4 }, outputs: { pocket_watch: 1 }, energyRequired: 15, ticksToComplete: 8, tier: 3, age: 3 },
+    { id: 'manhole_cover', inputs: { steel_plate: 2 }, outputs: { manhole_cover: 1 }, energyRequired: 8, ticksToComplete: 4, tier: 3, age: 3 },
+    { id: 'steel_bridge', inputs: { steel_beam: 4, steel_plate: 2, steel_rivet: 10 }, outputs: { steel_bridge: 1 }, energyRequired: 50, ticksToComplete: 20, tier: 3, age: 3 },
+    { id: 'water_tower', inputs: { steel_plate: 8, steel_pipe: 4, steel_beam: 4 }, outputs: { water_tower: 1 }, energyRequired: 45, ticksToComplete: 20, tier: 3, age: 3 },
+    { id: 'industrial_press', inputs: { piston: 2, steel_beam: 2, anvil: 1 }, outputs: { industrial_press: 1 }, energyRequired: 40, ticksToComplete: 18, tier: 3, age: 3 },
+    { id: 'steam_hammer', inputs: { piston: 1, anvil: 1, boiler: 1, steel_beam: 2 }, outputs: { steam_hammer: 1 }, energyRequired: 45, ticksToComplete: 20, tier: 3, age: 3 },
+    { id: 'rail_track', inputs: { steel_rod: 2, planks: 1 }, outputs: { rail_track: 2 }, energyRequired: 5, ticksToComplete: 3, tier: 3, age: 3 },
+    { id: 'padlock', inputs: { steel_ingot: 1, steel_spring: 1 }, outputs: { padlock: 1 }, energyRequired: 3, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'wrench', inputs: { steel_ingot: 1 }, outputs: { wrench: 1 }, energyRequired: 4, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'pipe_organ', inputs: { steel_pipe: 8, planks: 4, bellows: 1 }, outputs: { pipe_organ: 1 }, energyRequired: 30, ticksToComplete: 25, tier: 3, age: 3 },
+    { id: 'industrial_boiler', inputs: { boiler: 2, steel_plate: 4, steel_pipe: 4 }, outputs: { industrial_boiler: 1 }, energyRequired: 40, ticksToComplete: 15, tier: 3, age: 3 },
 
     // --- AGE 4: COMBUSTION ---
     // Intermediates
@@ -703,10 +737,17 @@ export const defaultRules = {
       energyConsumption: 15,
       animation: { frames: 4, speed: 0.2 },
       allowedRecipes: [
-        // Age 3
-        'gear', 'bricks',
-        'steel_beam', 'steel_plate', 'piston', 'boiler',
+        // Age 3 - Intermediates
+        'gear', 'bricks', 'steel_beam', 'steel_plate', 'steel_rod', 'steel_gear', 'steel_cable',
+        'steel_rivet', 'steel_spring', 'ball_bearing', 'steel_chain', 'steel_pipe', 'coupling',
+        'piston', 'steam_valve', 'drive_shaft', 'flywheel', 'pressure_gauge', 'boiler', 'camshaft', 'crankshaft',
+        
+        // Age 3 - Final Goods
         'vault_door', 'stove', 'bicycle', 'clock', 'printing_press', 'sewing_machine', 'tool_box', 'radiator',
+        'locomotive', 'industrial_furnace', 'lathe', 'milling_machine', 'safe', 'crane', 'elevator',
+        'mechanical_loom', 'pocket_watch', 'manhole_cover', 'steel_bridge', 'water_tower', 'industrial_press',
+        'steam_hammer', 'rail_track', 'padlock', 'wrench', 'pipe_organ', 'industrial_boiler',
+
         // Age 4
         'copper_wire',
         'engine_block', 'tire',
