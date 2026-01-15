@@ -11,9 +11,12 @@ import {
   IconButton,
   Tooltip,
   Chip,
+  Paper,
+  Button,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import GraphCanvas from '../components/debug/GraphCanvas';
 import SidePanel from '../components/debug/SidePanel';
 import { buildGraph } from '../utils/graphAnalysis';
@@ -64,6 +67,56 @@ export default function DebugGraphPage() {
     issues.missingMaterials.length +
     issues.unproduceable.length +
     issues.recipesMissingMachine.length;
+
+  // Generate issues text log
+  const generateIssuesLog = () => {
+    let log = '=== Recipe Graph Issues ===\n\n';
+
+    if (issues.missingMaterials.length > 0) {
+      log += `Missing Materials (${issues.missingMaterials.length}):\n`;
+      issues.missingMaterials.forEach(id => {
+        log += `  - ${id} (Referenced but not defined)\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.unproduceable.length > 0) {
+      log += `Unproduceable (${issues.unproduceable.length}):\n`;
+      issues.unproduceable.forEach(id => {
+        const material = defaultRules.materials.find(m => m.id === id);
+        log += `  - ${material?.name || id} (No recipe produces this)\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.recipesMissingMachine.length > 0) {
+      log += `Recipes Missing Machine (${issues.recipesMissingMachine.length}):\n`;
+      issues.recipesMissingMachine.forEach(recipeId => {
+        log += `  - ${recipeId} (Recipe has no machine)\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.unusedParts.length > 0) {
+      log += `Unused Parts (${issues.unusedParts.length}):\n`;
+      issues.unusedParts.forEach(id => {
+        const material = defaultRules.materials.find(m => m.id === id);
+        log += `  - ${material?.name || id} (Not used by any recipe)\n`;
+      });
+      log += '\n';
+    }
+
+    if (totalIssues === 0) {
+      log += 'No issues found!\n';
+    }
+
+    return log;
+  };
+
+  const handleCopyLog = () => {
+    const log = generateIssuesLog();
+    navigator.clipboard.writeText(log);
+  };
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -154,7 +207,7 @@ export default function DebugGraphPage() {
       </AppBar>
 
       {/* Main Content */}
-      <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
         {/* Graph Area */}
         <Box sx={{ flexGrow: 1, height: '100%' }}>
           <ReactFlowProvider>
@@ -178,6 +231,56 @@ export default function DebugGraphPage() {
           onSelectNode={handleSelectNode}
         />
       </Box>
+
+      {/* Issues Text Log */}
+      <Paper
+        elevation={3}
+        sx={{
+          borderTop: '2px solid #e0e0e0',
+          height: '200px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1,
+            borderBottom: '1px solid #e0e0e0',
+            bgcolor: '#1976d2',
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#fff' }}>
+            Issues Log (Copy for AI Processing)
+          </Typography>
+          <Button
+            size="small"
+            startIcon={<ContentCopyIcon />}
+            onClick={handleCopyLog}
+            variant="contained"
+            sx={{ bgcolor: '#fff', color: '#1976d2', '&:hover': { bgcolor: '#f0f0f0' } }}
+          >
+            Copy All
+          </Button>
+        </Box>
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflow: 'auto',
+            p: 2,
+            bgcolor: '#fafafa',
+            fontFamily: 'monospace',
+            fontSize: '0.875rem',
+            whiteSpace: 'pre-wrap',
+            color: '#000',
+          }}
+        >
+          {generateIssuesLog()}
+        </Box>
+      </Paper>
     </Box>
   );
 }

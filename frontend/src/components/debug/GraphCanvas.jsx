@@ -115,7 +115,25 @@ export default function GraphCanvas({
   }, []);
 
   return (
-    <Box sx={{ width: '100%', height: '100%', bgcolor: '#f8fafc' }}>
+    <Box sx={{
+      width: '100%',
+      height: '100%',
+      bgcolor: '#f8fafc',
+      '& .react-flow__controls': {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      },
+      '& .react-flow__controls-button': {
+        backgroundColor: '#fff',
+        borderColor: '#1976d2',
+        color: '#1976d2',
+        '&:hover': {
+          backgroundColor: '#e3f2fd',
+        },
+        '& svg': {
+          fill: '#1976d2',
+        }
+      }
+    }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
