@@ -205,6 +205,9 @@ export function analyzeIssues(rules) {
     });
   });
 
+  // Track recipes with zero quantities
+  const recipesWithZeroQuantity = [];
+
   // Analyze recipes
   rules.recipes.forEach(recipe => {
     // Track what's used as input
@@ -226,6 +229,22 @@ export function analyzeIssues(rules) {
     // Check if recipe has a machine
     if (!recipesWithMachine.has(recipe.id)) {
       recipesMissingMachine.push(recipe.id);
+    }
+
+    // Check for zero quantity inputs or outputs
+    const zeroInputs = Object.entries(recipe.inputs)
+      .filter(([_, quantity]) => quantity === 0)
+      .map(([id]) => id);
+    const zeroOutputs = Object.entries(recipe.outputs)
+      .filter(([_, quantity]) => quantity === 0)
+      .map(([id]) => id);
+
+    if (zeroInputs.length > 0 || zeroOutputs.length > 0) {
+      recipesWithZeroQuantity.push({
+        recipeId: recipe.id,
+        zeroInputs,
+        zeroOutputs,
+      });
     }
   });
 
@@ -269,6 +288,7 @@ export function analyzeIssues(rules) {
     recipesMissingMachine,
     noMachineOutputs,
     intermediateNotUsedInAge,
+    recipesWithZeroQuantity,
   };
 }
 

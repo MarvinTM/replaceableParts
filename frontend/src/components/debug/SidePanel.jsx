@@ -85,7 +85,8 @@ export default function SidePanel({
                 issues.missingMaterials.length +
                 issues.unproduceable.length +
                 issues.recipesMissingMachine.length +
-                (issues.intermediateNotUsedInAge?.length || 0)
+                (issues.intermediateNotUsedInAge?.length || 0) +
+                (issues.recipesWithZeroQuantity?.length || 0)
               }
               size="small"
               color="warning"
@@ -213,6 +214,42 @@ export default function SidePanel({
             </>
           )}
 
+          {/* Recipes with Zero Quantity */}
+          {issues.recipesWithZeroQuantity && issues.recipesWithZeroQuantity.length > 0 && (
+            <>
+              <Typography
+                variant="caption"
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fef3c7', color: '#78350f', fontWeight: 600 }}
+              >
+                Zero Quantity ({issues.recipesWithZeroQuantity.length})
+              </Typography>
+              <List dense disablePadding>
+                {issues.recipesWithZeroQuantity.map((issue) => {
+                  const recipe = rules.recipes.find(r => r.id === issue.recipeId);
+                  const outputIds = recipe ? Object.keys(recipe.outputs) : [];
+                  return (
+                    <ListItemButton
+                      key={issue.recipeId}
+                      onClick={() => handleIssueClick(outputIds)}
+                    >
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <WarningIcon fontSize="small" color="warning" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={issue.recipeId}
+                        secondary={
+                          (issue.zeroInputs.length > 0 ? `In: ${issue.zeroInputs.join(', ')}` : '') +
+                          (issue.zeroInputs.length > 0 && issue.zeroOutputs.length > 0 ? ' | ' : '') +
+                          (issue.zeroOutputs.length > 0 ? `Out: ${issue.zeroOutputs.join(', ')}` : '')
+                        }
+                      />
+                    </ListItemButton>
+                  );
+                })}
+              </List>
+            </>
+          )}
+
           {/* Unused Parts */}
           {issues.unusedParts.length > 0 && (
             <>
@@ -245,7 +282,8 @@ export default function SidePanel({
             issues.missingMaterials.length === 0 &&
             issues.unproduceable.length === 0 &&
             issues.recipesMissingMachine.length === 0 &&
-            (!issues.intermediateNotUsedInAge || issues.intermediateNotUsedInAge.length === 0) && (
+            (!issues.intermediateNotUsedInAge || issues.intermediateNotUsedInAge.length === 0) &&
+            (!issues.recipesWithZeroQuantity || issues.recipesWithZeroQuantity.length === 0) && (
               <Typography sx={{ p: 2, color: 'success.main' }}>
                 No issues found
               </Typography>

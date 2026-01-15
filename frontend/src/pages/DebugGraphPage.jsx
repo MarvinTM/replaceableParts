@@ -67,7 +67,8 @@ export default function DebugGraphPage() {
     issues.missingMaterials.length +
     issues.unproduceable.length +
     issues.recipesMissingMachine.length +
-    (issues.intermediateNotUsedInAge?.length || 0);
+    (issues.intermediateNotUsedInAge?.length || 0) +
+    (issues.recipesWithZeroQuantity?.length || 0);
 
   // Generate issues text log
   const generateIssuesLog = () => {
@@ -105,6 +106,21 @@ export default function DebugGraphPage() {
           ? `Used in ages: ${issue.usedInAges.sort((a, b) => a - b).join(', ')}`
           : 'Not used in any age';
         log += `  - ${issue.name} (Age ${issue.age}) - ${usedAgesStr}\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.recipesWithZeroQuantity && issues.recipesWithZeroQuantity.length > 0) {
+      log += `Recipes with Zero Quantity (${issues.recipesWithZeroQuantity.length}):\n`;
+      issues.recipesWithZeroQuantity.forEach(issue => {
+        const parts = [];
+        if (issue.zeroInputs.length > 0) {
+          parts.push(`Inputs: ${issue.zeroInputs.join(', ')}`);
+        }
+        if (issue.zeroOutputs.length > 0) {
+          parts.push(`Outputs: ${issue.zeroOutputs.join(', ')}`);
+        }
+        log += `  - ${issue.recipeId} (${parts.join(' | ')})\n`;
       });
       log += '\n';
     }
