@@ -69,7 +69,6 @@ export const initialState = {
     { id: 'node_wood_1', resourceType: 'wood', rate: 2, active: true },
     { id: 'node_stone_1', resourceType: 'stone', rate: 2, active: true },
     { id: 'node_iron_1', resourceType: 'iron_ore', rate: 1, active: true },
-    { id: 'node_coal_1', resourceType: 'coal', rate: 1, active: true },
     { id: 'node_sand_1', resourceType: 'sand', rate: 1, active: true }
   ],
 
