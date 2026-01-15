@@ -64,8 +64,8 @@ export const defaultRules = {
     { id: 'window', name: 'Glass Window', basePrice: 35, category: 'final', weight: 8, age: 2 },
     { id: 'lantern', name: 'Oil Lantern', basePrice: 45, category: 'final', weight: 5, age: 2 },
     { id: 'kettle', name: 'Copper Kettle', basePrice: 30, category: 'final', weight: 3, age: 2 },
-    { id: 'sink', name: 'Ceramic Sink', basePrice: 60, category: 'final', weight: 20, age: 2 },
-    { id: 'bathtub', name: 'Bathtub', basePrice: 120, category: 'final', weight: 50, age: 2 },
+    { id: 'fountain', name: 'Ceramic Fountain', basePrice: 60, category: 'final', weight: 20, age: 2 },
+    { id: 'aqueduct_section', name: 'Aqueduct Section', basePrice: 120, category: 'final', weight: 50, age: 2 },
     { id: 'spyglass', name: 'Spyglass', basePrice: 80, category: 'final', weight: 2, age: 2 },
 
     // ========================
@@ -81,7 +81,7 @@ export const defaultRules = {
     { id: 'boiler', name: 'Pressure Boiler', basePrice: 60, category: 'intermediate', weight: 15, age: 3 },
     
     // Final Goods (Heavy Machines, Appliances)
-    { id: 'safe', name: 'Steel Safe', basePrice: 150, category: 'final', weight: 50, age: 3 },
+    { id: 'vault_door', name: 'Vault Door', basePrice: 150, category: 'final', weight: 50, age: 3 },
     { id: 'stove', name: 'Wood Stove', basePrice: 100, category: 'final', weight: 40, age: 3 },
     { id: 'bicycle', name: 'Bicycle', basePrice: 120, category: 'final', weight: 15, age: 3 },
     { id: 'clock', name: 'Grandfather Clock', basePrice: 180, category: 'final', weight: 25, age: 3 },
@@ -107,7 +107,7 @@ export const defaultRules = {
     { id: 'chainsaw', name: 'Chainsaw', basePrice: 150, category: 'final', weight: 10, age: 4 },
     { id: 'generator', name: 'Portable Generator', basePrice: 300, category: 'final', weight: 40, age: 4 },
     { id: 'scooter', name: 'Motor Scooter', basePrice: 400, category: 'final', weight: 50, age: 4 },
-    { id: 'phone_rotary', name: 'Rotary Phone', basePrice: 80, category: 'final', weight: 2, age: 4 },
+    { id: 'radio_transmitter', name: 'Radio Transmitter', basePrice: 80, category: 'final', weight: 2, age: 4 },
     { id: 'typewriter', name: 'Typewriter', basePrice: 120, category: 'final', weight: 8, age: 4 },
     { id: 'camera', name: 'Film Camera', basePrice: 150, category: 'final', weight: 2, age: 4 },
 
@@ -129,7 +129,7 @@ export const defaultRules = {
     { id: 'washer', name: 'Washing Machine', basePrice: 450, category: 'final', weight: 70, age: 5 },
     { id: 'radio', name: 'AM/FM Radio', basePrice: 100, category: 'final', weight: 4, age: 5 },
     { id: 'drill', name: 'Power Drill', basePrice: 120, category: 'final', weight: 4, age: 5 },
-    { id: 'blender', name: 'Kitchen Blender', basePrice: 90, category: 'final', weight: 3, age: 5 },
+    { id: 'mixer', name: 'Industrial Mixer', basePrice: 90, category: 'final', weight: 3, age: 5 },
 
     // ========================
     // AGE 6: DIGITAL (Silicon, Chips)
@@ -227,8 +227,8 @@ export const defaultRules = {
     { id: 'window', inputs: { glass: 2, planks: 2 }, outputs: { window: 1 }, energyRequired: 3, ticksToComplete: 3, tier: 2, age: 2 },
     { id: 'lantern', inputs: { glass: 1, copper_sheet: 1, iron_rod: 1 }, outputs: { lantern: 1 }, energyRequired: 3, ticksToComplete: 4, tier: 2, age: 2 },
     { id: 'kettle', inputs: { copper_sheet: 2, iron_rod: 1 }, outputs: { kettle: 1 }, energyRequired: 3, ticksToComplete: 3, tier: 2, age: 2 },
-    { id: 'sink', inputs: { clay: 5, pipe: 1 }, outputs: { sink: 1 }, energyRequired: 5, ticksToComplete: 6, tier: 2, age: 2 },
-    { id: 'bathtub', inputs: { clay: 10, pipe: 2 }, outputs: { bathtub: 1 }, energyRequired: 8, ticksToComplete: 8, tier: 2, age: 2 },
+    { id: 'fountain', inputs: { clay: 5, pipe: 1 }, outputs: { fountain: 1 }, energyRequired: 5, ticksToComplete: 6, tier: 2, age: 2 },
+    { id: 'aqueduct_section', inputs: { clay: 10, pipe: 2 }, outputs: { aqueduct_section: 1 }, energyRequired: 8, ticksToComplete: 8, tier: 2, age: 2 },
     { id: 'spyglass', inputs: { glass: 2, copper_sheet: 2 }, outputs: { spyglass: 1 }, energyRequired: 5, ticksToComplete: 5, tier: 2, age: 2 },
 
     // --- AGE 3: INDUSTRIAL ---
@@ -242,7 +242,7 @@ export const defaultRules = {
     { id: 'boiler', inputs: { steel_plate: 4, pipe: 2 }, outputs: { boiler: 1 }, energyRequired: 10, ticksToComplete: 6, tier: 3, age: 3 },
 
     // Final Goods
-    { id: 'safe', inputs: { steel_plate: 6, gear: 4 }, outputs: { safe: 1 }, energyRequired: 15, ticksToComplete: 8, tier: 3, age: 3 },
+    { id: 'vault_door', inputs: { steel_plate: 6, gear: 4 }, outputs: { vault_door: 1 }, energyRequired: 15, ticksToComplete: 8, tier: 3, age: 3 },
     { id: 'stove', inputs: { iron_plate: 4, pipe: 1 }, outputs: { stove: 1 }, energyRequired: 10, ticksToComplete: 6, tier: 3, age: 3 },
     { id: 'bicycle', inputs: { steel_beam: 1, gear: 2, iron_rod: 2 }, outputs: { bicycle: 1 }, energyRequired: 12, ticksToComplete: 6, tier: 3, age: 3 },
     { id: 'clock', inputs: { planks: 6, gear: 8, glass: 1 }, outputs: { clock: 1 }, energyRequired: 10, ticksToComplete: 10, tier: 3, age: 3 },
@@ -266,7 +266,7 @@ export const defaultRules = {
     { id: 'chainsaw', inputs: { engine_block: 1, gear: 2, plastic: 1 }, outputs: { chainsaw: 1 }, energyRequired: 35, ticksToComplete: 8, tier: 4, age: 4 },
     { id: 'generator', inputs: { engine_block: 1, copper_wire: 5, steel_plate: 2 }, outputs: { generator: 1 }, energyRequired: 40, ticksToComplete: 10, tier: 4, age: 4 },
     { id: 'scooter', inputs: { engine_block: 1, tire: 2, steel_beam: 2 }, outputs: { scooter: 1 }, energyRequired: 50, ticksToComplete: 15, tier: 4, age: 4 },
-    { id: 'phone_rotary', inputs: { plastic: 3, copper_wire: 2 }, outputs: { phone_rotary: 1 }, energyRequired: 15, ticksToComplete: 5, tier: 4, age: 4 },
+    { id: 'radio_transmitter', inputs: { plastic: 3, copper_wire: 2 }, outputs: { radio_transmitter: 1 }, energyRequired: 15, ticksToComplete: 5, tier: 4, age: 4 },
     { id: 'typewriter', inputs: { steel_plate: 2, gear: 10, plastic: 1 }, outputs: { typewriter: 1 }, energyRequired: 20, ticksToComplete: 8, tier: 4, age: 4 },
     { id: 'camera', inputs: { plastic: 2, glass: 2, gear: 2 }, outputs: { camera: 1 }, energyRequired: 15, ticksToComplete: 6, tier: 4, age: 4 },
 
@@ -286,7 +286,7 @@ export const defaultRules = {
     { id: 'washer', inputs: { steel_plate: 3, electric_motor: 1, glass: 1 }, outputs: { washer: 1 }, energyRequired: 50, ticksToComplete: 10, tier: 5, age: 5 },
     { id: 'radio', inputs: { plastic: 2, insulated_wire: 3, copper_sheet: 1 }, outputs: { radio: 1 }, energyRequired: 25, ticksToComplete: 5, tier: 5, age: 5 },
     { id: 'drill', inputs: { electric_motor: 1, plastic: 2, gear: 1 }, outputs: { drill: 1 }, energyRequired: 25, ticksToComplete: 5, tier: 5, age: 5 },
-    { id: 'blender', inputs: { electric_motor: 1, glass: 1, plastic: 1 }, outputs: { blender: 1 }, energyRequired: 20, ticksToComplete: 4, tier: 5, age: 5 },
+    { id: 'mixer', inputs: { electric_motor: 1, glass: 1, plastic: 1 }, outputs: { mixer: 1 }, energyRequired: 20, ticksToComplete: 4, tier: 5, age: 5 },
 
     // --- AGE 6: DIGITAL ---
     // Intermediates
@@ -385,7 +385,7 @@ export const defaultRules = {
         'chair', 'table', 'wardrobe', 'chest', 'bucket', 'hammer', 'pickaxe', 'shovel', 'fence', 'door', 'stone_wall',
         // Age 2
         'copper_sheet', 'pipe',
-        'vase', 'pot', 'mirror', 'window', 'lantern', 'kettle', 'sink', 'bathtub', 'spyglass',
+        'vase', 'pot', 'mirror', 'window', 'lantern', 'kettle', 'fountain', 'aqueduct_section', 'spyglass',
         // Machine Self-build
         'basic_assembler', 'stone_furnace', 'treadwheel'
       ]
@@ -423,14 +423,14 @@ export const defaultRules = {
         // Age 3
         'gear', 'bricks',
         'steel_beam', 'steel_plate', 'piston', 'boiler',
-        'safe', 'stove', 'bicycle', 'clock', 'printing_press', 'sewing_machine', 'tool_box', 'radiator',
+        'vault_door', 'stove', 'bicycle', 'clock', 'printing_press', 'sewing_machine', 'tool_box', 'radiator',
         // Age 4
         'copper_wire',
         'engine_block', 'tire',
-        'car_tire', 'lawn_mower', 'chainsaw', 'generator', 'scooter', 'phone_rotary', 'typewriter', 'camera',
+        'car_tire', 'lawn_mower', 'chainsaw', 'generator', 'scooter', 'radio_transmitter', 'typewriter', 'camera',
         // Age 5
         'aluminum_sheet', 'electric_motor', 'insulated_wire', 'heating_element',
-        'fan', 'toaster', 'vacuum', 'fridge', 'washer', 'radio', 'drill', 'blender',
+        'fan', 'toaster', 'vacuum', 'fridge', 'washer', 'radio', 'drill', 'mixer',
         // Machines
         'foundry', 'steam_engine_gen', 'chemical_plant', 'diesel_gen', 'precision_assembler'
       ]
