@@ -22,6 +22,8 @@ export const defaultRules = {
     { id: 'oil', name: 'Crude Oil', basePrice: 5, category: 'raw', weight: 2, age: 4 },
     { id: 'bauxite', name: 'Bauxite', basePrice: 4, category: 'raw', weight: 2, age: 5 }, // Aluminum source
     { id: 'rare_earth_ore', name: 'Rare Earth Ore', basePrice: 10, category: 'raw', weight: 2, age: 7 }, // High tech source
+    { id: 'water', name: 'Water', basePrice: 1, category: 'raw', weight: 1, age: 1 },
+    { id: 'hydrogen', name: 'Hydrogen', basePrice: 8, category: 'raw', weight: 0.5, age: 7 },
 
     // ========================
     // AGE 1: PRIMITIVE (Wood, Stone, Iron)
@@ -203,6 +205,8 @@ export const defaultRules = {
     { id: 'concrete', name: 'Concrete', basePrice: 15, category: 'intermediate', weight: 10, age: 4 },
     { id: 'plastic', name: 'Plastic', basePrice: 15, category: 'intermediate', weight: 1, age: 4 },
     { id: 'rubber', name: 'Rubber', basePrice: 18, category: 'intermediate', weight: 2, age: 4 },
+    { id: 'leather', name: 'Leather', basePrice: 20, category: 'intermediate', weight: 2, age: 4 },
+    { id: 'vacuum_tube', name: 'Vacuum Tube', basePrice: 25, category: 'intermediate', weight: 0.5, age: 4 },
     { id: 'engine_block', name: 'Combustion Engine', basePrice: 100, category: 'intermediate', weight: 25, age: 4 },
     { id: 'tire', name: 'Rubber Tire', basePrice: 30, category: 'intermediate', weight: 5, age: 4 },
     { id: 'gasoline', name: 'Gasoline', basePrice: 12, category: 'intermediate', weight: 1, age: 4 },
@@ -255,6 +259,9 @@ export const defaultRules = {
     { id: 'electric_motor', name: 'Electric Motor', basePrice: 60, category: 'intermediate', weight: 5, age: 5 },
     { id: 'insulated_wire', name: 'Insulated Cable', basePrice: 15, category: 'intermediate', weight: 1, age: 5 },
     { id: 'heating_element', name: 'Heating Element', basePrice: 25, category: 'intermediate', weight: 1, age: 5 },
+    { id: 'housing', name: 'Metal Housing', basePrice: 18, category: 'intermediate', weight: 3, age: 5 },
+    { id: 'steel_wire', name: 'Steel Wire', basePrice: 8, category: 'intermediate', weight: 1, age: 5 },
+    { id: 'insulation', name: 'Thermal Insulation', basePrice: 12, category: 'intermediate', weight: 2, age: 5 },
     { id: 'electric_switch', name: 'Electric Switch', basePrice: 10, category: 'intermediate', weight: 0.5, age: 5 },
     { id: 'transformer', name: 'Transformer', basePrice: 45, category: 'intermediate', weight: 8, age: 5 },
     { id: 'capacitor', name: 'Capacitor', basePrice: 12, category: 'intermediate', weight: 0.5, age: 5 },
@@ -298,6 +305,7 @@ export const defaultRules = {
     // Parts
     { id: 'silicon', name: 'Refined Silicon', basePrice: 30, category: 'intermediate', weight: 1, age: 6 },
     { id: 'circuit_board', name: 'Circuit Board', basePrice: 40, category: 'intermediate', weight: 1, age: 6 },
+    { id: 'steel_bracket', name: 'Steel Bracket', basePrice: 10, category: 'intermediate', weight: 2, age: 6 },
     { id: 'cpu', name: 'Microprocessor', basePrice: 100, category: 'intermediate', weight: 0.5, age: 6 },
     { id: 'screen', name: 'LCD Screen', basePrice: 80, category: 'intermediate', weight: 3, age: 6 },
     { id: 'ram_module', name: 'RAM Module', basePrice: 50, category: 'intermediate', weight: 0.3, age: 6 },
@@ -343,6 +351,8 @@ export const defaultRules = {
     { id: 'adv_battery', name: 'Lithium Battery', basePrice: 80, category: 'intermediate', weight: 2, age: 7 },
     { id: 'composite', name: 'Carbon Composite', basePrice: 100, category: 'intermediate', weight: 1, age: 7 },
     { id: 'ai_core', name: 'AI Core', basePrice: 500, category: 'intermediate', weight: 1, age: 7 },
+    { id: 'liquid_nitrogen', name: 'Liquid Nitrogen', basePrice: 15, category: 'intermediate', weight: 1, age: 7 },
+    { id: 'helmet', name: 'Protective Helmet', basePrice: 50, category: 'intermediate', weight: 3, age: 7 },
     { id: 'superconductor', name: 'Superconductor', basePrice: 200, category: 'intermediate', weight: 1, age: 7 },
     { id: 'quantum_processor', name: 'Quantum Processor', basePrice: 600, category: 'intermediate', weight: 0.5, age: 7 },
     { id: 'graphene_sheet', name: 'Graphene Sheet', basePrice: 150, category: 'intermediate', weight: 0.2, age: 7 },
@@ -578,13 +588,15 @@ export const defaultRules = {
     { id: 'plastic', inputs: { oil: 1 }, outputs: { plastic: 2 }, energyRequired: 10, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'rubber', inputs: { oil: 1 }, outputs: { rubber: 2 }, energyRequired: 10, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'asphalt', inputs: { stone: 1, oil: 1 }, outputs: { asphalt: 2 }, energyRequired: 8, ticksToComplete: 2, tier: 4, age: 4 },
-    { id: 'concrete', inputs: { stone: 1, sand: 1, water: 0 }, outputs: { concrete: 2 }, energyRequired: 5, ticksToComplete: 2, tier: 4, age: 4 },
+    { id: 'concrete', inputs: { stone: 1, sand: 1 }, outputs: { concrete: 2 }, energyRequired: 5, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'plastic_sheet', inputs: { plastic: 2 }, outputs: { plastic_sheet: 1 }, energyRequired: 5, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'vinyl', inputs: { plastic: 2 }, outputs: { vinyl: 2 }, energyRequired: 6, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'fiberglass', inputs: { plastic: 1, glass: 1 }, outputs: { fiberglass: 2 }, energyRequired: 8, ticksToComplete: 3, tier: 4, age: 4 },
     { id: 'synthetic_fabric', inputs: { plastic: 1 }, outputs: { synthetic_fabric: 2 }, energyRequired: 5, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'glass_bottle', inputs: { glass: 1 }, outputs: { glass_bottle: 4 }, energyRequired: 3, ticksToComplete: 1, tier: 4, age: 4 },
-    
+    { id: 'leather', inputs: { synthetic_fabric: 1, rubber: 1 }, outputs: { leather: 1 }, energyRequired: 8, ticksToComplete: 3, tier: 4, age: 4 },
+    { id: 'vacuum_tube', inputs: { glass: 1, copper_wire: 1 }, outputs: { vacuum_tube: 2 }, energyRequired: 10, ticksToComplete: 3, tier: 4, age: 4 },
+
     // Complex Parts
     { id: 'carburetor', inputs: { steel_plate: 1, brass_ingot: 1 }, outputs: { carburetor: 1 }, energyRequired: 12, ticksToComplete: 4, tier: 4, age: 4 },
     { id: 'spark_plug', inputs: { ceramic_tile: 1, copper_wire: 1 }, outputs: { spark_plug: 4 }, energyRequired: 5, ticksToComplete: 2, tier: 4, age: 4 },
@@ -600,9 +612,9 @@ export const defaultRules = {
     { id: 'chainsaw', inputs: { engine_block: 1, gear: 2, plastic: 1, steel_chain: 1 }, outputs: { chainsaw: 1 }, energyRequired: 35, ticksToComplete: 8, tier: 4, age: 4 },
     { id: 'generator', inputs: { engine_block: 1, copper_wire: 5, steel_plate: 2 }, outputs: { generator: 1 }, energyRequired: 40, ticksToComplete: 10, tier: 4, age: 4 },
     { id: 'scooter', inputs: { engine_block: 1, tire: 2, steel_beam: 2 }, outputs: { scooter: 1 }, energyRequired: 50, ticksToComplete: 15, tier: 4, age: 4 },
-    { id: 'motorcycle', inputs: { car_engine: 1, tire: 2, steel_beam: 2, leather: 0 }, outputs: { motorcycle: 1 }, energyRequired: 70, ticksToComplete: 20, tier: 4, age: 4 },
+    { id: 'motorcycle', inputs: { car_engine: 1, tire: 2, steel_beam: 2 }, outputs: { motorcycle: 1 }, energyRequired: 70, ticksToComplete: 20, tier: 4, age: 4 },
     { id: 'automobile', inputs: { car_engine: 1, car_tire: 4, steel_plate: 6, glass: 2, vinyl: 2 }, outputs: { automobile: 1 }, energyRequired: 150, ticksToComplete: 40, tier: 4, age: 4 },
-    { id: 'radio_transmitter', inputs: { plastic: 3, copper_wire: 2, vacuum_tube: 0 }, outputs: { radio_transmitter: 1 }, energyRequired: 15, ticksToComplete: 5, tier: 4, age: 4 },
+    { id: 'radio_transmitter', inputs: { plastic: 3, copper_wire: 2 }, outputs: { radio_transmitter: 1 }, energyRequired: 15, ticksToComplete: 5, tier: 4, age: 4 },
     { id: 'typewriter', inputs: { steel_plate: 2, gear: 10, plastic: 1 }, outputs: { typewriter: 1 }, energyRequired: 20, ticksToComplete: 8, tier: 4, age: 4 },
     { id: 'camera', inputs: { plastic: 2, glass_lens: 2, gear: 2 }, outputs: { camera: 1 }, energyRequired: 15, ticksToComplete: 6, tier: 4, age: 4 },
     { id: 'industrial_pump', inputs: { steel_pipe: 4, engine_block: 1, rubber: 2 }, outputs: { industrial_pump: 1 }, energyRequired: 30, ticksToComplete: 10, tier: 4, age: 4 },
@@ -628,7 +640,7 @@ export const defaultRules = {
     { id: 'aluminum_rod', inputs: { aluminum_ingot: 1 }, outputs: { aluminum_rod: 2 }, energyRequired: 10, ticksToComplete: 2, tier: 5, age: 5 },
     { id: 'insulated_wire', inputs: { copper_wire: 1, plastic: 1 }, outputs: { insulated_wire: 2 }, energyRequired: 5, ticksToComplete: 1, tier: 5, age: 5 },
     { id: 'electric_coil', inputs: { copper_wire: 2, iron_rod: 1 }, outputs: { electric_coil: 1 }, energyRequired: 8, ticksToComplete: 2, tier: 5, age: 5 },
-    { id: 'electric_motor', inputs: { electric_coil: 2, steel_ingot: 1, housing: 0 }, outputs: { electric_motor: 1 }, energyRequired: 30, ticksToComplete: 5, tier: 5, age: 5 },
+    { id: 'electric_motor', inputs: { electric_coil: 2, steel_ingot: 1 }, outputs: { electric_motor: 1 }, energyRequired: 30, ticksToComplete: 5, tier: 5, age: 5 },
     { id: 'heating_element', inputs: { iron_rod: 1, copper_wire: 2 }, outputs: { heating_element: 1 }, energyRequired: 10, ticksToComplete: 2, tier: 5, age: 5 },
     { id: 'electric_switch', inputs: { plastic: 1, copper_sheet: 1 }, outputs: { electric_switch: 2 }, energyRequired: 5, ticksToComplete: 1, tier: 5, age: 5 },
     { id: 'transformer', inputs: { electric_coil: 2, steel_plate: 1 }, outputs: { transformer: 1 }, energyRequired: 20, ticksToComplete: 4, tier: 5, age: 5 },
@@ -638,6 +650,9 @@ export const defaultRules = {
     { id: 'relay', inputs: { electric_coil: 1, electric_switch: 1 }, outputs: { relay: 1 }, energyRequired: 10, ticksToComplete: 2, tier: 5, age: 5 },
     { id: 'thermostat', inputs: { brass_sheet: 1, electric_switch: 1 }, outputs: { thermostat: 1 }, energyRequired: 12, ticksToComplete: 3, tier: 5, age: 5 },
     { id: 'compressor', inputs: { electric_motor: 1, aluminum_sheet: 1, pipe: 1 }, outputs: { compressor: 1 }, energyRequired: 35, ticksToComplete: 6, tier: 5, age: 5 },
+    { id: 'housing', inputs: { steel_plate: 1, aluminum_sheet: 1 }, outputs: { housing: 2 }, energyRequired: 12, ticksToComplete: 3, tier: 5, age: 5 },
+    { id: 'steel_wire', inputs: { steel_ingot: 1 }, outputs: { steel_wire: 4 }, energyRequired: 5, ticksToComplete: 1, tier: 5, age: 5 },
+    { id: 'insulation', inputs: { fiberglass: 1, synthetic_fabric: 1 }, outputs: { insulation: 2 }, energyRequired: 8, ticksToComplete: 2, tier: 5, age: 5 },
 
     // Final Goods Age 5
     { id: 'fan', inputs: { electric_motor: 1, plastic: 2, aluminum_sheet: 1 }, outputs: { fan: 1 }, energyRequired: 20, ticksToComplete: 5, tier: 5, age: 5 },
@@ -658,10 +673,10 @@ export const defaultRules = {
     { id: 'electric_kettle', inputs: { heating_element: 1, plastic: 1, copper_sheet: 1 }, outputs: { electric_kettle: 1 }, energyRequired: 15, ticksToComplete: 3, tier: 5, age: 5 },
     { id: 'electric_saw', inputs: { electric_motor: 1, saw: 1, aluminum_sheet: 1 }, outputs: { electric_saw: 1 }, energyRequired: 30, ticksToComplete: 6, tier: 5, age: 5 },
     { id: 'arc_welder', inputs: { transformer: 1, insulated_wire: 2, steel_plate: 1 }, outputs: { arc_welder: 1 }, energyRequired: 40, ticksToComplete: 8, tier: 5, age: 5 },
-    { id: 'electric_guitar', inputs: { wood: 2, electric_coil: 2, steel_wire: 0 }, outputs: { electric_guitar: 1 }, energyRequired: 25, ticksToComplete: 6, tier: 5, age: 5 },
+    { id: 'electric_guitar', inputs: { wood: 2, electric_coil: 2 }, outputs: { electric_guitar: 1 }, energyRequired: 25, ticksToComplete: 6, tier: 5, age: 5 },
     { id: 'jukebox', inputs: { wood: 4, glass: 2, radio: 1, vinyl_record: 1 }, outputs: { jukebox: 1 }, energyRequired: 50, ticksToComplete: 10, tier: 5, age: 5 },
     { id: 'ceiling_fan', inputs: { electric_motor: 1, wood: 2, brass_ingot: 1 }, outputs: { ceiling_fan: 1 }, energyRequired: 30, ticksToComplete: 6, tier: 5, age: 5 },
-    { id: 'water_heater', inputs: { heating_element: 2, steel_plate: 3, insulation: 0 }, outputs: { water_heater: 1 }, energyRequired: 40, ticksToComplete: 8, tier: 5, age: 5 },
+    { id: 'water_heater', inputs: { heating_element: 2, steel_plate: 3 }, outputs: { water_heater: 1 }, energyRequired: 40, ticksToComplete: 8, tier: 5, age: 5 },
     { id: 'sander', inputs: { electric_motor: 1, plastic: 1 }, outputs: { sander: 1 }, energyRequired: 20, ticksToComplete: 4, tier: 5, age: 5 },
     { id: 'elevator_motor', inputs: { electric_motor: 2, steel_gear: 4, steel_beam: 2 }, outputs: { elevator_motor: 1 }, energyRequired: 60, ticksToComplete: 12, tier: 5, age: 5 },
 
@@ -680,8 +695,9 @@ export const defaultRules = {
     { id: 'power_supply', inputs: { transformer: 1, capacitor: 2, steel_plate: 1, fan: 1 }, outputs: { power_supply: 1 }, energyRequired: 30, ticksToComplete: 5, tier: 6, age: 6 },
     { id: 'keyboard', inputs: { plastic: 2, circuit_board: 1 }, outputs: { keyboard: 1 }, energyRequired: 15, ticksToComplete: 3, tier: 6, age: 6 },
     { id: 'mouse', inputs: { plastic: 1, led: 1, circuit_board: 1 }, outputs: { mouse: 1 }, energyRequired: 10, ticksToComplete: 2, tier: 6, age: 6 },
-    { id: 'usb_cable', inputs: { insulated_wire: 2, steel_plate: 0 }, outputs: { usb_cable: 2 }, energyRequired: 5, ticksToComplete: 1, tier: 6, age: 6 },
+    { id: 'usb_cable', inputs: { insulated_wire: 2 }, outputs: { usb_cable: 2 }, energyRequired: 5, ticksToComplete: 1, tier: 6, age: 6 },
     { id: 'digital_sensor', inputs: { silicon: 1, circuit_board: 1 }, outputs: { digital_sensor: 1 }, energyRequired: 20, ticksToComplete: 3, tier: 6, age: 6 },
+    { id: 'steel_bracket', inputs: { steel_plate: 1 }, outputs: { steel_bracket: 4 }, energyRequired: 8, ticksToComplete: 2, tier: 6, age: 6 },
 
     // Final Goods Age 6
     { id: 'monitor', inputs: { screen: 1, plastic: 2, circuit_board: 1 }, outputs: { monitor: 1 }, energyRequired: 40, ticksToComplete: 6, tier: 6, age: 6 },
@@ -701,11 +717,11 @@ export const defaultRules = {
     { id: 'mp3_player', inputs: { circuit_board: 1, screen: 1, battery: 1, plastic: 1 }, outputs: { mp3_player: 1 }, energyRequired: 30, ticksToComplete: 5, tier: 6, age: 6 },
     { id: 'electronic_lock', inputs: { circuit_board: 1, electric_motor: 1, steel_plate: 1 }, outputs: { electronic_lock: 1 }, energyRequired: 40, ticksToComplete: 6, tier: 6, age: 6 },
     { id: 'gps_device', inputs: { screen: 1, circuit_board: 1, battery: 1, radio_transmitter: 1 }, outputs: { gps_device: 1 }, energyRequired: 50, ticksToComplete: 8, tier: 6, age: 6 },
-    { id: 'barcode_scanner', inputs: { laser: 0, led: 1, digital_sensor: 1, plastic: 1 }, outputs: { barcode_scanner: 1 }, energyRequired: 35, ticksToComplete: 5, tier: 6, age: 6 },
+    { id: 'barcode_scanner', inputs: { led: 1, digital_sensor: 1, plastic: 1 }, outputs: { barcode_scanner: 1 }, energyRequired: 35, ticksToComplete: 5, tier: 6, age: 6 },
     { id: 'atm_machine', inputs: { computer: 1, safe: 1, screen: 1, steel_plate: 4 }, outputs: { atm_machine: 1 }, energyRequired: 200, ticksToComplete: 25, tier: 6, age: 6 },
     { id: 'pos_terminal', inputs: { screen: 1, circuit_board: 1, keyboard: 1 }, outputs: { pos_terminal: 1 }, energyRequired: 50, ticksToComplete: 8, tier: 6, age: 6 },
     { id: 'led_display', inputs: { led: 8, circuit_board: 2, aluminum_sheet: 2 }, outputs: { led_display: 1 }, energyRequired: 80, ticksToComplete: 10, tier: 6, age: 6 },
-    { id: 'surveillance_camera', inputs: { digital_camera: 1, electric_motor: 1, steel_bracket: 0 }, outputs: { surveillance_camera: 1 }, energyRequired: 70, ticksToComplete: 10, tier: 6, age: 6 },
+    { id: 'surveillance_camera', inputs: { digital_camera: 1, electric_motor: 1 }, outputs: { surveillance_camera: 1 }, energyRequired: 70, ticksToComplete: 10, tier: 6, age: 6 },
     { id: 'tablet', inputs: { screen: 1, motherboard: 1, battery: 1, aluminum_sheet: 1 }, outputs: { tablet: 1 }, energyRequired: 90, ticksToComplete: 12, tier: 6, age: 6 },
 
     // --- AGE 7: FUTURE ---
@@ -715,15 +731,17 @@ export const defaultRules = {
     { id: 'composite', inputs: { plastic: 2, coal: 2 }, outputs: { composite: 1 }, energyRequired: 80, ticksToComplete: 6, tier: 7, age: 7 },
     { id: 'graphene_sheet', inputs: { coal: 4, electric_coil: 2 }, outputs: { graphene_sheet: 1 }, energyRequired: 100, ticksToComplete: 8, tier: 7, age: 7 },
     { id: 'nano_material', inputs: { composite: 1, silicon: 1 }, outputs: { nano_material: 1 }, energyRequired: 120, ticksToComplete: 10, tier: 7, age: 7 },
-    { id: 'superconductor', inputs: { rare_earth_ore: 2, copper_wire: 4, liquid_nitrogen: 0 }, outputs: { superconductor: 1 }, energyRequired: 150, ticksToComplete: 10, tier: 7, age: 7 },
+    { id: 'superconductor', inputs: { rare_earth_ore: 2, copper_wire: 4 }, outputs: { superconductor: 1 }, energyRequired: 150, ticksToComplete: 10, tier: 7, age: 7 },
     { id: 'quantum_processor', inputs: { superconductor: 2, silicon: 2, laser: 1 }, outputs: { quantum_processor: 1 }, energyRequired: 300, ticksToComplete: 20, tier: 7, age: 7 },
     { id: 'ai_core', inputs: { quantum_processor: 1, motherboard: 2, rare_earth_ore: 2 }, outputs: { ai_core: 1 }, energyRequired: 400, ticksToComplete: 30, tier: 7, age: 7 },
     { id: 'plasma_containment', inputs: { superconductor: 4, aluminum_sheet: 2 }, outputs: { plasma_containment: 1 }, energyRequired: 250, ticksToComplete: 15, tier: 7, age: 7 },
-    { id: 'fusion_core', inputs: { plasma_containment: 1, hydrogen: 0, rare_earth_ore: 4 }, outputs: { fusion_core: 1 }, energyRequired: 500, ticksToComplete: 40, tier: 7, age: 7 },
+    { id: 'fusion_core', inputs: { plasma_containment: 1, rare_earth_ore: 4 }, outputs: { fusion_core: 1 }, energyRequired: 500, ticksToComplete: 40, tier: 7, age: 7 },
     { id: 'neural_interface', inputs: { digital_sensor: 2, ai_core: 1, nano_material: 1 }, outputs: { neural_interface: 1 }, energyRequired: 300, ticksToComplete: 20, tier: 7, age: 7 },
     { id: 'holographic_projector', inputs: { laser: 2, glass_lens: 2, circuit_board: 2 }, outputs: { holographic_projector: 1 }, energyRequired: 150, ticksToComplete: 12, tier: 7, age: 7 },
     { id: 'smart_fabric', inputs: { synthetic_fabric: 2, nano_material: 1, circuit_board: 1 }, outputs: { smart_fabric: 1 }, energyRequired: 100, ticksToComplete: 8, tier: 7, age: 7 },
     { id: 'anti_grav_unit', inputs: { superconductor: 4, fusion_core: 1 }, outputs: { anti_grav_unit: 1 }, energyRequired: 600, ticksToComplete: 50, tier: 7, age: 7 },
+    { id: 'liquid_nitrogen', inputs: { coal: 2, rare_earth_ore: 1 }, outputs: { liquid_nitrogen: 2 }, energyRequired: 50, ticksToComplete: 5, tier: 7, age: 7 },
+    { id: 'helmet', inputs: { composite: 1, aluminum_sheet: 1, plastic: 1 }, outputs: { helmet: 1 }, energyRequired: 40, ticksToComplete: 5, tier: 7, age: 7 },
 
     // Final Goods Age 7
     { id: 'smartphone', inputs: { cpu: 1, screen: 1, adv_battery: 1, camera: 1 }, outputs: { smartphone: 1 }, energyRequired: 80, ticksToComplete: 10, tier: 7, age: 7 },
@@ -742,7 +760,7 @@ export const defaultRules = {
     { id: 'personal_assistant_robot', inputs: { robot: 1, ai_core: 1, smart_fabric: 2 }, outputs: { personal_assistant_robot: 1 }, energyRequired: 500, ticksToComplete: 50, tier: 7, age: 7 },
     { id: 'smart_home_hub', inputs: { ai_core: 1, radio_transmitter: 1, screen: 1 }, outputs: { smart_home_hub: 1 }, energyRequired: 200, ticksToComplete: 20, tier: 7, age: 7 },
     { id: 'autonomous_vehicle', inputs: { electric_car: 1, ai_core: 2, digital_sensor: 6 }, outputs: { autonomous_vehicle: 1 }, energyRequired: 800, ticksToComplete: 80, tier: 7, age: 7 },
-    { id: 'space_suit', inputs: { smart_fabric: 6, composite: 2, helmet: 0 }, outputs: { space_suit: 1 }, energyRequired: 300, ticksToComplete: 30, tier: 7, age: 7 },
+    { id: 'space_suit', inputs: { smart_fabric: 6, composite: 2 }, outputs: { space_suit: 1 }, energyRequired: 300, ticksToComplete: 30, tier: 7, age: 7 },
     { id: 'medical_scanner', inputs: { laser: 2, ai_core: 1, bed: 1 }, outputs: { medical_scanner: 1 }, energyRequired: 500, ticksToComplete: 40, tier: 7, age: 7 },
     { id: 'quantum_computer', inputs: { quantum_processor: 4, plasma_containment: 1, server: 1 }, outputs: { quantum_computer: 1 }, energyRequired: 1500, ticksToComplete: 100, tier: 7, age: 7 },
     { id: 'teleporter_pad', inputs: { quantum_computer: 1, fusion_core: 2, nano_material: 10 }, outputs: { teleporter_pad: 1 }, energyRequired: 5000, ticksToComplete: 200, tier: 7, age: 7 },
