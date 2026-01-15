@@ -86,7 +86,9 @@ export default function SidePanel({
                 issues.unproduceable.length +
                 issues.recipesMissingMachine.length +
                 (issues.intermediateNotUsedInAge?.length || 0) +
-                (issues.recipesWithZeroQuantity?.length || 0)
+                (issues.recipesWithZeroQuantity?.length || 0) +
+                (issues.recipeAgeIssues?.length || 0) +
+                (issues.machineCycleIssues?.length || 0)
               }
               size="small"
               color="warning"
@@ -250,6 +252,62 @@ export default function SidePanel({
             </>
           )}
 
+          {/* Recipe Age Issues */}
+          {issues.recipeAgeIssues && issues.recipeAgeIssues.length > 0 && (
+            <>
+              <Typography
+                variant="caption"
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fee2e2', color: '#991b1b', fontWeight: 600 }}
+              >
+                Machine Age Mismatch ({issues.recipeAgeIssues.length})
+              </Typography>
+              <List dense disablePadding>
+                {issues.recipeAgeIssues.map((issue) => (
+                  <ListItemButton
+                    key={issue.recipeId}
+                    onClick={() => handleIssueClick([issue.recipeId])}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <ErrorIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={issue.recipeId}
+                      secondary={`Recipe Age ${issue.recipeAge} needs Machine Age ${issue.minMachineAge}`}
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            </>
+          )}
+
+          {/* Machine Cycle Issues */}
+          {issues.machineCycleIssues && issues.machineCycleIssues.length > 0 && (
+            <>
+              <Typography
+                variant="caption"
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fee2e2', color: '#991b1b', fontWeight: 600 }}
+              >
+                Circular Dependency ({issues.machineCycleIssues.length})
+              </Typography>
+              <List dense disablePadding>
+                {issues.machineCycleIssues.map((issue, idx) => (
+                  <ListItemButton
+                    key={`${issue.machineId}-${issue.partId}-${idx}`}
+                    onClick={() => handleIssueClick([issue.partId])}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <ErrorIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={issue.machineName}
+                      secondary={`Requires ${issue.partName} (only made by this machine)`}
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            </>
+          )}
+
           {/* Unused Parts */}
           {issues.unusedParts.length > 0 && (
             <>
@@ -283,7 +341,9 @@ export default function SidePanel({
             issues.unproduceable.length === 0 &&
             issues.recipesMissingMachine.length === 0 &&
             (!issues.intermediateNotUsedInAge || issues.intermediateNotUsedInAge.length === 0) &&
-            (!issues.recipesWithZeroQuantity || issues.recipesWithZeroQuantity.length === 0) && (
+            (!issues.recipesWithZeroQuantity || issues.recipesWithZeroQuantity.length === 0) &&
+            (!issues.recipeAgeIssues || issues.recipeAgeIssues.length === 0) &&
+            (!issues.machineCycleIssues || issues.machineCycleIssues.length === 0) && (
               <Typography sx={{ p: 2, color: 'success.main' }}>
                 No issues found
               </Typography>

@@ -4,9 +4,9 @@ import dagre from 'dagre';
  * Build the graph structure from defaultRules
  * Returns nodes and edges for React Flow
  */
-export function buildGraph(rules) {
+export function buildGraph(rules, initialState = null) {
   const materialMap = new Map(rules.materials.map(m => [m.id, m]));
-  const issues = analyzeIssues(rules);
+  const issues = analyzeIssues(rules, initialState);
 
   // Get extractable resources from exploration config
   const extractableResources = getExtractableResources(rules);
@@ -187,7 +187,7 @@ function getIssuesForMaterial(materialId, issues) {
 /**
  * Analyze all inconsistencies in the rules
  */
-export function analyzeIssues(rules) {
+export function analyzeIssues(rules, initialState = null) {
   const materialIds = new Set(rules.materials.map(m => m.id));
   const usedAsInput = new Set();
   const producedByRecipe = new Set();
@@ -281,6 +281,12 @@ export function analyzeIssues(rules) {
   // Find intermediate parts not used in their own age
   const intermediateNotUsedInAge = findIntermediatePartsNotUsedInAge(rules);
 
+  // Find recipes requiring machines from subsequent ages
+  const recipeAgeIssues = findRecipeAgeIssues(rules);
+
+  // Find machines with circular production dependencies
+  const machineCycleIssues = findMachineCycleIssues(rules, initialState);
+
   return {
     unusedParts,
     missingMaterials: Array.from(missingMaterials),
@@ -289,6 +295,8 @@ export function analyzeIssues(rules) {
     noMachineOutputs,
     intermediateNotUsedInAge,
     recipesWithZeroQuantity,
+    recipeAgeIssues,
+    machineCycleIssues,
   };
 }
 
@@ -402,4 +410,142 @@ export function getMachinesForRecipe(recipeId, rules) {
   return rules.machines.filter(machine =>
     machine.allowedRecipes.includes(recipeId)
   );
+}
+
+/**
+ * Find recipes that require a machine from a subsequent age
+ */
+function findRecipeAgeIssues(rules) {
+  const issues = [];
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const machineAgeMap = new Map();
+
+  // Map machine ID to its material age
+  rules.machines.forEach(machine => {
+    // Machine ID usually matches the item ID or has an itemId property
+    const matId = machine.itemId || machine.id;
+    const material = materialMap.get(matId);
+    if (material && material.age) {
+      machineAgeMap.set(machine.id, material.age);
+    } else {
+      machineAgeMap.set(machine.id, 1);
+    }
+  });
+
+  rules.recipes.forEach(recipe => {
+    if (!recipe.age) return;
+
+    const capableMachines = rules.machines.filter(m => m.allowedRecipes.includes(recipe.id));
+    if (capableMachines.length === 0) return; // Handled by recipesMissingMachine
+
+    // Find the earliest age machine that can process this recipe
+    let minMachineAge = Infinity;
+    capableMachines.forEach(m => {
+      const age = machineAgeMap.get(m.id);
+      if (age < minMachineAge) minMachineAge = age;
+    });
+
+    if (minMachineAge > recipe.age) {
+      issues.push({
+        recipeId: recipe.id,
+        recipeAge: recipe.age,
+        minMachineAge: minMachineAge,
+        machines: capableMachines.map(m => m.name || m.id).join(', ')
+      });
+    }
+  });
+
+  return issues;
+}
+
+/**
+ * Find machines that can only be produced by themselves (circular dependency)
+ */
+function findMachineCycleIssues(rules, initialState = null) {
+  const issues = [];
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const machineAgeMap = new Map();
+
+  // Create set of starter items from initial state
+  const starterItems = new Set();
+  if (initialState) {
+    // Items in inventory
+    if (initialState.inventory) {
+      Object.keys(initialState.inventory).forEach(key => starterItems.add(key));
+    }
+    // Items already deployed (machines/generators)
+    if (initialState.floorSpace && initialState.floorSpace.placements) {
+      initialState.floorSpace.placements.forEach(p => {
+        if (p.structureType) starterItems.add(p.structureType);
+      });
+    }
+    // Deployed machines list might be redundant but safe to check
+    if (initialState.machines) {
+      initialState.machines.forEach(m => starterItems.add(m.type));
+    }
+  }
+
+  // Map machine ID to its material age
+  rules.machines.forEach(machine => {
+    const matId = machine.itemId || machine.id;
+    const material = materialMap.get(matId);
+    if (material && material.age) {
+      machineAgeMap.set(machine.id, material.age);
+    } else {
+      machineAgeMap.set(machine.id, 1);
+    }
+  });
+
+  // For each machine, find inputs needed to produce it
+  rules.machines.forEach(machine => {
+    const machineAge = machineAgeMap.get(machine.id);
+    const machineItemId = machine.itemId || machine.id;
+
+    // If we start with this machine, the cycle is broken (bootstrapped)
+    if (starterItems.has(machineItemId)) return;
+    
+    // Find recipes that output this machine's item
+    const producingRecipes = rules.recipes.filter(r => r.outputs[machineItemId]);
+
+    if (producingRecipes.length === 0) return;
+
+    // Check each input of these recipes
+    producingRecipes.forEach(recipe => {
+      Object.keys(recipe.inputs).forEach(inputId => {
+        // Find how this input is produced
+        const inputProducingRecipes = rules.recipes.filter(r => r.outputs[inputId]);
+        
+        // If the input is raw (no recipes), it's fine
+        if (inputProducingRecipes.length === 0) return;
+
+        // Check which machines can run the input-producing recipes
+        // We only care about machines that are available at or before the current machine's age
+        // because we are looking for bootstrap issues
+        const capableMachinesForInput = new Set();
+        
+        inputProducingRecipes.forEach(r => {
+          const machinesForRecipe = rules.machines.filter(m => m.allowedRecipes.includes(r.id));
+          machinesForRecipe.forEach(m => {
+             const mAge = machineAgeMap.get(m.id);
+             // If another machine of equal or lower age can produce it, we are fine
+             if (mAge <= machineAge) {
+               capableMachinesForInput.add(m.id);
+             }
+          });
+        });
+
+        // If the ONLY capable machine (of relevant age) is the machine itself
+        if (capableMachinesForInput.size === 1 && capableMachinesForInput.has(machine.id)) {
+          issues.push({
+            machineId: machine.id,
+            machineName: machine.name,
+            partId: inputId,
+            partName: materialMap.get(inputId)?.name || inputId
+          });
+        }
+      });
+    });
+  });
+
+  return issues;
 }

@@ -21,6 +21,7 @@ import GraphCanvas from '../components/debug/GraphCanvas';
 import SidePanel from '../components/debug/SidePanel';
 import { buildGraph } from '../utils/graphAnalysis';
 import { defaultRules } from '../engine/defaultRules';
+import { initialState } from '../engine/initialState';
 
 export default function DebugGraphPage() {
   const [filters, setFilters] = useState({
@@ -37,7 +38,7 @@ export default function DebugGraphPage() {
 
   // Build graph from rules
   const { nodes, edges, issues } = useMemo(() => {
-    return buildGraph(defaultRules);
+    return buildGraph(defaultRules, initialState);
   }, [refreshKey]);
 
   const handleFilterChange = (key) => (event) => {
@@ -68,7 +69,9 @@ export default function DebugGraphPage() {
     issues.unproduceable.length +
     issues.recipesMissingMachine.length +
     (issues.intermediateNotUsedInAge?.length || 0) +
-    (issues.recipesWithZeroQuantity?.length || 0);
+    (issues.recipesWithZeroQuantity?.length || 0) +
+    (issues.recipeAgeIssues?.length || 0) +
+    (issues.machineCycleIssues?.length || 0);
 
   // Generate issues text log
   const generateIssuesLog = () => {
@@ -121,6 +124,22 @@ export default function DebugGraphPage() {
           parts.push(`Outputs: ${issue.zeroOutputs.join(', ')}`);
         }
         log += `  - ${issue.recipeId} (${parts.join(' | ')})\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.recipeAgeIssues && issues.recipeAgeIssues.length > 0) {
+      log += `Machine Age Mismatch (${issues.recipeAgeIssues.length}):\n`;
+      issues.recipeAgeIssues.forEach(issue => {
+        log += `  - ${issue.recipeId} (Age ${issue.recipeAge}): Needs Machine Age ${issue.minMachineAge} (${issue.machines})\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.machineCycleIssues && issues.machineCycleIssues.length > 0) {
+      log += `Circular Dependency (${issues.machineCycleIssues.length}):\n`;
+      issues.machineCycleIssues.forEach(issue => {
+        log += `  - ${issue.machineName} requires ${issue.partName} (only produced by this machine)\n`;
       });
       log += '\n';
     }
