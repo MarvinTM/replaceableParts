@@ -1,6 +1,6 @@
 /**
  * Initial Game State
- * Starting configuration with pre-defined extraction nodes and one generator
+ * Updated for the Consolidated Resource System
  */
 
 import { generateExplorationMap } from './mapGenerator.js';
@@ -8,156 +8,92 @@ import { defaultRules } from './defaultRules.js';
 
 export const initialState = {
   tick: 0,
-  rngSeed: 12345,
-  credits: 5000000,
+  rngSeed: Date.now(),
+  credits: 500,
 
   // Floor Space (2D Grid)
   floorSpace: {
-    width: 8,
-    height: 8,
-    chunks: [{ x: 0, y: 0, width: 8, height: 8 }],
-    chunks: [{ x: 0, y: 0, width: 8, height: 8 }],
+    width: 16,
+    height: 16,
+    chunks: [{ x: 0, y: 0, width: 16, height: 16 }],
     placements: [
-      // Starting generator at position (3, 3)
-      { id: 'starter_crank', x: 3, y: 3, structureType: 'manual_crank' },
-      // Starting machine at position (0, 0)
-      { id: 'starter_machine', x: 0, y: 0, structureType: 'basic_assembler' }
+      // Starting generator: Treadwheel (Manual power)
+      { id: 'starter_treadwheel', x: 4, y: 4, structureType: 'treadwheel' },
+      // Starting machine: Basic Assembler
+      { id: 'starter_assembler', x: 2, y: 2, structureType: 'basic_assembler' }
     ]
   },
 
   energy: {
-    produced: 3,  // From starting manual crank
+    produced: 5,
     consumed: 0
   },
 
-  // Inventory space is total capacity for per-item limits
-  inventorySpace: 100,
+  // Inventory space
+  inventorySpace: 200,
 
-  // Inventory starts with 1 production machine so player can build more
+  // Starter Inventory
   inventory: {
-    production_machine: 5,
-    treadwheel: 5,
-    ore_crusher: 5,
-    tailoring_table: 5,
-    windmill: 5,
-    nuclear_power_plant: 5
+    basic_assembler: 2,
+    stone_furnace: 2,
+    treadwheel: 1
   },
 
-  // Starting machine for demonstration
+  // Deployed Machines
   machines: [
     {
-      id: 'starter_machine',
+      id: 'starter_assembler',
       type: 'basic_assembler',
       recipeId: 'planks',
       internalBuffer: {},
       status: 'idle',
       enabled: true,
-      x: 0,
-      y: 0
+      x: 2,
+      y: 2
     }
   ],
 
-  generators: [],
+  // Deployed Generators
+  generators: [
+    {
+      id: 'starter_treadwheel',
+      type: 'treadwheel',
+      x: 4,
+      y: 4,
+      active: true
+    }
+  ],
 
-  // Pre-defined extraction nodes (active from start)
+  // Pre-defined extraction nodes (Age 1 Resources)
   extractionNodes: [
-    {
-      id: 'node_wood_1',
-      resourceType: 'wood',
-      rate: 2,
-      active: true
-    },
-    {
-      id: 'node_stone_1',
-      resourceType: 'stone',
-      rate: 2,
-      active: true
-    },
-    {
-      id: 'node_iron_ore_1',
-      resourceType: 'iron_ore',
-      rate: 1,
-      active: true
-    },
-    {
-      id: 'node_copper_ore_1',
-      resourceType: 'copper_ore',
-      rate: 1,
-      active: true
-    },
-    {
-      id: 'node_coal_1',
-      resourceType: 'coal',
-      rate: 2,
-      active: true
-    },
-    {
-      id: 'node_clay_1',
-      resourceType: 'clay',
-      rate: 1,
-      active: true
-    },
-    {
-      id: 'node_sand_1',
-      resourceType: 'sand',
-      rate: 1,
-      active: true
-    },
-    {
-      id: 'node_flux_1',
-      resourceType: 'flux',
-      rate: 1,
-      active: true
-    }
+    { id: 'node_wood_1', resourceType: 'wood', rate: 2, active: true },
+    { id: 'node_stone_1', resourceType: 'stone', rate: 2, active: true },
+    { id: 'node_iron_1', resourceType: 'iron_ore', rate: 1, active: true },
+    { id: 'node_coal_1', resourceType: 'coal', rate: 1, active: true },
+    { id: 'node_sand_1', resourceType: 'sand', rate: 1, active: true }
   ],
 
-  // Start with basic Tier 1 recipes + equipment recipes discovered and unlocked
+  // Discovery: Start with Age 1 basics
   discoveredRecipes: [
-    // Tier 1
-    'planks',
-    'charcoal',
-    'stone_bricks',
-    'gravel',
-    'bricks',
-    'glass',
-    'iron_ingot',
-    'copper_ingot',
-    'linen_thread',
-    
-    // Equipment (so player can build machines and generators from start)
-    'production_machine'
+    'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails', 'gear',
+    'basic_assembler', 'stone_furnace', 'treadwheel'
   ],
 
   unlockedRecipes: [
-    // Tier 1
-    'planks',
-    'charcoal',
-    'stone_bricks',
-    'gravel',
-    'bricks',
-    'glass',
-    'iron_ingot',
-    'copper_ingot',
-    'linen_thread',
-    // Equipment
-    'production_machine'
+    'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails', 'gear',
+    'basic_assembler', 'stone_furnace', 'treadwheel'
   ],
 
-  // Research starts inactive (cost defined in rules)
   research: {
     active: false
   },
 
-  // Market popularity (empty = all at default 1.0)
   marketPopularity: {},
-
-  // Exploration map (generated dynamically based on seed)
   explorationMap: null
 };
 
 /**
  * Create a fresh copy of the initial state
- * Use this to start a new game
  */
 export function createInitialState(customSeed = null, rules = defaultRules) {
   const state = JSON.parse(JSON.stringify(initialState));
@@ -165,7 +101,6 @@ export function createInitialState(customSeed = null, rules = defaultRules) {
     state.rngSeed = customSeed;
   }
 
-  // Generate exploration map using the game seed
   const explorationRules = rules.exploration;
   state.explorationMap = generateExplorationMap(
     state.rngSeed,
