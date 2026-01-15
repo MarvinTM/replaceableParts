@@ -34,7 +34,6 @@ export const defaultRules = {
     { id: 'iron_plate', name: 'Iron Plate', basePrice: 10, category: 'intermediate', weight: 4, age: 1 },
     { id: 'iron_rod', name: 'Iron Rod', basePrice: 9, category: 'intermediate', weight: 2, age: 1 },
     { id: 'nails', name: 'Nails', basePrice: 5, category: 'intermediate', weight: 1, age: 1 },
-    { id: 'gear', name: 'Iron Gear', basePrice: 12, category: 'intermediate', weight: 2, age: 1 },
 
     // Final Goods (Furniture, Basic Tools, Structures)
     { id: 'chair', name: 'Wooden Chair', basePrice: 15, category: 'final', weight: 5, age: 1 },
@@ -53,10 +52,8 @@ export const defaultRules = {
     // AGE 2: REFINEMENT (Copper, Clay, Glass)
     // ========================
     // Parts
-    { id: 'bricks', name: 'Fired Bricks', basePrice: 6, category: 'intermediate', weight: 2, age: 2 },
     { id: 'glass', name: 'Glass', basePrice: 8, category: 'intermediate', weight: 2, age: 2 },
     { id: 'copper_ingot', name: 'Copper Ingot', basePrice: 8, category: 'intermediate', weight: 3, age: 2 },
-    { id: 'copper_wire', name: 'Copper Wire', basePrice: 10, category: 'intermediate', weight: 1, age: 2 },
     { id: 'copper_sheet', name: 'Copper Sheet', basePrice: 12, category: 'intermediate', weight: 3, age: 2 },
     { id: 'pipe', name: 'Copper Pipe', basePrice: 15, category: 'intermediate', weight: 3, age: 2 },
     
@@ -75,6 +72,8 @@ export const defaultRules = {
     // AGE 3: INDUSTRIAL (Steel, Steam)
     // ========================
     // Parts (Steel is Iron + Coal refined)
+    { id: 'gear', name: 'Iron Gear', basePrice: 12, category: 'intermediate', weight: 2, age: 3 },
+    { id: 'bricks', name: 'Fired Bricks', basePrice: 6, category: 'intermediate', weight: 2, age: 3 },
     { id: 'steel_ingot', name: 'Steel Ingot', basePrice: 20, category: 'intermediate', weight: 4, age: 3 },
     { id: 'steel_beam', name: 'Steel Beam', basePrice: 30, category: 'intermediate', weight: 6, age: 3 },
     { id: 'steel_plate', name: 'Steel Plate', basePrice: 28, category: 'intermediate', weight: 5, age: 3 },
@@ -95,6 +94,7 @@ export const defaultRules = {
     // AGE 4: COMBUSTION (Oil, Plastic, Rubber, Concrete)
     // ========================
     // Parts
+    { id: 'copper_wire', name: 'Copper Wire', basePrice: 10, category: 'intermediate', weight: 1, age: 4 },
     { id: 'concrete', name: 'Concrete', basePrice: 15, category: 'intermediate', weight: 10, age: 4 },
     { id: 'plastic', name: 'Plastic', basePrice: 15, category: 'intermediate', weight: 1, age: 4 },
     { id: 'rubber', name: 'Rubber', basePrice: 18, category: 'intermediate', weight: 2, age: 4 },
@@ -199,7 +199,6 @@ export const defaultRules = {
     { id: 'iron_plate', inputs: { iron_ingot: 2 }, outputs: { iron_plate: 1 }, energyRequired: 3, ticksToComplete: 2, tier: 1, age: 1 },
     { id: 'iron_rod', inputs: { iron_ingot: 1 }, outputs: { iron_rod: 2 }, energyRequired: 2, ticksToComplete: 1, tier: 1, age: 1 },
     { id: 'nails', inputs: { iron_rod: 1 }, outputs: { nails: 8 }, energyRequired: 1, ticksToComplete: 1, tier: 1, age: 1 },
-    { id: 'gear', inputs: { iron_plate: 1 }, outputs: { gear: 2 }, energyRequired: 2, ticksToComplete: 2, tier: 1, age: 1 },
 
     // Final Goods
     { id: 'chair', inputs: { planks: 4, nails: 2 }, outputs: { chair: 1 }, energyRequired: 2, ticksToComplete: 3, tier: 1, age: 1 },
@@ -216,10 +215,8 @@ export const defaultRules = {
 
     // --- AGE 2: REFINEMENT ---
     // Intermediates
-    { id: 'bricks', inputs: { clay: 2 }, outputs: { bricks: 3 }, energyRequired: 2, ticksToComplete: 2, tier: 2, age: 2 },
     { id: 'glass', inputs: { sand: 2 }, outputs: { glass: 2 }, energyRequired: 3, ticksToComplete: 2, tier: 2, age: 2 },
     { id: 'copper_ingot', inputs: { copper_ore: 2 }, outputs: { copper_ingot: 1 }, energyRequired: 2, ticksToComplete: 2, tier: 2, age: 2 },
-    { id: 'copper_wire', inputs: { copper_ingot: 1 }, outputs: { copper_wire: 4 }, energyRequired: 2, ticksToComplete: 1, tier: 2, age: 2 },
     { id: 'copper_sheet', inputs: { copper_ingot: 2 }, outputs: { copper_sheet: 1 }, energyRequired: 3, ticksToComplete: 2, tier: 2, age: 2 },
     { id: 'pipe', inputs: { copper_sheet: 1 }, outputs: { pipe: 2 }, energyRequired: 3, ticksToComplete: 2, tier: 2, age: 2 },
 
@@ -236,6 +233,8 @@ export const defaultRules = {
 
     // --- AGE 3: INDUSTRIAL ---
     // Intermediates
+    { id: 'gear', inputs: { iron_plate: 1 }, outputs: { gear: 2 }, energyRequired: 2, ticksToComplete: 2, tier: 3, age: 3 },
+    { id: 'bricks', inputs: { clay: 2 }, outputs: { bricks: 3 }, energyRequired: 2, ticksToComplete: 2, tier: 3, age: 3 },
     { id: 'steel_ingot', inputs: { iron_ingot: 2, coal: 2 }, outputs: { steel_ingot: 1 }, energyRequired: 8, ticksToComplete: 4, tier: 3, age: 3 },
     { id: 'steel_beam', inputs: { steel_ingot: 3 }, outputs: { steel_beam: 1 }, energyRequired: 6, ticksToComplete: 3, tier: 3, age: 3 },
     { id: 'steel_plate', inputs: { steel_ingot: 2 }, outputs: { steel_plate: 1 }, energyRequired: 6, ticksToComplete: 3, tier: 3, age: 3 },
@@ -254,6 +253,7 @@ export const defaultRules = {
 
     // --- AGE 4: COMBUSTION ---
     // Intermediates
+    { id: 'copper_wire', inputs: { copper_ingot: 1 }, outputs: { copper_wire: 4 }, energyRequired: 2, ticksToComplete: 1, tier: 4, age: 4 },
     { id: 'concrete', inputs: { stone: 1, sand: 1 }, outputs: { concrete: 2 }, energyRequired: 5, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'plastic', inputs: { oil: 1 }, outputs: { plastic: 2 }, energyRequired: 10, ticksToComplete: 2, tier: 4, age: 4 },
     { id: 'rubber', inputs: { oil: 1 }, outputs: { rubber: 2 }, energyRequired: 10, ticksToComplete: 2, tier: 4, age: 4 }, // Simplified rubber from oil
@@ -321,7 +321,7 @@ export const defaultRules = {
     { id: 'solar_panel_item', inputs: { silicon: 4, glass: 2, aluminum_sheet: 1 }, outputs: { solar_panel_item: 1 }, energyRequired: 80, ticksToComplete: 8, tier: 7, age: 7 },
 
     // --- MACHINES & GENERATORS ---
-    { id: 'basic_assembler', inputs: { iron_plate: 4, gear: 2 }, outputs: { basic_assembler: 1 }, energyRequired: 10, ticksToComplete: 5, tier: 1, age: 1 },
+    { id: 'basic_assembler', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { basic_assembler: 1 }, energyRequired: 10, ticksToComplete: 5, tier: 1, age: 1 },
     { id: 'stone_furnace', inputs: { stone: 8 }, outputs: { stone_furnace: 1 }, energyRequired: 0, ticksToComplete: 2, tier: 1, age: 1 },
     { id: 'treadwheel', inputs: { wood: 10 }, outputs: { treadwheel: 1 }, energyRequired: 0, ticksToComplete: 5, tier: 1, age: 1 },
     
@@ -381,10 +381,10 @@ export const defaultRules = {
       animation: { frames: 4, speed: 0.1 },
       allowedRecipes: [
         // Age 1
-        'planks', 'wooden_beam', 'iron_plate', 'iron_rod', 'nails', 'gear',
+        'planks', 'wooden_beam', 'iron_plate', 'iron_rod', 'nails',
         'chair', 'table', 'wardrobe', 'chest', 'bucket', 'hammer', 'pickaxe', 'shovel', 'fence', 'door', 'stone_wall',
         // Age 2
-        'copper_wire', 'copper_sheet', 'pipe',
+        'copper_sheet', 'pipe',
         'vase', 'pot', 'mirror', 'window', 'lantern', 'kettle', 'sink', 'bathtub', 'spyglass',
         // Machine Self-build
         'basic_assembler', 'stone_furnace', 'treadwheel'
@@ -421,9 +421,11 @@ export const defaultRules = {
       animation: { frames: 4, speed: 0.2 },
       allowedRecipes: [
         // Age 3
+        'gear', 'bricks',
         'steel_beam', 'steel_plate', 'piston', 'boiler',
         'safe', 'stove', 'bicycle', 'clock', 'printing_press', 'sewing_machine', 'tool_box', 'radiator',
         // Age 4
+        'copper_wire',
         'engine_block', 'tire',
         'car_tire', 'lawn_mower', 'chainsaw', 'generator', 'scooter', 'phone_rotary', 'typewriter', 'camera',
         // Age 5

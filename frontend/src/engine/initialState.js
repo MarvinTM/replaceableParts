@@ -74,12 +74,12 @@ export const initialState = {
 
   // Discovery: Start with Age 1 basics
   discoveredRecipes: [
-    'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails', 'gear',
+    'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails',
     'basic_assembler', 'stone_furnace', 'treadwheel'
   ],
 
   unlockedRecipes: [
-    'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails', 'gear',
+    'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails',
     'basic_assembler', 'stone_furnace', 'treadwheel'
   ],
 
