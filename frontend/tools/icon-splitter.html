@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icon Grid Splitter</title>
+  <!-- JSZip for creating ZIP archives -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --primary: #4a90d9;
+      --text: #eee;
+      --text-muted: #888;
+      --border: #333;
+      --success: #4caf50;
+      --error: #f44336;
+      --warning: #ff9800;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .panels {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .panel h2 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    input[type="number"], textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    input[type="number"] {
+      width: 100px;
+    }
+
+    select {
+      cursor: pointer;
+    }
+
+    textarea {
+      min-height: 180px;
+      font-family: monospace;
+      resize: vertical;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: flex-end;
+    }
+
+    .input-group {
+      flex: 1;
+    }
+
+    .input-group label {
+      margin-bottom: 6px;
+    }
+
+    .input-group input {
+      margin-bottom: 0;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(74, 144, 217, 0.1);
+    }
+
+    .drop-zone.has-image {
+      padding: 10px;
+    }
+
+    .drop-zone img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 4px;
+    }
+
+    .drop-zone p {
+      margin: 0;
+      color: var(--text-muted);
+    }
+
+    .drop-zone input {
+      display: none;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: white;
+      width: 100%;
+    }
+
+    button.primary:hover {
+      background: #3a7bc8;
+    }
+
+    button.primary:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    button.secondary:hover {
+      background: rgba(74, 144, 217, 0.1);
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: rgba(76, 175, 80, 0.2);
+      color: var(--success);
+    }
+
+    .status.error {
+      background: rgba(244, 67, 54, 0.2);
+      color: var(--error);
+    }
+
+    .status.info {
+      background: rgba(74, 144, 217, 0.2);
+      color: var(--primary);
+    }
+
+    .status.warning {
+      background: rgba(255, 152, 0, 0.2);
+      color: var(--warning);
+    }
+
+    /* Calculated info box */
+    .calc-info {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .calc-info .row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .calc-info .row:last-child {
+      margin-bottom: 0;
+    }
+
+    .calc-info .label {
+      color: var(--text-muted);
+    }
+
+    .calc-info .value {
+      font-weight: 600;
+      font-family: monospace;
+    }
+
+    .calc-info .value.warning {
+      color: var(--warning);
+    }
+
+    .calc-info .value.good {
+      color: var(--success);
+    }
+
+    /* Preview section */
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .preview-header h2 {
+      margin: 0;
+    }
+
+    .preview-stats {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .preview-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    }
+
+    .preview-item {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preview-item:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .preview-item canvas {
+      display: block;
+      margin: 0 auto 6px;
+      background: repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 8px 8px;
+      border-radius: 4px;
+    }
+
+    .preview-item .name {
+      font-size: 11px;
+      color: var(--text-muted);
+      word-break: break-all;
+      line-height: 1.3;
+    }
+
+    .preview-item.missing {
+      border: 1px dashed var(--error);
+    }
+
+    .preview-item.missing .name {
+      color: var(--error);
+    }
+
+    .empty-preview {
+      color: var(--text-muted);
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    /* Help text */
+    .help {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: -12px;
+      margin-bottom: 16px;
+    }
+
+    /* Grid overlay preview */
+    .grid-preview-container {
+      position: relative;
+      display: inline-block;
+      max-width: 100%;
+    }
+
+    .grid-preview-container img {
+      display: block;
+      max-width: 100%;
+      max-height: 200px;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Icon Grid Splitter</h1>
+    <p class="subtitle">Split a grid image into individual material icons - auto-detects icon size</p>
+
+    <div class="panels">
+      <!-- Left Panel: Controls -->
+      <div class="panel">
+        <h2>1. Upload Grid Image</h2>
+        <div class="drop-zone" id="dropZone">
+          <p>Drop image here or click to select</p>
+          <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <h2>2. Material IDs</h2>
+        <textarea id="materialIds" placeholder="Enter material IDs, one per line:&#10;iron_ore&#10;copper_ore&#10;wood&#10;iron_ingot&#10;..."></textarea>
+        <p class="help">Order should match icons left-to-right, top-to-bottom</p>
+
+        <h2>3. Grid Layout</h2>
+        <div class="input-row">
+          <div class="input-group">
+            <label for="columns">Columns</label>
+            <input type="number" id="columns" value="10" min="1" max="100">
+          </div>
+          <div class="input-group">
+            <label for="outputSize">Output Size (px)</label>
+            <input type="number" id="outputSize" value="32" min="8" max="512">
+          </div>
+        </div>
+
+        <h2>4. Scaling Mode</h2>
+        <div class="input-row">
+          <div class="input-group" style="flex: 2;">
+            <label for="scaleMode">How to handle non-square icons</label>
+            <select id="scaleMode">
+              <option value="fit" selected>Fit (preserve aspect ratio) - Recommended</option>
+              <option value="stretch">Stretch to fill</option>
+              <option value="crop">Crop center</option>
+            </select>
+          </div>
+        </div>
+        <p class="help">Fit: preserves proportions, adds transparent padding. Crop: takes center square.</p>
+
+        <div class="calc-info" id="calcInfo" style="display: none;">
+          <div class="row">
+            <span class="label">Image size:</span>
+            <span class="value" id="infoImageSize">-</span>
+          </div>
+          <div class="row">
+            <span class="label">Grid layout:</span>
+            <span class="value" id="infoGridLayout">-</span>
+          </div>
+          <div class="row">
+            <span class="label">Detected icon size:</span>
+            <span class="value" id="infoIconSize">-</span>
+          </div>
+          <div class="row">
+            <span class="label">Materials:</span>
+            <span class="value" id="infoMaterials">-</span>
+          </div>
+        </div>
+
+        <div id="status"></div>
+
+        <button class="primary" id="splitBtn" disabled>Split &amp; Preview</button>
+        <button class="secondary" id="downloadBtn" disabled>Download All as ZIP</button>
+      </div>
+
+      <!-- Right Panel: Preview -->
+      <div class="panel">
+        <div class="preview-header">
+          <h2>Preview</h2>
+          <span class="preview-stats" id="previewStats"></span>
+        </div>
+        <div id="preview" class="empty-preview">
+          Upload an image and enter material IDs to preview
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const columnsInput = document.getElementById('columns');
+    const outputSizeInput = document.getElementById('outputSize');
+    const scaleModeSelect = document.getElementById('scaleMode');
+    const materialIdsInput = document.getElementById('materialIds');
+    const statusDiv = document.getElementById('status');
+    const calcInfoDiv = document.getElementById('calcInfo');
+    const splitBtn = document.getElementById('splitBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const previewDiv = document.getElementById('preview');
+    const previewStats = document.getElementById('previewStats');
+
+    // Info elements
+    const infoImageSize = document.getElementById('infoImageSize');
+    const infoGridLayout = document.getElementById('infoGridLayout');
+    const infoIconSize = document.getElementById('infoIconSize');
+    const infoMaterials = document.getElementById('infoMaterials');
+
+    // State
+    let sourceImage = null;
+    let splitIcons = []; // Array of { id, canvas }
+
+    // Drag and drop handling
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        loadImage(file);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        loadImage(file);
+      }
+    });
+
+    // Load image
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          sourceImage = img;
+
+          // Show image with grid overlay
+          updateDropZonePreview();
+
+          updateCalculations();
+          updateSplitButton();
+        };
+        img.onerror = () => {
+          updateStatus('Failed to load image', 'error');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Update drop zone with image preview
+    function updateDropZonePreview() {
+      if (!sourceImage) return;
+
+      const container = document.createElement('div');
+      container.className = 'grid-preview-container';
+
+      const img = document.createElement('img');
+      img.src = sourceImage.src;
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'grid-overlay';
+
+      container.appendChild(img);
+      container.appendChild(canvas);
+
+      dropZone.innerHTML = '';
+      dropZone.appendChild(container);
+      dropZone.classList.add('has-image');
+
+      // Draw grid overlay after image loads in DOM
+      requestAnimationFrame(() => {
+        drawGridOverlay(canvas, img);
+      });
+    }
+
+    // Draw grid lines on overlay canvas
+    function drawGridOverlay(canvas, imgElement) {
+      const rect = imgElement.getBoundingClientRect();
+      const displayWidth = imgElement.clientWidth;
+      const displayHeight = imgElement.clientHeight;
+
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+      canvas.style.width = displayWidth + 'px';
+      canvas.style.height = displayHeight + 'px';
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+      const columns = parseInt(columnsInput.value) || 1;
+      const materialIds = getMaterialIds();
+      const materialCount = materialIds.length;
+
+      if (materialCount === 0 || !sourceImage) return;
+
+      const rows = Math.ceil(materialCount / columns);
+      const scaleX = displayWidth / sourceImage.width;
+      const scaleY = displayHeight / sourceImage.height;
+
+      const cellWidth = (sourceImage.width / columns) * scaleX;
+      const cellHeight = (sourceImage.height / rows) * scaleY;
+
+      ctx.strokeStyle = 'rgba(74, 144, 217, 0.7)';
+      ctx.lineWidth = 1;
+
+      // Vertical lines
+      for (let i = 1; i < columns; i++) {
+        const x = i * cellWidth;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, displayHeight);
+        ctx.stroke();
+      }
+
+      // Horizontal lines
+      for (let i = 1; i < rows; i++) {
+        const y = i * cellHeight;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(displayWidth, y);
+        ctx.stroke();
+      }
+
+      // Border
+      ctx.strokeStyle = 'rgba(74, 144, 217, 0.9)';
+      ctx.strokeRect(0, 0, displayWidth, displayHeight);
+    }
+
+    // Status updates
+    function updateStatus(message, type = 'info') {
+      if (message) {
+        statusDiv.className = `status ${type}`;
+        statusDiv.textContent = message;
+        statusDiv.style.display = 'block';
+      } else {
+        statusDiv.style.display = 'none';
+      }
+    }
+
+    // Get material IDs from textarea
+    function getMaterialIds() {
+      return materialIdsInput.value
+        .split('\n')
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+    }
+
+    // Calculate and display grid info
+    function updateCalculations() {
+      const materialIds = getMaterialIds();
+      const columns = parseInt(columnsInput.value) || 1;
+
+      if (!sourceImage || materialIds.length === 0) {
+        calcInfoDiv.style.display = 'none';
+        updateStatus(null);
+        return;
+      }
+
+      calcInfoDiv.style.display = 'block';
+
+      const materialCount = materialIds.length;
+      const rows = Math.ceil(materialCount / columns);
+
+      const iconWidth = sourceImage.width / columns;
+      const iconHeight = sourceImage.height / rows;
+
+      // Update info display
+      infoImageSize.textContent = `${sourceImage.width} × ${sourceImage.height} px`;
+      infoGridLayout.textContent = `${columns} cols × ${rows} rows`;
+      infoMaterials.textContent = `${materialCount} icons`;
+
+      // Check if icon dimensions are whole numbers (clean division)
+      const isCleanWidth = Number.isInteger(iconWidth);
+      const isCleanHeight = Number.isInteger(iconHeight);
+      const isSquare = Math.abs(iconWidth - iconHeight) < 0.01;
+
+      let iconSizeText = `${iconWidth.toFixed(1)} × ${iconHeight.toFixed(1)} px`;
+      let iconSizeClass = '';
+
+      if (isCleanWidth && isCleanHeight && isSquare) {
+        iconSizeText = `${iconWidth} × ${iconHeight} px`;
+        iconSizeClass = 'good';
+      } else if (!isSquare) {
+        iconSizeClass = 'warning';
+        updateStatus('Warning: Icons are not square. Check column count.', 'warning');
+      } else if (!isCleanWidth || !isCleanHeight) {
+        iconSizeClass = 'warning';
+        updateStatus('Warning: Icon size has decimals. May cause slight blurriness.', 'warning');
+      } else {
+        updateStatus(null);
+      }
+
+      infoIconSize.textContent = iconSizeText;
+      infoIconSize.className = `value ${iconSizeClass}`;
+
+      // Update grid overlay
+      updateDropZonePreview();
+    }
+
+    // Update split button state
+    function updateSplitButton() {
+      const materialIds = getMaterialIds();
+      splitBtn.disabled = !sourceImage || materialIds.length === 0;
+    }
+
+    // Input listeners
+    materialIdsInput.addEventListener('input', () => {
+      updateCalculations();
+      updateSplitButton();
+    });
+
+    columnsInput.addEventListener('input', () => {
+      updateCalculations();
+      updateSplitButton();
+    });
+
+    outputSizeInput.addEventListener('input', updateSplitButton);
+
+    // Split the grid
+    splitBtn.addEventListener('click', () => {
+      if (!sourceImage) return;
+
+      const columns = parseInt(columnsInput.value) || 1;
+      const outputSize = parseInt(outputSizeInput.value) || 32;
+      const scaleMode = scaleModeSelect.value;
+      const materialIds = getMaterialIds();
+      const materialCount = materialIds.length;
+
+      if (materialCount === 0) {
+        updateStatus('Please enter material IDs', 'error');
+        return;
+      }
+
+      const rows = Math.ceil(materialCount / columns);
+      const iconWidth = sourceImage.width / columns;
+      const iconHeight = sourceImage.height / rows;
+
+      // Split icons
+      splitIcons = [];
+      previewDiv.innerHTML = '';
+      previewDiv.className = 'preview-grid';
+
+      for (let i = 0; i < materialCount; i++) {
+        const col = i % columns;
+        const row = Math.floor(i / columns);
+        const x = col * iconWidth;
+        const y = row * iconHeight;
+
+        // Create canvas for this icon at output size
+        const canvas = document.createElement('canvas');
+        canvas.width = outputSize;
+        canvas.height = outputSize;
+        const ctx = canvas.getContext('2d');
+
+        // Use better interpolation for scaling
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Draw based on scaling mode
+        if (scaleMode === 'stretch') {
+          // Stretch: distort to fill (original behavior)
+          ctx.drawImage(
+            sourceImage,
+            x, y, iconWidth, iconHeight,
+            0, 0, outputSize, outputSize
+          );
+        } else if (scaleMode === 'crop') {
+          // Crop: take center square from source
+          const minDim = Math.min(iconWidth, iconHeight);
+          const cropX = x + (iconWidth - minDim) / 2;
+          const cropY = y + (iconHeight - minDim) / 2;
+          ctx.drawImage(
+            sourceImage,
+            cropX, cropY, minDim, minDim,
+            0, 0, outputSize, outputSize
+          );
+        } else {
+          // Fit (default): preserve aspect ratio, center with transparent padding
+          const aspectRatio = iconWidth / iconHeight;
+          let drawWidth, drawHeight, drawX, drawY;
+
+          if (aspectRatio > 1) {
+            // Wider than tall - fit to width
+            drawWidth = outputSize;
+            drawHeight = outputSize / aspectRatio;
+            drawX = 0;
+            drawY = (outputSize - drawHeight) / 2;
+          } else {
+            // Taller than wide - fit to height
+            drawHeight = outputSize;
+            drawWidth = outputSize * aspectRatio;
+            drawX = (outputSize - drawWidth) / 2;
+            drawY = 0;
+          }
+
+          ctx.drawImage(
+            sourceImage,
+            x, y, iconWidth, iconHeight,
+            drawX, drawY, drawWidth, drawHeight
+          );
+        }
+
+        const id = materialIds[i];
+        splitIcons.push({ id, canvas });
+
+        // Create preview item
+        const previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+        previewItem.title = `Click to download ${id}.png`;
+
+        // Preview at 48px for visibility
+        const previewCanvas = document.createElement('canvas');
+        const previewSize = 48;
+        previewCanvas.width = previewSize;
+        previewCanvas.height = previewSize;
+        const previewCtx = previewCanvas.getContext('2d');
+        previewCtx.imageSmoothingEnabled = outputSize < previewSize;
+        previewCtx.drawImage(canvas, 0, 0, previewSize, previewSize);
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'name';
+        nameDiv.textContent = id;
+
+        previewItem.appendChild(previewCanvas);
+        previewItem.appendChild(nameDiv);
+        previewDiv.appendChild(previewItem);
+
+        // Click to download individual icon
+        previewItem.addEventListener('click', () => downloadSingleIcon(id, canvas));
+      }
+
+      const actualSize = `${Math.round(iconWidth)}×${Math.round(iconHeight)}`;
+      const modeLabel = { fit: 'fit', stretch: 'stretch', crop: 'crop' }[scaleMode];
+      previewStats.textContent = `${splitIcons.length} icons (${actualSize} → ${outputSize}×${outputSize}, ${modeLabel})`;
+      updateStatus(`Split into ${splitIcons.length} icons using "${modeLabel}" mode`, 'success');
+      downloadBtn.disabled = false;
+    });
+
+    // Download single icon
+    async function downloadSingleIcon(id, canvas) {
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${id}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Download all icons as ZIP
+    downloadBtn.addEventListener('click', async () => {
+      if (splitIcons.length === 0) return;
+
+      updateStatus('Creating ZIP file...', 'info');
+      downloadBtn.disabled = true;
+
+      try {
+        const zip = new JSZip();
+
+        // Add each icon to the ZIP
+        for (let i = 0; i < splitIcons.length; i++) {
+          const { id, canvas } = splitIcons[i];
+
+          // Convert canvas to blob
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+          // Add to ZIP
+          zip.file(`${id}.png`, blob);
+
+          // Update progress
+          if ((i + 1) % 20 === 0 || i === splitIcons.length - 1) {
+            updateStatus(`Adding to ZIP... ${i + 1}/${splitIcons.length}`, 'info');
+          }
+        }
+
+        updateStatus('Generating ZIP file...', 'info');
+
+        // Generate ZIP blob
+        const zipBlob = await zip.generateAsync({
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 }
+        }, (metadata) => {
+          updateStatus(`Compressing... ${Math.round(metadata.percent)}%`, 'info');
+        });
+
+        // Download ZIP
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'material-icons.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        updateStatus(`Downloaded ${splitIcons.length} icons as ZIP`, 'success');
+      } catch (error) {
+        updateStatus(`Error creating ZIP: ${error.message}`, 'error');
+        console.error(error);
+      }
+
+      downloadBtn.disabled = false;
+    });
+
+    // Initial state
+    updateCalculations();
+  </script>
+</body>
+</html>
