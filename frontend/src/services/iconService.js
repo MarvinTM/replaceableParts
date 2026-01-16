@@ -5,10 +5,16 @@
  * Supports both React/MUI components and Pixi.js canvas rendering.
  *
  * Icon Specifications:
- * - Format: PNG with transparency (or SVG for development)
- * - Size: 32x32 pixels (base size)
+ * - Format: PNG with transparency (or SVG for development placeholders)
+ * - Source Size: 64x64 pixels (stored at 2x for retina/quality)
+ * - Display Size: Varies by context (20-64px), downscaled on the fly
  * - Style: Isometric mini-sprites
  * - Location: /assets/icons/{materialId}.{format}
+ *
+ * Display size guidelines:
+ * - 20-24px: Inventory chips, inline mentions
+ * - 32px: Standard UI elements, recipe lists
+ * - 48-64px: Detail views, canvas overlays, popups
  */
 
 // Cache for loaded icon URLs (validated as existing)
@@ -22,7 +28,7 @@ const ICON_BASE_PATH = '/assets/icons';
 
 // Icon format: 'svg' for development placeholders, 'png' for production sprites
 // Change this to 'png' when you add real isometric PNG icons
-const ICON_FORMAT = 'svg';
+const ICON_FORMAT = 'png';
 
 const DEFAULT_ICON = `${ICON_BASE_PATH}/_default.${ICON_FORMAT}`;
 

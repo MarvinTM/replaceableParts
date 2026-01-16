@@ -8,6 +8,8 @@ import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import MaterialIcon from '../common/MaterialIcon';
 
 export default function MachineInfoPopup({
   machine,
@@ -23,9 +25,42 @@ export default function MachineInfoPopup({
 
   const energyCost = rules?.machines?.baseEnergy || 2;
   const machineName = t('game.factory.productionMachine', 'Production Machine');
+  const currentRecipe = machine.recipeId
+    ? rules?.recipes?.find(r => r.id === machine.recipeId)
+    : null;
   const recipeName = machine.recipeId
     ? machine.recipeId.replace(/_/g, ' ')
     : t('game.factory.noRecipeAssigned', 'No recipe assigned');
+
+  // Helper to render material items with icons
+  const renderMaterialItems = (items, iconSize = 28) => {
+    if (!items) return null;
+    return Object.entries(items).map(([itemId, qty]) => {
+      const material = rules?.materials?.find(m => m.id === itemId);
+      return (
+        <Box
+          key={itemId}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 0.25,
+          }}
+        >
+          <MaterialIcon
+            materialId={itemId}
+            materialName={material?.name}
+            category={material?.category}
+            size={iconSize}
+            showTooltip
+          />
+          <Typography variant="caption" sx={{ fontWeight: 500, fontSize: '0.7rem' }}>
+            x{qty}
+          </Typography>
+        </Box>
+      );
+    });
+  };
 
   const handleToggle = () => {
     onToggleEnabled?.(machine.id);
@@ -122,6 +157,31 @@ export default function MachineInfoPopup({
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
           {t('game.factory.currentRecipeLabel', 'Current Recipe:')}
         </Typography>
+
+        {/* Recipe I/O visual display */}
+        {currentRecipe && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1.5,
+              mb: 1.5,
+              p: 1.5,
+              backgroundColor: 'action.hover',
+              borderRadius: 1,
+            }}
+          >
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {renderMaterialItems(currentRecipe.inputs)}
+            </Box>
+            <ArrowForwardIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {renderMaterialItems(currentRecipe.outputs)}
+            </Box>
+          </Box>
+        )}
+
         <Button
           variant="outlined"
           fullWidth

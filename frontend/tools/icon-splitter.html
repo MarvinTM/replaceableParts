@@ -376,7 +376,7 @@
           </div>
           <div class="input-group">
             <label for="outputSize">Output Size (px)</label>
-            <input type="number" id="outputSize" value="32" min="8" max="512">
+            <input type="number" id="outputSize" value="64" min="8" max="512">
           </div>
         </div>
 
@@ -680,7 +680,7 @@
       if (!sourceImage) return;
 
       const columns = parseInt(columnsInput.value) || 1;
-      const outputSize = parseInt(outputSizeInput.value) || 32;
+      const outputSize = parseInt(outputSizeInput.value) || 64;
       const scaleMode = scaleModeSelect.value;
       const materialIds = getMaterialIds();
       const materialCount = materialIds.length;
