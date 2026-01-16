@@ -1882,7 +1882,8 @@ export default function FactoryCanvas({
       }}
       style={{
         width: '100%',
-        height: '400px',
+        height: '100%',
+        minHeight: '300px',
         borderRadius: '8px',
         overflow: 'hidden'
       }}
