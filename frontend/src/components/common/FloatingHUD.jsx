@@ -11,7 +11,7 @@ export default function FloatingHUD({ credits, energy }) {
     <Box
       sx={{
         position: 'absolute',
-        top: 8,
+        top: 40,
         right: 8,
         display: 'flex',
         gap: 2,
