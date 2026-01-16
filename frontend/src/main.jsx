@@ -9,6 +9,12 @@ import { AuthProvider } from './contexts/AuthContext';
 import { GameProvider } from './contexts/GameContext';
 import { theme } from './theme';
 import './i18n';
+import { defaultRules } from './engine/defaultRules';
+
+// Expose for debugging in console
+if (typeof window !== 'undefined') {
+  window.defaultRules = defaultRules;
+}
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
