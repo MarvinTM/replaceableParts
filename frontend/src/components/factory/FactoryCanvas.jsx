@@ -10,6 +10,7 @@ import {
   COLORS
 } from './useIsometric';
 import { canPlaceAt } from '../../engine/engine.js';
+import { getIconUrl, ICON_FORMAT } from '../../services/iconService';
 
 // Asset paths - place your images in frontend/public/assets/factory/
 const ASSET_BASE = '/assets/factory';
@@ -58,6 +59,85 @@ const MACHINE_LABEL_STYLE = new TextStyle({
   stroke: { color: 0x000000, width: 2 },
   align: 'center'
 });
+
+// Recipe icon display configuration
+const RECIPE_ICON_CONFIG = {
+  iconSize: 24,           // Display size for icons
+  iconSpacing: 4,         // Space between icons (increased for quantity badges)
+  arrowWidth: 14,         // Width of arrow between inputs/outputs
+  verticalOffset: -8,     // Offset above the label
+  maxIconsPerSide: 3,     // Max icons to show per side (inputs/outputs)
+  backgroundColor: 0x000000,
+  backgroundAlpha: 0.5,
+  backgroundPadding: 4,
+  backgroundRadius: 4,
+  showQuantities: true,   // Whether to show quantity badges
+};
+
+// Text style for quantity badges on icons
+const QUANTITY_BADGE_STYLE = new TextStyle({
+  fontFamily: 'Arial, sans-serif',
+  fontSize: 9,
+  fontWeight: 'bold',
+  fill: 0xffffff,
+  stroke: { color: 0x000000, width: 2 },
+});
+
+// Category-based fallback colors for materials without icons (matching MaterialIcon.jsx)
+const CATEGORY_COLORS_HEX = {
+  raw: 0x8B4513,        // Brown for raw materials
+  intermediate: 0x4A90D9, // Blue for intermediate parts
+  final: 0x2E7D32,      // Green for final goods
+  equipment: 0x9C27B0,  // Purple for equipment
+  default: 0x757575,    // Gray default
+};
+
+// Text style for placeholder icon letters
+const PLACEHOLDER_LETTER_STYLE = new TextStyle({
+  fontFamily: 'Arial, sans-serif',
+  fontSize: 11,
+  fontWeight: 'bold',
+  fill: 0xffffff,
+});
+
+/**
+ * Create a placeholder icon container for missing material icons
+ * @param {string} materialId - The material ID
+ * @param {string} category - The material category
+ * @param {number} size - Icon size
+ * @returns {Container}
+ */
+function createPlaceholderIcon(materialId, category, size) {
+  const container = new Container();
+  const color = CATEGORY_COLORS_HEX[category] || CATEGORY_COLORS_HEX.default;
+  const letter = (materialId || '?')[0].toUpperCase();
+
+  // Draw isometric diamond shape
+  const shape = new Graphics();
+  const halfSize = size / 2;
+
+  // Diamond points (isometric-ish hexagon)
+  shape.moveTo(halfSize, 0);           // Top
+  shape.lineTo(size, halfSize * 0.5);  // Top-right
+  shape.lineTo(size, halfSize * 1.5);  // Bottom-right
+  shape.lineTo(halfSize, size);        // Bottom
+  shape.lineTo(0, halfSize * 1.5);     // Bottom-left
+  shape.lineTo(0, halfSize * 0.5);     // Top-left
+  shape.closePath();
+  shape.fill({ color });
+  shape.stroke({ color: 0x000000, width: 1, alpha: 0.3 });
+
+  container.addChild(shape);
+
+  // Add letter
+  const text = new Text({ text: letter, style: PLACEHOLDER_LETTER_STYLE });
+  text.anchor.set(0.5, 0.5);
+  text.x = halfSize;
+  text.y = halfSize;
+  container.addChild(text);
+
+  return container;
+}
 
 // Wall positioning adjustments (tweak these values to fine-tune alignment)
 const WALL_CONFIG = {
@@ -141,6 +221,150 @@ async function loadAssets(rules) {
   }
 
   return loaded;
+}
+
+// Cache for material icon textures
+const materialIconCache = new Map();
+const failedIconCache = new Set();
+
+/**
+ * Load a material icon texture (with caching)
+ * @param {string} materialId - The material ID
+ * @returns {Promise<Texture|null>}
+ */
+async function loadMaterialIcon(materialId) {
+  if (materialIconCache.has(materialId)) {
+    return materialIconCache.get(materialId);
+  }
+  if (failedIconCache.has(materialId)) {
+    return null;
+  }
+
+  try {
+    const texture = await Assets.load(getIconUrl(materialId));
+    materialIconCache.set(materialId, texture);
+    return texture;
+  } catch {
+    failedIconCache.add(materialId);
+    return null;
+  }
+}
+
+/**
+ * Preload icons for all materials used in recipes of placed machines
+ * @param {Array} machines - Placed machines
+ * @param {Object} rules - Game rules
+ */
+async function preloadRecipeIcons(machines, rules) {
+  const materialIds = new Set();
+
+  for (const machine of machines) {
+    if (!machine.recipeId) continue;
+    const recipe = rules.recipes?.find(r => r.id === machine.recipeId);
+    if (!recipe) continue;
+
+    Object.keys(recipe.inputs || {}).forEach(id => materialIds.add(id));
+    Object.keys(recipe.outputs || {}).forEach(id => materialIds.add(id));
+  }
+
+  // Load all icons in parallel
+  await Promise.all(
+    Array.from(materialIds).map(id => loadMaterialIcon(id))
+  );
+}
+
+/**
+ * Create a container with recipe input/output icons
+ * @param {Object} recipe - The recipe object
+ * @param {Object} rules - Game rules (for material lookup)
+ * @returns {Container|null}
+ */
+function createRecipeIconDisplay(recipe, rules) {
+  if (!recipe) return null;
+
+  const container = new Container();
+  const config = RECIPE_ICON_CONFIG;
+
+  const inputEntries = Object.entries(recipe.inputs || {}).slice(0, config.maxIconsPerSide);
+  const outputEntries = Object.entries(recipe.outputs || {}).slice(0, config.maxIconsPerSide);
+
+  // Calculate total width
+  const inputWidth = inputEntries.length * (config.iconSize + config.iconSpacing) - config.iconSpacing;
+  const outputWidth = outputEntries.length * (config.iconSize + config.iconSpacing) - config.iconSpacing;
+  const totalWidth = inputWidth + config.arrowWidth + outputWidth + config.backgroundPadding * 2;
+  const totalHeight = config.iconSize + config.backgroundPadding * 2;
+
+  // Draw background
+  const bg = new Graphics();
+  bg.roundRect(
+    -totalWidth / 2,
+    -totalHeight / 2,
+    totalWidth,
+    totalHeight,
+    config.backgroundRadius
+  );
+  bg.fill({ color: config.backgroundColor, alpha: config.backgroundAlpha });
+  container.addChild(bg);
+
+  // Helper to add an icon with optional quantity badge
+  const addIconWithQuantity = (materialId, quantity, x) => {
+    const texture = materialIconCache.get(materialId);
+    let iconElement;
+
+    if (texture) {
+      // Use actual icon texture
+      iconElement = new Sprite(texture);
+      iconElement.width = config.iconSize;
+      iconElement.height = config.iconSize;
+      iconElement.anchor.set(0, 0.5);
+      iconElement.x = x;
+      iconElement.y = 0;
+    } else {
+      // Use placeholder with category color and initial
+      const material = rules?.materials?.find(m => m.id === materialId);
+      const category = material?.category || 'default';
+      iconElement = createPlaceholderIcon(materialId, category, config.iconSize);
+      iconElement.x = x;
+      iconElement.y = -config.iconSize / 2;
+    }
+
+    container.addChild(iconElement);
+
+    // Add quantity badge if enabled and quantity > 1
+    if (config.showQuantities && quantity > 1) {
+      const qtyText = new Text({ text: `${quantity}`, style: QUANTITY_BADGE_STYLE });
+      qtyText.anchor.set(1, 1); // Bottom-right anchor
+      qtyText.x = x + config.iconSize - 1;
+      qtyText.y = config.iconSize / 2 - 1;
+      container.addChild(qtyText);
+    }
+  };
+
+  let xOffset = -totalWidth / 2 + config.backgroundPadding;
+
+  // Add input icons with quantities
+  for (const [materialId, quantity] of inputEntries) {
+    addIconWithQuantity(materialId, quantity, xOffset);
+    xOffset += config.iconSize + config.iconSpacing;
+  }
+
+  // Add arrow
+  xOffset -= config.iconSpacing; // Remove last spacing
+  const arrow = new Graphics();
+  arrow.moveTo(xOffset + 2, -3);
+  arrow.lineTo(xOffset + config.arrowWidth - 2, 0);
+  arrow.lineTo(xOffset + 2, 3);
+  arrow.stroke({ color: 0xffffff, width: 2 });
+  container.addChild(arrow);
+  xOffset += config.arrowWidth;
+
+  // Add output icons with quantities
+  for (const [materialId, quantity] of outputEntries) {
+    addIconWithQuantity(materialId, quantity, xOffset);
+    xOffset += config.iconSize + config.iconSpacing;
+  }
+
+  return container;
 }
 
 /**
@@ -752,16 +976,29 @@ export default function FactoryCanvas({
         structuresContainer.addChild(machineGraphics);
       }
 
-      // Add recipe label above the machine
+      // Calculate machine visual top for positioning labels/icons
+      const machineVisualTop = (screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4)) - (machineAssets?.idle?.height || 30);
+
+      // Add recipe icon display above the machine (if recipe is assigned)
+      if (machine.recipeId) {
+        const recipe = rules?.recipes?.find(r => r.id === machine.recipeId);
+        const iconDisplay = createRecipeIconDisplay(recipe, rules);
+        if (iconDisplay) {
+          iconDisplay.x = screenPos.x;
+          iconDisplay.y = machineVisualTop - RECIPE_ICON_CONFIG.iconSize - 8;
+          iconDisplay.zIndex = screenPos.y + 0.2;
+          structuresContainer.addChild(iconDisplay);
+        }
+      }
+
+      // Add recipe label above the machine (below icons)
       const labelText = machine.recipeId
         ? machine.recipeId.replace(/_/g, ' ')
         : (machine.enabled ? 'No Recipe' : 'Disabled');
       const label = new Text({ text: labelText, style: MACHINE_LABEL_STYLE });
       label.anchor.set(0.5, 1);
       label.x = screenPos.x;
-      // Position label relative to the machine top
-      const machineVisualTop = (screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4)) - (machineAssets?.idle?.height || 30);
-      label.y = machineVisualTop - 5; 
+      label.y = machineVisualTop - 5;
       label.zIndex = screenPos.y + 0.1; // Slightly above the machine
       structuresContainer.addChild(label);
     });
@@ -1192,6 +1429,15 @@ export default function FactoryCanvas({
   useEffect(() => {
     render();
   }, [render]);
+
+  // Preload material icons for recipes used by placed machines
+  useEffect(() => {
+    if (!machines || !rules) return;
+    preloadRecipeIcons(machines, rules).then(() => {
+      // Re-render after icons are loaded
+      render();
+    });
+  }, [machines, rules, render]);
 
   // Re-center view when floor space dimensions change or when assets finish loading
   useEffect(() => {
