@@ -25,6 +25,14 @@
   "settings": {
     "title": "Configuración",
     "general": "General",
+    "enableAnimations": "Habilitar Animaciones",
+    "productionAnimation": "Estilo de Animación de Producción",
+    "productionAnimations": {
+      "floatingFadeOut": "Flotante con Desvanecimiento",
+      "popAndFloat": "Pop + Flotante",
+      "flyToInventory": "Volar al Inventario",
+      "collectThenFly": "Recolectar y Volar"
+    },
     "moreComingSoon": "Más opciones próximamente..."
   },
   "login": {

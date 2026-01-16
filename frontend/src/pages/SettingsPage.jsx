@@ -16,8 +16,10 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const rules = useGameStore((state) => state.rules);
   const animationsEnabled = useGameStore((state) => state.animationsEnabled);
+  const productionAnimationStyle = useGameStore((state) => state.productionAnimationStyle);
   const setExpansionType = useGameStore((state) => state.setExpansionType);
   const toggleAnimations = useGameStore((state) => state.toggleAnimations);
+  const setProductionAnimationStyle = useGameStore((state) => state.setProductionAnimationStyle);
 
   const handleLanguageChange = (event) => {
     i18n.changeLanguage(event.target.value);
@@ -29,6 +31,10 @@ export default function SettingsPage() {
 
   const handleAnimationsToggle = () => {
     toggleAnimations();
+  };
+
+  const handleProductionAnimationChange = (event) => {
+    setProductionAnimationStyle(event.target.value);
   };
 
   return (
@@ -77,9 +83,26 @@ export default function SettingsPage() {
                 color="primary"
               />
             }
-            label="Enable Animations"
+            label={t('settings.enableAnimations')}
             sx={{ mt: 3 }}
           />
+
+          {animationsEnabled && (
+            <FormControl fullWidth sx={{ mt: 3 }}>
+              <InputLabel id="production-anim-label">{t('settings.productionAnimation')}</InputLabel>
+              <Select
+                labelId="production-anim-label"
+                value={productionAnimationStyle}
+                label={t('settings.productionAnimation')}
+                onChange={handleProductionAnimationChange}
+              >
+                <MenuItem value="floatingFadeOut">{t('settings.productionAnimations.floatingFadeOut')}</MenuItem>
+                <MenuItem value="popAndFloat">{t('settings.productionAnimations.popAndFloat')}</MenuItem>
+                <MenuItem value="flyToInventory">{t('settings.productionAnimations.flyToInventory')}</MenuItem>
+                <MenuItem value="collectThenFly">{t('settings.productionAnimations.collectThenFly')}</MenuItem>
+              </Select>
+            </FormControl>
+          )}
 
           <Box sx={{ mt: 4, textAlign: 'center', py: 4 }}>
             <SettingsIcon sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
@@ -85,6 +85,9 @@ function FactoryTab() {
 
   // State for recipe selector (opened from machine info popup)
   const [showRecipeSelector, setShowRecipeSelector] = useState(false);
+
+  // Ref for inventory panel (used for fly-to-inventory animations)
+  const inventoryPanelRef = useRef(null);
 
   if (!engineState) return null;
 
@@ -341,22 +344,26 @@ function FactoryTab() {
       title: t('game.factory.inventory'),
       icon: <InventoryIcon sx={{ color: 'info.main', fontSize: 20 }} />,
       badge: Object.values(inventory).reduce((a, b) => a + b, 0) || undefined,
-      content: Object.keys(inventory).length === 0 ? (
-        <Typography variant="body2" color="text.secondary">{t('game.factory.emptyInventory')}</Typography>
-      ) : (
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-          {Object.entries(inventory).map(([itemId, quantity]) => {
-            const material = rules.materials.find(m => m.id === itemId);
-            return (
-              <Chip
-                key={itemId}
-                icon={<MaterialIcon materialId={itemId} materialName={material?.name} category={material?.category} size={16} />}
-                label={`${material?.name || itemId}: ${quantity}`}
-                variant="outlined"
-                size="small"
-              />
-            );
-          })}
+      content: (
+        <Box ref={inventoryPanelRef}>
+          {Object.keys(inventory).length === 0 ? (
+            <Typography variant="body2" color="text.secondary">{t('game.factory.emptyInventory')}</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {Object.entries(inventory).map(([itemId, quantity]) => {
+                const material = rules.materials.find(m => m.id === itemId);
+                return (
+                  <Chip
+                    key={itemId}
+                    icon={<MaterialIcon materialId={itemId} materialName={material?.name} category={material?.category} size={16} />}
+                    label={`${material?.name || itemId}: ${quantity}`}
+                    variant="outlined"
+                    size="small"
+                  />
+                );
+              })}
+            </Box>
+          )}
         </Box>
       )
     }
@@ -393,6 +400,7 @@ function FactoryTab() {
                 onGeneratorRightClick={handleGeneratorRightClick}
                 engineState={engineState}
                 animationsEnabled={animationsEnabled}
+                inventoryPanelRef={inventoryPanelRef}
               />
             </Box>
           </Box>

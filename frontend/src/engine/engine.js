@@ -359,6 +359,9 @@ function simulateTick(state, rules) {
   const newState = deepClone(state);
   const rng = createRNG(state.rngSeed);
 
+  // Track production events for UI animations
+  const productionEvents = [];
+
   // Track items sold this tick for market recovery
   const soldThisTick = new Set();
 
@@ -483,6 +486,17 @@ function simulateTick(state, rules) {
         for (const [itemId, quantity] of Object.entries(recipe.outputs)) {
           const currentAmount = newState.inventory[itemId] || 0;
           newState.inventory[itemId] = currentAmount + quantity;
+
+          // Track production event for UI animations
+          productionEvents.push({
+            machineId: machine.id,
+            machineType: machine.type,
+            x: machine.x,
+            y: machine.y,
+            itemId,
+            quantity,
+            tick: newState.tick
+          });
         }
       }
       // If can't produce, buffer stays intact - machine waits for space
@@ -552,7 +566,7 @@ function simulateTick(state, rules) {
   newState.tick += 1;
   newState.rngSeed = rng.getCurrentSeed();
 
-  return newState;
+  return { newState, productionEvents };
 }
 
 // ============================================================================
@@ -1146,8 +1160,10 @@ function unlockExplorationNode(state, rules, payload) {
 
 export function engine(state, rules, action) {
   switch (action.type) {
-    case 'SIMULATE':
-      return { state: simulateTick(state, rules), error: null };
+    case 'SIMULATE': {
+      const result = simulateTick(state, rules);
+      return { state: result.newState, error: null, productionEvents: result.productionEvents };
+    }
 
     case 'ADD_MACHINE':
       return addMachine(state, rules, action.payload || {});

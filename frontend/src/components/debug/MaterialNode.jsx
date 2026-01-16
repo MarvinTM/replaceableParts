@@ -4,6 +4,7 @@ import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import BuildIcon from '@mui/icons-material/Build';
+import MaterialIcon from '../common/MaterialIcon';
 
 const categoryColors = {
   raw: { bg: '#dcfce7', border: '#16a34a', text: '#166534' },
@@ -21,7 +22,7 @@ const issueStyles = {
 };
 
 function MaterialNode({ data, selected }) {
-  const { label, category, isExtractable, issues = [], tier } = data;
+  const { label, material, category, isExtractable, issues = [], tier } = data;
   const colors = categoryColors[category] || categoryColors.unknown;
 
   // Determine border style based on issues
@@ -62,6 +63,12 @@ function MaterialNode({ data, selected }) {
       />
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <MaterialIcon
+          materialId={material?.id || label}
+          materialName={label}
+          category={category}
+          size={24}
+        />
         {isExtractable && (
           <Tooltip title="Extractable from map">
             <BuildIcon sx={{ fontSize: 14, color: colors.text }} />

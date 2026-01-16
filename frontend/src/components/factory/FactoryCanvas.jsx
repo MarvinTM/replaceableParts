@@ -11,6 +11,7 @@ import {
 } from './useIsometric';
 import { canPlaceAt } from '../../engine/engine.js';
 import { getIconUrl, ICON_FORMAT } from '../../services/iconService';
+import useGameStore from '../../stores/gameStore';
 
 // Asset paths - place your images in frontend/public/assets/factory/
 const ASSET_BASE = '/assets/factory';
@@ -82,6 +83,39 @@ const QUANTITY_BADGE_STYLE = new TextStyle({
   fill: 0xffffff,
   stroke: { color: 0x000000, width: 2 },
 });
+
+// Production animation configuration
+const PRODUCTION_ANIM_CONFIG = {
+  floatingFadeOut: {
+    duration: 1500,      // ms
+    floatDistance: 80,   // pixels to float up
+    startScale: 1.0,
+    endScale: 0.8,
+    startAlpha: 1.0,
+    endAlpha: 0.0,
+  },
+  popAndFloat: {
+    popDuration: 150,    // ms for pop effect
+    floatDuration: 1200, // ms for float
+    popScale: 1.4,       // scale during pop
+    floatDistance: 80,
+    startAlpha: 1.0,
+    endAlpha: 0.0,
+  },
+  flyToInventory: {
+    duration: 800,       // ms
+    arcHeight: 100,      // pixels for arc peak
+    startScale: 1.0,
+    endScale: 0.5,
+  },
+  collectThenFly: {
+    collectDuration: 500,   // ms to stack at machine
+    flyDuration: 600,       // ms to fly to inventory
+    stackOffset: 8,         // pixels between stacked icons
+    maxStack: 5,            // max visible in stack
+    arcHeight: 80,
+  },
+};
 
 // Category-based fallback colors for materials without icons (matching MaterialIcon.jsx)
 const CATEGORY_COLORS_HEX = {
@@ -527,7 +561,8 @@ export default function FactoryCanvas({
   onMachineRightClick,
   onGeneratorRightClick,
   engineState,
-  animationsEnabled = true
+  animationsEnabled = true,
+  inventoryPanelRef = null
 }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
@@ -539,6 +574,16 @@ export default function FactoryCanvas({
   const floorDimensionsRef = useRef({ width: 0, height: 0 }); // Store floor dimensions for hover check
   const animationsEnabledRef = useRef(animationsEnabled); // Track animations enabled state
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+
+  // Production animation state from store
+  const productionAnimationStyle = useGameStore((state) => state.productionAnimationStyle);
+  const pendingProductionEvents = useGameStore((state) => state.pendingProductionEvents);
+  const clearProductionEvents = useGameStore((state) => state.clearProductionEvents);
+
+  // Production animation tracking
+  const productionAnimContainerRef = useRef(null);
+  const activeProductionAnimsRef = useRef([]);
+  const inventoryPanelRefInternal = useRef(inventoryPanelRef);
   const [isHovering, setIsHovering] = useState(false);
 
   // Force re-render when animation states change
@@ -576,6 +621,11 @@ export default function FactoryCanvas({
   useEffect(() => {
     animationsEnabledRef.current = animationsEnabled;
   }, [animationsEnabled]);
+
+  // Update inventory panel ref when it changes
+  useEffect(() => {
+    inventoryPanelRefInternal.current = inventoryPanelRef;
+  }, [inventoryPanelRef]);
 
   // Clear hover position when drag ends
   useEffect(() => {
@@ -615,6 +665,118 @@ export default function FactoryCanvas({
 
     return false;
   }, []);
+
+  // Spawn a production animation for a given event
+  const spawnProductionAnimation = useCallback((event, style, inventoryTargetPos) => {
+    if (!productionAnimContainerRef.current || !assetsRef.current) return;
+
+    const container = productionAnimContainerRef.current;
+    const world = worldRef.current;
+    if (!world) return;
+
+    const { x: machineX, y: machineY, itemId, quantity, machineType } = event;
+
+    // Get machine size for proper positioning
+    const machineConfig = rules?.machines?.find(m => m.id === machineType);
+    const sizeX = machineConfig?.sizeX || 1;
+    const sizeY = machineConfig?.sizeY || 1;
+
+    // Get screen position of the machine
+    const screenPos = getStructureScreenPosition(machineX, machineY, sizeX, sizeY);
+
+    // Convert to stage coordinates (accounting for world transform)
+    const startX = screenPos.x * world.scale.x + world.x;
+    const startY = (screenPos.y - 50) * world.scale.y + world.y; // 50px above machine
+
+    // Try to load the material icon
+    const iconUrl = getIconUrl(itemId);
+    const iconPromise = Assets.load(iconUrl).catch(() => null);
+
+    iconPromise.then((texture) => {
+      if (!productionAnimContainerRef.current) return;
+
+      let sprite;
+      if (texture) {
+        sprite = new Sprite(texture);
+        sprite.width = 32;
+        sprite.height = 32;
+      } else {
+        // Create placeholder
+        const material = rules?.materials?.find(m => m.id === itemId);
+        const category = material?.category || 'default';
+        const color = CATEGORY_COLORS_HEX[category] || CATEGORY_COLORS_HEX.default;
+
+        const g = new Graphics();
+        g.roundRect(0, 0, 32, 32, 4);
+        g.fill(color);
+        g.stroke({ width: 2, color: 0xffffff, alpha: 0.3 });
+
+        sprite = new Container();
+        sprite.addChild(g);
+
+        // Add letter
+        const letter = itemId.charAt(0).toUpperCase();
+        const text = new Text({ text: letter, style: PLACEHOLDER_LETTER_STYLE });
+        text.anchor.set(0.5);
+        text.x = 16;
+        text.y = 16;
+        sprite.addChild(text);
+      }
+
+      sprite.anchor?.set(0.5, 0.5);
+      sprite.x = startX;
+      sprite.y = startY;
+
+      // Add quantity badge if > 1
+      if (quantity > 1) {
+        const badge = new Text({ text: `x${quantity}`, style: QUANTITY_BADGE_STYLE });
+        badge.anchor.set(0, 0);
+        badge.x = 8;
+        badge.y = 8;
+        sprite.addChild(badge);
+      }
+
+      container.addChild(sprite);
+
+      // Create animation data
+      const animData = {
+        sprite,
+        startTime: Date.now(),
+        startX,
+        startY,
+        style,
+        inventoryTargetPos,
+        config: PRODUCTION_ANIM_CONFIG[style],
+      };
+
+      activeProductionAnimsRef.current.push(animData);
+    });
+  }, [rules]);
+
+  // Process production events and spawn animations
+  useEffect(() => {
+    if (!animationsEnabled || !pendingProductionEvents || pendingProductionEvents.length === 0) return;
+    if (!productionAnimContainerRef.current) return;
+
+    // Calculate inventory panel position for fly-to animations
+    let inventoryTargetPos = null;
+    const invRef = inventoryPanelRefInternal.current;
+    if (invRef?.current) {
+      const rect = invRef.current.getBoundingClientRect();
+      inventoryTargetPos = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + 20
+      };
+    }
+
+    // Spawn animation for each event
+    pendingProductionEvents.forEach(event => {
+      spawnProductionAnimation(event, productionAnimationStyle, inventoryTargetPos);
+    });
+
+    // Clear processed events
+    clearProductionEvents();
+  }, [pendingProductionEvents, animationsEnabled, productionAnimationStyle, spawnProductionAnimation, clearProductionEvents]);
 
   const render = useCallback(() => {
     if (!worldRef.current || !floorSpace) return;
@@ -1302,6 +1464,11 @@ export default function FactoryCanvas({
       app.stage.addChild(world);
       worldRef.current = world;
 
+      // Create production animation container (renders above world for visibility)
+      const productionAnimContainer = new Container();
+      app.stage.addChild(productionAnimContainer);
+      productionAnimContainerRef.current = productionAnimContainer;
+
       // Setup animation ticker to trigger random animations for machines only
       // Generators animate continuously when enabled
       app.ticker.add(() => {
@@ -1331,6 +1498,123 @@ export default function FactoryCanvas({
             sprite.gotoAndPlay(0);
           }
         });
+
+        // Update production animations
+        const now = Date.now();
+        const anims = activeProductionAnimsRef.current;
+        const prodContainer = productionAnimContainerRef.current;
+
+        for (let i = anims.length - 1; i >= 0; i--) {
+          const anim = anims[i];
+          const elapsed = now - anim.startTime;
+          const config = anim.config;
+
+          let progress, isComplete = false;
+
+          switch (anim.style) {
+            case 'floatingFadeOut': {
+              progress = Math.min(elapsed / config.duration, 1);
+              const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+
+              anim.sprite.y = anim.startY - (config.floatDistance * eased);
+              anim.sprite.alpha = config.startAlpha + (config.endAlpha - config.startAlpha) * progress;
+              anim.sprite.scale.set(config.startScale + (config.endScale - config.startScale) * progress);
+
+              isComplete = progress >= 1;
+              break;
+            }
+
+            case 'popAndFloat': {
+              const totalDuration = config.popDuration + config.floatDuration;
+              progress = Math.min(elapsed / totalDuration, 1);
+
+              if (elapsed < config.popDuration) {
+                // Pop phase
+                const popProgress = elapsed / config.popDuration;
+                const popEased = Math.sin(popProgress * Math.PI); // bell curve
+                anim.sprite.scale.set(1 + (config.popScale - 1) * popEased);
+              } else {
+                // Float phase
+                const floatElapsed = elapsed - config.popDuration;
+                const floatProgress = floatElapsed / config.floatDuration;
+                const eased = 1 - Math.pow(1 - floatProgress, 3);
+
+                anim.sprite.y = anim.startY - (config.floatDistance * eased);
+                anim.sprite.alpha = 1 - floatProgress;
+                anim.sprite.scale.set(1);
+              }
+
+              isComplete = progress >= 1;
+              break;
+            }
+
+            case 'flyToInventory': {
+              if (!anim.inventoryTargetPos) {
+                // Fallback to floating if no target
+                progress = Math.min(elapsed / 1500, 1);
+                anim.sprite.y = anim.startY - (80 * progress);
+                anim.sprite.alpha = 1 - progress;
+                isComplete = progress >= 1;
+              } else {
+                progress = Math.min(elapsed / config.duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 2); // easeOutQuad
+
+                // Quadratic bezier arc to target
+                const midY = Math.min(anim.startY, anim.inventoryTargetPos.y) - config.arcHeight;
+                const t = eased;
+                const mt = 1 - t;
+
+                anim.sprite.x = mt * mt * anim.startX + 2 * mt * t * ((anim.startX + anim.inventoryTargetPos.x) / 2) + t * t * anim.inventoryTargetPos.x;
+                anim.sprite.y = mt * mt * anim.startY + 2 * mt * t * midY + t * t * anim.inventoryTargetPos.y;
+
+                // Scale down as it approaches
+                anim.sprite.scale.set(config.startScale + (config.endScale - config.startScale) * progress);
+              }
+
+              isComplete = progress >= 1;
+              break;
+            }
+
+            case 'collectThenFly': {
+              const collectEnd = config.collectDuration;
+              const totalDuration = collectEnd + config.flyDuration;
+              progress = Math.min(elapsed / totalDuration, 1);
+
+              if (elapsed < collectEnd) {
+                // Collecting phase - slight bounce
+                const collectProgress = elapsed / collectEnd;
+                const bounce = Math.sin(collectProgress * Math.PI * 2) * 3;
+                anim.sprite.y = anim.startY + bounce;
+              } else if (anim.inventoryTargetPos) {
+                // Flying phase
+                const flyElapsed = elapsed - collectEnd;
+                const flyProgress = flyElapsed / config.flyDuration;
+                const eased = 1 - Math.pow(1 - flyProgress, 2);
+
+                const midY = Math.min(anim.startY, anim.inventoryTargetPos.y) - config.arcHeight;
+                const t = eased;
+                const mt = 1 - t;
+
+                anim.sprite.x = mt * mt * anim.startX + 2 * mt * t * ((anim.startX + anim.inventoryTargetPos.x) / 2) + t * t * anim.inventoryTargetPos.x;
+                anim.sprite.y = mt * mt * anim.startY + 2 * mt * t * midY + t * t * anim.inventoryTargetPos.y;
+              } else {
+                // Fallback: just float up
+                const floatProgress = (elapsed - collectEnd) / config.flyDuration;
+                anim.sprite.y = anim.startY - (80 * floatProgress);
+                anim.sprite.alpha = 1 - floatProgress;
+              }
+
+              isComplete = progress >= 1;
+              break;
+            }
+          }
+
+          if (isComplete && prodContainer) {
+            prodContainer.removeChild(anim.sprite);
+            anim.sprite.destroy();
+            anims.splice(i, 1);
+          }
+        }
       });
 
       // Setup zoom (mouse wheel)

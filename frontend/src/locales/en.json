@@ -25,6 +25,14 @@
   "settings": {
     "title": "Settings",
     "general": "General",
+    "enableAnimations": "Enable Animations",
+    "productionAnimation": "Production Animation Style",
+    "productionAnimations": {
+      "floatingFadeOut": "Floating Fade-Out",
+      "popAndFloat": "Pop + Float",
+      "flyToInventory": "Fly to Inventory",
+      "collectThenFly": "Collect then Fly"
+    },
     "moreComingSoon": "More settings coming soon..."
   },
   "login": {

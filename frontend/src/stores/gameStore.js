@@ -24,6 +24,10 @@ const useGameStore = create(
 
       // UI preferences
       animationsEnabled: true,
+      productionAnimationStyle: 'floatingFadeOut', // 'floatingFadeOut' | 'popAndFloat' | 'flyToInventory' | 'collectThenFly'
+
+      // Production events for animations (cleared after consumed)
+      pendingProductionEvents: [],
 
       // Initialize a new game
       initNewGame: (seed = null) => {
@@ -83,7 +87,12 @@ const useGameStore = create(
 
       // Convenience action dispatchers
       simulate: () => {
-        return get().dispatch({ type: 'SIMULATE' });
+        const result = get().dispatch({ type: 'SIMULATE' });
+        // Capture production events for animations
+        if (result.productionEvents && result.productionEvents.length > 0) {
+          set({ pendingProductionEvents: result.productionEvents }, false, 'captureProductionEvents');
+        }
+        return result;
       },
 
       addMachine: (machineType, x, y) => {
@@ -167,6 +176,14 @@ const useGameStore = create(
         set((state) => ({
           animationsEnabled: !state.animationsEnabled
         }), false, 'toggleAnimations');
+      },
+
+      setProductionAnimationStyle: (style) => {
+        set({ productionAnimationStyle: style }, false, 'setProductionAnimationStyle');
+      },
+
+      clearProductionEvents: () => {
+        set({ pendingProductionEvents: [] }, false, 'clearProductionEvents');
       },
 
       // Game loop controls
