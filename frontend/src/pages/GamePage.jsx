@@ -34,6 +34,7 @@ import PlaceableMachinesPanel from '../components/factory/PlaceableMachinesPanel
 import PlaceableGeneratorsPanel from '../components/factory/PlaceableGeneratorsPanel';
 import RecipeDropdown from '../components/factory/RecipeDropdown';
 import MachineInfoPopup from '../components/factory/MachineInfoPopup';
+import MaterialIcon from '../components/common/MaterialIcon';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -302,7 +303,14 @@ function FactoryTab() {
                     return (
                       <Chip
                         key={itemId}
-                        icon={<InventoryIcon />}
+                        icon={
+                          <MaterialIcon
+                            materialId={itemId}
+                            materialName={material?.name}
+                            category={material?.category}
+                            size={20}
+                          />
+                        }
                         label={`${material?.name || itemId}: ${quantity}`}
                         variant="outlined"
                         size="small"
