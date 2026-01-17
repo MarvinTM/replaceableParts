@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import {
   Box,
@@ -30,6 +30,7 @@ import SidePanel from '../components/debug/SidePanel';
 import { buildGraph, calculateRawMaterialUsage, calculateRawMaterialCosts, calculateEnergyCosts } from '../utils/graphAnalysis';
 import { defaultRules } from '../engine/defaultRules';
 import { initialState } from '../engine/initialState';
+import { findMaterialsMissingIcons } from '../services/iconService';
 
 export default function DebugGraphPage() {
   const [filters, setFilters] = useState({
@@ -45,6 +46,7 @@ export default function DebugGraphPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [bottomTab, setBottomTab] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
+  const [materialsMissingIcons, setMaterialsMissingIcons] = useState([]);
 
   // Build graph from rules
   const { nodes, edges, issues } = useMemo(() => {
@@ -57,6 +59,11 @@ export default function DebugGraphPage() {
     rawCosts: calculateRawMaterialCosts(defaultRules),
     energyCosts: calculateEnergyCosts(defaultRules),
   }), [refreshKey]);
+
+  // Check for materials missing icons
+  useEffect(() => {
+    findMaterialsMissingIcons(defaultRules.materials).then(setMaterialsMissingIcons);
+  }, [refreshKey]);
 
   // Get list of all raw material IDs for column headers
   const rawMaterialIds = useMemo(() => {
@@ -95,7 +102,8 @@ export default function DebugGraphPage() {
     (issues.intermediateNotUsedInAge?.length || 0) +
     (issues.recipesWithZeroQuantity?.length || 0) +
     (issues.recipeAgeIssues?.length || 0) +
-    (issues.machineCycleIssues?.length || 0);
+    (issues.machineCycleIssues?.length || 0) +
+    materialsMissingIcons.length;
 
   // Generate issues text log
   const generateIssuesLog = () => {
@@ -173,6 +181,14 @@ export default function DebugGraphPage() {
       issues.unusedParts.forEach(id => {
         const material = defaultRules.materials.find(m => m.id === id);
         log += `  - ${material?.name || id} (Not used by any recipe)\n`;
+      });
+      log += '\n';
+    }
+
+    if (materialsMissingIcons.length > 0) {
+      log += `Materials Missing Icons (${materialsMissingIcons.length}):\n`;
+      materialsMissingIcons.forEach(({ id, name }) => {
+        log += `  - ${name} (${id}.png)\n`;
       });
       log += '\n';
     }
@@ -359,6 +375,7 @@ export default function DebugGraphPage() {
           selectedNode={selectedNode}
           onHighlightNodes={handleHighlightNodes}
           onSelectNode={handleSelectNode}
+          materialsMissingIcons={materialsMissingIcons}
         />
       </Box>
 

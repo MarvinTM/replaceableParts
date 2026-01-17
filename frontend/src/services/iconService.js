@@ -127,6 +127,59 @@ export function getCacheStats() {
   };
 }
 
+/**
+ * Check if an icon actually loads as a valid image
+ * This is more reliable than HEAD requests since dev servers often return 200 for everything
+ * @param {string} materialId - The material ID
+ * @returns {Promise<boolean>}
+ */
+function checkIconLoads(materialId) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      iconCache.set(materialId, getIconUrl(materialId));
+      resolve(true);
+    };
+    img.onerror = () => {
+      failedIcons.add(materialId);
+      resolve(false);
+    };
+    img.src = getIconUrl(materialId);
+  });
+}
+
+/**
+ * Find materials that are missing icons
+ * @param {Array<{id: string, name: string}>} materials - Array of material objects
+ * @returns {Promise<Array<{id: string, name: string}>>} Array of materials missing icons
+ */
+export async function findMaterialsMissingIcons(materials) {
+  const missing = [];
+
+  await Promise.all(
+    materials.map(async (material) => {
+      // Check cache first
+      if (iconCache.has(material.id)) {
+        return; // Icon exists
+      }
+      if (failedIcons.has(material.id)) {
+        missing.push({ id: material.id, name: material.name });
+        return;
+      }
+
+      // Actually try loading the image
+      const loads = await checkIconLoads(material.id);
+      if (!loads) {
+        missing.push({ id: material.id, name: material.name });
+      }
+    })
+  );
+
+  // Sort by name for consistent display
+  missing.sort((a, b) => a.name.localeCompare(b.name));
+  return missing;
+}
+
 // For Pixi.js integration - load icon as texture
 let pixiAssets = null;
 
@@ -167,6 +220,7 @@ export default {
   preloadIcons,
   clearIconCache,
   getCacheStats,
+  findMaterialsMissingIcons,
   setPixiAssets,
   loadIconTexture,
   ICON_BASE_PATH,

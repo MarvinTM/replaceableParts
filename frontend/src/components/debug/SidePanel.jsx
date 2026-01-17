@@ -18,6 +18,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import InfoIcon from '@mui/icons-material/Info';
+import ImageNotSupportedIcon from '@mui/icons-material/ImageNotSupported';
 import {
   getRecipesForMaterial,
   getRecipesUsingMaterial,
@@ -30,6 +31,7 @@ export default function SidePanel({
   selectedNode,
   onHighlightNodes,
   onSelectNode,
+  materialsMissingIcons = [],
 }) {
   const [expandedSection, setExpandedSection] = useState('issues');
 
@@ -88,7 +90,8 @@ export default function SidePanel({
                 (issues.intermediateNotUsedInAge?.length || 0) +
                 (issues.recipesWithZeroQuantity?.length || 0) +
                 (issues.recipeAgeIssues?.length || 0) +
-                (issues.machineCycleIssues?.length || 0)
+                (issues.machineCycleIssues?.length || 0) +
+                materialsMissingIcons.length
               }
               size="small"
               color="warning"
@@ -336,6 +339,34 @@ export default function SidePanel({
             </>
           )}
 
+          {/* Materials Missing Icons */}
+          {materialsMissingIcons.length > 0 && (
+            <>
+              <Typography
+                variant="caption"
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#f0f9ff', color: '#0369a1', fontWeight: 600 }}
+              >
+                Missing Icons ({materialsMissingIcons.length})
+              </Typography>
+              <List dense disablePadding>
+                {materialsMissingIcons.map(({ id, name }) => (
+                  <ListItemButton
+                    key={id}
+                    onClick={() => handleIssueClick([id])}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <ImageNotSupportedIcon fontSize="small" sx={{ color: '#0284c7' }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={name}
+                      secondary={`${id}.png`}
+                    />
+                  </ListItemButton>
+                ))}
+              </List>
+            </>
+          )}
+
           {issues.unusedParts.length === 0 &&
             issues.missingMaterials.length === 0 &&
             issues.unproduceable.length === 0 &&
@@ -343,7 +374,8 @@ export default function SidePanel({
             (!issues.intermediateNotUsedInAge || issues.intermediateNotUsedInAge.length === 0) &&
             (!issues.recipesWithZeroQuantity || issues.recipesWithZeroQuantity.length === 0) &&
             (!issues.recipeAgeIssues || issues.recipeAgeIssues.length === 0) &&
-            (!issues.machineCycleIssues || issues.machineCycleIssues.length === 0) && (
+            (!issues.machineCycleIssues || issues.machineCycleIssues.length === 0) &&
+            materialsMissingIcons.length === 0 && (
               <Typography sx={{ p: 2, color: 'success.main' }}>
                 No issues found
               </Typography>
