@@ -189,6 +189,7 @@ function getIssuesForMaterial(materialId, issues) {
  */
 export function analyzeIssues(rules, initialState = null) {
   const materialIds = new Set(rules.materials.map(m => m.id));
+  const recipeIds = new Set(rules.recipes.map(r => r.id));
   const usedAsInput = new Set();
   const producedByRecipe = new Set();
   const recipesMissingMachine = [];
@@ -197,11 +198,20 @@ export function analyzeIssues(rules, initialState = null) {
   // Get extractable resources
   const extractableResources = getExtractableResources(rules);
 
-  // Get all recipes that have a machine
+  // Get all recipes that have a machine, and check for invalid recipe references
   const recipesWithMachine = new Set();
+  const invalidAllowedRecipes = [];
   rules.machines.forEach(machine => {
     machine.allowedRecipes.forEach(recipeId => {
       recipesWithMachine.add(recipeId);
+      // Check if this recipe ID actually exists
+      if (!recipeIds.has(recipeId)) {
+        invalidAllowedRecipes.push({
+          machineId: machine.id,
+          machineName: machine.name,
+          recipeId: recipeId
+        });
+      }
     });
   });
 
@@ -297,6 +307,7 @@ export function analyzeIssues(rules, initialState = null) {
     recipesWithZeroQuantity,
     recipeAgeIssues,
     machineCycleIssues,
+    invalidAllowedRecipes,
   };
 }
 

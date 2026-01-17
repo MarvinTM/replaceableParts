@@ -44,6 +44,11 @@ describe('Game Rules Validation', () => {
     expect(issues.recipeAgeIssues, `Machine age mismatches: ${formatted.join('; ')}`).toEqual([]);
   });
 
+  it('should have no invalid recipe IDs in machine allowedRecipes', () => {
+    const formatted = issues.invalidAllowedRecipes.map(i => `${i.machineName} has invalid recipe '${i.recipeId}'`);
+    expect(issues.invalidAllowedRecipes, `Invalid allowedRecipes: ${formatted.join('; ')}`).toEqual([]);
+  });
+
   it('should have no circular machine dependencies', () => {
     const formatted = issues.machineCycleIssues.map(i => {
       if (i.type === 'self_dependency') {
