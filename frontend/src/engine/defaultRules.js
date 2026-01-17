@@ -885,9 +885,10 @@ export const defaultRules = {
       id: 'stone_furnace',
       itemId: 'stone_furnace',
       name: 'Stone Furnace',
-      sizeX: 2, sizeY: 2,
+      sizeX: 3, sizeY: 3,
       energyConsumption: 1,
       animation: { frames: 4, speed: 0.05 },
+      disableAutoScale: true,
       allowedRecipes: [
         'iron_ingot', 'copper_ingot', 'bricks', 'glass', 'stone_bricks', 'aluminum_ingot', 'silicon', // Added advanced smelting
         // Age 1 stone/ceramic processing
@@ -907,6 +908,7 @@ export const defaultRules = {
       energyConsumption: 1,
       animation: { frames: 4, speed: 0.1 },
       disableAutoScale: true,
+      spriteScale:1.25,
       allowedRecipes: [
         // Intermediates
         'planks', 'wooden_beam', 'wooden_dowel', 'wooden_shingle', 'wooden_handle', 'rope',
@@ -924,9 +926,10 @@ export const defaultRules = {
       id: 'blacksmiths_anvil',
       itemId: 'blacksmiths_anvil',
       name: "Blacksmith's Anvil",
-      sizeX: 1, sizeY: 1,
+      sizeX: 2, sizeY: 2,
       energyConsumption: 2,
       animation: { frames: 4, speed: 0.02 },
+      disableAutoScale: true,
       allowedRecipes: [
         // Intermediates
         'iron_plate', 'iron_rod', 'nails', 'iron_wire', 'iron_bracket', 'hinges',
@@ -945,9 +948,10 @@ export const defaultRules = {
       id: 'masons_workshop',
       itemId: 'masons_workshop',
       name: "Mason's Workshop",
-      sizeX: 1, sizeY: 1,
+      sizeX: 2, sizeY: 3,
       energyConsumption: 1,
       animation: { frames: 4, speed: 0.1 },
+      disableAutoScale: true,
       allowedRecipes: [
         // Stone construction
         'stone_wall', 'stone_pillar', 'well', 'bridge_section', 'gate',

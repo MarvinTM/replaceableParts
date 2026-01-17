@@ -35,7 +35,8 @@ export const initialState = {
     carpenters_bench: 2,
     blacksmiths_anvil: 1,
     stone_furnace: 2,
-    treadwheel: 1
+    treadwheel: 1,
+    masons_workshop: 1
   },
 
   // Deployed Machines
