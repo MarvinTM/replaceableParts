@@ -421,7 +421,7 @@ export const defaultRules = {
     // Machines - Age 1
     { id: 'carpenters_bench', name: "Carpenter's Bench", basePrice: 60, category: 'equipment', weight: 15, age: 1 },
     { id: 'blacksmiths_anvil', name: "Blacksmith's Anvil", basePrice: 80, category: 'equipment', weight: 40, age: 1 },
-    { id: 'masons_table', name: "Mason's Table", basePrice: 50, category: 'equipment', weight: 25, age: 1 },
+    { id: 'masons_workshop', name: "Mason's Table", basePrice: 50, category: 'equipment', weight: 25, age: 1 },
     { id: 'stone_furnace', name: 'Stone Furnace', basePrice: 50, category: 'equipment', weight: 30, age: 1 },
     // Machines - Age 2
     { id: 'glassblowers_workshop', name: "Glassblower's Workshop", basePrice: 120, category: 'equipment', weight: 30, age: 2 },
@@ -835,7 +835,7 @@ export const defaultRules = {
     // Age 1 machines
     { id: 'carpenters_bench', inputs: { planks: 6, wooden_beam: 2, nails: 10 }, outputs: { carpenters_bench: 1 }, energyRequired: 5, ticksToComplete: 3, tier: 1, age: 1 },
     { id: 'blacksmiths_anvil', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { blacksmiths_anvil: 1 }, energyRequired: 10, ticksToComplete: 5, tier: 1, age: 1 },
-    { id: 'masons_table', inputs: { stone: 8, wooden_beam: 2 }, outputs: { masons_table: 1 }, energyRequired: 5, ticksToComplete: 3, tier: 1, age: 1 },
+    { id: 'masons_workshop', inputs: { stone: 8, wooden_beam: 2 }, outputs: { masons_workshop: 1 }, energyRequired: 5, ticksToComplete: 3, tier: 1, age: 1 },
     { id: 'stone_furnace', inputs: { stone: 8 }, outputs: { stone_furnace: 1 }, energyRequired: 0, ticksToComplete: 2, tier: 1, age: 1 },
     { id: 'treadwheel', inputs: { wood: 10 }, outputs: { treadwheel: 1 }, energyRequired: 0, ticksToComplete: 5, tier: 1, age: 1 },
     // Age 2 machines
@@ -917,7 +917,7 @@ export const defaultRules = {
         // Vehicles & Transport
         'wheelbarrow', 'cart', 'wagon',
         // Other
-        'coat_hanger', 'plow', 'carpenters_bench', 'masons_table'
+        'coat_hanger', 'plow', 'carpenters_bench', 'masons_workshop'
       ]
     },
     {
@@ -942,9 +942,9 @@ export const defaultRules = {
       ]
     },
     {
-      id: 'masons_table',
-      itemId: 'masons_table',
-      name: "Mason's Table",
+      id: 'masons_workshop',
+      itemId: 'masons_workshop',
+      name: "Mason's Workshop",
       sizeX: 1, sizeY: 1,
       energyConsumption: 1,
       animation: { frames: 4, speed: 0.1 },
