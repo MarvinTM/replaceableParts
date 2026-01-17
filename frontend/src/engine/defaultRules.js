@@ -418,11 +418,22 @@ export const defaultRules = {
     // ========================
     // EQUIPMENT (Machines & Generators)
     // ========================
-    // Machines
-    { id: 'basic_assembler', name: 'Basic Assembler', basePrice: 100, category: 'equipment', weight: 20, age: 1 },
+    // Machines - Age 1
+    { id: 'carpenters_bench', name: "Carpenter's Bench", basePrice: 60, category: 'equipment', weight: 15, age: 1 },
+    { id: 'blacksmiths_anvil', name: "Blacksmith's Anvil", basePrice: 80, category: 'equipment', weight: 40, age: 1 },
+    { id: 'masons_table', name: "Mason's Table", basePrice: 50, category: 'equipment', weight: 25, age: 1 },
     { id: 'stone_furnace', name: 'Stone Furnace', basePrice: 50, category: 'equipment', weight: 30, age: 1 },
+    // Machines - Age 2
+    { id: 'tinkers_bench', name: "Tinker's Bench", basePrice: 150, category: 'equipment', weight: 20, age: 2 },
+    { id: 'glassblowers_workshop', name: "Glassblower's Workshop", basePrice: 120, category: 'equipment', weight: 30, age: 2 },
+    { id: 'potters_wheel_machine', name: "Potter's Wheel", basePrice: 80, category: 'equipment', weight: 25, age: 2 },
     { id: 'foundry', name: 'Ind. Foundry', basePrice: 300, category: 'equipment', weight: 50, age: 2 },
-    { id: 'precision_assembler', name: 'Precision Assembler', basePrice: 1000, category: 'equipment', weight: 40, age: 3 },
+    // Machines - Age 3
+    { id: 'steam_workshop', name: 'Steam Workshop', basePrice: 400, category: 'equipment', weight: 50, age: 3 },
+    { id: 'steel_forge', name: 'Steel Forge', basePrice: 500, category: 'equipment', weight: 70, age: 3 },
+    { id: 'heavy_assembly', name: 'Heavy Assembly', basePrice: 800, category: 'equipment', weight: 100, age: 3 },
+    // Machines - Age 4+
+    { id: 'precision_assembler', name: 'Precision Assembler', basePrice: 1500, category: 'equipment', weight: 60, age: 4 },
     { id: 'chemical_plant', name: 'Chemical Plant', basePrice: 800, category: 'equipment', weight: 60, age: 4 },
     { id: 'electronics_fab', name: 'Electronics Fab', basePrice: 1500, category: 'equipment', weight: 100, age: 6 },
     
@@ -823,13 +834,24 @@ export const defaultRules = {
     { id: 'neural_implant', inputs: { neural_interface: 1, ai_core: 1, adv_battery: 1 }, outputs: { neural_implant: 1 }, energyRequired: 350, ticksToComplete: 35, tier: 7, age: 7 },
 
     // --- MACHINES & GENERATORS ---
-    { id: 'basic_assembler', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { basic_assembler: 1 }, energyRequired: 10, ticksToComplete: 5, tier: 1, age: 1 },
+    // Age 1 machines
+    { id: 'carpenters_bench', inputs: { planks: 6, wooden_beam: 2, nails: 10 }, outputs: { carpenters_bench: 1 }, energyRequired: 5, ticksToComplete: 3, tier: 1, age: 1 },
+    { id: 'blacksmiths_anvil', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { blacksmiths_anvil: 1 }, energyRequired: 10, ticksToComplete: 5, tier: 1, age: 1 },
+    { id: 'masons_table', inputs: { stone: 8, wooden_beam: 2 }, outputs: { masons_table: 1 }, energyRequired: 5, ticksToComplete: 3, tier: 1, age: 1 },
     { id: 'stone_furnace', inputs: { stone: 8 }, outputs: { stone_furnace: 1 }, energyRequired: 0, ticksToComplete: 2, tier: 1, age: 1 },
     { id: 'treadwheel', inputs: { wood: 10 }, outputs: { treadwheel: 1 }, energyRequired: 0, ticksToComplete: 5, tier: 1, age: 1 },
-    
+    // Age 2 machines
+    { id: 'tinkers_bench', inputs: { copper_sheet: 4, wooden_beam: 2, iron_rod: 4 }, outputs: { tinkers_bench: 1 }, energyRequired: 15, ticksToComplete: 6, tier: 2, age: 2 },
+    { id: 'glassblowers_workshop', inputs: { iron_plate: 4, bricks: 8, copper_tubing: 2 }, outputs: { glassblowers_workshop: 1 }, energyRequired: 15, ticksToComplete: 6, tier: 2, age: 2 },
+    { id: 'potters_wheel_machine', inputs: { wooden_beam: 4, iron_rod: 2, stone: 4 }, outputs: { potters_wheel_machine: 1 }, energyRequired: 10, ticksToComplete: 4, tier: 2, age: 2 },
     { id: 'foundry', inputs: { bricks: 10, steel_beam: 4 }, outputs: { foundry: 1 }, energyRequired: 50, ticksToComplete: 10, tier: 3, age: 3 },
+    // Age 3 machines
+    { id: 'steam_workshop', inputs: { steel_plate: 6, gear: 6, pipe: 4, boiler: 1 }, outputs: { steam_workshop: 1 }, energyRequired: 50, ticksToComplete: 10, tier: 3, age: 3 },
+    { id: 'steel_forge', inputs: { steel_plate: 10, bricks: 12, iron_chain: 4 }, outputs: { steel_forge: 1 }, energyRequired: 60, ticksToComplete: 12, tier: 3, age: 3 },
+    { id: 'heavy_assembly', inputs: { steel_beam: 8, steel_plate: 8, gear: 6, crane: 1 }, outputs: { heavy_assembly: 1 }, energyRequired: 100, ticksToComplete: 20, tier: 3, age: 3 },
     { id: 'steam_engine_gen', inputs: { steel_plate: 10, boiler: 1, piston: 2 }, outputs: { steam_engine_gen: 1 }, energyRequired: 100, ticksToComplete: 20, tier: 3, age: 3 },
-    { id: 'precision_assembler', inputs: { steel_plate: 10, gear: 10, crankshaft: 2, piston: 2 }, outputs: { precision_assembler: 1 }, energyRequired: 100, ticksToComplete: 20, tier: 3, age: 3 },
+    // Age 4 machines
+    { id: 'precision_assembler', inputs: { steel_plate: 10, gear: 10, electric_motor: 2, ball_bearing: 4 }, outputs: { precision_assembler: 1 }, energyRequired: 150, ticksToComplete: 25, tier: 4, age: 4 },
     
     { id: 'chemical_plant', inputs: { steel_plate: 10, pipe: 10, glass: 5 }, outputs: { chemical_plant: 1 }, energyRequired: 150, ticksToComplete: 25, tier: 4, age: 4 },
     { id: 'diesel_gen', inputs: { engine_block: 2, generator: 1 }, outputs: { diesel_gen: 1 }, energyRequired: 200, ticksToComplete: 25, tier: 4, age: 4 },
@@ -878,33 +900,176 @@ export const defaultRules = {
         'ceramic_tile', 'terracotta', 'porcelain', 'glass_pane', 'glass_lens', 'decorative_glass'
       ]
     },
+    // ============================================
+    // AGE 1 MACHINES
+    // ============================================
     {
-      id: 'basic_assembler',
-      itemId: 'basic_assembler',
-      name: 'Basic Assembler',
+      id: 'carpenters_bench',
+      itemId: 'carpenters_bench',
+      name: "Carpenter's Bench",
       sizeX: 1, sizeY: 2,
+      energyConsumption: 1,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Intermediates
+        'planks', 'wooden_beam', 'wooden_dowel', 'wooden_shingle', 'wooden_handle', 'rope',
+        // Furniture
+        'chair', 'table', 'wardrobe', 'chest', 'bed', 'bench', 'workbench', 'crate', 'barrel',
+        // Structures
+        'fence', 'door', 'ladder', 'staircase', 'shingled_roof', 'roof_tile_section',
+        // Vehicles & Transport
+        'wheelbarrow', 'cart', 'wagon',
+        // Other
+        'coat_hanger', 'plow'
+      ]
+    },
+    {
+      id: 'blacksmiths_anvil',
+      itemId: 'blacksmiths_anvil',
+      name: "Blacksmith's Anvil",
+      sizeX: 1, sizeY: 1,
       energyConsumption: 2,
       animation: { frames: 4, speed: 0.1 },
       allowedRecipes: [
-        // Age 1 - Intermediates
-        'planks', 'wooden_beam', 'iron_plate', 'iron_rod', 'nails',
-        'rope', 'wooden_dowel', 'iron_wire', 'iron_bracket', 'hinges', 'iron_chain', 'wooden_shingle', 'iron_axle', 'wheel', 'wooden_handle',
-        // Age 1 - Final Goods
-        'chair', 'table', 'wardrobe', 'chest', 'bucket', 'hammer', 'pickaxe', 'shovel', 'fence', 'door', 'stone_wall',
-        'bed', 'bench', 'ladder', 'wheelbarrow', 'cart', 'barrel', 'anvil', 'bellows', 'axe', 'saw', 'chisel', 'mallet',
-        'shield', 'spear', 'gate', 'staircase', 'roof_tile_section', 'well', 'workbench', 'forge', 'crate', 'bridge_section',
-        'plow', 'stone_pillar', 'tool_rack', 'shield_rack', 'iron_grate', 'coat_hanger', 'shingled_roof', 'wagon', 'water_wheel', 'anchor',
-        // Age 2 - Intermediates
+        // Intermediates
+        'iron_plate', 'iron_rod', 'nails', 'iron_wire', 'iron_bracket', 'hinges',
+        'iron_chain', 'iron_axle', 'wheel',
+        // Tools
+        'hammer', 'pickaxe', 'shovel', 'axe', 'saw', 'chisel', 'mallet', 'bucket', 'tool_rack',
+        // Weapons & Military
+        'shield', 'spear', 'shield_rack', 'bronze_armor',
+        // Metal items
+        'iron_grate', 'anchor', 'bellows', 'water_wheel', 'anvil',
+        // Self-build
+        'blacksmiths_anvil', 'forge', 'carpenters_bench'
+      ]
+    },
+    {
+      id: 'masons_table',
+      itemId: 'masons_table',
+      name: "Mason's Table",
+      sizeX: 1, sizeY: 1,
+      energyConsumption: 1,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Stone construction
+        'stone_wall', 'stone_pillar', 'well', 'bridge_section', 'gate',
+        // Self-build
+        'masons_table', 'treadwheel', 'stone_furnace'
+      ]
+    },
+    // ============================================
+    // AGE 2 MACHINES
+    // ============================================
+    {
+      id: 'tinkers_bench',
+      itemId: 'tinkers_bench',
+      name: "Tinker's Bench",
+      sizeX: 1, sizeY: 2,
+      energyConsumption: 3,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Copper/Brass Intermediates
         'copper_sheet', 'pipe', 'copper_tubing', 'copper_rod', 'brass_sheet',
-        // Age 2 - Final Goods
-        'vase', 'pot', 'mirror', 'window', 'lantern', 'kettle', 'fountain', 'aqueduct_section', 'spyglass',
-        'chandelier', 'stained_glass', 'telescope', 'compass', 'plate_set', 'tile_floor', 'bathtub', 'sink',
-        'decorative_urn', 'chimney', 'greenhouse_panel', 'church_bell', 'candelabra', 'pottery_wheel', 'barometer',
-        'hourglass', 'ceramic_bowl', 'copper_statue', 'magnifying_glass', 'sundial', 'bronze_armor',
-        // Age - 3 Intermediates
-        'steel_plate','gear', 'crankshaft', 'piston',
-        // Machine Self-build
-        'basic_assembler', 'stone_furnace', 'treadwheel'
+        // Scientific Instruments
+        'compass', 'barometer', 'spyglass', 'telescope', 'magnifying_glass', 'sundial', 'hourglass',
+        // Decorative Metalwork
+        'kettle', 'candelabra', 'copper_statue', 'decorative_urn', 'church_bell',
+        // Plumbing
+        'fountain', 'aqueduct_section', 'bathtub', 'sink', 'chimney',
+        // Precision Mechanical
+        'clock', 'pocket_watch', 'padlock', 'pressure_gauge', 'wrench',
+        // Self-build
+        'tinkers_bench'
+      ]
+    },
+    {
+      id: 'glassblowers_workshop',
+      itemId: 'glassblowers_workshop',
+      name: "Glassblower's Workshop",
+      sizeX: 1, sizeY: 2,
+      energyConsumption: 3,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Glass items
+        'window', 'mirror', 'lantern', 'chandelier', 'stained_glass', 'greenhouse_panel',
+        // Self-build
+        'glassblowers_workshop'
+      ]
+    },
+    {
+      id: 'potters_wheel_machine',
+      itemId: 'potters_wheel_machine',
+      name: "Potter's Wheel",
+      sizeX: 1, sizeY: 1,
+      energyConsumption: 1,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Ceramics
+        'vase', 'pot', 'ceramic_bowl', 'tile_floor', 'plate_set',
+        // Self-build
+        'potters_wheel_machine', 'pottery_wheel'
+      ]
+    },
+    // ============================================
+    // AGE 3 MACHINES
+    // ============================================
+    {
+      id: 'steam_workshop',
+      itemId: 'steam_workshop',
+      name: 'Steam Workshop',
+      sizeX: 2, sizeY: 2,
+      energyConsumption: 5,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Mechanical Intermediates
+        'gear', 'crankshaft', 'piston', 'coupling',
+        // Steam Components
+        'steam_valve', 'drive_shaft', 'flywheel', 'boiler', 'camshaft',
+        // Steam-era Machines
+        'sewing_machine', 'printing_press', 'mechanical_loom', 'rotary_engine', 'steam_hammer',
+        // Home
+        'stove', 'pressure_cooker', 'radiator', 'bicycle',
+        // Self-build
+        'steam_workshop', 'steam_engine_gen'
+      ]
+    },
+    {
+      id: 'steel_forge',
+      itemId: 'steel_forge',
+      name: 'Steel Forge',
+      sizeX: 2, sizeY: 2,
+      energyConsumption: 8,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Steel Intermediates
+        'steel_plate', 'steel_beam', 'steel_rod', 'steel_gear', 'steel_cable',
+        'steel_rivet', 'steel_spring', 'ball_bearing', 'steel_chain', 'steel_pipe',
+        // Steel Products
+        'tool_box', 'safe', 'vault_door', 'manhole_cover',
+        // Self-build
+        'steel_forge'
+      ]
+    },
+    {
+      id: 'heavy_assembly',
+      itemId: 'heavy_assembly',
+      name: 'Heavy Assembly',
+      sizeX: 3, sizeY: 2,
+      energyConsumption: 10,
+      animation: { frames: 4, speed: 0.1 },
+      allowedRecipes: [
+        // Large Construction
+        'crane', 'elevator', 'steel_bridge', 'water_tower', 'rail_track',
+        // Heavy Vehicles
+        'locomotive',
+        // Industrial Machines
+        'industrial_furnace', 'industrial_boiler', 'lathe', 'milling_machine',
+        'industrial_press', 'conveyor_belt',
+        // Large Items
+        'pipe_organ', 'plumbing_system',
+        // Self-build
+        'heavy_assembly', 'foundry'
       ]
     },
     {
@@ -935,6 +1100,9 @@ export const defaultRules = {
         'composite', 'nano_material', 'liquid_nitrogen'
       ]
     },
+    // ============================================
+    // AGE 4+ MACHINE
+    // ============================================
     {
       id: 'precision_assembler',
       itemId: 'precision_assembler',
@@ -943,29 +1111,26 @@ export const defaultRules = {
       energyConsumption: 15,
       animation: { frames: 4, speed: 0.2 },
       allowedRecipes: [
-        // Age 3 - Intermediates
-        'bricks', 'steel_beam', 'steel_rod', 'steel_gear', 'steel_cable',
-        'steel_rivet', 'steel_spring', 'ball_bearing', 'steel_chain', 'steel_pipe', 'coupling',
-        'steam_valve', 'drive_shaft', 'flywheel', 'pressure_gauge', 'boiler', 'camshaft',
-        // Age 3 - Final Goods
-        'vault_door', 'stove', 'bicycle', 'clock', 'printing_press', 'sewing_machine', 'tool_box', 'radiator',
-        'locomotive', 'industrial_furnace', 'lathe', 'milling_machine', 'safe', 'crane', 'elevator',
-        'mechanical_loom', 'pocket_watch', 'manhole_cover', 'steel_bridge', 'water_tower', 'industrial_press',
-        'steam_hammer', 'rail_track', 'padlock', 'wrench', 'pipe_organ', 'industrial_boiler',
-        'conveyor_belt', 'pressure_cooker', 'plumbing_system', 'rotary_engine',
-        
-        // Age 4
-        'copper_wire', 'carburetor', 'spark_plug', 'engine_block', 'tire', 'battery', 'light_bulb', 'vacuum_tube',
-        'car_tire', 'car_engine', 'lawn_mower', 'chainsaw', 'generator', 'scooter', 'motorcycle',
-        'automobile', 'industrial_pump', 'power_saw', 'jackhammer', 'concrete_mixer', 'traffic_light',
-        'street_lamp', 'telephone', 'vinyl_record', 'plastic_container', 'garden_hose', 'fuel_tank',
-        'oil_drum', 'flashlight', 'road_segment', 'radio_transmitter', 'typewriter', 'camera',
-        'leather_jacket', 'amplifier', 'diesel_truck', 'chemistry_set', 'raincoat', 'kayak',
+        // Age 4 - Electrical Components
+        'copper_wire', 'battery', 'light_bulb', 'vacuum_tube',
+        // Age 4 - Engine Components
+        'carburetor', 'spark_plug', 'engine_block', 'tire', 'car_tire', 'car_engine',
+        // Age 4 - Vehicles
+        'lawn_mower', 'chainsaw', 'generator', 'scooter', 'motorcycle',
+        'automobile', 'diesel_truck', 'kayak',
+        // Age 4 - Industrial
+        'industrial_pump', 'power_saw', 'jackhammer', 'concrete_mixer',
+        // Age 4 - Consumer & Infrastructure
+        'traffic_light', 'street_lamp', 'telephone', 'vinyl_record',
+        'plastic_container', 'garden_hose', 'fuel_tank', 'oil_drum', 'flashlight',
+        'road_segment', 'radio_transmitter', 'typewriter', 'camera',
+        'leather_jacket', 'amplifier', 'chemistry_set', 'raincoat',
 
-        // Age 5 (Electric / Appliances)
+        // Age 5 - Electrical Intermediates
         'aluminum_sheet', 'aluminum_rod', 'insulated_wire', 'electric_coil', 'electric_motor',
-        'heating_element', 'electric_switch', 'transformer', 'capacitor', 'resistor', 'bulb_socket',
-        'relay', 'thermostat', 'compressor', 'housing', 'steel_wire',
+        'heating_element', 'electric_switch', 'transformer', 'capacitor', 'resistor',
+        'bulb_socket', 'relay', 'thermostat', 'compressor', 'housing', 'steel_wire',
+        // Age 5 - Appliances
         'fan', 'toaster', 'vacuum', 'fridge', 'washer', 'dishwasher', 'air_conditioner',
         'electric_oven', 'radio', 'drill', 'mixer', 'blender', 'food_processor', 'hair_dryer',
         'electric_heater', 'electric_kettle', 'electric_saw', 'arc_welder', 'electric_guitar',
@@ -976,7 +1141,7 @@ export const defaultRules = {
         'steel_bracket', 'bracket_assembly',
 
         // Machines
-        'foundry', 'steam_engine_gen', 'chemical_plant', 'diesel_gen', 'precision_assembler'
+        'chemical_plant', 'diesel_gen', 'precision_assembler'
       ]
     },
     {
