@@ -428,7 +428,6 @@ export const defaultRules = {
     { id: 'potters_wheel_machine', name: "Potter's Wheel", basePrice: 80, category: 'equipment', weight: 25, age: 2 },
     { id: 'foundry', name: 'Ind. Foundry', basePrice: 300, category: 'equipment', weight: 50, age: 2 },
     // Machines - Age 3
-    { id: 'steam_workshop', name: 'Steam Workshop', basePrice: 400, category: 'equipment', weight: 50, age: 3 },
     { id: 'steel_forge', name: 'Steel Forge', basePrice: 500, category: 'equipment', weight: 70, age: 3 },
     { id: 'heavy_assembly', name: 'Heavy Assembly', basePrice: 800, category: 'equipment', weight: 100, age: 3 },
     // Machines - Age 4+
@@ -844,7 +843,6 @@ export const defaultRules = {
     { id: 'potters_wheel_machine', inputs: { wooden_beam: 4, iron_rod: 2, stone: 4 }, outputs: { potters_wheel_machine: 1 }, energyRequired: 10, ticksToComplete: 4, tier: 2, age: 2 },
     { id: 'foundry', inputs: { bricks: 10, steel_beam: 4 }, outputs: { foundry: 1 }, energyRequired: 50, ticksToComplete: 10, tier: 3, age: 3 },
     // Age 3 machines
-    { id: 'steam_workshop', inputs: { steel_plate: 6, gear: 6, pipe: 4, boiler: 1 }, outputs: { steam_workshop: 1 }, energyRequired: 50, ticksToComplete: 10, tier: 3, age: 3 },
     { id: 'steel_forge', inputs: { steel_plate: 10, bricks: 12, iron_chain: 4 }, outputs: { steel_forge: 1 }, energyRequired: 60, ticksToComplete: 12, tier: 3, age: 3 },
     { id: 'heavy_assembly', inputs: { steel_beam: 8, steel_plate: 8, gear: 6, crane: 1 }, outputs: { heavy_assembly: 1 }, energyRequired: 100, ticksToComplete: 20, tier: 3, age: 3 },
     { id: 'steam_engine_gen', inputs: { steel_plate: 10, boiler: 1, piston: 2 }, outputs: { steam_engine_gen: 1 }, energyRequired: 100, ticksToComplete: 20, tier: 3, age: 3 },
@@ -919,7 +917,7 @@ export const defaultRules = {
         // Vehicles & Transport
         'wheelbarrow', 'cart', 'wagon',
         // Other
-        'coat_hanger', 'plow'
+        'coat_hanger', 'plow', 'carpenters_bench', 'masons_table'
       ]
     },
     {
@@ -940,7 +938,7 @@ export const defaultRules = {
         // Metal items
         'iron_grate', 'anchor', 'bellows', 'water_wheel', 'anvil',
         // Self-build
-        'masons_table', 'forge', 'carpenters_bench'
+        'forge', 'potters_wheel_machine', 'steel_forge', 'heavy_assembly'
       ]
     },
     {
@@ -954,7 +952,7 @@ export const defaultRules = {
         // Stone construction
         'stone_wall', 'stone_pillar', 'well', 'bridge_section', 'gate',
         // Self-build
-        'treadwheel', 'stone_furnace',
+        'treadwheel', 'stone_furnace','blacksmiths_anvil',
         // Copper/Brass Intermediates
         'copper_sheet', 'pipe', 'copper_tubing', 'copper_rod', 'brass_sheet',
         // Scientific Instruments
@@ -966,7 +964,7 @@ export const defaultRules = {
         // Precision Mechanical
         'clock', 'pocket_watch', 'padlock', 'pressure_gauge', 'wrench',
         // Bootstrap components for Age 3 machines
-        'gear', 'boiler'
+        'gear', 'boiler', 'glassblowers_workshop'
       ]
     },
     // ============================================
@@ -981,9 +979,7 @@ export const defaultRules = {
       animation: { frames: 4, speed: 0.1 },
       allowedRecipes: [
         // Glass items
-        'window', 'mirror', 'lantern', 'chandelier', 'stained_glass', 'greenhouse_panel',
-        // Self-build
-        'glassblowers_workshop'
+        'window', 'mirror', 'lantern', 'chandelier', 'stained_glass', 'greenhouse_panel'
       ]
     },
     {
@@ -997,34 +993,12 @@ export const defaultRules = {
         // Ceramics
         'vase', 'pot', 'ceramic_bowl', 'tile_floor', 'plate_set',
         // Self-build
-        'potters_wheel_machine', 'pottery_wheel'
+        'pottery_wheel'
       ]
     },
     // ============================================
     // AGE 3 MACHINES
     // ============================================
-    {
-      id: 'steam_workshop',
-      itemId: 'steam_workshop',
-      name: 'Steam Workshop',
-      sizeX: 2, sizeY: 2,
-      energyConsumption: 5,
-      animation: { frames: 4, speed: 0.1 },
-      allowedRecipes: [
-        // Mechanical Intermediates
-        'gear', 'crankshaft', 'piston', 'coupling',
-        // Steam Components
-        'steam_valve', 'drive_shaft', 'flywheel', 'boiler', 'camshaft',
-        // Bootstrap for Steel Forge
-        'steel_plate',
-        // Steam-era Machines
-        'sewing_machine', 'printing_press', 'mechanical_loom', 'rotary_engine', 'steam_hammer',
-        // Home
-        'stove', 'pressure_cooker', 'radiator', 'bicycle',
-        // Self-build
-        'steam_workshop', 'steam_engine_gen'
-      ]
-    },
     {
       id: 'steel_forge',
       itemId: 'steel_forge',
@@ -1039,19 +1013,29 @@ export const defaultRules = {
         // Steel Products
         'tool_box', 'safe', 'vault_door', 'manhole_cover',
         // Bootstrap for Heavy Assembly
-        'crane',
-        // Self-build
-        'steel_forge'
+        'crane'
       ]
     },
     {
       id: 'heavy_assembly',
       itemId: 'heavy_assembly',
-      name: 'Heavy Assembly',
+      name: 'Heavy Assembly Plant',
       sizeX: 3, sizeY: 2,
       energyConsumption: 10,
       animation: { frames: 4, speed: 0.1 },
       allowedRecipes: [
+        // Mechanical Intermediates
+        'gear', 'crankshaft', 'piston', 'coupling',
+        // Steam Components
+        'steam_valve', 'drive_shaft', 'flywheel', 'boiler', 'camshaft',
+        // Bootstrap for Steel Forge
+        'steel_plate',
+        // Steam-era Machines
+        'sewing_machine', 'printing_press', 'mechanical_loom', 'rotary_engine', 'steam_hammer',
+        // Home
+        'stove', 'pressure_cooker', 'radiator', 'bicycle',
+        // Self-build
+        'steam_engine_gen',
         // Large Construction
         'crane', 'elevator', 'steel_bridge', 'water_tower', 'rail_track',
         // Heavy Vehicles
@@ -1064,7 +1048,9 @@ export const defaultRules = {
         // Bootstrap for Precision Assembler
         'electric_coil', 'electric_motor',
         // Self-build
-        'heavy_assembly', 'foundry'
+        'heavy_assembly', 'foundry',
+        'chemical_plant',
+        'steel_forge','precision_assembler'
       ]
     },
     {
@@ -1136,7 +1122,7 @@ export const defaultRules = {
         'steel_bracket', 'bracket_assembly',
 
         // Machines
-        'chemical_plant', 'diesel_gen', 'precision_assembler'
+        'diesel_gen', 'precision_assembler','electronics_fab'
       ]
     },
     {
@@ -1168,7 +1154,7 @@ export const defaultRules = {
         'cryogenic_chamber', 'space_helmet', 'graphene_armor', 'neural_implant',
 
         // Machines
-        'electronics_fab', 'solar_array', 'fusion_reactor'
+         'solar_array', 'fusion_reactor'
       ]
     }
   ],
