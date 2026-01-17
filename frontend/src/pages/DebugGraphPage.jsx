@@ -13,13 +13,21 @@ import {
   Chip,
   Paper,
   Button,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import GraphCanvas from '../components/debug/GraphCanvas';
 import SidePanel from '../components/debug/SidePanel';
-import { buildGraph } from '../utils/graphAnalysis';
+import { buildGraph, calculateRawMaterialUsage, calculateRawMaterialCosts, calculateEnergyCosts } from '../utils/graphAnalysis';
 import { defaultRules } from '../engine/defaultRules';
 import { initialState } from '../engine/initialState';
 
@@ -35,11 +43,27 @@ export default function DebugGraphPage() {
   const [selectedNode, setSelectedNode] = useState(null);
   const [highlightedNodes, setHighlightedNodes] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [bottomTab, setBottomTab] = useState(0);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
 
   // Build graph from rules
   const { nodes, edges, issues } = useMemo(() => {
     return buildGraph(defaultRules, initialState);
   }, [refreshKey]);
+
+  // Calculate balance metrics
+  const balanceMetrics = useMemo(() => ({
+    rawUsage: calculateRawMaterialUsage(defaultRules),
+    rawCosts: calculateRawMaterialCosts(defaultRules),
+    energyCosts: calculateEnergyCosts(defaultRules),
+  }), [refreshKey]);
+
+  // Get list of all raw material IDs for column headers
+  const rawMaterialIds = useMemo(() => {
+    return defaultRules.materials
+      .filter(m => m.category === 'raw')
+      .map(m => m.id);
+  }, []);
 
   const handleFilterChange = (key) => (event) => {
     setFilters(prev => ({
@@ -165,6 +189,65 @@ export default function DebugGraphPage() {
     navigator.clipboard.writeText(log);
   };
 
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  };
+
+  // Prepare sorted data for Raw Material Usage table
+  const rawUsageData = useMemo(() => {
+    const data = Array.from(balanceMetrics.rawUsage.entries()).map(([id, info]) => ({
+      id,
+      ...info,
+    }));
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        const aVal = a[sortConfig.key] ?? 0;
+        const bVal = b[sortConfig.key] ?? 0;
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+      });
+    } else {
+      data.sort((a, b) => b.totalDependentMaterials - a.totalDependentMaterials);
+    }
+    return data;
+  }, [balanceMetrics.rawUsage, sortConfig]);
+
+  // Prepare sorted data for Final Good Costs table
+  const finalGoodCostsData = useMemo(() => {
+    const data = Array.from(balanceMetrics.rawCosts.entries()).map(([id, info]) => {
+      const energyInfo = balanceMetrics.energyCosts.get(id) || { totalEnergy: 0, directEnergy: 0 };
+      const totalRawUnits = Object.values(info.rawMaterials).reduce((sum, qty) => sum + qty, 0);
+      return {
+        id,
+        ...info,
+        totalEnergy: energyInfo.totalEnergy,
+        directEnergy: energyInfo.directEnergy,
+        totalRawUnits,
+      };
+    });
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+        // Handle raw material columns
+        if (sortConfig.key.startsWith('raw_')) {
+          const rawId = sortConfig.key.replace('raw_', '');
+          aVal = a.rawMaterials[rawId] ?? 0;
+          bVal = b.rawMaterials[rawId] ?? 0;
+        }
+        if (typeof aVal === 'string') {
+          return sortConfig.direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        return sortConfig.direction === 'asc' ? (aVal ?? 0) - (bVal ?? 0) : (bVal ?? 0) - (aVal ?? 0);
+      });
+    } else {
+      data.sort((a, b) => a.age - b.age || a.name.localeCompare(b.name));
+    }
+    return data;
+  }, [balanceMetrics.rawCosts, balanceMetrics.energyCosts, sortConfig]);
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -279,12 +362,12 @@ export default function DebugGraphPage() {
         />
       </Box>
 
-      {/* Issues Text Log */}
+      {/* Bottom Panel with Tabs */}
       <Paper
         elevation={3}
         sx={{
           borderTop: '2px solid #e0e0e0',
-          height: '200px',
+          height: '250px',
           display: 'flex',
           flexDirection: 'column',
         }}
@@ -295,38 +378,179 @@ export default function DebugGraphPage() {
             alignItems: 'center',
             justifyContent: 'space-between',
             px: 2,
-            py: 1,
             borderBottom: '1px solid #e0e0e0',
             bgcolor: '#1976d2',
           }}
         >
-          <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#fff' }}>
-            Issues Log (Copy for AI Processing)
-          </Typography>
-          <Button
-            size="small"
-            startIcon={<ContentCopyIcon />}
-            onClick={handleCopyLog}
-            variant="contained"
-            sx={{ bgcolor: '#fff', color: '#1976d2', '&:hover': { bgcolor: '#f0f0f0' } }}
+          <Tabs
+            value={bottomTab}
+            onChange={(e, v) => { setBottomTab(v); setSortConfig({ key: null, direction: 'desc' }); }}
+            sx={{
+              minHeight: 40,
+              '& .MuiTab-root': { color: 'rgba(255,255,255,0.7)', minHeight: 40, py: 0 },
+              '& .Mui-selected': { color: '#fff' },
+              '& .MuiTabs-indicator': { bgcolor: '#fff' },
+            }}
           >
-            Copy All
-          </Button>
+            <Tab label="Issues Log" />
+            <Tab label="Raw Material Usage" />
+            <Tab label="Final Good Costs" />
+          </Tabs>
+          {bottomTab === 0 && (
+            <Button
+              size="small"
+              startIcon={<ContentCopyIcon />}
+              onClick={handleCopyLog}
+              variant="contained"
+              sx={{ bgcolor: '#fff', color: '#1976d2', '&:hover': { bgcolor: '#f0f0f0' } }}
+            >
+              Copy All
+            </Button>
+          )}
         </Box>
-        <Box
-          sx={{
-            flexGrow: 1,
-            overflow: 'auto',
-            p: 2,
-            bgcolor: '#fafafa',
-            fontFamily: 'monospace',
-            fontSize: '0.875rem',
-            whiteSpace: 'pre-wrap',
-            color: '#000',
-          }}
-        >
-          {generateIssuesLog()}
-        </Box>
+
+        {/* Tab 0: Issues Log */}
+        {bottomTab === 0 && (
+          <Box
+            sx={{
+              flexGrow: 1,
+              overflow: 'auto',
+              p: 2,
+              bgcolor: '#fafafa',
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+              whiteSpace: 'pre-wrap',
+              color: '#000',
+            }}
+          >
+            {generateIssuesLog()}
+          </Box>
+        )}
+
+        {/* Tab 1: Raw Material Usage */}
+        {bottomTab === 1 && (
+          <TableContainer sx={{ flexGrow: 1, overflow: 'auto' }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortConfig.key === 'name'}
+                      direction={sortConfig.key === 'name' ? sortConfig.direction : 'asc'}
+                      onClick={() => handleSort('name')}
+                    >
+                      Raw Material
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel
+                      active={sortConfig.key === 'directRecipeCount'}
+                      direction={sortConfig.key === 'directRecipeCount' ? sortConfig.direction : 'desc'}
+                      onClick={() => handleSort('directRecipeCount')}
+                    >
+                      Direct Recipes
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel
+                      active={sortConfig.key === 'totalDependentMaterials'}
+                      direction={sortConfig.key === 'totalDependentMaterials' ? sortConfig.direction : 'desc'}
+                      onClick={() => handleSort('totalDependentMaterials')}
+                    >
+                      Total Dependent Items
+                    </TableSortLabel>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rawUsageData.map(row => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell align="right">{row.directRecipeCount}</TableCell>
+                    <TableCell align="right">{row.totalDependentMaterials}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {/* Tab 2: Final Good Costs */}
+        {bottomTab === 2 && (
+          <TableContainer sx={{ flexGrow: 1, overflow: 'auto' }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortConfig.key === 'name'}
+                      direction={sortConfig.key === 'name' ? sortConfig.direction : 'asc'}
+                      onClick={() => handleSort('name')}
+                    >
+                      Final Good
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel
+                      active={sortConfig.key === 'age'}
+                      direction={sortConfig.key === 'age' ? sortConfig.direction : 'asc'}
+                      onClick={() => handleSort('age')}
+                    >
+                      Age
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel
+                      active={sortConfig.key === 'totalEnergy'}
+                      direction={sortConfig.key === 'totalEnergy' ? sortConfig.direction : 'desc'}
+                      onClick={() => handleSort('totalEnergy')}
+                    >
+                      Total Energy
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel
+                      active={sortConfig.key === 'totalRawUnits'}
+                      direction={sortConfig.key === 'totalRawUnits' ? sortConfig.direction : 'desc'}
+                      onClick={() => handleSort('totalRawUnits')}
+                    >
+                      Total Raw Units
+                    </TableSortLabel>
+                  </TableCell>
+                  {rawMaterialIds.map(rawId => {
+                    const rawMat = defaultRules.materials.find(m => m.id === rawId);
+                    return (
+                      <TableCell key={rawId} align="right" sx={{ minWidth: 80 }}>
+                        <TableSortLabel
+                          active={sortConfig.key === `raw_${rawId}`}
+                          direction={sortConfig.key === `raw_${rawId}` ? sortConfig.direction : 'desc'}
+                          onClick={() => handleSort(`raw_${rawId}`)}
+                        >
+                          {rawMat?.name || rawId}
+                        </TableSortLabel>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {finalGoodCostsData.map(row => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{row.name}</TableCell>
+                    <TableCell align="right">{row.age}</TableCell>
+                    <TableCell align="right">{row.totalEnergy.toFixed(1)}</TableCell>
+                    <TableCell align="right">{row.totalRawUnits.toFixed(1)}</TableCell>
+                    {rawMaterialIds.map(rawId => (
+                      <TableCell key={rawId} align="right">
+                        {row.rawMaterials[rawId] ? row.rawMaterials[rawId].toFixed(2) : '-'}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </Paper>
     </Box>
   );

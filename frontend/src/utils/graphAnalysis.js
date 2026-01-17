@@ -312,6 +312,215 @@ export function analyzeIssues(rules, initialState = null) {
 }
 
 /**
+ * Calculate how many recipes/materials depend on each raw material
+ * Returns a Map of rawMaterialId -> { directRecipeCount, totalDependentMaterials, dependentMaterials[] }
+ */
+export function calculateRawMaterialUsage(rules) {
+  // Build forward dependency map: material -> materials that are produced using it
+  const usedBy = new Map();
+
+  rules.recipes.forEach(recipe => {
+    Object.keys(recipe.inputs).forEach(inputId => {
+      Object.keys(recipe.outputs).forEach(outputId => {
+        if (!usedBy.has(inputId)) usedBy.set(inputId, new Set());
+        usedBy.get(inputId).add(outputId);
+      });
+    });
+  });
+
+  const rawMaterials = rules.materials.filter(m => m.category === 'raw');
+  const result = new Map();
+
+  rawMaterials.forEach(raw => {
+    // Count direct recipes (recipes that directly use this raw material as input)
+    const directRecipeCount = rules.recipes.filter(r => r.inputs[raw.id] !== undefined).length;
+
+    // BFS to find all materials that transitively depend on this raw material
+    const visited = new Set();
+    const queue = [raw.id];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (visited.has(current)) continue;
+      visited.add(current);
+
+      const dependents = usedBy.get(current) || new Set();
+      dependents.forEach(dep => {
+        if (!visited.has(dep)) queue.push(dep);
+      });
+    }
+
+    visited.delete(raw.id); // Don't count itself
+
+    result.set(raw.id, {
+      name: raw.name,
+      directRecipeCount,
+      totalDependentMaterials: visited.size,
+      dependentMaterials: Array.from(visited),
+    });
+  });
+
+  return result;
+}
+
+/**
+ * Calculate total raw material costs for each final good
+ * Returns a Map of finalGoodId -> { name, age, rawMaterials: { rawId: quantity } }
+ */
+export function calculateRawMaterialCosts(rules) {
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const recipesByOutput = new Map();
+
+  // Build recipe lookup by output (assuming one recipe per output)
+  rules.recipes.forEach(recipe => {
+    Object.keys(recipe.outputs).forEach(outputId => {
+      recipesByOutput.set(outputId, recipe);
+    });
+  });
+
+  // Memoization cache for raw costs
+  const rawCostCache = new Map();
+
+  function getRawCosts(materialId, visited = new Set()) {
+    // Handle circular dependencies
+    if (visited.has(materialId)) {
+      return new Map();
+    }
+
+    // Return cached result
+    if (rawCostCache.has(materialId)) {
+      return new Map(rawCostCache.get(materialId));
+    }
+
+    const material = materialMap.get(materialId);
+    const costs = new Map();
+
+    // If raw material, return itself with quantity 1
+    if (material?.category === 'raw') {
+      costs.set(materialId, 1);
+      rawCostCache.set(materialId, costs);
+      return new Map(costs);
+    }
+
+    // Find recipe that produces this material
+    const recipe = recipesByOutput.get(materialId);
+    if (!recipe) {
+      rawCostCache.set(materialId, costs);
+      return costs;
+    }
+
+    // Get output quantity
+    const outputQuantity = recipe.outputs[materialId];
+
+    // Mark as visiting to detect cycles
+    visited.add(materialId);
+
+    // Recursively calculate raw costs for each input
+    Object.entries(recipe.inputs).forEach(([inputId, inputQty]) => {
+      const inputRawCosts = getRawCosts(inputId, new Set(visited));
+      inputRawCosts.forEach((rawQty, rawId) => {
+        // Scale by input quantity needed, divide by output quantity
+        const scaledCost = (rawQty * inputQty) / outputQuantity;
+        costs.set(rawId, (costs.get(rawId) || 0) + scaledCost);
+      });
+    });
+
+    rawCostCache.set(materialId, new Map(costs));
+    return costs;
+  }
+
+  // Calculate for all final goods
+  const finalGoods = rules.materials.filter(m => m.category === 'final');
+  const results = new Map();
+
+  finalGoods.forEach(finalGood => {
+    const rawCosts = getRawCosts(finalGood.id);
+    results.set(finalGood.id, {
+      name: finalGood.name,
+      age: finalGood.age,
+      rawMaterials: Object.fromEntries(rawCosts),
+    });
+  });
+
+  return results;
+}
+
+/**
+ * Calculate total energy costs for each final good
+ * Returns a Map of finalGoodId -> { name, age, totalEnergy, directEnergy }
+ */
+export function calculateEnergyCosts(rules) {
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const recipesByOutput = new Map();
+
+  rules.recipes.forEach(recipe => {
+    Object.keys(recipe.outputs).forEach(outputId => {
+      recipesByOutput.set(outputId, recipe);
+    });
+  });
+
+  // Memoization cache
+  const energyCache = new Map();
+
+  function getEnergyCost(materialId, visited = new Set()) {
+    // Handle circular dependencies
+    if (visited.has(materialId)) {
+      return 0;
+    }
+
+    if (energyCache.has(materialId)) {
+      return energyCache.get(materialId);
+    }
+
+    const material = materialMap.get(materialId);
+
+    // Raw materials have no production energy
+    if (material?.category === 'raw') {
+      energyCache.set(materialId, 0);
+      return 0;
+    }
+
+    const recipe = recipesByOutput.get(materialId);
+    if (!recipe) {
+      energyCache.set(materialId, 0);
+      return 0;
+    }
+
+    const outputQuantity = recipe.outputs[materialId];
+    visited.add(materialId);
+
+    // Energy for this recipe (per unit output)
+    let totalEnergy = recipe.energyRequired / outputQuantity;
+
+    // Add energy from inputs
+    Object.entries(recipe.inputs).forEach(([inputId, inputQty]) => {
+      const inputEnergy = getEnergyCost(inputId, new Set(visited));
+      totalEnergy += (inputEnergy * inputQty) / outputQuantity;
+    });
+
+    energyCache.set(materialId, totalEnergy);
+    return totalEnergy;
+  }
+
+  // Calculate for all final goods
+  const finalGoods = rules.materials.filter(m => m.category === 'final');
+  const results = new Map();
+
+  finalGoods.forEach(finalGood => {
+    const recipe = recipesByOutput.get(finalGood.id);
+    const directEnergy = recipe ? recipe.energyRequired / recipe.outputs[finalGood.id] : 0;
+    results.set(finalGood.id, {
+      name: finalGood.name,
+      age: finalGood.age,
+      totalEnergy: getEnergyCost(finalGood.id),
+      directEnergy,
+    });
+  });
+
+  return results;
+}
+
+/**
  * Find intermediate parts that are not used in any recipe for their own age
  */
 function findIntermediatePartsNotUsedInAge(rules) {
