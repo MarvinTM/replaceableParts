@@ -1067,7 +1067,7 @@ export const defaultRules = {
     initialWidth: 16,
     initialHeight: 16,
     initialChunkSize: 4,
-    costPerCell: 10
+    costPerCell: 1
   },
   inventorySpace: {
     baseCost: 50,

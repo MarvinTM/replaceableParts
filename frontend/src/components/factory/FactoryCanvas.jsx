@@ -1624,7 +1624,7 @@ export default function FactoryCanvas({
         if (!currentWorld) return;
         e.preventDefault();
         const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(Math.max(currentWorld.scale.x * scaleFactor, minZoomRef.current), 4);
+        const newScale = Math.min(Math.max(currentWorld.scale.x * scaleFactor, minZoomRef.current), 1);
 
         const rect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
@@ -1737,7 +1737,7 @@ export default function FactoryCanvas({
     const padding = 1.2; // 20% padding
     const scaleX = app.screen.width / (factoryPixelWidth * padding);
     const scaleY = app.screen.height / (factoryPixelHeight * padding);
-    const fitScale = Math.min(scaleX, scaleY, 2); // Cap at 2x zoom
+    const fitScale = Math.min(scaleX, scaleY, 1); // Cap at 1x zoom
 
     // Update dynamic minimum zoom to allow seeing the whole factory
     // Use a slightly smaller scale than fitScale to give some margin

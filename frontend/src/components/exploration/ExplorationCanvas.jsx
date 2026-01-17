@@ -93,7 +93,7 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
     const totalHeight = (exploredHeight + padding * 2) * TILE_HEIGHT;
     const scaleX = app.screen.width / totalWidth;
     const scaleY = app.screen.height / totalHeight;
-    const initialScale = Math.max(Math.min(scaleX, scaleY, 2), 0.5);
+    const initialScale = Math.max(Math.min(scaleX, scaleY, 1), 0.5);
 
     world.scale.set(initialScale);
     world.x = app.screen.width / 2 - center.x * initialScale;
@@ -198,7 +198,7 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
         if (!currentWorld) return;
         e.preventDefault();
         const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(Math.max(currentWorld.scale.x * scaleFactor, 0.25), 4);
+        const newScale = Math.min(Math.max(currentWorld.scale.x * scaleFactor, 0.25), 1);
 
         const rect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
@@ -257,10 +257,10 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
         const worldY = (mouseY - currentWorld.y) / currentWorld.scale.y;
 
         // Convert world to grid (approximate - for click detection)
-        // Inverse of: screenX = (gridX - gridY) * (TILE_WIDTH / 2)
-        //             screenY = (gridX + gridY) * (TILE_HEIGHT / 2)
+        // Inverse of: screenX = (gridX + gridY) * (TILE_WIDTH / 2)
+        //             screenY = (gridX - gridY) * (TILE_HEIGHT / 2)
         const gridX = Math.round((worldX / (TILE_WIDTH / 2) + worldY / (TILE_HEIGHT / 2)) / 2);
-        const gridY = Math.round((worldY / (TILE_HEIGHT / 2) - worldX / (TILE_WIDTH / 2)) / 2);
+        const gridY = Math.round((worldX / (TILE_WIDTH / 2) - worldY / (TILE_HEIGHT / 2)) / 2);
 
         const key = `${gridX},${gridY}`;
         const tile = currentMap.tiles[key];

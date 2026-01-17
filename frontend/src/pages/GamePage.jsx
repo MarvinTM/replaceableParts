@@ -461,6 +461,7 @@ function ExplorationTab() {
   const unlockExplorationNode = useGameStore((state) => state.unlockExplorationNode);
 
   const [selectedTile, setSelectedTile] = useState(null);
+  const [expandedSection, setExpandedSection] = useState('stats');
 
   if (!engineState?.explorationMap) return null;
 
@@ -478,6 +479,7 @@ function ExplorationTab() {
 
   const handleTileClick = (tile) => {
     setSelectedTile(tile);
+    setExpandedSection('selectedTile'); // Auto-expand the selected tile section
   };
 
   const handleExpand = () => {
@@ -608,7 +610,12 @@ function ExplorationTab() {
         </Box>
 
         {/* Right Sidebar */}
-        <CollapsibleSidebar sections={sidebarSections} defaultExpanded="stats" />
+        <CollapsibleSidebar
+          sections={sidebarSections}
+          defaultExpanded="stats"
+          expanded={expandedSection}
+          onExpandedChange={setExpandedSection}
+        />
       </Box>
 
       {/* Bottom Actions Panel */}

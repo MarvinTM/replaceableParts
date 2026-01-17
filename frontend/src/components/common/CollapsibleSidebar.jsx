@@ -13,12 +13,23 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 
 const SIDEBAR_WIDTH = 300;
 
-export default function CollapsibleSidebar({ sections, defaultExpanded = null }) {
+export default function CollapsibleSidebar({ sections, defaultExpanded = null, expanded = null, onExpandedChange = null }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(defaultExpanded || (sections[0]?.id ?? null));
+  const [internalExpandedSection, setInternalExpandedSection] = useState(defaultExpanded || (sections[0]?.id ?? null));
+
+  // Use controlled expanded if provided, otherwise use internal state
+  const expandedSection = expanded !== null ? expanded : internalExpandedSection;
 
   const handleAccordionChange = (panel) => (event, isExpanded) => {
-    setExpandedSection(isExpanded ? panel : null);
+    const newExpanded = isExpanded ? panel : null;
+
+    // Update internal state
+    setInternalExpandedSection(newExpanded);
+
+    // Call external handler if provided
+    if (onExpandedChange) {
+      onExpandedChange(newExpanded);
+    }
   };
 
   const toggleSidebar = () => {
