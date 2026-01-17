@@ -52,6 +52,9 @@ const ANIM_CONFIG = {
   }
 };
 
+// Idle pause duration between animation cycles in continuous mode (milliseconds)
+const CONTINUOUS_MODE_IDLE_PAUSE = 1000;
+
 // Text style for machine labels
 const MACHINE_LABEL_STYLE = new TextStyle({
   fontFamily: 'Arial, sans-serif',
@@ -610,6 +613,9 @@ export default function FactoryCanvas({
   // Track which machines/generators are currently playing animation
   const currentlyAnimatingRef = useRef({});
 
+  // Track restart times for continuous mode (when animation should restart after idle pause)
+  const continuousRestartTimesRef = useRef({});
+
   // Store latest machines/generators for ticker access
   const machinesRef = useRef(machines);
   const generatorsRef = useRef(generators);
@@ -1081,20 +1087,21 @@ export default function FactoryCanvas({
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse;
-
-            // In continuous mode, loop forever; in sometimes mode, play once per trigger
-            const isContinuousMode = machineAnimationMode === 'continuous';
-            displayObject.loop = isContinuousMode;
+            displayObject.loop = false; // Always play once, ticker handles restarts
             displayObject.stop(); // Don't auto-play
 
-            // Add completion handler to reset animation state (only matters for non-looping)
-            if (!isContinuousMode) {
-              displayObject.onComplete = () => {
-                currentlyAnimatingRef.current[machineKey] = false;
-                delete animatedSpritesRef.current[machineKey]; // Remove ref when done
-                forceRenderRef.current(); // Re-render to show idle sprite
-              };
-            }
+            const isContinuousMode = machineAnimationMode === 'continuous';
+
+            displayObject.onComplete = () => {
+              if (isContinuousMode) {
+                // In continuous mode, schedule restart after idle pause
+                continuousRestartTimesRef.current[machineKey] = Date.now() + CONTINUOUS_MODE_IDLE_PAUSE;
+              }
+              // Mark as not animating and clean up sprite
+              currentlyAnimatingRef.current[machineKey] = false;
+              delete animatedSpritesRef.current[machineKey];
+              forceRenderRef.current(); // Re-render to show idle sprite
+            };
 
             // Store reference for ticker control
             animatedSpritesRef.current[machineKey] = displayObject;
@@ -1489,21 +1496,33 @@ export default function FactoryCanvas({
         const machines = machinesRef.current || [];
 
         if (currentMode === 'continuous') {
-          // In continuous mode, mark all working, enabled machines as animating
+          // In continuous mode, animate working machines with idle pauses between cycles
+          const now = Date.now();
           let needsRerender = false;
+
           machines.forEach(m => {
             const key = `machine-${m.id}`;
             const isWorking = m.enabled && m.status === 'working';
 
-            if (isWorking && !currentlyAnimatingRef.current[key]) {
-              // Machine started working, mark as animating
-              currentlyAnimatingRef.current[key] = true;
-              needsRerender = true;
-            } else if (!isWorking && currentlyAnimatingRef.current[key]) {
-              // Machine stopped working, stop animation
-              currentlyAnimatingRef.current[key] = false;
-              delete animatedSpritesRef.current[key];
-              needsRerender = true;
+            if (isWorking) {
+              if (!currentlyAnimatingRef.current[key]) {
+                // Check if we have a scheduled restart time
+                const restartTime = continuousRestartTimesRef.current[key];
+                if (!restartTime || now >= restartTime) {
+                  // Either first time or idle pause is over, start animating
+                  currentlyAnimatingRef.current[key] = true;
+                  delete continuousRestartTimesRef.current[key];
+                  needsRerender = true;
+                }
+              }
+            } else {
+              // Machine stopped working, clean up
+              if (currentlyAnimatingRef.current[key]) {
+                currentlyAnimatingRef.current[key] = false;
+                delete animatedSpritesRef.current[key];
+                needsRerender = true;
+              }
+              delete continuousRestartTimesRef.current[key];
             }
           });
 
