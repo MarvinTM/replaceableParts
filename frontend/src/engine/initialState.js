@@ -34,24 +34,14 @@ export const initialState = {
 
   // Starter Inventory
   inventory: {
-    basic_assembler: 2,
+    carpenters_bench: 2,
+    blacksmiths_anvil: 1,
     stone_furnace: 2,
     treadwheel: 1
   },
 
   // Deployed Machines
-  machines: [
-    {
-      id: 'starter_assembler',
-      type: 'basic_assembler',
-      recipeId: 'planks',
-      internalBuffer: {},
-      status: 'idle',
-      enabled: true,
-      x: 2,
-      y: 2
-    }
-  ],
+  machines: [],
 
   // Deployed Generators
   generators: [

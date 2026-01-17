@@ -933,7 +933,7 @@ export const defaultRules = {
       allowedRecipes: [
         // Intermediates
         'iron_plate', 'iron_rod', 'nails', 'iron_wire', 'iron_bracket', 'hinges',
-        'iron_chain', 'iron_axle', 'wheel',
+        'iron_chain', 'iron_axle', 'wheel', 'copper_sheet',
         // Tools
         'hammer', 'pickaxe', 'shovel', 'axe', 'saw', 'chisel', 'mallet', 'bucket', 'tool_rack',
         // Weapons & Military
@@ -979,6 +979,8 @@ export const defaultRules = {
         'fountain', 'aqueduct_section', 'bathtub', 'sink', 'chimney',
         // Precision Mechanical
         'clock', 'pocket_watch', 'padlock', 'pressure_gauge', 'wrench',
+        // Bootstrap components for Age 3 machines
+        'gear', 'boiler',
         // Self-build
         'tinkers_bench'
       ]
@@ -1026,6 +1028,8 @@ export const defaultRules = {
         'gear', 'crankshaft', 'piston', 'coupling',
         // Steam Components
         'steam_valve', 'drive_shaft', 'flywheel', 'boiler', 'camshaft',
+        // Bootstrap for Steel Forge
+        'steel_plate',
         // Steam-era Machines
         'sewing_machine', 'printing_press', 'mechanical_loom', 'rotary_engine', 'steam_hammer',
         // Home
@@ -1047,6 +1051,8 @@ export const defaultRules = {
         'steel_rivet', 'steel_spring', 'ball_bearing', 'steel_chain', 'steel_pipe',
         // Steel Products
         'tool_box', 'safe', 'vault_door', 'manhole_cover',
+        // Bootstrap for Heavy Assembly
+        'crane',
         // Self-build
         'steel_forge'
       ]
@@ -1068,6 +1074,8 @@ export const defaultRules = {
         'industrial_press', 'conveyor_belt',
         // Large Items
         'pipe_organ', 'plumbing_system',
+        // Bootstrap for Precision Assembler
+        'electric_coil', 'electric_motor',
         // Self-build
         'heavy_assembly', 'foundry'
       ]
