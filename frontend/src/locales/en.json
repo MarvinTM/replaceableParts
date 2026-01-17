@@ -38,7 +38,8 @@
       "flyToInventory": "Fly to Inventory",
       "collectThenFly": "Collect then Fly"
     },
-    "moreComingSoon": "More settings coming soon..."
+    "moreComingSoon": "More settings coming soon...",
+    "disableResearch": "Disable Research (unlock all recipes)"
   },
   "login": {
     "title": "Welcome to replaceableParts",

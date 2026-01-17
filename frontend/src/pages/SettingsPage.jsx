@@ -4,9 +4,11 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import Switch from '@mui/material/Switch';
 import SettingsIcon from '@mui/icons-material/Settings';
 import useGameStore from '../stores/gameStore';
 
@@ -15,9 +17,11 @@ export default function SettingsPage() {
   const rules = useGameStore((state) => state.rules);
   const machineAnimationMode = useGameStore((state) => state.machineAnimationMode);
   const productionAnimationStyle = useGameStore((state) => state.productionAnimationStyle);
+  const disableResearch = useGameStore((state) => state.disableResearch);
   const setExpansionType = useGameStore((state) => state.setExpansionType);
   const setMachineAnimationMode = useGameStore((state) => state.setMachineAnimationMode);
   const setProductionAnimationStyle = useGameStore((state) => state.setProductionAnimationStyle);
+  const setDisableResearch = useGameStore((state) => state.setDisableResearch);
 
   const handleLanguageChange = (event) => {
     i18n.changeLanguage(event.target.value);
@@ -33,6 +37,10 @@ export default function SettingsPage() {
 
   const handleProductionAnimationChange = (event) => {
     setProductionAnimationStyle(event.target.value);
+  };
+
+  const handleDisableResearchChange = (event) => {
+    setDisableResearch(event.target.checked);
   };
 
   return (
@@ -103,6 +111,17 @@ export default function SettingsPage() {
               </Select>
             </FormControl>
           )}
+
+          <FormControlLabel
+            sx={{ mt: 3, display: 'flex' }}
+            control={
+              <Switch
+                checked={disableResearch}
+                onChange={handleDisableResearchChange}
+              />
+            }
+            label={t('settings.disableResearch')}
+          />
 
           <Box sx={{ mt: 4, textAlign: 'center', py: 4 }}>
             <SettingsIcon sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />

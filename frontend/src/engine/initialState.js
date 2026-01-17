@@ -18,9 +18,7 @@ export const initialState = {
     chunks: [{ x: 0, y: 0, width: 16, height: 16 }],
     placements: [
       // Starting generator: Treadwheel (Manual power)
-      { id: 'starter_treadwheel', x: 4, y: 4, structureType: 'treadwheel' },
-      // Starting machine: Basic Assembler
-      { id: 'starter_assembler', x: 2, y: 2, structureType: 'basic_assembler' }
+      { id: 'starter_treadwheel', x: 4, y: 4, structureType: 'treadwheel' }
     ]
   },
 

@@ -38,7 +38,8 @@
       "flyToInventory": "Volar al Inventario",
       "collectThenFly": "Recolectar y Volar"
     },
-    "moreComingSoon": "Más opciones próximamente..."
+    "moreComingSoon": "Más opciones próximamente...",
+    "disableResearch": "Desactivar Investigación (desbloquear todas las recetas)"
   },
   "login": {
     "title": "Bienvenido a replaceableParts",

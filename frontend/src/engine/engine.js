@@ -956,6 +956,16 @@ function unlockRecipe(state, rules, payload) {
   return { state: newState, error: null };
 }
 
+function unlockAllRecipes(state, rules, payload) {
+  const newState = deepClone(state);
+  const allRecipeIds = rules.recipes.map(r => r.id);
+
+  newState.discoveredRecipes = [...allRecipeIds];
+  newState.unlockedRecipes = [...allRecipeIds];
+
+  return { state: newState, error: null };
+}
+
 function unblockMachine(state, rules, payload) {
   const newState = deepClone(state);
   const { machineId } = payload;
@@ -1200,6 +1210,9 @@ export function engine(state, rules, action) {
 
     case 'UNLOCK_RECIPE':
       return unlockRecipe(state, rules, action.payload);
+
+    case 'UNLOCK_ALL_RECIPES':
+      return unlockAllRecipes(state, rules, action.payload);
 
     case 'UNBLOCK_MACHINE':
       return unblockMachine(state, rules, action.payload);

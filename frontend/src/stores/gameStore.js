@@ -25,6 +25,7 @@ const useGameStore = create(
       // UI preferences
       machineAnimationMode: 'continuous', // 'disabled' | 'sometimes' | 'continuous'
       productionAnimationStyle: 'floatingFadeOut', // 'floatingFadeOut' | 'popAndFloat' | 'flyToInventory' | 'collectThenFly'
+      disableResearch: false, // If true, all recipes are immediately unlocked
 
       // Production events for animations (cleared after consumed)
       pendingProductionEvents: [],
@@ -139,6 +140,10 @@ const useGameStore = create(
         return get().dispatch({ type: 'UNLOCK_RECIPE', payload: { recipeId } });
       },
 
+      unlockAllRecipes: () => {
+        return get().dispatch({ type: 'UNLOCK_ALL_RECIPES', payload: {} });
+      },
+
       unblockMachine: (machineId) => {
         return get().dispatch({ type: 'UNBLOCK_MACHINE', payload: { machineId } });
       },
@@ -178,6 +183,13 @@ const useGameStore = create(
 
       setProductionAnimationStyle: (style) => {
         set({ productionAnimationStyle: style }, false, 'setProductionAnimationStyle');
+      },
+
+      setDisableResearch: (disabled) => {
+        set({ disableResearch: disabled }, false, 'setDisableResearch');
+        if (disabled && get().engineState) {
+          get().unlockAllRecipes();
+        }
       },
 
       clearProductionEvents: () => {
