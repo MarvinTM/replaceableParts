@@ -891,7 +891,7 @@ export const defaultRules = {
       name: 'Stone Furnace',
       sizeX: 2, sizeY: 2,
       energyConsumption: 1,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 4, speed: 0.05 },
       allowedRecipes: [
         'iron_ingot', 'copper_ingot', 'bricks', 'glass', 'stone_bricks', 'aluminum_ingot', 'silicon', // Added advanced smelting
         // Age 1 stone/ceramic processing

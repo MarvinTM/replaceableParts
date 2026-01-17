@@ -25,7 +25,12 @@
   "settings": {
     "title": "Configuración",
     "general": "General",
-    "enableAnimations": "Habilitar Animaciones",
+    "machineAnimation": "Animaciones de Máquinas",
+    "machineAnimations": {
+      "disabled": "Deshabilitadas",
+      "sometimes": "Activadas a Veces",
+      "continuous": "Animación Continua"
+    },
     "productionAnimation": "Estilo de Animación de Producción",
     "productionAnimations": {
       "floatingFadeOut": "Flotante con Desvanecimiento",

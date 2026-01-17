@@ -4,21 +4,19 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import FormControl from '@mui/material/FormControl';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
-import Switch from '@mui/material/Switch';
 import SettingsIcon from '@mui/icons-material/Settings';
 import useGameStore from '../stores/gameStore';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const rules = useGameStore((state) => state.rules);
-  const animationsEnabled = useGameStore((state) => state.animationsEnabled);
+  const machineAnimationMode = useGameStore((state) => state.machineAnimationMode);
   const productionAnimationStyle = useGameStore((state) => state.productionAnimationStyle);
   const setExpansionType = useGameStore((state) => state.setExpansionType);
-  const toggleAnimations = useGameStore((state) => state.toggleAnimations);
+  const setMachineAnimationMode = useGameStore((state) => state.setMachineAnimationMode);
   const setProductionAnimationStyle = useGameStore((state) => state.setProductionAnimationStyle);
 
   const handleLanguageChange = (event) => {
@@ -29,8 +27,8 @@ export default function SettingsPage() {
     setExpansionType(event.target.value);
   };
 
-  const handleAnimationsToggle = () => {
-    toggleAnimations();
+  const handleMachineAnimationModeChange = (event) => {
+    setMachineAnimationMode(event.target.value);
   };
 
   const handleProductionAnimationChange = (event) => {
@@ -75,19 +73,21 @@ export default function SettingsPage() {
             </Select>
           </FormControl>
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={animationsEnabled}
-                onChange={handleAnimationsToggle}
-                color="primary"
-              />
-            }
-            label={t('settings.enableAnimations')}
-            sx={{ mt: 3 }}
-          />
+          <FormControl fullWidth sx={{ mt: 3 }}>
+            <InputLabel id="machine-anim-label">{t('settings.machineAnimation')}</InputLabel>
+            <Select
+              labelId="machine-anim-label"
+              value={machineAnimationMode}
+              label={t('settings.machineAnimation')}
+              onChange={handleMachineAnimationModeChange}
+            >
+              <MenuItem value="disabled">{t('settings.machineAnimations.disabled')}</MenuItem>
+              <MenuItem value="sometimes">{t('settings.machineAnimations.sometimes')}</MenuItem>
+              <MenuItem value="continuous">{t('settings.machineAnimations.continuous')}</MenuItem>
+            </Select>
+          </FormControl>
 
-          {animationsEnabled && (
+          {machineAnimationMode !== 'disabled' && (
             <FormControl fullWidth sx={{ mt: 3 }}>
               <InputLabel id="production-anim-label">{t('settings.productionAnimation')}</InputLabel>
               <Select

@@ -561,9 +561,11 @@ export default function FactoryCanvas({
   onMachineRightClick,
   onGeneratorRightClick,
   engineState,
-  animationsEnabled = true,
+  machineAnimationMode = 'continuous', // 'disabled' | 'sometimes' | 'continuous'
   inventoryPanelRef = null
 }) {
+  // Derive animationsEnabled from machineAnimationMode
+  const animationsEnabled = machineAnimationMode !== 'disabled';
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const worldRef = useRef(null);
@@ -573,6 +575,7 @@ export default function FactoryCanvas({
   const lowerWallSpritesRef = useRef([]); // Store lower wall sprites for alpha updates
   const floorDimensionsRef = useRef({ width: 0, height: 0 }); // Store floor dimensions for hover check
   const animationsEnabledRef = useRef(animationsEnabled); // Track animations enabled state
+  const machineAnimationModeRef = useRef(machineAnimationMode); // Track animation mode
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   // Production animation state from store
@@ -617,10 +620,11 @@ export default function FactoryCanvas({
     generatorsRef.current = generators;
   }, [machines, generators]);
 
-  // Update animationsEnabled ref when it changes
+  // Update animationsEnabled and machineAnimationMode refs when they change
   useEffect(() => {
     animationsEnabledRef.current = animationsEnabled;
-  }, [animationsEnabled]);
+    machineAnimationModeRef.current = machineAnimationMode;
+  }, [animationsEnabled, machineAnimationMode]);
 
   // Update inventory panel ref when it changes
   useEffect(() => {
@@ -1077,15 +1081,20 @@ export default function FactoryCanvas({
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse;
-            displayObject.loop = false; // Play once per trigger
+
+            // In continuous mode, loop forever; in sometimes mode, play once per trigger
+            const isContinuousMode = machineAnimationMode === 'continuous';
+            displayObject.loop = isContinuousMode;
             displayObject.stop(); // Don't auto-play
 
-            // Add completion handler to reset animation state
-            displayObject.onComplete = () => {
-              currentlyAnimatingRef.current[machineKey] = false;
-              delete animatedSpritesRef.current[machineKey]; // Remove ref when done
-              forceRenderRef.current(); // Re-render to show idle sprite
-            };
+            // Add completion handler to reset animation state (only matters for non-looping)
+            if (!isContinuousMode) {
+              displayObject.onComplete = () => {
+                currentlyAnimatingRef.current[machineKey] = false;
+                delete animatedSpritesRef.current[machineKey]; // Remove ref when done
+                forceRenderRef.current(); // Re-render to show idle sprite
+              };
+            }
 
             // Store reference for ticker control
             animatedSpritesRef.current[machineKey] = displayObject;
@@ -1469,28 +1478,56 @@ export default function FactoryCanvas({
       app.stage.addChild(productionAnimContainer);
       productionAnimContainerRef.current = productionAnimContainer;
 
-      // Setup animation ticker to trigger random animations for machines only
+      // Setup animation ticker to trigger animations for machines
+      // In 'sometimes' mode: random triggers; in 'continuous' mode: always animate working machines
       // Generators animate continuously when enabled
       app.ticker.add(() => {
         // Skip animation logic if animations are disabled
         if (!animationsEnabledRef.current) return;
 
-        // Only check machines for random animation triggers
-        const machineItems = (machinesRef.current || []).map(m => ({
-          key: `machine-${m.id}`,
-          type: 'machine',
-          id: m.id
-        }));
+        const currentMode = machineAnimationModeRef.current;
+        const machines = machinesRef.current || [];
 
-        machineItems.forEach(({ key, type, id }) => {
-          // Check if should trigger
-          if (shouldTriggerAnimation(id, type)) {
-            // Mark as animating
-            currentlyAnimatingRef.current[key] = true;
-            // Trigger re-render to create AnimatedSprite
+        if (currentMode === 'continuous') {
+          // In continuous mode, mark all working, enabled machines as animating
+          let needsRerender = false;
+          machines.forEach(m => {
+            const key = `machine-${m.id}`;
+            const isWorking = m.enabled && m.status === 'working';
+
+            if (isWorking && !currentlyAnimatingRef.current[key]) {
+              // Machine started working, mark as animating
+              currentlyAnimatingRef.current[key] = true;
+              needsRerender = true;
+            } else if (!isWorking && currentlyAnimatingRef.current[key]) {
+              // Machine stopped working, stop animation
+              currentlyAnimatingRef.current[key] = false;
+              delete animatedSpritesRef.current[key];
+              needsRerender = true;
+            }
+          });
+
+          if (needsRerender) {
             forceRenderRef.current();
           }
-        });
+        } else {
+          // 'sometimes' mode: random animation triggers
+          const machineItems = machines.map(m => ({
+            key: `machine-${m.id}`,
+            type: 'machine',
+            id: m.id
+          }));
+
+          machineItems.forEach(({ key, type, id }) => {
+            // Check if should trigger
+            if (shouldTriggerAnimation(id, type)) {
+              // Mark as animating
+              currentlyAnimatingRef.current[key] = true;
+              // Trigger re-render to create AnimatedSprite
+              forceRenderRef.current();
+            }
+          });
+        }
 
         // Play any machine sprites that are marked as animating
         Object.entries(animatedSpritesRef.current).forEach(([key, sprite]) => {

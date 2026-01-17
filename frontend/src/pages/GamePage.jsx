@@ -57,7 +57,7 @@ function FactoryTab() {
   const { t } = useTranslation();
   const engineState = useGameStore((state) => state.engineState);
   const rules = useGameStore((state) => state.rules);
-  const animationsEnabled = useGameStore((state) => state.animationsEnabled);
+  const machineAnimationMode = useGameStore((state) => state.machineAnimationMode);
   const buyFloorSpace = useGameStore((state) => state.buyFloorSpace);
   const addMachine = useGameStore((state) => state.addMachine);
   const addGenerator = useGameStore((state) => state.addGenerator);
@@ -399,7 +399,7 @@ function FactoryTab() {
                 onMachineRightClick={handleMachineRightClick}
                 onGeneratorRightClick={handleGeneratorRightClick}
                 engineState={engineState}
-                animationsEnabled={animationsEnabled}
+                machineAnimationMode={machineAnimationMode}
                 inventoryPanelRef={inventoryPanelRef}
               />
             </Box>

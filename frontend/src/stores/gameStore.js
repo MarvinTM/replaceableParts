@@ -23,7 +23,7 @@ const useGameStore = create(
       tickInterval: null,
 
       // UI preferences
-      animationsEnabled: true,
+      machineAnimationMode: 'continuous', // 'disabled' | 'sometimes' | 'continuous'
       productionAnimationStyle: 'floatingFadeOut', // 'floatingFadeOut' | 'popAndFloat' | 'flyToInventory' | 'collectThenFly'
 
       // Production events for animations (cleared after consumed)
@@ -172,10 +172,8 @@ const useGameStore = create(
         }), false, 'setExpansionType');
       },
 
-      toggleAnimations: () => {
-        set((state) => ({
-          animationsEnabled: !state.animationsEnabled
-        }), false, 'toggleAnimations');
+      setMachineAnimationMode: (mode) => {
+        set({ machineAnimationMode: mode }, false, 'setMachineAnimationMode');
       },
 
       setProductionAnimationStyle: (style) => {
