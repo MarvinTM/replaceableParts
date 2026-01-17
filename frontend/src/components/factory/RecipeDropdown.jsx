@@ -171,6 +171,7 @@ export default function RecipeDropdown({
                   secondary={
                     <RecipeIODisplay recipe={recipe} materials={rules?.materials} iconSize={18} />
                   }
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
               </ListItemButton>
             ))
