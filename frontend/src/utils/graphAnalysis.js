@@ -459,29 +459,35 @@ function findRecipeAgeIssues(rules) {
 }
 
 /**
- * Find machines that can only be produced by themselves (circular dependency)
+ * Find machines with circular production dependencies.
+ * This detects:
+ * 1. Direct self-dependencies: machine's recipe can only be run by itself
+ * 2. Longer cycles: A requires B, B requires C, C requires A
+ *
+ * A machine "requires" another if, to manufacture it, the only machines capable
+ * of running the necessary recipe(s) include that other machine.
  */
 function findMachineCycleIssues(rules, initialState = null) {
-  const issues = [];
   const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const machineMap = new Map(rules.machines.map(m => [m.id, m]));
   const machineAgeMap = new Map();
 
-  // Create set of starter items from initial state
-  const starterItems = new Set();
+  // Create set of starter machines from initial state (bootstrapped machines)
+  const starterMachines = new Set();
   if (initialState) {
     // Items in inventory
     if (initialState.inventory) {
-      Object.keys(initialState.inventory).forEach(key => starterItems.add(key));
+      Object.keys(initialState.inventory).forEach(key => starterMachines.add(key));
     }
     // Items already deployed (machines/generators)
     if (initialState.floorSpace && initialState.floorSpace.placements) {
       initialState.floorSpace.placements.forEach(p => {
-        if (p.structureType) starterItems.add(p.structureType);
+        if (p.structureType) starterMachines.add(p.structureType);
       });
     }
-    // Deployed machines list might be redundant but safe to check
+    // Deployed machines list
     if (initialState.machines) {
-      initialState.machines.forEach(m => starterItems.add(m.type));
+      initialState.machines.forEach(m => starterMachines.add(m.type));
     }
   }
 
@@ -496,55 +502,160 @@ function findMachineCycleIssues(rules, initialState = null) {
     }
   });
 
-  // For each machine, find inputs needed to produce it
+  // Build dependency graph: machine -> set of machines it depends on
+  // A machine M depends on machine N if N is required to produce M
+  const dependencies = new Map(); // machineId -> Set of machineIds it depends on
+  const dependencyReasons = new Map(); // "machineId->depId" -> reason string
+
   rules.machines.forEach(machine => {
     const machineAge = machineAgeMap.get(machine.id);
     const machineItemId = machine.itemId || machine.id;
+    const deps = new Set();
+    dependencies.set(machine.id, deps);
 
-    // If we start with this machine, the cycle is broken (bootstrapped)
-    if (starterItems.has(machineItemId)) return;
-    
+    // If bootstrapped, no dependencies matter
+    if (starterMachines.has(machineItemId)) return;
+
     // Find recipes that output this machine's item
     const producingRecipes = rules.recipes.filter(r => r.outputs[machineItemId]);
-
     if (producingRecipes.length === 0) return;
 
-    // Check each input of these recipes
+    // Check 1: Which machines can RUN the recipe that produces this machine?
+    const machinesThatCanProduceThis = new Set();
     producingRecipes.forEach(recipe => {
-      Object.keys(recipe.inputs).forEach(inputId => {
-        // Find how this input is produced
-        const inputProducingRecipes = rules.recipes.filter(r => r.outputs[inputId]);
-        
-        // If the input is raw (no recipes), it's fine
-        if (inputProducingRecipes.length === 0) return;
-
-        // Check which machines can run the input-producing recipes
-        // We only care about machines that are available at or before the current machine's age
-        // because we are looking for bootstrap issues
-        const capableMachinesForInput = new Set();
-        
-        inputProducingRecipes.forEach(r => {
-          const machinesForRecipe = rules.machines.filter(m => m.allowedRecipes.includes(r.id));
-          machinesForRecipe.forEach(m => {
-             const mAge = machineAgeMap.get(m.id);
-             // If another machine of equal or lower age can produce it, we are fine
-             if (mAge <= machineAge) {
-               capableMachinesForInput.add(m.id);
-             }
-          });
-        });
-
-        // If the ONLY capable machine (of relevant age) is the machine itself
-        if (capableMachinesForInput.size === 1 && capableMachinesForInput.has(machine.id)) {
-          issues.push({
-            machineId: machine.id,
-            machineName: machine.name,
-            partId: inputId,
-            partName: materialMap.get(inputId)?.name || inputId
-          });
+      rules.machines.forEach(m => {
+        if (m.allowedRecipes.includes(recipe.id)) {
+          const mAge = machineAgeMap.get(m.id);
+          if (mAge <= machineAge) {
+            machinesThatCanProduceThis.add(m.id);
+          }
         }
       });
     });
+
+    // If only specific machines can produce this, we depend on them
+    if (machinesThatCanProduceThis.size > 0) {
+      // We depend on ALL of these machines (need at least one)
+      // But for cycle detection, if the ONLY option includes ourselves, that's a problem
+      // We track all required machines
+      machinesThatCanProduceThis.forEach(mId => {
+        if (mId !== machine.id || machinesThatCanProduceThis.size === 1) {
+          // Only add self-dependency if it's the ONLY option
+          if (machinesThatCanProduceThis.size === 1) {
+            deps.add(mId);
+            dependencyReasons.set(`${machine.id}->${mId}`, `recipe '${producingRecipes[0].id}' can only be run by this machine`);
+          }
+        }
+      });
+    }
+
+    // Check 2: For each input needed, which machines can produce it?
+    producingRecipes.forEach(recipe => {
+      Object.keys(recipe.inputs).forEach(inputId => {
+        const inputProducingRecipes = rules.recipes.filter(r => r.outputs[inputId]);
+
+        // If raw material (no recipe), skip
+        if (inputProducingRecipes.length === 0) return;
+
+        // Find all machines that can produce this input (at or before our age)
+        const machinesForInput = new Set();
+        inputProducingRecipes.forEach(r => {
+          rules.machines.forEach(m => {
+            if (m.allowedRecipes.includes(r.id)) {
+              const mAge = machineAgeMap.get(m.id);
+              if (mAge <= machineAge) {
+                machinesForInput.add(m.id);
+              }
+            }
+          });
+        });
+
+        // If only ONE machine can produce this input, we depend on it
+        if (machinesForInput.size === 1) {
+          const depMachine = Array.from(machinesForInput)[0];
+          deps.add(depMachine);
+          const inputName = materialMap.get(inputId)?.name || inputId;
+          dependencyReasons.set(`${machine.id}->${depMachine}`, `needs '${inputName}' which only this machine can produce`);
+        }
+      });
+    });
+  });
+
+  // Detect cycles using DFS with coloring
+  // WHITE (0) = unvisited, GRAY (1) = in current path, BLACK (2) = fully processed
+  const color = new Map();
+  const parent = new Map();
+  const cycles = [];
+
+  rules.machines.forEach(m => color.set(m.id, 0));
+
+  function dfs(machineId, path) {
+    color.set(machineId, 1); // GRAY - currently exploring
+    path.push(machineId);
+
+    const deps = dependencies.get(machineId) || new Set();
+    for (const depId of deps) {
+      if (!machineMap.has(depId)) continue; // Skip non-machine dependencies
+
+      if (color.get(depId) === 1) {
+        // Found a cycle! Extract it from the path
+        const cycleStart = path.indexOf(depId);
+        const cyclePath = path.slice(cycleStart);
+        cyclePath.push(depId); // Close the cycle
+        cycles.push(cyclePath);
+      } else if (color.get(depId) === 0) {
+        dfs(depId, path);
+      }
+    }
+
+    path.pop();
+    color.set(machineId, 2); // BLACK - fully processed
+  }
+
+  // Run DFS from each unvisited machine
+  rules.machines.forEach(machine => {
+    if (color.get(machine.id) === 0) {
+      dfs(machine.id, []);
+    }
+  });
+
+  // Convert cycles to issue format
+  const issues = [];
+  const seenCycles = new Set(); // Avoid duplicate cycle reports
+
+  cycles.forEach(cyclePath => {
+    // Normalize cycle to avoid duplicates (start from smallest ID)
+    const cycleOnly = cyclePath.slice(0, -1); // Remove the closing duplicate
+    const minIdx = cycleOnly.indexOf(cycleOnly.reduce((a, b) => a < b ? a : b));
+    const normalized = [...cycleOnly.slice(minIdx), ...cycleOnly.slice(0, minIdx)].join('->');
+
+    if (seenCycles.has(normalized)) return;
+    seenCycles.add(normalized);
+
+    // Build descriptive message
+    const cycleDescription = cyclePath.map(id => machineMap.get(id)?.name || id).join(' → ');
+
+    // For single-machine cycles (self-dependency)
+    if (cyclePath.length === 2) {
+      const machineId = cyclePath[0];
+      const machine = machineMap.get(machineId);
+      const reason = dependencyReasons.get(`${machineId}->${machineId}`) || 'requires itself';
+      issues.push({
+        type: 'self_dependency',
+        machineId,
+        machineName: machine?.name || machineId,
+        cycle: cycleDescription,
+        reason
+      });
+    } else {
+      // Multi-machine cycle
+      issues.push({
+        type: 'circular_dependency',
+        cycle: cycleDescription,
+        machineIds: cycleOnly,
+        machineNames: cycleOnly.map(id => machineMap.get(id)?.name || id)
+      });
+    }
   });
 
   return issues;

@@ -938,15 +938,19 @@ export default function FactoryCanvas({
       // Skip if generator type is not set (backwards compatibility)
       if (!gen.type) return;
 
-      // Look up size from rules based on generator type
+      // Look up size and scaling options from rules based on generator type
       let sizeX = 1;
       let sizeY = 1;
+      let spriteScale = 1.0;
+      let disableAutoScale = false;
 
       if (rules && rules.generators) {
         const genConfig = rules.generators.find(g => g.id === gen.type);
         if (genConfig) {
           sizeX = genConfig.sizeX;
           sizeY = genConfig.sizeY;
+          spriteScale = genConfig.spriteScale ?? 1.0;
+          disableAutoScale = genConfig.disableAutoScale ?? false;
         }
       }
 
@@ -1007,13 +1011,18 @@ export default function FactoryCanvas({
         // Position at the visual bottom of the footprint diamond to avoid "floating"
         displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
 
-        // Scale sprite to fit the isometric footprint
-        // Expected width for a sizeX × sizeY structure: (sizeX + sizeY) * TILE_WIDTH / 2
-        const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+        // Scale sprite to fit the isometric footprint (unless disabled)
         const spriteWidth = displayObject.texture.width;
         if (spriteWidth > 0) {
-          const scale = expectedWidth / spriteWidth;
-          displayObject.scale.set(scale);
+          if (disableAutoScale) {
+            // Use spriteScale directly (no auto-fitting to footprint)
+            displayObject.scale.set(spriteScale);
+          } else {
+            // Auto-fit to footprint, then apply spriteScale multiplier
+            const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+            const autoScale = expectedWidth / spriteWidth;
+            displayObject.scale.set(autoScale * spriteScale);
+          }
         }
 
         // zIndex should be based on visual screen Y for correct isometric sorting
@@ -1034,15 +1043,19 @@ export default function FactoryCanvas({
       // Skip if machine type is not set (backwards compatibility)
       if (!machine.type) return;
 
-      // Look up size from rules based on machine type
+      // Look up size and scaling options from rules based on machine type
       let sizeX = 1;
       let sizeY = 1;
+      let spriteScale = 1.0;
+      let disableAutoScale = false;
 
       if (rules && rules.machines) {
         const machineConfig = rules.machines.find(m => m.id === machine.type);
         if (machineConfig) {
           sizeX = machineConfig.sizeX;
           sizeY = machineConfig.sizeY;
+          spriteScale = machineConfig.spriteScale ?? 1.0;
+          disableAutoScale = machineConfig.disableAutoScale ?? false;
         }
       }
 
@@ -1132,13 +1145,18 @@ export default function FactoryCanvas({
         // Position at the visual bottom of the footprint diamond to avoid "floating"
         displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
 
-        // Scale sprite to fit the isometric footprint
-        // Expected width for a sizeX × sizeY structure: (sizeX + sizeY) * TILE_WIDTH / 2
-        const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+        // Scale sprite to fit the isometric footprint (unless disabled)
         const spriteWidth = displayObject.texture.width;
         if (spriteWidth > 0) {
-          const scale = expectedWidth / spriteWidth;
-          displayObject.scale.set(scale);
+          if (disableAutoScale) {
+            // Use spriteScale directly (no auto-fitting to footprint)
+            displayObject.scale.set(spriteScale);
+          } else {
+            // Auto-fit to footprint, then apply spriteScale multiplier
+            const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+            const autoScale = expectedWidth / spriteWidth;
+            displayObject.scale.set(autoScale * spriteScale);
+          }
         }
 
         // zIndex based on screen Y
@@ -1384,12 +1402,28 @@ export default function FactoryCanvas({
         const sprite = new Sprite(texture);
         sprite.anchor.set(0.5, 1); // Bottom center anchor
 
-        // Scale to actual building size: (sizeX + sizeY) * TILE_WIDTH / 2
-        const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+        // Look up scaling options from config
+        let spriteScale = 1.0;
+        let disableAutoScale = false;
+        if (typeId && rules) {
+          const configList = isMachine ? rules.machines : rules.generators;
+          const config = configList?.find(c => c.id === typeId);
+          if (config) {
+            spriteScale = config.spriteScale ?? 1.0;
+            disableAutoScale = config.disableAutoScale ?? false;
+          }
+        }
+
+        // Scale sprite to fit the isometric footprint (unless disabled)
         const spriteWidth = texture.width;
         if (spriteWidth > 0) {
-          const scale = expectedWidth / spriteWidth;
-          sprite.scale.set(scale);
+          if (disableAutoScale) {
+            sprite.scale.set(spriteScale);
+          } else {
+            const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+            const autoScale = expectedWidth / spriteWidth;
+            sprite.scale.set(autoScale * spriteScale);
+          }
         }
 
         // Position at the center of the footprint

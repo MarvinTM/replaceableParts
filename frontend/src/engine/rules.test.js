@@ -45,7 +45,13 @@ describe('Game Rules Validation', () => {
   });
 
   it('should have no circular machine dependencies', () => {
-    const formatted = issues.machineCycleIssues.map(i => `${i.machineName} needs ${i.partName}`);
+    const formatted = issues.machineCycleIssues.map(i => {
+      if (i.type === 'self_dependency') {
+        return `${i.machineName}: ${i.reason}`;
+      } else {
+        return `Cycle: ${i.cycle}`;
+      }
+    });
     expect(issues.machineCycleIssues, `Circular dependencies: ${formatted.join('; ')}`).toEqual([]);
   });
 });

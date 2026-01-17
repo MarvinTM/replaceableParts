@@ -910,6 +910,7 @@ export const defaultRules = {
       sizeX: 1, sizeY: 2,
       energyConsumption: 1,
       animation: { frames: 4, speed: 0.1 },
+      disableAutoScale: true,
       allowedRecipes: [
         // Intermediates
         'planks', 'wooden_beam', 'wooden_dowel', 'wooden_shingle', 'wooden_handle', 'rope',
@@ -929,7 +930,7 @@ export const defaultRules = {
       name: "Blacksmith's Anvil",
       sizeX: 1, sizeY: 1,
       energyConsumption: 2,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 4, speed: 0.02 },
       allowedRecipes: [
         // Intermediates
         'iron_plate', 'iron_rod', 'nails', 'iron_wire', 'iron_bracket', 'hinges',
@@ -941,7 +942,7 @@ export const defaultRules = {
         // Metal items
         'iron_grate', 'anchor', 'bellows', 'water_wheel', 'anvil',
         // Self-build
-        'blacksmiths_anvil', 'forge', 'carpenters_bench'
+        'masons_table', 'forge', 'carpenters_bench'
       ]
     },
     {
@@ -955,20 +956,7 @@ export const defaultRules = {
         // Stone construction
         'stone_wall', 'stone_pillar', 'well', 'bridge_section', 'gate',
         // Self-build
-        'masons_table', 'treadwheel', 'stone_furnace'
-      ]
-    },
-    // ============================================
-    // AGE 2 MACHINES
-    // ============================================
-    {
-      id: 'tinkers_bench',
-      itemId: 'tinkers_bench',
-      name: "Tinker's Bench",
-      sizeX: 1, sizeY: 2,
-      energyConsumption: 3,
-      animation: { frames: 4, speed: 0.1 },
-      allowedRecipes: [
+        'treadwheel', 'stone_furnace',
         // Copper/Brass Intermediates
         'copper_sheet', 'pipe', 'copper_tubing', 'copper_rod', 'brass_sheet',
         // Scientific Instruments
@@ -980,11 +968,12 @@ export const defaultRules = {
         // Precision Mechanical
         'clock', 'pocket_watch', 'padlock', 'pressure_gauge', 'wrench',
         // Bootstrap components for Age 3 machines
-        'gear', 'boiler',
-        // Self-build
-        'tinkers_bench'
+        'gear', 'boiler'
       ]
     },
+    // ============================================
+    // AGE 2 MACHINES
+    // ============================================
     {
       id: 'glassblowers_workshop',
       itemId: 'glassblowers_workshop',
