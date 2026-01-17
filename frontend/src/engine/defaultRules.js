@@ -424,7 +424,6 @@ export const defaultRules = {
     { id: 'masons_table', name: "Mason's Table", basePrice: 50, category: 'equipment', weight: 25, age: 1 },
     { id: 'stone_furnace', name: 'Stone Furnace', basePrice: 50, category: 'equipment', weight: 30, age: 1 },
     // Machines - Age 2
-    { id: 'tinkers_bench', name: "Tinker's Bench", basePrice: 150, category: 'equipment', weight: 20, age: 2 },
     { id: 'glassblowers_workshop', name: "Glassblower's Workshop", basePrice: 120, category: 'equipment', weight: 30, age: 2 },
     { id: 'potters_wheel_machine', name: "Potter's Wheel", basePrice: 80, category: 'equipment', weight: 25, age: 2 },
     { id: 'foundry', name: 'Ind. Foundry', basePrice: 300, category: 'equipment', weight: 50, age: 2 },
@@ -841,7 +840,6 @@ export const defaultRules = {
     { id: 'stone_furnace', inputs: { stone: 8 }, outputs: { stone_furnace: 1 }, energyRequired: 0, ticksToComplete: 2, tier: 1, age: 1 },
     { id: 'treadwheel', inputs: { wood: 10 }, outputs: { treadwheel: 1 }, energyRequired: 0, ticksToComplete: 5, tier: 1, age: 1 },
     // Age 2 machines
-    { id: 'tinkers_bench', inputs: { copper_sheet: 4, wooden_beam: 2, iron_rod: 4 }, outputs: { tinkers_bench: 1 }, energyRequired: 15, ticksToComplete: 6, tier: 2, age: 2 },
     { id: 'glassblowers_workshop', inputs: { iron_plate: 4, bricks: 8, copper_tubing: 2 }, outputs: { glassblowers_workshop: 1 }, energyRequired: 15, ticksToComplete: 6, tier: 2, age: 2 },
     { id: 'potters_wheel_machine', inputs: { wooden_beam: 4, iron_rod: 2, stone: 4 }, outputs: { potters_wheel_machine: 1 }, energyRequired: 10, ticksToComplete: 4, tier: 2, age: 2 },
     { id: 'foundry', inputs: { bricks: 10, steel_beam: 4 }, outputs: { foundry: 1 }, energyRequired: 50, ticksToComplete: 10, tier: 3, age: 3 },
