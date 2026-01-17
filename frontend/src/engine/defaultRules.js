@@ -665,7 +665,7 @@ export const defaultRules = {
     { id: 'industrial_pump', inputs: { steel_pipe: 4, engine_block: 1, rubber: 2 }, outputs: { industrial_pump: 1 }, ticksToComplete: 10, tier: 4, age: 4 },
     { id: 'power_saw', inputs: { engine_block: 1, saw: 1, plastic: 1 }, outputs: { power_saw: 1 }, ticksToComplete: 8, tier: 4, age: 4 },
     { id: 'jackhammer', inputs: { engine_block: 1, chisel: 2, steel_spring: 2 }, outputs: { jackhammer: 1 }, ticksToComplete: 8, tier: 4, age: 4 },
-    { id: 'concrete_mixer', inputs: { engine_block: 1, steel_plate: 4, wheel: 2 }, outputs: { concrete_mixer: 1 }, ticksToComplete: 15, tier: 4, age: 4 },
+    { id: 'concrete_mixer', inputs: { engine_block: 1, steel_plate: 8, wheel: 4 }, outputs: { concrete_mixer: 1 }, ticksToComplete: 15, tier: 4, age: 4 },
     { id: 'traffic_light', inputs: { steel_pipe: 1, light_bulb: 3, glass_lens: 3 }, outputs: { traffic_light: 1 }, ticksToComplete: 6, tier: 4, age: 4 },
     { id: 'street_lamp', inputs: { steel_pipe: 2, light_bulb: 1, glass: 1 }, outputs: { street_lamp: 1 }, ticksToComplete: 5, tier: 4, age: 4 },
     { id: 'telephone', inputs: { plastic: 2, copper_wire: 2, steel_spring: 1 }, outputs: { telephone: 1 }, ticksToComplete: 5, tier: 4, age: 4 },
