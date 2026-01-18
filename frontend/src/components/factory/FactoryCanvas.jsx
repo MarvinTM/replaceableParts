@@ -22,6 +22,18 @@ const ASSET_MANIFEST = {
   },
   walls: {
     segment: `${ASSET_BASE}/wall.png`,
+    door: `${ASSET_BASE}/wall_with_door.png`,
+  },
+  terrain: {
+    // Grass variants for natural-looking terrain (same 64x32 isometric shape as floor)
+    grass: [
+      `${ASSET_BASE}/terrain_grass_1.png`,
+      `${ASSET_BASE}/terrain_grass_2.png`,
+      `${ASSET_BASE}/terrain_grass_3.png`,
+      `${ASSET_BASE}/terrain_grass_4.png`,
+    ],
+    // Road tile (aligned with isometric grid, for path to factory entrance)
+    road: `${ASSET_BASE}/terrain_road.png`,
   },
   machines: {
     idle: `${ASSET_BASE}/machine_idle.png`,
@@ -196,7 +208,18 @@ const WALL_CONFIG = {
   // Common settings
   wallRowVerticalOffset: 32,   // Vertical offset for subsequent wall rows
   baseNumberOfWallRows: 3,     // Base number of wall rows at initial factory size
-  initialFactorySize: 8        // Initial factory size (8x8)
+  initialFactorySize: 16       // Initial factory size (16x16)
+};
+
+// Terrain/world background configuration
+const TERRAIN_CONFIG = {
+  // How many tiles to extend beyond factory bounds in each grid direction
+  extentTiles: 30,
+  // Road width in tiles (extends to the right from the factory entrance)
+  roadWidthTiles: 3,
+  // Probability of using the base grass variant (0-1). Higher = more uniform terrain.
+  // Remaining probability is split among other variants for sparse variation.
+  baseGrassProbability: 0.85,
 };
 
 /**
@@ -212,13 +235,25 @@ function getWallRowCount(factoryWidth, factoryHeight) {
 }
 
 /**
+ * Simple hash function for consistent pseudo-random grass variant selection
+ * @param {number} x - Grid X position
+ * @param {number} y - Grid Y position
+ * @returns {number} - A number between 0 and 1
+ */
+function tileHash(x, y) {
+  const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+/**
  * Load assets and return what's available
  * @param {Object} rules - Game rules containing machine and generator types
  */
 async function loadAssets(rules) {
   const loaded = {
     floor: { light: null, dark: null },
-    walls: { segment: null },
+    walls: { segment: null, door: null },
+    terrain: { grass: [], road: null },
     machines: {},
     generators: {}
   };
@@ -238,6 +273,16 @@ async function loadAssets(rules) {
 
   // Load wall sprites
   loaded.walls.segment = await tryLoad(ASSET_MANIFEST.walls.segment);
+  loaded.walls.door = await tryLoad(ASSET_MANIFEST.walls.door);
+
+  // Load terrain tiles
+  for (const grassPath of ASSET_MANIFEST.terrain.grass) {
+    const texture = await tryLoad(grassPath);
+    if (texture) {
+      loaded.terrain.grass.push(texture);
+    }
+  }
+  loaded.terrain.road = await tryLoad(ASSET_MANIFEST.terrain.road);
 
   // Load per-type machine sprites
   for (const machineType of rules.machines) {
@@ -815,21 +860,86 @@ export default function FactoryCanvas({
     // Store dimensions for hover detection
     floorDimensionsRef.current = { width, height };
 
+    // Helper to check if a tile is a valid factory floor tile
+    const isTileValid = (tx, ty) => {
+      if (!floorSpace.chunks) return tx >= 0 && tx < width && ty >= 0 && ty < height;
+      // Check if (tx, ty) is inside any factory chunk
+      return floorSpace.chunks.some(c =>
+        tx >= c.x && tx < c.x + c.width &&
+        ty >= c.y && ty < c.y + c.height
+      );
+    };
+
+    // === RENDER TERRAIN (world background) ===
+    const terrainContainer = new Container();
+    const { extentTiles, roadWidthTiles, baseGrassProbability } = TERRAIN_CONFIG;
+    const hasTerrainSprites = assets?.terrain?.grass?.length > 0;
+
+    if (hasTerrainSprites) {
+      const grassTextures = assets.terrain.grass;
+      const roadTexture = assets.terrain.road;
+
+      // Define terrain bounds (extend beyond factory in all directions)
+      const terrainMinX = -extentTiles;
+      const terrainMinY = -extentTiles;
+      const terrainMaxX = width + extentTiles;
+      const terrainMaxY = height + extentTiles;
+
+      // Road tiles positions: extends in -Y direction toward lower-left border
+      // The road reaches the factory at the LEFT corner (grid 0, 0)
+      // Road is roadWidthTiles wide, extending to the right (positive X)
+      const roadTiles = new Set();
+      for (let roadX = 0; roadX < roadWidthTiles; roadX++) {
+        for (let roadY = -1; roadY >= terrainMinY; roadY--) {
+          roadTiles.add(`${roadX},${roadY}`);
+        }
+      }
+
+      // Render terrain tiles (grass and road)
+      for (let x = terrainMinX; x < terrainMaxX; x++) {
+        for (let y = terrainMinY; y < terrainMaxY; y++) {
+          // Skip tiles that are actually part of the factory floor
+          if (isTileValid(x, y)) {
+            continue;
+          }
+
+          const screenPos = gridToScreen(x, y);
+          const tileKey = `${x},${y}`;
+
+          let texture;
+          if (roadTiles.has(tileKey) && roadTexture) {
+            // Road tile
+            texture = roadTexture;
+          } else {
+            // Grass tile - mostly use base variant, sparse variation with others
+            const hash = tileHash(x, y);
+            if (hash < baseGrassProbability || grassTextures.length === 1) {
+              // Use base grass variant (first texture)
+              texture = grassTextures[0];
+            } else {
+              // Use one of the other variants (spread remaining probability)
+              const remainingProb = 1 - baseGrassProbability;
+              const variantHash = (hash - baseGrassProbability) / remainingProb;
+              const variantIndex = 1 + Math.floor(variantHash * (grassTextures.length - 1));
+              texture = grassTextures[Math.min(variantIndex, grassTextures.length - 1)];
+            }
+          }
+
+          const sprite = new Sprite(texture);
+          sprite.anchor.set(0.5, 0.5);
+          sprite.x = screenPos.x;
+          sprite.y = screenPos.y;
+          terrainContainer.addChild(sprite);
+        }
+      }
+    }
+
+    world.addChild(terrainContainer);
+
     // === RENDER FLOOR ===
     const floorContainer = new Container();
 
     const hasFloorSprites = assets?.floor.light && assets?.floor.dark;
-
-    // Helper to check if a tile is valid
-    const isTileValid = (tx, ty) => {
-      if (!floorSpace.chunks) return true; // Legacy support or initial load
-      // Simple check: is (tx, ty) inside any chunk?
-      // Since tiles are 1x1, we just check point inclusion
-      return floorSpace.chunks.some(c => 
-        tx >= c.x && tx < c.x + c.width && 
-        ty >= c.y && ty < c.y + c.height
-      );
-    };
 
     if (hasFloorSprites) {
       // Use sprite tiles
@@ -1270,7 +1380,10 @@ export default function FactoryCanvas({
       for (let row = 0; row < numberOfRows; row++) {
         for (const edge of lowerLeftEdges) {
           const screenPos = gridToScreen(edge.x, edge.y);
-          const wallSprite = new Sprite(assets.walls.segment);
+          // Use door sprite for tile (1, 0) on rows 0 and 1
+          const isDoorPosition = edge.x === 1 && edge.y === 0 && row <= 1;
+          const texture = isDoorPosition && assets.walls.door ? assets.walls.door : assets.walls.segment;
+          const wallSprite = new Sprite(texture);
 
           wallSprite.anchor.set(0.5, 1);
           wallSprite.scale.x = -1; // Flip horizontally to face the other direction
