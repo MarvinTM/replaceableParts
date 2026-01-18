@@ -36,7 +36,8 @@ export const initialState = {
   // Built Machines (ready to deploy, not in regular inventory)
   builtMachines: {
     stone_furnace: 1,
-    blacksmiths_anvil: 1
+    blacksmiths_anvil: 1,
+    carpenters_bench: 1
   },
 
   // Built Generators (ready to deploy, not in regular inventory)
