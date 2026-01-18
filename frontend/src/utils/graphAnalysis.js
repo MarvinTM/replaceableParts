@@ -737,6 +737,14 @@ function findMachineCycleIssues(rules, initialState = null) {
     if (initialState.machines) {
       initialState.machines.forEach(m => starterMachines.add(m.type));
     }
+    // Built machines (ready to deploy, not yet placed)
+    if (initialState.builtMachines) {
+      Object.keys(initialState.builtMachines).forEach(key => starterMachines.add(key));
+    }
+    // Built generators (ready to deploy, not yet placed)
+    if (initialState.builtGenerators) {
+      Object.keys(initialState.builtGenerators).forEach(key => starterMachines.add(key));
+    }
   }
 
   // Map machine ID to its material age
