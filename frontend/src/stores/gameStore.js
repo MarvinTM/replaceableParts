@@ -165,6 +165,15 @@ const useGameStore = create(
         return get().dispatch({ type: 'UNLOCK_EXPLORATION_NODE', payload: { x, y } });
       },
 
+      // Machine/Generator building actions
+      buildMachine: (machineType) => {
+        return get().dispatch({ type: 'BUILD_MACHINE', payload: { machineType } });
+      },
+
+      buildGenerator: (generatorType) => {
+        return get().dispatch({ type: 'BUILD_GENERATOR', payload: { generatorType } });
+      },
+
       setExpansionType: (type) => {
         set((state) => ({
           rules: {

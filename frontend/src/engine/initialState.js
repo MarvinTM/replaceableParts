@@ -30,13 +30,18 @@ export const initialState = {
   // Inventory space
   inventorySpace: 200,
 
-  // Starter Inventory
-  inventory: {
-    carpenters_bench: 2,
-    blacksmiths_anvil: 1,
-    stone_furnace: 2,
-    treadwheel: 1,
-    masons_workshop: 1
+  // Starter Inventory (no machines/generators here - they go in built pools)
+  inventory: {},
+
+  // Built Machines (ready to deploy, not in regular inventory)
+  builtMachines: {
+    stone_furnace: 1,
+    blacksmiths_anvil: 1
+  },
+
+  // Built Generators (ready to deploy, not in regular inventory)
+  builtGenerators: {
+    treadwheel: 2
   },
 
   // Deployed Machines

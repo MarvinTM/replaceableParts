@@ -26,6 +26,8 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import GridViewIcon from '@mui/icons-material/GridView';
 import InfoIcon from '@mui/icons-material/Info';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import BuildIcon from '@mui/icons-material/Build';
+import Divider from '@mui/material/Divider';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
 import { getNextExpansionChunk } from '../engine/engine.js';
@@ -33,6 +35,7 @@ import FactoryCanvas from '../components/factory/FactoryCanvas';
 import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 import RecipeDropdown from '../components/factory/RecipeDropdown';
 import MachineInfoPopup from '../components/factory/MachineInfoPopup';
+import BuildPopup from '../components/factory/BuildPopup';
 import MaterialIcon from '../components/common/MaterialIcon';
 import FloatingHUD from '../components/common/FloatingHUD';
 import CollapsibleSidebar from '../components/common/CollapsibleSidebar';
@@ -67,6 +70,8 @@ function FactoryTab() {
   const toggleMachine = useGameStore((state) => state.toggleMachine);
   const moveMachine = useGameStore((state) => state.moveMachine);
   const moveGenerator = useGameStore((state) => state.moveGenerator);
+  const buildMachineAction = useGameStore((state) => state.buildMachine);
+  const buildGeneratorAction = useGameStore((state) => state.buildGenerator);
 
   // Drag state for placing machines/generators or moving existing ones
   const [dragState, setDragState] = useState({
@@ -86,12 +91,17 @@ function FactoryTab() {
   // State for recipe selector (opened from machine info popup)
   const [showRecipeSelector, setShowRecipeSelector] = useState(false);
 
+  // State for build popup
+  const [buildPopupOpen, setBuildPopupOpen] = useState(false);
+  const [buildPopupType, setBuildPopupType] = useState(null); // 'machine' or 'generator'
+  const [buildPopupItemType, setBuildPopupItemType] = useState(null); // e.g., 'stone_furnace'
+
   // Ref for inventory panel (used for fly-to-inventory animations)
   const inventoryPanelRef = useRef(null);
 
   if (!engineState) return null;
 
-  const { machines, generators, floorSpace, inventory, credits, rngSeed, unlockedRecipes } = engineState;
+  const { machines, generators, floorSpace, inventory, credits, rngSeed, unlockedRecipes, builtMachines, builtGenerators } = engineState;
 
   // Get current machine state from engineState (ensures fresh data after toggle)
   const selectedMachine = selectedMachineId
@@ -228,14 +238,42 @@ function FactoryTab() {
     }
   };
 
-  // Get available generators and machines for sidebar
+  // Build popup handlers
+  const handleOpenBuildPopup = (type, itemType) => {
+    setBuildPopupType(type);
+    setBuildPopupItemType(itemType);
+    setBuildPopupOpen(true);
+  };
+
+  const handleCloseBuildPopup = () => {
+    setBuildPopupOpen(false);
+    setBuildPopupType(null);
+    setBuildPopupItemType(null);
+  };
+
+  const handleBuild = (itemType) => {
+    if (buildPopupType === 'machine') {
+      buildMachineAction(itemType);
+    } else if (buildPopupType === 'generator') {
+      buildGeneratorAction(itemType);
+    }
+  };
+
+  // Get available generators and machines from built pools (ready to deploy)
   const availableGenerators = rules.generators
-    .map(genType => ({ ...genType, count: inventory[genType.itemId] || 0 }))
+    .map(genType => ({ ...genType, count: builtGenerators?.[genType.id] || 0 }))
     .filter(gen => gen.count > 0);
 
   const availableMachines = rules.machines
-    .map(machineType => ({ ...machineType, count: inventory[machineType.itemId] || 0 }))
+    .map(machineType => ({ ...machineType, count: builtMachines?.[machineType.id] || 0 }))
     .filter(machine => machine.count > 0);
+
+  // Get buildable machines and generators (those with recipes)
+  const buildableMachines = rules.machines
+    .filter(machineType => rules.machineRecipes?.[machineType.id]);
+
+  const buildableGenerators = rules.generators
+    .filter(genType => rules.generatorRecipes?.[genType.id]);
 
   const PREVIEW_SIZE = 48;
 
@@ -246,47 +284,84 @@ function FactoryTab() {
       title: t('game.factory.generators'),
       icon: <BoltIcon sx={{ color: 'success.main', fontSize: 20 }} />,
       badge: availableGenerators.length > 0 ? availableGenerators.reduce((sum, g) => sum + g.count, 0) : undefined,
-      content: availableGenerators.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('game.factory.noGeneratorsInInventory', 'No generators in inventory')}
-        </Typography>
-      ) : (
+      content: (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {availableGenerators.map((generator) => (
-            <Box
-              key={generator.id}
-              draggable={true}
-              onDragStart={(e) => {
-                e.dataTransfer.setData('application/json', JSON.stringify({
-                  itemType: 'generator', itemId: generator.itemId, generatorType: generator.id,
-                  sizeX: generator.sizeX, sizeY: generator.sizeY
-                }));
-                e.dataTransfer.effectAllowed = 'move';
-                handleDragStart('generator', generator.itemId, generator.id, generator.sizeX, generator.sizeY);
-              }}
-              onDragEnd={handleDragEnd}
-              sx={{
-                display: 'flex', alignItems: 'center', gap: 1, p: 1,
-                border: '1px solid', borderColor: 'divider', borderRadius: 1,
-                cursor: 'grab', backgroundColor: 'background.paper',
-                '&:hover': { backgroundColor: 'action.hover', borderColor: 'warning.main' },
-                '&:active': { cursor: 'grabbing' }
-              }}
-            >
-              <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
-                sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-              <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                <Typography variant="body2" noWrap>{generator.name}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <BoltIcon sx={{ fontSize: 14, color: 'success.main' }} />
-                  <Typography variant="caption" color="success.main">+{generator.energyOutput}</Typography>
+          {/* Built generators ready to deploy */}
+          {availableGenerators.length > 0 && (
+            <>
+              <Typography variant="caption" color="text.secondary">
+                {t('game.factory.readyToDeploy', 'Ready to Deploy')}
+              </Typography>
+              {availableGenerators.map((generator) => (
+                <Box
+                  key={generator.id}
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('application/json', JSON.stringify({
+                      itemType: 'generator', itemId: generator.itemId, generatorType: generator.id,
+                      sizeX: generator.sizeX, sizeY: generator.sizeY
+                    }));
+                    e.dataTransfer.effectAllowed = 'move';
+                    handleDragStart('generator', generator.itemId, generator.id, generator.sizeX, generator.sizeY);
+                  }}
+                  onDragEnd={handleDragEnd}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 1, p: 1,
+                    border: '1px solid', borderColor: 'divider', borderRadius: 1,
+                    cursor: 'grab', backgroundColor: 'background.paper',
+                    '&:hover': { backgroundColor: 'action.hover', borderColor: 'warning.main' },
+                    '&:active': { cursor: 'grabbing' }
+                  }}
+                >
+                  <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
+                    sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                    <Typography variant="body2" noWrap>{generator.name}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <BoltIcon sx={{ fontSize: 14, color: 'success.main' }} />
+                      <Typography variant="caption" color="success.main">+{generator.energyOutput}</Typography>
+                    </Box>
+                  </Box>
+                  <Chip label={`x${generator.count}`} size="small" color="warning" />
                 </Box>
+              ))}
+            </>
+          )}
+          {availableGenerators.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {t('game.factory.noGeneratorsBuilt', 'No generators built yet')}
+            </Typography>
+          )}
+          {/* Build new generators */}
+          {buildableGenerators.length > 0 && (
+            <>
+              <Divider sx={{ my: 0.5 }} />
+              <Typography variant="caption" color="text.secondary">
+                {t('game.factory.buildNewGenerator', 'Build New Generator')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                {buildableGenerators.map((generator) => (
+                  <Button
+                    key={generator.id}
+                    variant="outlined"
+                    size="small"
+                    color="warning"
+                    startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => handleOpenBuildPopup('generator', generator.id)}
+                    sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
+                  >
+                    <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
+                      sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    {generator.name}
+                  </Button>
+                ))}
               </Box>
-              <Chip label={`x${generator.count}`} size="small" color="warning" />
-            </Box>
-          ))}
+            </>
+          )}
         </Box>
       )
     },
@@ -295,47 +370,83 @@ function FactoryTab() {
       title: t('game.factory.machines'),
       icon: <PrecisionManufacturingIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
       badge: availableMachines.length > 0 ? availableMachines.reduce((sum, m) => sum + m.count, 0) : undefined,
-      content: availableMachines.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('game.factory.noMachinesInInventory', 'No machines in inventory')}
-        </Typography>
-      ) : (
+      content: (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {availableMachines.map((machine) => (
-            <Box
-              key={machine.id}
-              draggable={true}
-              onDragStart={(e) => {
-                e.dataTransfer.setData('application/json', JSON.stringify({
-                  itemType: 'machine', itemId: machine.itemId, machineType: machine.id,
-                  sizeX: machine.sizeX, sizeY: machine.sizeY
-                }));
-                e.dataTransfer.effectAllowed = 'move';
-                handleDragStart('machine', machine.itemId, machine.id, machine.sizeX, machine.sizeY);
-              }}
-              onDragEnd={handleDragEnd}
-              sx={{
-                display: 'flex', alignItems: 'center', gap: 1, p: 1,
-                border: '1px solid', borderColor: 'divider', borderRadius: 1,
-                cursor: 'grab', backgroundColor: 'background.paper',
-                '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
-                '&:active': { cursor: 'grabbing' }
-              }}
-            >
-              <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
-                sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-              <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                <Typography variant="body2" noWrap>{machine.name}</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-                  <Typography variant="caption" color="text.secondary">-{machine.energyConsumption}</Typography>
+          {/* Built machines ready to deploy */}
+          {availableMachines.length > 0 && (
+            <>
+              <Typography variant="caption" color="text.secondary">
+                {t('game.factory.readyToDeploy', 'Ready to Deploy')}
+              </Typography>
+              {availableMachines.map((machine) => (
+                <Box
+                  key={machine.id}
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('application/json', JSON.stringify({
+                      itemType: 'machine', itemId: machine.itemId, machineType: machine.id,
+                      sizeX: machine.sizeX, sizeY: machine.sizeY
+                    }));
+                    e.dataTransfer.effectAllowed = 'move';
+                    handleDragStart('machine', machine.itemId, machine.id, machine.sizeX, machine.sizeY);
+                  }}
+                  onDragEnd={handleDragEnd}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 1, p: 1,
+                    border: '1px solid', borderColor: 'divider', borderRadius: 1,
+                    cursor: 'grab', backgroundColor: 'background.paper',
+                    '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
+                    '&:active': { cursor: 'grabbing' }
+                  }}
+                >
+                  <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
+                    sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                    <Typography variant="body2" noWrap>{machine.name}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                      <Typography variant="caption" color="text.secondary">-{machine.energyConsumption}</Typography>
+                    </Box>
+                  </Box>
+                  <Chip label={`x${machine.count}`} size="small" color="primary" />
                 </Box>
+              ))}
+            </>
+          )}
+          {availableMachines.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {t('game.factory.noMachinesBuilt', 'No machines built yet')}
+            </Typography>
+          )}
+          {/* Build new machines */}
+          {buildableMachines.length > 0 && (
+            <>
+              <Divider sx={{ my: 0.5 }} />
+              <Typography variant="caption" color="text.secondary">
+                {t('game.factory.buildNewMachine', 'Build New Machine')}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                {buildableMachines.map((machine) => (
+                  <Button
+                    key={machine.id}
+                    variant="outlined"
+                    size="small"
+                    startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => handleOpenBuildPopup('machine', machine.id)}
+                    sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
+                  >
+                    <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
+                      sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    {machine.name}
+                  </Button>
+                ))}
               </Box>
-              <Chip label={`x${machine.count}`} size="small" color="primary" />
-            </Box>
-          ))}
+            </>
+          )}
         </Box>
       )
     },
@@ -449,6 +560,27 @@ function FactoryTab() {
           onClose={handleCloseRecipeSelector}
         />
       )}
+
+      {/* Build Popup */}
+      <BuildPopup
+        open={buildPopupOpen}
+        onClose={handleCloseBuildPopup}
+        type={buildPopupType}
+        itemType={buildPopupItemType}
+        itemConfig={
+          buildPopupType === 'machine'
+            ? rules.machines.find(m => m.id === buildPopupItemType)
+            : rules.generators.find(g => g.id === buildPopupItemType)
+        }
+        buildRecipe={
+          buildPopupType === 'machine'
+            ? rules.machineRecipes?.[buildPopupItemType]
+            : rules.generatorRecipes?.[buildPopupItemType]
+        }
+        inventory={inventory}
+        rules={rules}
+        onBuild={handleBuild}
+      />
     </Box>
   );
 }

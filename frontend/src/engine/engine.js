@@ -597,20 +597,20 @@ function addMachine(state, rules, payload) {
     return { state: newState, error: placement.error };
   }
 
-  // Check if we have the required item in inventory
-  const requiredItemId = machineConfig.itemId;
-  const available = newState.inventory[requiredItemId] || 0;
+  // Check if we have the machine in the built machines pool
+  if (!newState.builtMachines) {
+    newState.builtMachines = {};
+  }
+  const available = newState.builtMachines[machineType] || 0;
 
   if (available < 1) {
-    const material = rules.materials.find(m => m.id === requiredItemId);
-    const name = material ? material.name : requiredItemId;
-    return { state: newState, error: `Need 1 ${name} in inventory to deploy a machine` };
+    return { state: newState, error: `No built ${machineConfig.name} available to deploy. Build one first.` };
   }
 
-  // Consume the item from inventory
-  newState.inventory[requiredItemId] -= 1;
-  if (newState.inventory[requiredItemId] === 0) {
-    delete newState.inventory[requiredItemId];
+  // Consume from the built machines pool
+  newState.builtMachines[machineType] -= 1;
+  if (newState.builtMachines[machineType] === 0) {
+    delete newState.builtMachines[machineType];
   }
 
   const machineId = generateId();
@@ -654,11 +654,11 @@ function removeMachine(state, rules, payload) {
     newState.inventory[itemId] = (newState.inventory[itemId] || 0) + quantity;
   }
 
-  // Return machine itself to inventory
-  const machineConfig = rules.machines.find(m => m.id === machine.type);
-  if (machineConfig && machineConfig.itemId) {
-    newState.inventory[machineConfig.itemId] = (newState.inventory[machineConfig.itemId] || 0) + 1;
+  // Return machine to the built machines pool
+  if (!newState.builtMachines) {
+    newState.builtMachines = {};
   }
+  newState.builtMachines[machine.type] = (newState.builtMachines[machine.type] || 0) + 1;
 
   // Remove from machines array
   newState.machines.splice(machineIndex, 1);
@@ -774,20 +774,20 @@ function addGenerator(state, rules, payload) {
     return { state: newState, error: placement.error };
   }
 
-  // Check if we have the required item in inventory
-  const requiredItemId = genConfig.itemId;
-  const available = newState.inventory[requiredItemId] || 0;
+  // Check if we have the generator in the built generators pool
+  if (!newState.builtGenerators) {
+    newState.builtGenerators = {};
+  }
+  const available = newState.builtGenerators[generatorType] || 0;
 
   if (available < 1) {
-    const material = rules.materials.find(m => m.id === requiredItemId);
-    const name = material ? material.name : requiredItemId;
-    return { state: newState, error: `Need 1 ${name} in inventory to deploy this generator` };
+    return { state: newState, error: `No built ${genConfig.name} available to deploy. Build one first.` };
   }
 
-  // Consume the item from inventory
-  newState.inventory[requiredItemId] -= 1;
-  if (newState.inventory[requiredItemId] === 0) {
-    delete newState.inventory[requiredItemId];
+  // Consume from the built generators pool
+  newState.builtGenerators[generatorType] -= 1;
+  if (newState.builtGenerators[generatorType] === 0) {
+    delete newState.builtGenerators[generatorType];
   }
 
   const generatorId = generateId();
@@ -825,11 +825,11 @@ function removeGenerator(state, rules, payload) {
 
   const generator = newState.generators[genIndex];
 
-  // Return generator itself to inventory
-  const genConfig = rules.generators.find(g => g.id === generator.type);
-  if (genConfig && genConfig.itemId) {
-    newState.inventory[genConfig.itemId] = (newState.inventory[genConfig.itemId] || 0) + 1;
+  // Return generator to the built generators pool
+  if (!newState.builtGenerators) {
+    newState.builtGenerators = {};
   }
+  newState.builtGenerators[generator.type] = (newState.builtGenerators[generator.type] || 0) + 1;
 
   // Remove from generators array
   newState.generators.splice(genIndex, 1);
@@ -1021,6 +1021,122 @@ function buyInventorySpace(state, rules, payload) {
 
   newState.credits -= cost;
   newState.inventorySpace += rules.inventorySpace.upgradeAmount;
+
+  return { state: newState, error: null };
+}
+
+// ============================================================================
+// Machine/Generator Building Actions
+// ============================================================================
+
+/**
+ * Build a machine by consuming materials from inventory.
+ * The built machine goes into the builtMachines pool (not regular inventory).
+ */
+function buildMachine(state, rules, payload) {
+  const newState = deepClone(state);
+  const { machineType } = payload;
+
+  // Validate machine type exists
+  const machineConfig = rules.machines.find(m => m.id === machineType);
+  if (!machineConfig) {
+    return { state: newState, error: 'Machine type not found' };
+  }
+
+  // Get the build recipe for this machine
+  const buildRecipe = rules.machineRecipes?.[machineType];
+  if (!buildRecipe || !buildRecipe.slots) {
+    return { state: newState, error: 'No build recipe found for this machine type' };
+  }
+
+  // Calculate required materials from slots
+  const requiredMaterials = {};
+  for (const slot of buildRecipe.slots) {
+    const materialId = slot.material;
+    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + 1;
+  }
+
+  // Check if all materials are available in inventory
+  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+    const available = newState.inventory[materialId] || 0;
+    if (available < needed) {
+      const material = rules.materials.find(m => m.id === materialId);
+      const name = material ? material.name : materialId;
+      return { state: newState, error: `Not enough ${name} (need ${needed}, have ${available})` };
+    }
+  }
+
+  // Consume materials from inventory
+  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+    newState.inventory[materialId] -= needed;
+    if (newState.inventory[materialId] === 0) {
+      delete newState.inventory[materialId];
+    }
+  }
+
+  // Initialize builtMachines if it doesn't exist
+  if (!newState.builtMachines) {
+    newState.builtMachines = {};
+  }
+
+  // Add machine to built pool
+  newState.builtMachines[machineType] = (newState.builtMachines[machineType] || 0) + 1;
+
+  return { state: newState, error: null };
+}
+
+/**
+ * Build a generator by consuming materials from inventory.
+ * The built generator goes into the builtGenerators pool (not regular inventory).
+ */
+function buildGenerator(state, rules, payload) {
+  const newState = deepClone(state);
+  const { generatorType } = payload;
+
+  // Validate generator type exists
+  const genConfig = rules.generators.find(g => g.id === generatorType);
+  if (!genConfig) {
+    return { state: newState, error: 'Generator type not found' };
+  }
+
+  // Get the build recipe for this generator
+  const buildRecipe = rules.generatorRecipes?.[generatorType];
+  if (!buildRecipe || !buildRecipe.slots) {
+    return { state: newState, error: 'No build recipe found for this generator type' };
+  }
+
+  // Calculate required materials from slots
+  const requiredMaterials = {};
+  for (const slot of buildRecipe.slots) {
+    const materialId = slot.material;
+    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + 1;
+  }
+
+  // Check if all materials are available in inventory
+  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+    const available = newState.inventory[materialId] || 0;
+    if (available < needed) {
+      const material = rules.materials.find(m => m.id === materialId);
+      const name = material ? material.name : materialId;
+      return { state: newState, error: `Not enough ${name} (need ${needed}, have ${available})` };
+    }
+  }
+
+  // Consume materials from inventory
+  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+    newState.inventory[materialId] -= needed;
+    if (newState.inventory[materialId] === 0) {
+      delete newState.inventory[materialId];
+    }
+  }
+
+  // Initialize builtGenerators if it doesn't exist
+  if (!newState.builtGenerators) {
+    newState.builtGenerators = {};
+  }
+
+  // Add generator to built pool
+  newState.builtGenerators[generatorType] = (newState.builtGenerators[generatorType] || 0) + 1;
 
   return { state: newState, error: null };
 }
@@ -1222,6 +1338,12 @@ export function engine(state, rules, action) {
 
     case 'BUY_INVENTORY_SPACE':
       return buyInventorySpace(state, rules, action.payload);
+
+    case 'BUILD_MACHINE':
+      return buildMachine(state, rules, action.payload);
+
+    case 'BUILD_GENERATOR':
+      return buildGenerator(state, rules, action.payload);
 
     case 'EXPAND_EXPLORATION':
       return expandExploration(state, rules, action.payload);
