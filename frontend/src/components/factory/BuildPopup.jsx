@@ -43,6 +43,9 @@ export default function BuildPopup({
   // Track which slot is being dragged over
   const [dragOverSlot, setDragOverSlot] = useState(null);
 
+  // Track if preview image failed to load
+  const [imageError, setImageError] = useState(false);
+
   // Calculate materials needed and available
   const materialInfo = useMemo(() => {
     if (!buildRecipe?.slots) return { needed: {}, available: {}, canBuild: false };
@@ -122,6 +125,12 @@ export default function BuildPopup({
   const handleMaterialDragStart = (e, materialId) => {
     e.dataTransfer.setData('text/plain', materialId);
     e.dataTransfer.effectAllowed = 'move';
+
+    // Create a custom drag image showing only the icon
+    const dragImage = e.currentTarget.querySelector('img');
+    if (dragImage) {
+      e.dataTransfer.setDragImage(dragImage, 20, 20);
+    }
   };
 
   // Handle drag over a slot
@@ -155,10 +164,17 @@ export default function BuildPopup({
       // Check if we have enough of this material (accounting for already filled slots)
       const materialData = uniqueMaterials.find(m => m.id === droppedMaterial);
       if (materialData && materialData.canDrag) {
-        setSlotFills(prev => ({
-          ...prev,
-          [slotIndex]: currentFilled + 1
-        }));
+        // Calculate how many units we can add
+        const neededForThisSlot = required - currentFilled;
+        const availableToAdd = materialData.available - materialData.filled;
+        const unitsToAdd = Math.min(neededForThisSlot, availableToAdd);
+
+        if (unitsToAdd > 0) {
+          setSlotFills(prev => ({
+            ...prev,
+            [slotIndex]: currentFilled + unitsToAdd
+          }));
+        }
       }
     }
   };
@@ -191,6 +207,7 @@ export default function BuildPopup({
   const handleClose = () => {
     setSlotFills({});
     setDragOverSlot(null);
+    setImageError(false);
     onClose();
   };
 
@@ -224,23 +241,46 @@ export default function BuildPopup({
       <DialogContent dividers>
         {/* Machine/Generator Preview */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-          <Box
-            component="img"
-            src={`/assets/factory/${itemType}_idle.png`}
-            alt={itemConfig.name}
-            sx={{
-              width: 96,
-              height: 96,
-              objectFit: 'contain',
-              imageRendering: 'pixelated',
-            }}
-            onError={(e) => {
-              // Try without _idle suffix for generators
-              if (type === 'generator') {
-                e.target.src = `/assets/factory/${itemType}.png`;
-              }
-            }}
-          />
+          {!imageError ? (
+            <Box
+              component="img"
+              src={`/assets/factory/${itemType}_idle.png`}
+              alt={itemConfig.name}
+              sx={{
+                width: 96,
+                height: 96,
+                objectFit: 'contain',
+                imageRendering: 'pixelated',
+              }}
+              onError={(e) => {
+                // Try without _idle suffix for generators
+                if (type === 'generator' && !e.target.src.includes(`${itemType}.png`)) {
+                  e.target.src = `/assets/factory/${itemType}.png`;
+                } else {
+                  setImageError(true);
+                }
+              }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: 96,
+                height: 96,
+                backgroundColor: type === 'machine' ? '#4A90D9' : '#9C27B0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 48,
+                fontWeight: 'bold',
+                color: 'white',
+                borderRadius: '4px',
+                textShadow: '2px 2px 2px rgba(0,0,0,0.3)',
+                clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+              }}
+            >
+              {(itemConfig.name || itemType)[0].toUpperCase()}
+            </Box>
+          )}
         </Box>
 
         {/* Component Slots Section */}
@@ -359,8 +399,10 @@ export default function BuildPopup({
                     color: isFull ? 'success.dark' : 'text.secondary',
                     maxWidth: SLOT_SIZE - 8,
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    wordBreak: 'break-word',
                   }}
                 >
                   {slot.label}
