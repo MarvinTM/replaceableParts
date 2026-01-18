@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import {
   Box,
@@ -22,11 +22,16 @@ import {
   TableHead,
   TableRow,
   TableSortLabel,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import GraphCanvas from '../components/debug/GraphCanvas';
 import SidePanel from '../components/debug/SidePanel';
+import MaterialIcon from '../components/common/MaterialIcon';
 import { buildGraph, calculateRawMaterialUsage, calculateRawMaterialCosts, calculateEnergyCosts } from '../utils/graphAnalysis';
 import { defaultRules } from '../engine/defaultRules';
 import { initialState } from '../engine/initialState';
@@ -47,6 +52,46 @@ export default function DebugGraphPage() {
   const [bottomTab, setBottomTab] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
   const [materialsMissingIcons, setMaterialsMissingIcons] = useState([]);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(() => Math.floor(window.innerHeight / 2));
+  const [finalGoodsNameFilter, setFinalGoodsNameFilter] = useState('');
+  const [finalGoodsAgeFilter, setFinalGoodsAgeFilter] = useState('');
+  const isDraggingRef = useRef(false);
+  const dragStartYRef = useRef(0);
+  const dragStartHeightRef = useRef(0);
+
+  // Handle resize drag
+  const handleResizeMouseDown = useCallback((e) => {
+    isDraggingRef.current = true;
+    dragStartYRef.current = e.clientY;
+    dragStartHeightRef.current = bottomPanelHeight;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  }, [bottomPanelHeight]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const deltaY = dragStartYRef.current - e.clientY;
+      const newHeight = Math.min(Math.max(dragStartHeightRef.current + deltaY, 100), window.innerHeight - 200);
+      setBottomPanelHeight(newHeight);
+    };
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   // Build graph from rules
   const { nodes, edges, issues } = useMemo(() => {
@@ -230,19 +275,50 @@ export default function DebugGraphPage() {
     return data;
   }, [balanceMetrics.rawUsage, sortConfig]);
 
-  // Prepare sorted data for Final Good Costs table
+  // Create material lookup for accessing basePrice
+  const materialMap = useMemo(() => {
+    return new Map(defaultRules.materials.map(m => [m.id, m]));
+  }, []);
+
+  // Get unique ages from final goods for the filter dropdown
+  const finalGoodsAges = useMemo(() => {
+    const ages = new Set();
+    defaultRules.materials
+      .filter(m => m.category === 'final')
+      .forEach(m => ages.add(m.age));
+    return Array.from(ages).sort((a, b) => a - b);
+  }, []);
+
+  // Prepare sorted and filtered data for Final Good Costs table
   const finalGoodCostsData = useMemo(() => {
-    const data = Array.from(balanceMetrics.rawCosts.entries()).map(([id, info]) => {
+    let data = Array.from(balanceMetrics.rawCosts.entries()).map(([id, info]) => {
       const energyInfo = balanceMetrics.energyCosts.get(id) || { totalEnergy: 0, directEnergy: 0 };
       const totalRawUnits = Object.values(info.rawMaterials).reduce((sum, qty) => sum + qty, 0);
+      const material = materialMap.get(id);
+      const price = material?.basePrice || 0;
+      const priceCostRatio = (info.age && totalRawUnits) ? price / (info.age * totalRawUnits) : 0;
       return {
         id,
         ...info,
         totalEnergy: energyInfo.totalEnergy,
         directEnergy: energyInfo.directEnergy,
         totalRawUnits,
+        price,
+        priceCostRatio,
       };
     });
+
+    // Apply name filter
+    if (finalGoodsNameFilter) {
+      const lowerFilter = finalGoodsNameFilter.toLowerCase();
+      data = data.filter(item => item.name.toLowerCase().includes(lowerFilter));
+    }
+
+    // Apply age filter
+    if (finalGoodsAgeFilter !== '') {
+      data = data.filter(item => item.age === finalGoodsAgeFilter);
+    }
+
     if (sortConfig.key) {
       data.sort((a, b) => {
         let aVal = a[sortConfig.key];
@@ -262,7 +338,7 @@ export default function DebugGraphPage() {
       data.sort((a, b) => a.age - b.age || a.name.localeCompare(b.name));
     }
     return data;
-  }, [balanceMetrics.rawCosts, balanceMetrics.energyCosts, sortConfig]);
+  }, [balanceMetrics.rawCosts, balanceMetrics.energyCosts, materialMap, sortConfig, finalGoodsNameFilter, finalGoodsAgeFilter]);
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -384,11 +460,36 @@ export default function DebugGraphPage() {
         elevation={3}
         sx={{
           borderTop: '2px solid #e0e0e0',
-          height: '250px',
+          height: bottomPanelHeight,
           display: 'flex',
           flexDirection: 'column',
+          flexShrink: 0,
         }}
       >
+        {/* Resize Handle */}
+        <Box
+          onMouseDown={handleResizeMouseDown}
+          sx={{
+            height: 6,
+            bgcolor: '#1565c0',
+            cursor: 'ns-resize',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            '&:hover': {
+              bgcolor: '#0d47a1',
+            },
+          }}
+        >
+          <Box
+            sx={{
+              width: 40,
+              height: 3,
+              bgcolor: 'rgba(255,255,255,0.5)',
+              borderRadius: 1,
+            }}
+          />
+        </Box>
         <Box
           sx={{
             display: 'flex',
@@ -423,6 +524,51 @@ export default function DebugGraphPage() {
             >
               Copy All
             </Button>
+          )}
+          {bottomTab === 2 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <TextField
+                size="small"
+                placeholder="Filter by name..."
+                value={finalGoodsNameFilter}
+                onChange={(e) => setFinalGoodsNameFilter(e.target.value)}
+                sx={{
+                  width: 180,
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: '#fff',
+                    height: 32,
+                    color: '#000',
+                  },
+                  '& .MuiOutlinedInput-input': {
+                    color: '#000',
+                    '&::placeholder': {
+                      color: '#666',
+                      opacity: 1,
+                    },
+                  },
+                }}
+              />
+              <FormControl size="small" sx={{ minWidth: 100 }}>
+                <Select
+                  value={finalGoodsAgeFilter}
+                  onChange={(e) => setFinalGoodsAgeFilter(e.target.value)}
+                  displayEmpty
+                  sx={{
+                    bgcolor: '#fff',
+                    height: 32,
+                    color: '#000',
+                    '& .MuiSelect-select': {
+                      color: '#000',
+                    },
+                  }}
+                >
+                  <MenuItem value="">All Ages</MenuItem>
+                  {finalGoodsAges.map(age => (
+                    <MenuItem key={age} value={age}>Age {age}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
           )}
         </Box>
 
@@ -498,6 +644,7 @@ export default function DebugGraphPage() {
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
+                  <TableCell sx={{ width: 40, padding: '6px 8px' }}></TableCell>
                   <TableCell>
                     <TableSortLabel
                       active={sortConfig.key === 'name'}
@@ -518,11 +665,20 @@ export default function DebugGraphPage() {
                   </TableCell>
                   <TableCell align="right">
                     <TableSortLabel
-                      active={sortConfig.key === 'totalEnergy'}
-                      direction={sortConfig.key === 'totalEnergy' ? sortConfig.direction : 'desc'}
-                      onClick={() => handleSort('totalEnergy')}
+                      active={sortConfig.key === 'price'}
+                      direction={sortConfig.key === 'price' ? sortConfig.direction : 'desc'}
+                      onClick={() => handleSort('price')}
                     >
-                      Total Energy
+                      Price
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel
+                      active={sortConfig.key === 'priceCostRatio'}
+                      direction={sortConfig.key === 'priceCostRatio' ? sortConfig.direction : 'desc'}
+                      onClick={() => handleSort('priceCostRatio')}
+                    >
+                      Price/Cost Ratio
                     </TableSortLabel>
                   </TableCell>
                   <TableCell align="right">
@@ -532,6 +688,15 @@ export default function DebugGraphPage() {
                       onClick={() => handleSort('totalRawUnits')}
                     >
                       Total Raw Units
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell align="right">
+                    <TableSortLabel
+                      active={sortConfig.key === 'totalEnergy'}
+                      direction={sortConfig.key === 'totalEnergy' ? sortConfig.direction : 'desc'}
+                      onClick={() => handleSort('totalEnergy')}
+                    >
+                      Total Energy
                     </TableSortLabel>
                   </TableCell>
                   {rawMaterialIds.map(rawId => {
@@ -553,10 +718,20 @@ export default function DebugGraphPage() {
               <TableBody>
                 {finalGoodCostsData.map(row => (
                   <TableRow key={row.id} hover>
+                    <TableCell sx={{ padding: '6px 8px' }}>
+                      <MaterialIcon
+                        materialId={row.id}
+                        materialName={row.name}
+                        category="final"
+                        size={24}
+                      />
+                    </TableCell>
                     <TableCell>{row.name}</TableCell>
                     <TableCell align="right">{row.age}</TableCell>
-                    <TableCell align="right">{row.totalEnergy.toFixed(1)}</TableCell>
+                    <TableCell align="right">{row.price}</TableCell>
+                    <TableCell align="right">{row.priceCostRatio.toFixed(2)}</TableCell>
                     <TableCell align="right">{row.totalRawUnits.toFixed(1)}</TableCell>
+                    <TableCell align="right">{row.totalEnergy.toFixed(1)}</TableCell>
                     {rawMaterialIds.map(rawId => (
                       <TableCell key={rawId} align="right">
                         {row.rawMaterials[rawId] ? row.rawMaterials[rawId].toFixed(2) : '-'}

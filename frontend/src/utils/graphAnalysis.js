@@ -447,20 +447,101 @@ export function calculateRawMaterialCosts(rules) {
 
 /**
  * Calculate total energy costs for each final good
- * Note: Energy is now defined at machine level, not recipe level.
- * This function returns 0 for energy values as recipe-level energy no longer exists.
+ * Energy is defined at the machine level. This function calculates the total energy
+ * by summing the energy consumption of machines needed to produce each recipe,
+ * including all intermediate recipes in cascade.
  * Returns a Map of finalGoodId -> { name, age, totalEnergy, directEnergy }
  */
 export function calculateEnergyCosts(rules) {
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const recipesByOutput = new Map();
+
+  // Build recipe lookup by output
+  rules.recipes.forEach(recipe => {
+    Object.keys(recipe.outputs).forEach(outputId => {
+      recipesByOutput.set(outputId, recipe);
+    });
+  });
+
+  // Build machine lookup by recipe - get the minimum energy machine for each recipe
+  const machineEnergyByRecipe = new Map();
+  rules.machines.forEach(machine => {
+    const energy = machine.energyConsumption || 0;
+    machine.allowedRecipes.forEach(recipeId => {
+      const currentEnergy = machineEnergyByRecipe.get(recipeId);
+      // Use the minimum energy machine if multiple machines can produce the same recipe
+      if (currentEnergy === undefined || energy < currentEnergy) {
+        machineEnergyByRecipe.set(recipeId, energy);
+      }
+    });
+  });
+
+  // Memoization cache for energy costs
+  const energyCostCache = new Map();
+
+  function getEnergyCost(materialId, visited = new Set()) {
+    // Handle circular dependencies
+    if (visited.has(materialId)) {
+      return 0;
+    }
+
+    // Return cached result
+    if (energyCostCache.has(materialId)) {
+      return energyCostCache.get(materialId);
+    }
+
+    const material = materialMap.get(materialId);
+
+    // Raw materials don't require energy to produce
+    if (material?.category === 'raw') {
+      energyCostCache.set(materialId, 0);
+      return 0;
+    }
+
+    // Find recipe that produces this material
+    const recipe = recipesByOutput.get(materialId);
+    if (!recipe) {
+      energyCostCache.set(materialId, 0);
+      return 0;
+    }
+
+    // Get output quantity
+    const outputQuantity = recipe.outputs[materialId];
+
+    // Mark as visiting to detect cycles
+    visited.add(materialId);
+
+    // Get energy for the machine that runs this recipe
+    const machineEnergy = machineEnergyByRecipe.get(recipe.id) || 0;
+
+    // Energy cost per unit produced = machine energy / output quantity
+    let totalEnergy = machineEnergy / outputQuantity;
+
+    // Add energy costs for each input material (scaled by input quantity)
+    Object.entries(recipe.inputs).forEach(([inputId, inputQty]) => {
+      const inputEnergy = getEnergyCost(inputId, new Set(visited));
+      // Scale by input quantity needed, divide by output quantity
+      totalEnergy += (inputEnergy * inputQty) / outputQuantity;
+    });
+
+    energyCostCache.set(materialId, totalEnergy);
+    return totalEnergy;
+  }
+
+  // Calculate for all final goods
   const finalGoods = rules.materials.filter(m => m.category === 'final');
   const results = new Map();
 
   finalGoods.forEach(finalGood => {
+    const recipe = recipesByOutput.get(finalGood.id);
+    const directEnergy = recipe ? (machineEnergyByRecipe.get(recipe.id) || 0) / (recipe.outputs[finalGood.id] || 1) : 0;
+    const totalEnergy = getEnergyCost(finalGood.id);
+
     results.set(finalGood.id, {
       name: finalGood.name,
       age: finalGood.age,
-      totalEnergy: 0,
-      directEnergy: 0,
+      totalEnergy,
+      directEnergy,
     });
   });
 
