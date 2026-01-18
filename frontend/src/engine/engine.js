@@ -1053,7 +1053,8 @@ function buildMachine(state, rules, payload) {
   const requiredMaterials = {};
   for (const slot of buildRecipe.slots) {
     const materialId = slot.material;
-    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + 1;
+    const qty = slot.quantity || 1;
+    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
   }
 
   // Check if all materials are available in inventory
@@ -1109,7 +1110,8 @@ function buildGenerator(state, rules, payload) {
   const requiredMaterials = {};
   for (const slot of buildRecipe.slots) {
     const materialId = slot.material;
-    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + 1;
+    const qty = slot.quantity || 1;
+    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
   }
 
   // Check if all materials are available in inventory

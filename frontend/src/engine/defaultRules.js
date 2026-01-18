@@ -1488,14 +1488,8 @@ export const defaultRules = {
   generatorRecipes: {
     treadwheel: {
       slots: [
-        { label: 'Wheel Plank 1', material: 'wood' },
-        { label: 'Wheel Plank 2', material: 'wood' },
-        { label: 'Wheel Plank 3', material: 'wood' },
-        { label: 'Wheel Plank 4', material: 'wood' },
-        { label: 'Frame Post 1', material: 'wood' },
-        { label: 'Frame Post 2', material: 'wood' },
-        { label: 'Frame Post 3', material: 'wood' },
-        { label: 'Frame Post 4', material: 'wood' },
+        { label: 'Wheel Planks', material: 'wood', quantity: 4 },
+        { label: 'Frame Posts', material: 'wood', quantity: 4 },
         { label: 'Platform Plank 1', material: 'wood' },
         { label: 'Platform Plank 2', material: 'wood' }
       ]
