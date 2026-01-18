@@ -930,6 +930,7 @@ export const defaultRules = {
       energyConsumption: 2,
       animation: { frames: 4, speed: 0.02 },
       disableAutoScale: true,
+      spriteScale:1.25,
       allowedRecipes: [
         // Intermediates
         'iron_plate', 'iron_rod', 'nails', 'iron_wire', 'iron_bracket', 'hinges',
@@ -976,9 +977,11 @@ export const defaultRules = {
       id: 'glassblowers_workshop',
       itemId: 'glassblowers_workshop',
       name: "Glassblower's Workshop",
-      sizeX: 1, sizeY: 2,
+      sizeX: 2, sizeY: 2,
       energyConsumption: 3,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 4, speed: 0.02 },
+      disableAutoScale: true,
+      spriteScale:0.8,
       allowedRecipes: [
         // Glass items
         'window', 'mirror', 'lantern', 'chandelier', 'stained_glass', 'greenhouse_panel'
