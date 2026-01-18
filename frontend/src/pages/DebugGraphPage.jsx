@@ -296,7 +296,7 @@ export default function DebugGraphPage() {
       const totalRawUnits = Object.values(info.rawMaterials).reduce((sum, qty) => sum + qty, 0);
       const material = materialMap.get(id);
       const price = material?.basePrice || 0;
-      const priceCostRatio = (info.age && totalRawUnits) ? price / (info.age * totalRawUnits) : 0;
+      const priceCostRatio = (totalRawUnits) ? price / totalRawUnits : 0;
       return {
         id,
         ...info,
