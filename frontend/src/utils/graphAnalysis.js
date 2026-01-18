@@ -238,7 +238,15 @@ export function analyzeIssues(rules, initialState = null) {
 
     // Check if recipe has a machine
     if (!recipesWithMachine.has(recipe.id)) {
-      recipesMissingMachine.push(recipe.id);
+      // Ignore if this recipe produces equipment (manual build)
+      const producesEquipment = Object.keys(recipe.outputs).some(outId => {
+        const mat = rules.materials.find(m => m.id === outId);
+        return mat && mat.category === 'equipment';
+      });
+
+      if (!producesEquipment) {
+        recipesMissingMachine.push(recipe.id);
+      }
     }
 
     // Check for zero quantity inputs or outputs

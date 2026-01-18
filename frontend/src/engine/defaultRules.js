@@ -919,7 +919,7 @@ export const defaultRules = {
         // Vehicles & Transport
         'wheelbarrow', 'cart', 'wagon',
         // Other
-        'coat_hanger', 'plow', 'carpenters_bench', 'masons_workshop'
+        'coat_hanger', 'plow'
       ]
     },
     {
@@ -939,9 +939,7 @@ export const defaultRules = {
         // Weapons & Military
         'shield', 'spear', 'shield_rack', 'bronze_armor',
         // Metal items
-        'iron_grate', 'anchor', 'bellows', 'water_wheel', 'anvil',
-        // Self-build
-        'forge', 'potters_wheel_machine', 'steel_forge', 'heavy_assembly'
+        'forge','iron_grate', 'anchor', 'bellows', 'water_wheel', 'anvil'
       ]
     },
     {
@@ -968,7 +966,7 @@ export const defaultRules = {
         // Precision Mechanical
         'clock', 'pocket_watch', 'padlock', 'pressure_gauge', 'wrench',
         // Bootstrap components for Age 3 machines
-        'gear', 'boiler', 'glassblowers_workshop'
+        'gear', 'boiler'
       ]
     },
     // ============================================
@@ -1038,8 +1036,6 @@ export const defaultRules = {
         'sewing_machine', 'printing_press', 'mechanical_loom', 'rotary_engine', 'steam_hammer',
         // Home
         'stove', 'pressure_cooker', 'radiator', 'bicycle',
-        // Self-build
-        'steam_engine_gen',
         // Large Construction
         'crane', 'elevator', 'steel_bridge', 'water_tower', 'rail_track',
         // Heavy Vehicles
@@ -1050,11 +1046,7 @@ export const defaultRules = {
         // Large Items
         'pipe_organ', 'plumbing_system',
         // Bootstrap for Precision Assembler
-        'electric_coil', 'electric_motor',
-        // Self-build
-        'heavy_assembly', 'foundry',
-        'chemical_plant',
-        'steel_forge','precision_assembler'
+        'electric_coil', 'electric_motor'
       ]
     },
     {
@@ -1123,10 +1115,7 @@ export const defaultRules = {
         'motor_housing_unit', 'insulated_pipe', 'relay_panel', 'wire_spool', 'lamp_fixture',
 
         // Age 6
-        'steel_bracket', 'bracket_assembly',
-
-        // Machines
-        'diesel_gen', 'precision_assembler','electronics_fab'
+        'steel_bracket', 'bracket_assembly'
       ]
     },
     {
@@ -1157,8 +1146,6 @@ export const defaultRules = {
         'medical_scanner', 'quantum_computer', 'teleporter_pad', 'energy_shield', 'weather_control', 'replicator',
         'cryogenic_chamber', 'space_helmet', 'graphene_armor', 'neural_implant',
 
-        // Machines
-         'solar_array', 'fusion_reactor'
       ]
     }
   ],
