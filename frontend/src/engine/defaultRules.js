@@ -991,9 +991,11 @@ export const defaultRules = {
       id: 'potters_wheel_machine',
       itemId: 'potters_wheel_machine',
       name: "Potter's Wheel",
-      sizeX: 1, sizeY: 1,
+      sizeX: 2, sizeY: 2,
       energyConsumption: 1,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 4, speed: 0.02 },
+      spriteScale:1.1,
+      disableAutoScale: true,
       allowedRecipes: [
         // Ceramics
         'vase', 'pot', 'ceramic_bowl', 'tile_floor', 'plate_set',

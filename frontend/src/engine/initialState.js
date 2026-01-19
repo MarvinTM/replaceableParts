@@ -38,7 +38,8 @@ export const initialState = {
     stone_furnace: 1,
     blacksmiths_anvil: 1,
     carpenters_bench: 1,
-    glassblowers_workshop: 1
+    glassblowers_workshop: 1,
+    potters_wheel_machine: 1
   },
 
   // Built Generators (ready to deploy, not in regular inventory)
