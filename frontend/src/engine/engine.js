@@ -553,16 +553,60 @@ function simulateTick(state, rules) {
   }
 
   // 5. Market Recovery (for items not sold this tick)
+  // Initialize marketDamage if it doesn't exist (for old saves)
+  if (!newState.marketDamage) {
+    newState.marketDamage = {};
+  }
+
   for (const itemId of Object.keys(newState.marketPopularity)) {
     if (!soldThisTick.has(itemId)) {
+      // Calculate recovery rate scaled by market damage
+      const damage = newState.marketDamage[itemId] || 0;
+      const damagePenalty = 1 + (damage / rules.market.damagePenaltyFactor);
+      const effectiveRecoveryRate = rules.market.recoveryRate / damagePenalty;
+
+      // Apply recovery
       newState.marketPopularity[itemId] = Math.min(
         rules.market.maxPopularity,
-        newState.marketPopularity[itemId] + rules.market.recoveryRate
+        newState.marketPopularity[itemId] + effectiveRecoveryRate
       );
+
+      // Heal damage over time (only when not selling)
+      if (damage > 0) {
+        newState.marketDamage[itemId] = Math.max(
+          0,
+          damage - rules.market.damageHealingRate
+        );
+      }
     }
   }
 
-  // 6. Advance State
+  // 6. Sample Price History (periodically)
+  const nextTick = newState.tick + 1;
+  if (nextTick % rules.market.priceHistorySampleInterval === 0) {
+    // Initialize price history if needed
+    if (!newState.marketPriceHistory) {
+      newState.marketPriceHistory = [];
+    }
+
+    // Sample current prices for all items with popularity tracking
+    const sample = { tick: nextTick };
+    for (const itemId of Object.keys(newState.marketPopularity)) {
+      const material = rules.materials.find(m => m.id === itemId);
+      if (material) {
+        const popularity = newState.marketPopularity[itemId] || 1.0;
+        sample[itemId] = Math.floor(material.basePrice * popularity);
+      }
+    }
+
+    // Add sample and trim to max samples
+    newState.marketPriceHistory.push(sample);
+    if (newState.marketPriceHistory.length > rules.market.priceHistoryMaxSamples) {
+      newState.marketPriceHistory.shift();
+    }
+  }
+
+  // 7. Advance State
   newState.tick += 1;
   newState.rngSeed = rng.getCurrentSeed();
 
@@ -915,14 +959,50 @@ function sellGoods(state, rules, payload) {
 
   newState.credits += totalCredits;
 
-  // Apply popularity decay
+  // Initialize market tracking if needed
   if (!newState.marketPopularity[itemId]) {
     newState.marketPopularity[itemId] = rules.market.maxPopularity; // New items start at max
   }
+  if (!newState.marketDamage) {
+    newState.marketDamage = {};
+  }
+  if (!newState.marketDamage[itemId]) {
+    newState.marketDamage[itemId] = 0;
+  }
+
+  // Calculate accelerating decay based on quantity sold
+  let totalDecay = 0;
+  let remainingQty = quantity;
+
+  // First 10 units: base rate
+  if (remainingQty > 0) {
+    const qtyAtBaseRate = Math.min(remainingQty, 10);
+    totalDecay += qtyAtBaseRate * rules.market.decayRateBase;
+    remainingQty -= qtyAtBaseRate;
+  }
+
+  // Next 15 units (11-25): medium rate
+  if (remainingQty > 0) {
+    const qtyAtMediumRate = Math.min(remainingQty, 15);
+    totalDecay += qtyAtMediumRate * rules.market.decayRateMedium;
+    remainingQty -= qtyAtMediumRate;
+  }
+
+  // Remaining units (26+): high rate
+  if (remainingQty > 0) {
+    totalDecay += remainingQty * rules.market.decayRateHigh;
+  }
+
+  // Apply decay
   newState.marketPopularity[itemId] = Math.max(
     rules.market.minPopularity,
-    newState.marketPopularity[itemId] - (rules.market.decayRate * quantity)
+    newState.marketPopularity[itemId] - totalDecay
   );
+
+  // Track market damage if selling while saturated (popularity < 1.0)
+  if (newState.marketPopularity[itemId] < 1.0) {
+    newState.marketDamage[itemId] += quantity;
+  }
 
   return { state: newState, error: null };
 }

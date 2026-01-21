@@ -85,6 +85,8 @@ export const initialState = {
   },
 
   marketPopularity: {},
+  marketDamage: {},  // Tracks overselling damage per item
+  marketPriceHistory: [],  // Array of {tick, itemId: price, ...} sampled every N ticks
   explorationMap: null
 };
 

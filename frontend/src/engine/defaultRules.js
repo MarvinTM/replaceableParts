@@ -862,9 +862,19 @@ export const defaultRules = {
   // ============================================================================
   market: {
     noveltyBonus: 2.5,
-    decayRate: 0.04,
-    recoveryRate: 0.02,
-    minPopularity: 0.5,
+    // Decay rates - accelerating with quantity
+    decayRateBase: 0.04,      // For first 10 units
+    decayRateMedium: 0.06,    // For 11-25 units
+    decayRateHigh: 0.10,      // For 26+ units
+    // Recovery
+    recoveryRate: 0.01,        // Reduced from 0.02 - slower recovery
+    damageHealingRate: 0.01,    // How fast damage heals per tick
+    damagePenaltyFactor: 50,   // Divides recovery: effectiveRecovery = base / (1 + damage/factor)
+    // Price history tracking
+    priceHistorySampleInterval: 10,  // Sample prices every 10 ticks
+    priceHistoryMaxSamples: 50,      // Keep last 50 samples (500 ticks of history)
+    // Bounds
+    minPopularity: 0.25,
     maxPopularity: 2.5
   },
 

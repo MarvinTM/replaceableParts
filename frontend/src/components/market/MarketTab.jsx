@@ -42,7 +42,44 @@ const AGE_COLORS = {
   7: '#00CED1'  // Dark turquoise (future)
 };
 
-const SAMPLE_INTERVAL = 10; // Sample prices every 10 ticks
+// Custom Legend with Material Icons
+function CustomLegend({ payload }) {
+  if (!payload || payload.length === 0) return null;
+
+  return (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mt: 2 }}>
+      {payload.map((entry, index) => (
+        <Box
+          key={`legend-${index}`}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+            px: 1,
+            py: 0.5,
+            borderRadius: 1,
+            bgcolor: 'background.paper',
+            border: 1,
+            borderColor: 'divider'
+          }}
+        >
+          <MaterialIcon materialId={entry.dataKey} size={16} />
+          <Box
+            sx={{
+              width: 20,
+              height: 3,
+              bgcolor: entry.color,
+              borderRadius: 1
+            }}
+          />
+          <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+            {entry.value}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 export default function MarketTab() {
   const { t } = useTranslation();
@@ -53,7 +90,6 @@ export default function MarketTab() {
   const sellGoods = useGameStore((state) => state.sellGoods);
 
   // Local state
-  const [priceHistory, setPriceHistory] = useState([]); // [{tick, itemId: price, ...}]
   const [selectedItem, setSelectedItem] = useState(null);
   const [sellQuantity, setSellQuantity] = useState(1);
   const [ageFilters, setAgeFilters] = useState({
@@ -61,29 +97,6 @@ export default function MarketTab() {
   });
   const [sortBy, setSortBy] = useState('age'); // 'age' | 'price' | 'quantity' | 'popularity'
   const [salesHistory, setSalesHistory] = useState([]); // Track sales for analytics
-
-  // Sample prices periodically
-  useEffect(() => {
-    const currentTick = engineState.tick;
-
-    // Sample every SAMPLE_INTERVAL ticks
-    if (currentTick % SAMPLE_INTERVAL === 0) {
-      const newSample = { tick: currentTick };
-
-      // Get all discovered final goods
-      const discoveredFinalGoods = getDiscoveredFinalGoods();
-
-      discoveredFinalGoods.forEach(item => {
-        newSample[item.id] = getCurrentPrice(item.id);
-      });
-
-      setPriceHistory(prev => {
-        const updated = [...prev, newSample];
-        // Keep last 500 ticks of history (50 samples)
-        return updated.slice(-50);
-      });
-    }
-  }, [engineState.tick]);
 
   // Get discovered final goods based on discoveredRecipes
   const getDiscoveredFinalGoods = () => {
@@ -247,8 +260,8 @@ export default function MarketTab() {
 
   // Prepare chart data
   const chartData = useMemo(() => {
-    return priceHistory;
-  }, [priceHistory]);
+    return engineState.marketPriceHistory || [];
+  }, [engineState.marketPriceHistory]);
 
   const discoveredFinalGoods = getDiscoveredFinalGoods();
 
@@ -311,7 +324,7 @@ export default function MarketTab() {
                 label={{ value: 'Price', angle: -90, position: 'insideLeft' }}
               />
               <RechartsTooltip />
-              <Legend />
+              <Legend content={<CustomLegend />} />
               {discoveredFinalGoods.map(item => (
                 <Line
                   key={item.id}
