@@ -72,12 +72,12 @@ export const initialState = {
   // Discovery: Start with Age 1 basics
   discoveredRecipes: [
     'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails',
-    'stone_furnace', 'treadwheel', 'chair'
+    'stone_furnace', 'treadwheel', 'chair', 'table'
   ],
 
   unlockedRecipes: [
     'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails',
-    'stone_furnace', 'treadwheel', 'chair'
+    'stone_furnace', 'treadwheel', 'chair', 'table'
   ],
 
   research: {
@@ -87,6 +87,7 @@ export const initialState = {
   marketPopularity: {},
   marketDamage: {},  // Tracks overselling damage per item
   marketPriceHistory: [],  // Array of {tick, itemId: price, ...} sampled every N ticks
+  marketRecentSales: [],  // Array of {tick, itemId} for last 100 ticks (for diversification bonus)
   explorationMap: null
 };
 
