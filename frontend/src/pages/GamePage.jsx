@@ -40,6 +40,7 @@ import MaterialIcon from '../components/common/MaterialIcon';
 import FloatingHUD from '../components/common/FloatingHUD';
 import CollapsibleSidebar from '../components/common/CollapsibleSidebar';
 import CollapsibleActionsPanel from '../components/common/CollapsibleActionsPanel';
+import MarketTab from '../components/market/MarketTab';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -893,11 +894,7 @@ export default function GamePage() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={3}>
-        <PlaceholderTab
-          title={t('main.tabs.market')}
-          description={t('main.marketDescription')}
-          icon={StorefrontIcon}
-        />
+        <MarketTab />
       </TabPanel>
     </Box>
   );
