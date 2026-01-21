@@ -186,6 +186,45 @@ export default function MarketTab() {
     return { hot, cold };
   }, [engineState.marketPopularity, engineState.tick]);
 
+  // Diversification bonus calculation
+  const diversificationStats = useMemo(() => {
+    const recentSales = engineState.marketRecentSales || [];
+    const windowStart = engineState.tick - rules.market.diversificationWindow;
+    const validSales = recentSales.filter(sale => sale.tick > windowStart);
+    const uniqueItemsSold = new Set(validSales.map(sale => sale.itemId)).size;
+
+    // Find applicable bonus
+    let bonusMultiplier = 1.0;
+    let nextThreshold = null;
+    const bonusThresholds = Object.keys(rules.market.diversificationBonuses)
+      .map(Number)
+      .sort((a, b) => b - a); // Sort descending
+
+    for (const threshold of bonusThresholds) {
+      if (uniqueItemsSold >= threshold) {
+        bonusMultiplier = rules.market.diversificationBonuses[threshold];
+        break;
+      }
+    }
+
+    // Find next threshold to unlock
+    const sortedAscending = [...bonusThresholds].sort((a, b) => a - b);
+    for (const threshold of sortedAscending) {
+      if (uniqueItemsSold < threshold) {
+        nextThreshold = threshold;
+        break;
+      }
+    }
+
+    return {
+      uniqueItemsSold,
+      bonusMultiplier,
+      bonusPercent: Math.round((bonusMultiplier - 1) * 100),
+      nextThreshold,
+      nextBonus: nextThreshold ? rules.market.diversificationBonuses[nextThreshold] : null
+    };
+  }, [engineState.marketRecentSales, engineState.tick]);
+
   // Revenue analytics
   const revenueAnalytics = useMemo(() => {
     const totalRevenue = salesHistory.reduce((sum, sale) => sum + sale.totalPrice, 0);
@@ -396,6 +435,36 @@ export default function MarketTab() {
                 <Typography variant="body2" color="text.secondary">No saturated markets</Typography>
               )}
             </Box>
+          </Box>
+
+          {/* Diversification Bonus */}
+          <Box sx={{ mt: 2, p: 1.5, bgcolor: diversificationStats.bonusPercent > 0 ? 'success.dark' : 'action.hover', borderRadius: 1, border: 1, borderColor: diversificationStats.bonusPercent > 0 ? 'success.main' : 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="subtitle2" fontWeight="bold">
+                Diversification Bonus
+              </Typography>
+              {diversificationStats.bonusPercent > 0 && (
+                <Chip
+                  label={`+${diversificationStats.bonusPercent}%`}
+                  color="success"
+                  size="small"
+                  sx={{ fontWeight: 'bold' }}
+                />
+              )}
+            </Box>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              {diversificationStats.uniqueItemsSold} unique item{diversificationStats.uniqueItemsSold !== 1 ? 's' : ''} sold recently
+            </Typography>
+            {diversificationStats.nextThreshold && (
+              <Typography variant="caption" color="text.secondary">
+                Sell {diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold} more type{(diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold) !== 1 ? 's' : ''} to unlock +{Math.round((diversificationStats.nextBonus - 1) * 100)}% bonus
+              </Typography>
+            )}
+            {!diversificationStats.nextThreshold && diversificationStats.bonusPercent > 0 && (
+              <Typography variant="caption" color="success.light">
+                Maximum diversification bonus achieved!
+              </Typography>
+            )}
           </Box>
 
           {/* Recommendations */}

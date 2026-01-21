@@ -947,9 +947,31 @@ function sellGoods(state, rules, payload) {
     return { state: newState, error: 'Item not found in materials list' };
   }
 
+  // Initialize market tracking if needed
+  if (!newState.marketRecentSales) {
+    newState.marketRecentSales = [];
+  }
+
+  // Calculate diversification bonus based on recent sales
+  const recentWindow = newState.tick - rules.market.diversificationWindow;
+  const recentSales = newState.marketRecentSales.filter(sale => sale.tick > recentWindow);
+  const uniqueItemsSold = new Set(recentSales.map(sale => sale.itemId)).size;
+
+  let diversificationBonus = 1.0;
+  const bonusThresholds = Object.keys(rules.market.diversificationBonuses)
+    .map(Number)
+    .sort((a, b) => b - a); // Sort descending
+
+  for (const threshold of bonusThresholds) {
+    if (uniqueItemsSold >= threshold) {
+      diversificationBonus = rules.market.diversificationBonuses[threshold];
+      break;
+    }
+  }
+
   // Get popularity multiplier (default to 1.0 if not tracked)
   const popularity = newState.marketPopularity[itemId] || 1.0;
-  const pricePerUnit = material.basePrice * popularity;
+  const pricePerUnit = material.basePrice * popularity * diversificationBonus;
   const totalCredits = Math.floor(pricePerUnit * quantity);
 
   newState.inventory[itemId] -= quantity;
@@ -1000,9 +1022,23 @@ function sellGoods(state, rules, payload) {
   );
 
   // Track market damage if selling while saturated (popularity < 1.0)
+  // Apply age-based damage multiplier (lower ages saturate faster)
   if (newState.marketPopularity[itemId] < 1.0) {
-    newState.marketDamage[itemId] += quantity;
+    const ageMultiplier = rules.market.ageDamageMultipliers[material.age] || 1.0;
+    newState.marketDamage[itemId] += quantity * ageMultiplier;
   }
+
+  // Track this sale for diversification bonus calculation
+  newState.marketRecentSales.push({
+    tick: newState.tick,
+    itemId: itemId
+  });
+
+  // Trim old sales outside the diversification window
+  const windowStart = newState.tick - rules.market.diversificationWindow;
+  newState.marketRecentSales = newState.marketRecentSales.filter(
+    sale => sale.tick > windowStart
+  );
 
   return { state: newState, error: null };
 }
