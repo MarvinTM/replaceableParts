@@ -933,6 +933,49 @@ function moveGenerator(state, rules, payload) {
   return { state: newState, error: null };
 }
 
+/**
+ * Calculate obsolescence multiplier for an item based on technological advancement
+ * Returns a multiplier (0.5 to 1.0) where lower = more obsolete
+ */
+function calculateObsolescence(itemAge, discoveredRecipes, rules) {
+  if (!rules.market.obsolescenceEnabled) {
+    return 1.0; // No obsolescence if disabled
+  }
+
+  const nextAge = itemAge + 1;
+  if (nextAge > 7) {
+    return 1.0; // Age 7 has no next age, so no obsolescence
+  }
+
+  // Count total final goods recipes for next age
+  const nextAgeFinalGoods = rules.recipes.filter(recipe => {
+    const outputs = Object.keys(recipe.outputs || {});
+    return outputs.some(outputId => {
+      const material = rules.materials.find(m => m.id === outputId);
+      return material && material.category === 'final' && material.age === nextAge;
+    });
+  });
+
+  const totalNextAgeRecipes = nextAgeFinalGoods.length;
+  if (totalNextAgeRecipes === 0) {
+    return 1.0; // No final goods in next age
+  }
+
+  // Count discovered final goods recipes from next age
+  const discoveredNextAgeRecipes = nextAgeFinalGoods.filter(recipe =>
+    discoveredRecipes.includes(recipe.id)
+  ).length;
+
+  // Calculate progress through next age (0.0 to 1.0)
+  const progressThroughNextAge = discoveredNextAgeRecipes / totalNextAgeRecipes;
+
+  // Calculate obsolescence debuff
+  const debuff = progressThroughNextAge * rules.market.obsolescenceMaxDebuff;
+
+  // Return multiplier (1.0 = no debuff, 0.5 = max debuff)
+  return 1.0 - debuff;
+}
+
 function sellGoods(state, rules, payload) {
   const newState = deepClone(state);
   const { itemId, quantity } = payload;
@@ -969,9 +1012,18 @@ function sellGoods(state, rules, payload) {
     }
   }
 
+  // Calculate obsolescence multiplier (technological advancement penalty)
+  const obsolescenceMultiplier = calculateObsolescence(
+    material.age,
+    newState.discoveredRecipes || [],
+    rules
+  );
+
   // Get popularity multiplier (default to 1.0 if not tracked)
   const popularity = newState.marketPopularity[itemId] || 1.0;
-  const pricePerUnit = material.basePrice * popularity * diversificationBonus;
+
+  // Final price = base × popularity × diversification × obsolescence
+  const pricePerUnit = material.basePrice * popularity * diversificationBonus * obsolescenceMultiplier;
   const totalCredits = Math.floor(pricePerUnit * quantity);
 
   newState.inventory[itemId] -= quantity;
@@ -1022,10 +1074,9 @@ function sellGoods(state, rules, payload) {
   );
 
   // Track market damage if selling while saturated (popularity < 1.0)
-  // Apply age-based damage multiplier (lower ages saturate faster)
+  // All ages accumulate damage equally (saturation affects all ages the same)
   if (newState.marketPopularity[itemId] < 1.0) {
-    const ageMultiplier = rules.market.ageDamageMultipliers[material.age] || 1.0;
-    newState.marketDamage[itemId] += quantity * ageMultiplier;
+    newState.marketDamage[itemId] += quantity;
   }
 
   // Track this sale for diversification bonus calculation

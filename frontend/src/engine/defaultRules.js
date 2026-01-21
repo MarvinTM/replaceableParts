@@ -880,16 +880,10 @@ export const defaultRules = {
       5: 1.15,   // 5+ unique items → +15% all prices
       7: 1.20    // 7+ unique items → +20% all prices
     },
-    // Age-Based Market Maturity (lower ages saturate faster)
-    ageDamageMultipliers: {
-      1: 1.5,    // Age 1 accumulates damage 50% faster
-      2: 1.3,    // Age 2 accumulates damage 30% faster
-      3: 1.1,    // Age 3 accumulates damage 10% faster
-      4: 1.0,    // Age 4 baseline
-      5: 0.8,    // Age 5 accumulates damage 20% slower
-      6: 0.6,    // Age 6 accumulates damage 40% slower
-      7: 0.4     // Age 7 accumulates damage 60% slower (premium market)
-    },
+    // Age Obsolescence (older products lose value as you advance)
+    // When you discover Age N+1 recipes, Age N products become obsolete
+    obsolescenceEnabled: true,
+    obsolescenceMaxDebuff: 0.5,  // Max 50% price reduction when next age fully discovered
     // Bounds
     minPopularity: 0.25,
     maxPopularity: 2.5

@@ -123,13 +123,14 @@ export default function MarketTab() {
       .filter(Boolean);
   };
 
-  // Calculate current price for an item
+  // Calculate current price for an item (includes popularity and obsolescence, but not diversification)
   const getCurrentPrice = (itemId) => {
     const material = rules.materials.find(m => m.id === itemId);
     if (!material) return 0;
 
     const popularity = engineState.marketPopularity?.[itemId] || 1.0;
-    return Math.floor(material.basePrice * popularity);
+    const obsolescence = getObsolescence(material.age);
+    return Math.floor(material.basePrice * popularity * obsolescence);
   };
 
   // Get popularity for an item
@@ -142,6 +143,44 @@ export default function MarketTab() {
     return engineState.inventory?.[itemId] || 0;
   };
 
+  // Calculate obsolescence for an age
+  const getObsolescence = (age) => {
+    if (!rules.market.obsolescenceEnabled) {
+      return 1.0;
+    }
+
+    const nextAge = age + 1;
+    if (nextAge > 7) {
+      return 1.0;
+    }
+
+    // Count total final goods recipes for next age
+    const nextAgeFinalGoods = rules.recipes.filter(recipe => {
+      const outputs = Object.keys(recipe.outputs || {});
+      return outputs.some(outputId => {
+        const material = rules.materials.find(m => m.id === outputId);
+        return material && material.category === 'final' && material.age === nextAge;
+      });
+    });
+
+    const totalNextAgeRecipes = nextAgeFinalGoods.length;
+    if (totalNextAgeRecipes === 0) {
+      return 1.0;
+    }
+
+    // Count discovered final goods recipes from next age
+    const discoveredRecipes = engineState.discoveredRecipes || [];
+    const discoveredNextAgeRecipes = nextAgeFinalGoods.filter(recipe =>
+      discoveredRecipes.includes(recipe.id)
+    ).length;
+
+    // Calculate progress and debuff
+    const progress = discoveredNextAgeRecipes / totalNextAgeRecipes;
+    const debuff = progress * rules.market.obsolescenceMaxDebuff;
+
+    return 1.0 - debuff;
+  };
+
   // Get all final goods in inventory with details
   const inventoryFinalGoods = useMemo(() => {
     const discovered = getDiscoveredFinalGoods();
@@ -151,7 +190,8 @@ export default function MarketTab() {
         ...material,
         quantity: getInventoryQuantity(material.id),
         currentPrice: getCurrentPrice(material.id),
-        popularity: getPopularity(material.id)
+        popularity: getPopularity(material.id),
+        obsolescence: getObsolescence(material.age)
       }))
       .filter(item => item.quantity > 0 || true) // Show all discovered, even if qty=0
       .filter(item => ageFilters[item.age]) // Apply age filters
@@ -224,6 +264,46 @@ export default function MarketTab() {
       nextBonus: nextThreshold ? rules.market.diversificationBonuses[nextThreshold] : null
     };
   }, [engineState.marketRecentSales, engineState.tick]);
+
+  // Obsolescence stats (technological advancement penalties)
+  const obsolescenceStats = useMemo(() => {
+    const stats = [];
+
+    for (let age = 1; age <= 7; age++) {
+      const obsolescenceMultiplier = getObsolescence(age);
+      const debuffPercent = Math.round((1.0 - obsolescenceMultiplier) * 100);
+
+      if (debuffPercent > 0) {
+        const nextAge = age + 1;
+
+        // Count recipes discovered in next age
+        const nextAgeFinalGoods = rules.recipes.filter(recipe => {
+          const outputs = Object.keys(recipe.outputs || {});
+          return outputs.some(outputId => {
+            const material = rules.materials.find(m => m.id === outputId);
+            return material && material.category === 'final' && material.age === nextAge;
+          });
+        });
+
+        const discoveredRecipes = engineState.discoveredRecipes || [];
+        const discoveredNextAge = nextAgeFinalGoods.filter(recipe =>
+          discoveredRecipes.includes(recipe.id)
+        ).length;
+        const totalNextAge = nextAgeFinalGoods.length;
+
+        stats.push({
+          age,
+          nextAge,
+          debuffPercent,
+          discoveredNextAge,
+          totalNextAge,
+          progressPercent: Math.round((discoveredNextAge / totalNextAge) * 100)
+        });
+      }
+    }
+
+    return stats;
+  }, [engineState.discoveredRecipes, engineState.tick]);
 
   // Revenue analytics
   const revenueAnalytics = useMemo(() => {
@@ -467,6 +547,38 @@ export default function MarketTab() {
             )}
           </Box>
 
+          {/* Age Obsolescence */}
+          {obsolescenceStats.length > 0 && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: 'warning.dark', borderRadius: 1, border: 1, borderColor: 'warning.main' }}>
+              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                Technological Obsolescence
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 1.5 }}>
+                Older products lose value as you discover newer technology
+              </Typography>
+              {obsolescenceStats.map(stat => (
+                <Box key={stat.age} sx={{ mb: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography variant="body2" fontWeight="bold">
+                      Age {stat.age} goods
+                    </Typography>
+                    <Chip
+                      label={`-${stat.debuffPercent}%`}
+                      color="warning"
+                      size="small"
+                    />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    {stat.discoveredNextAge}/{stat.totalNextAge} Age {stat.nextAge} recipes discovered ({stat.progressPercent}%)
+                  </Typography>
+                </Box>
+              ))}
+              <Typography variant="caption" color="warning.light" sx={{ mt: 1, display: 'block' }}>
+                Research and produce higher-age goods to maintain profits!
+              </Typography>
+            </Box>
+          )}
+
           {/* Recommendations */}
           <Box sx={{ mt: 2, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
             <Typography variant="subtitle2" gutterBottom>
@@ -517,7 +629,16 @@ export default function MarketTab() {
                       <Typography variant="body1" fontWeight="bold">{item.name}</Typography>
                       <Typography variant="caption" color="text.secondary">Age {item.age}</Typography>
                     </Box>
-                    <Chip label={status.label} color={status.color} size="small" />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Chip label={status.label} color={status.color} size="small" />
+                      {item.obsolescence < 1.0 && (
+                        <Chip
+                          label={`-${Math.round((1 - item.obsolescence) * 100)}% Obsolete`}
+                          color="warning"
+                          size="small"
+                        />
+                      )}
+                    </Box>
                   </Box>
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
