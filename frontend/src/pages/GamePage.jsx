@@ -11,6 +11,7 @@ import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import CircularProgress from '@mui/material/CircularProgress';
 import FactoryIcon from '@mui/icons-material/Factory';
 import ExploreIcon from '@mui/icons-material/Explore';
 import ScienceIcon from '@mui/icons-material/Science';
@@ -796,7 +797,7 @@ function PlaceholderTab({ title, description, icon: Icon }) {
 
 export default function GamePage() {
   const { t } = useTranslation();
-  const { currentGame } = useGame();
+  const { currentGame, isAutoRestoring } = useGame();
 
   const engineState = useGameStore((state) => state.engineState);
   const isRunning = useGameStore((state) => state.isRunning);
@@ -806,9 +807,19 @@ export default function GamePage() {
 
   const [tabValue, setTabValue] = useState(0);
 
-  // If no game is loaded, redirect to menu
-  if (!currentGame || !engineState) {
+  // If no game is loaded and not auto-restoring, redirect to menu
+  if ((!currentGame || !engineState) && !isAutoRestoring) {
     return <Navigate to="/" replace />;
+  }
+
+  // Show loading screen during auto-restore
+  if (isAutoRestoring) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 2 }}>
+        <CircularProgress />
+        <Typography variant="h6">{t('game.restoring', 'Restoring game...')}</Typography>
+      </Box>
+    );
   }
 
   const handleTabChange = (event, newValue) => {

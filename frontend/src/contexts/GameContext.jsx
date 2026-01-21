@@ -9,6 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 export function GameProvider({ children }) {
   const [saves, setSaves] = useState([]);
   const [isLoadingSaves, setIsLoadingSaves] = useState(false);
+  const [isAutoRestoring, setIsAutoRestoring] = useState(false);
 
   // Get state and actions from Zustand store
   const engineState = useGameStore((state) => state.engineState);
@@ -129,6 +130,31 @@ export function GameProvider({ children }) {
     }
   }, [saveId, loadSaves, clearGame]);
 
+  // Auto-restore last played game on mount (after page refresh)
+  const hasAttemptedRestore = useRef(false);
+  useEffect(() => {
+    const autoRestore = async () => {
+      // If there's a saveId in localStorage but no engineState in memory,
+      // it means the page was refreshed - restore the game from backend
+      if (saveId && !engineState && !isAutoRestoring && !hasAttemptedRestore.current) {
+        hasAttemptedRestore.current = true;
+        setIsAutoRestoring(true);
+        try {
+          console.log(`Auto-restoring last played game: ${saveName} (ID: ${saveId})`);
+          await loadGame(saveId);
+        } catch (error) {
+          console.error('Failed to auto-restore game:', error);
+          // Clear the stale saveId if the restore fails
+          clearGame();
+        } finally {
+          setIsAutoRestoring(false);
+        }
+      }
+    };
+
+    autoRestore();
+  }, [saveId, engineState, isAutoRestoring, saveName, loadGame, clearGame]); // React to changes
+
   // Auto-save every 30 seconds while in game
   useEffect(() => {
     if (!isInGame || !saveId) return;
@@ -192,6 +218,7 @@ export function GameProvider({ children }) {
     saves,
     isInGame,
     isLoadingSaves,
+    isAutoRestoring,
     loadSaves,
     getLatestSave,
     startNewGame,

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { engine } from '../engine/engine.js';
 import { createInitialState } from '../engine/initialState.js';
 import { defaultRules } from '../engine/defaultRules.js';
@@ -10,7 +10,8 @@ import { defaultRules } from '../engine/defaultRules.js';
  */
 const useGameStore = create(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       // Engine state
       engineState: null,
       rules: defaultRules,
@@ -274,6 +275,14 @@ const useGameStore = create(
         }
       }
     }),
+      {
+        name: 'replaceableParts-lastSave',
+        partialize: (state) => ({
+          saveId: state.saveId,
+          saveName: state.saveName
+        })
+      }
+    ),
     { name: 'replaceableParts-game' }
   )
 );
