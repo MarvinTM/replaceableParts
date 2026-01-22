@@ -495,6 +495,17 @@ function simulateTick(state, rules) {
   const newState = deepClone(state);
   const rng = createRNG(state.rngSeed);
 
+  // Initialize research state for backward compatibility with old saves
+  if (!newState.research) {
+    newState.research = { active: false, researchPoints: 0, awaitingPrototype: [] };
+  }
+  if (!newState.research.awaitingPrototype) {
+    newState.research.awaitingPrototype = [];
+  }
+  if (typeof newState.research.researchPoints !== 'number') {
+    newState.research.researchPoints = 0;
+  }
+
   // Track production events for UI animations
   const productionEvents = [];
 
@@ -1398,11 +1409,27 @@ function buyInventorySpace(state, rules, payload) {
 // ============================================================================
 
 /**
+ * Initialize research state for backward compatibility with old saves
+ */
+function initializeResearchState(state) {
+  if (!state.research) {
+    state.research = { active: false, researchPoints: 0, awaitingPrototype: [] };
+  }
+  if (!state.research.awaitingPrototype) {
+    state.research.awaitingPrototype = [];
+  }
+  if (typeof state.research.researchPoints !== 'number') {
+    state.research.researchPoints = 0;
+  }
+}
+
+/**
  * Convert credits to Research Points (RP)
  * Uses creditsToRPRatio from rules (default 10:1)
  */
 function donateCredits(state, rules, payload) {
   const newState = deepClone(state);
+  initializeResearchState(newState);
   const { amount } = payload;
 
   if (typeof amount !== 'number' || amount <= 0) {
@@ -1430,6 +1457,7 @@ function donateCredits(state, rules, payload) {
  */
 function donateParts(state, rules, payload) {
   const newState = deepClone(state);
+  initializeResearchState(newState);
   const { itemId, quantity } = payload;
 
   if (typeof quantity !== 'number' || quantity <= 0) {
@@ -1470,6 +1498,7 @@ function donateParts(state, rules, payload) {
  */
 function runExperiment(state, rules, payload) {
   const newState = deepClone(state);
+  initializeResearchState(newState);
   const rng = createRNG(state.rngSeed);
 
   // Find undiscovered recipes
@@ -1510,6 +1539,7 @@ function runExperiment(state, rules, payload) {
  */
 function fillPrototypeSlot(state, rules, payload) {
   const newState = deepClone(state);
+  initializeResearchState(newState);
   const { recipeId, materialId, quantity } = payload;
 
   if (typeof quantity !== 'number' || quantity <= 0) {

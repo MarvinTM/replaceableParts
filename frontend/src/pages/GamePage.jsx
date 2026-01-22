@@ -104,7 +104,7 @@ function FactoryTab() {
 
   if (!engineState) return null;
 
-  const { machines, generators, floorSpace, inventory, credits, rngSeed, unlockedRecipes, builtMachines, builtGenerators } = engineState;
+  const { machines, generators, floorSpace, inventory, credits, unlockedRecipes, builtMachines, builtGenerators } = engineState;
 
   // Get current machine state from engineState (ensures fresh data after toggle)
   const selectedMachine = selectedMachineId
@@ -501,7 +501,6 @@ function FactoryTab() {
             </Box>
             <Box sx={{ flex: 1, minHeight: 0 }}>
               <FactoryCanvas
-                key={rngSeed}
                 floorSpace={floorSpace}
                 machines={machines}
                 generators={generators}
