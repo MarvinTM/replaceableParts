@@ -893,9 +893,18 @@ export const defaultRules = {
   // Research
   // ============================================================================
   research: {
+    // Existing
     energyCost: 3,
     discoveryChance: 0.20,
-    proximityWeight: 0.5
+    proximityWeight: 0.5,
+
+    // Research Points system
+    creditsToRPRatio: 10,           // 10 credits = 1 RP
+    ageMultipliers: { 1: 1.0, 2: 1.5, 3: 2.0, 4: 3.0, 5: 5.0, 6: 8.0, 7: 12.0 },
+    passiveDiscoveryChance: 0.002,  // 1/500 per tick
+    ageWeighting: { floor: 0.30, ceiling: 0.85 },
+    experimentCosts: { 1: 100, 2: 150, 3: 250, 4: 400, 5: 700, 6: 1200, 7: 2000 },
+    prototypeMultiplier: 5          // 5x recipe quantity for prototypes
   },
 
   // ============================================================================

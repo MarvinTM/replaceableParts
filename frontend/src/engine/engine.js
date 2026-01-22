@@ -49,6 +49,142 @@ function getMaxStack(itemId, inventoryCapacity, rules) {
 }
 
 // ============================================================================
+// Research Helper Functions
+// ============================================================================
+
+/**
+ * Calculate the highest age for which the player has unlocked any recipe
+ */
+function calculateHighestUnlockedAge(state, rules) {
+  let highestAge = 1;
+  for (const recipeId of state.unlockedRecipes) {
+    const recipe = rules.recipes.find(r => r.id === recipeId);
+    if (recipe) {
+      // Check output materials for their age
+      for (const outputId of Object.keys(recipe.outputs)) {
+        const material = rules.materials.find(m => m.id === outputId);
+        if (material && material.age > highestAge) {
+          highestAge = material.age;
+        }
+      }
+    }
+  }
+  return highestAge;
+}
+
+/**
+ * Select a recipe using age-weighted randomization
+ * Higher ages have higher probability based on how many recipes are missing
+ */
+function selectRecipeByAgeWeighting(undiscovered, state, rules, rng) {
+  const { floor, ceiling } = rules.research.ageWeighting;
+
+  // Group undiscovered recipes by age
+  const recipesByAge = {};
+  for (const recipe of undiscovered) {
+    // Determine recipe age from its outputs
+    let recipeAge = 1;
+    for (const outputId of Object.keys(recipe.outputs)) {
+      const material = rules.materials.find(m => m.id === outputId);
+      if (material && material.age > recipeAge) {
+        recipeAge = material.age;
+      }
+    }
+    if (!recipesByAge[recipeAge]) {
+      recipesByAge[recipeAge] = [];
+    }
+    recipesByAge[recipeAge].push(recipe);
+  }
+
+  // Calculate total recipes per age (for missing ratio calculation)
+  const totalRecipesByAge = {};
+  for (const recipe of rules.recipes) {
+    let recipeAge = 1;
+    for (const outputId of Object.keys(recipe.outputs)) {
+      const material = rules.materials.find(m => m.id === outputId);
+      if (material && material.age > recipeAge) {
+        recipeAge = material.age;
+      }
+    }
+    totalRecipesByAge[recipeAge] = (totalRecipesByAge[recipeAge] || 0) + 1;
+  }
+
+  // Calculate probability for each age
+  const ages = Object.keys(recipesByAge).map(Number).sort((a, b) => a - b);
+  const probabilities = {};
+  let totalProb = 0;
+
+  for (const age of ages) {
+    const missingCount = recipesByAge[age].length;
+    const totalCount = totalRecipesByAge[age] || 1;
+    const missingRatio = missingCount / totalCount;
+    const prob = floor + (ceiling - floor) * missingRatio;
+    probabilities[age] = prob;
+    totalProb += prob;
+  }
+
+  // Normalize probabilities and select
+  let roll = rng.next() * totalProb;
+  for (const age of ages) {
+    roll -= probabilities[age];
+    if (roll <= 0) {
+      // Select random recipe from this age
+      const recipesInAge = recipesByAge[age];
+      const index = Math.floor(rng.next() * recipesInAge.length);
+      return recipesInAge[index];
+    }
+  }
+
+  // Fallback: return first undiscovered
+  return undiscovered[0];
+}
+
+/**
+ * Create a prototype entry for a discovered recipe
+ */
+function createPrototypeEntry(recipe, rules) {
+  const multiplier = rules.research.prototypeMultiplier;
+
+  // Determine if any input is a raw material (flow mode) or all are intermediate/final (slots mode)
+  let hasNonRawInput = false;
+  for (const inputId of Object.keys(recipe.inputs)) {
+    const material = rules.materials.find(m => m.id === inputId);
+    if (material && material.category !== 'raw') {
+      hasNonRawInput = true;
+      break;
+    }
+  }
+
+  if (!hasNonRawInput) {
+    // Flow mode: all inputs are raw materials
+    const prototypeProgress = {};
+    for (const inputId of Object.keys(recipe.inputs)) {
+      prototypeProgress[inputId] = 0;
+    }
+    return {
+      recipeId: recipe.id,
+      mode: 'flow',
+      prototypeProgress,
+      requiredAmounts: Object.fromEntries(
+        Object.entries(recipe.inputs).map(([id, qty]) => [id, qty * multiplier])
+      )
+    };
+  } else {
+    // Slots mode: at least one input is non-raw
+    const slots = Object.entries(recipe.inputs).map(([materialId, quantity]) => ({
+      material: materialId,
+      quantity: quantity * multiplier,
+      filled: 0
+    }));
+    return {
+      recipeId: recipe.id,
+      mode: 'slots',
+      slots
+    };
+  }
+}
+
+// ============================================================================
 // Structure Dimension Utilities
 // ============================================================================
 
@@ -551,6 +687,71 @@ function simulateTick(state, rules) {
       }
     }
   }
+
+  // 4b. Passive Discovery (1/500 chance per tick, independent of active research)
+  if (rules.research.passiveDiscoveryChance) {
+    const passiveRoll = rng.next();
+    if (passiveRoll < rules.research.passiveDiscoveryChance) {
+      const undiscoveredForPassive = rules.recipes.filter(r => !newState.discoveredRecipes.includes(r.id));
+      if (undiscoveredForPassive.length > 0) {
+        // Use age-weighted selection for passive discovery too
+        const passiveRecipe = selectRecipeByAgeWeighting(undiscoveredForPassive, newState, rules, rng);
+        newState.discoveredRecipes.push(passiveRecipe.id);
+        // Create prototype entry for passive discovery
+        const passivePrototype = createPrototypeEntry(passiveRecipe, rules);
+        newState.research.awaitingPrototype.push(passivePrototype);
+      }
+    }
+  }
+
+  // 4c. Flow Prototype Processing (raw materials from extraction feed into prototypes)
+  // Note: This happens after machines have consumed, using leftover raw material supply
+  for (const prototype of newState.research.awaitingPrototype) {
+    if (prototype.mode === 'flow') {
+      let prototypeComplete = true;
+      for (const inputId of Object.keys(prototype.requiredAmounts)) {
+        const needed = prototype.requiredAmounts[inputId];
+        const current = prototype.prototypeProgress[inputId] || 0;
+        const stillNeeded = needed - current;
+
+        if (stillNeeded > 0) {
+          // Pull from raw material supply
+          const available = rawMaterialSupply[inputId] || 0;
+          const toPull = Math.min(stillNeeded, available);
+
+          if (toPull > 0) {
+            prototype.prototypeProgress[inputId] = current + toPull;
+            rawMaterialSupply[inputId] -= toPull;
+          }
+
+          if (prototype.prototypeProgress[inputId] < needed) {
+            prototypeComplete = false;
+          }
+        }
+      }
+
+      // If prototype is complete, move to unlocked recipes
+      if (prototypeComplete) {
+        if (!newState.unlockedRecipes.includes(prototype.recipeId)) {
+          newState.unlockedRecipes.push(prototype.recipeId);
+        }
+      }
+    }
+  }
+
+  // Remove completed flow prototypes
+  newState.research.awaitingPrototype = newState.research.awaitingPrototype.filter(proto => {
+    if (proto.mode === 'flow') {
+      // Check if all requirements are met
+      for (const inputId of Object.keys(proto.requiredAmounts)) {
+        if ((proto.prototypeProgress[inputId] || 0) < proto.requiredAmounts[inputId]) {
+          return true; // Keep incomplete prototypes
+        }
+      }
+      return false; // Remove complete prototypes
+    }
+    return true; // Keep slots-mode prototypes (they're handled separately)
+  });
 
   // 5. Market Recovery (for items not sold this tick)
   // Initialize marketDamage if it doesn't exist (for old saves)
@@ -1193,6 +1394,185 @@ function buyInventorySpace(state, rules, payload) {
 }
 
 // ============================================================================
+// Research Actions
+// ============================================================================
+
+/**
+ * Convert credits to Research Points (RP)
+ * Uses creditsToRPRatio from rules (default 10:1)
+ */
+function donateCredits(state, rules, payload) {
+  const newState = deepClone(state);
+  const { amount } = payload;
+
+  if (typeof amount !== 'number' || amount <= 0) {
+    return { state: newState, error: 'Invalid donation amount' };
+  }
+
+  if (newState.credits < amount) {
+    return { state: newState, error: 'Not enough credits' };
+  }
+
+  const rpGained = Math.floor(amount / rules.research.creditsToRPRatio);
+  if (rpGained <= 0) {
+    return { state: newState, error: `Need at least ${rules.research.creditsToRPRatio} credits to gain 1 RP` };
+  }
+
+  newState.credits -= amount;
+  newState.research.researchPoints += rpGained;
+
+  return { state: newState, error: null };
+}
+
+/**
+ * Convert inventory parts to Research Points (RP)
+ * RP gained = basePrice × ageMultiplier × quantity
+ */
+function donateParts(state, rules, payload) {
+  const newState = deepClone(state);
+  const { itemId, quantity } = payload;
+
+  if (typeof quantity !== 'number' || quantity <= 0) {
+    return { state: newState, error: 'Invalid quantity' };
+  }
+
+  const available = newState.inventory[itemId] || 0;
+  if (available < quantity) {
+    return { state: newState, error: 'Not enough items in inventory' };
+  }
+
+  const material = rules.materials.find(m => m.id === itemId);
+  if (!material) {
+    return { state: newState, error: 'Material not found' };
+  }
+
+  // Raw materials cannot be donated
+  if (material.category === 'raw') {
+    return { state: newState, error: 'Raw materials cannot be donated' };
+  }
+
+  const ageMultiplier = rules.research.ageMultipliers[material.age] || 1.0;
+  const rpGained = Math.floor(material.basePrice * ageMultiplier * quantity);
+
+  newState.inventory[itemId] -= quantity;
+  if (newState.inventory[itemId] === 0) {
+    delete newState.inventory[itemId];
+  }
+
+  newState.research.researchPoints += rpGained;
+
+  return { state: newState, error: null };
+}
+
+/**
+ * Run an experiment to discover a new recipe
+ * Cost is based on the highest unlocked age
+ */
+function runExperiment(state, rules, payload) {
+  const newState = deepClone(state);
+  const rng = createRNG(state.rngSeed);
+
+  // Find undiscovered recipes
+  const undiscovered = rules.recipes.filter(r => !newState.discoveredRecipes.includes(r.id));
+  if (undiscovered.length === 0) {
+    return { state: newState, error: 'All recipes have been discovered' };
+  }
+
+  // Calculate experiment cost based on highest unlocked age
+  const highestAge = calculateHighestUnlockedAge(newState, rules);
+  const experimentCost = rules.research.experimentCosts[highestAge] || rules.research.experimentCosts[1];
+
+  if (newState.research.researchPoints < experimentCost) {
+    return { state: newState, error: `Not enough Research Points (need ${experimentCost} RP)` };
+  }
+
+  // Deduct cost
+  newState.research.researchPoints -= experimentCost;
+
+  // Select recipe using age-weighted randomization
+  const selectedRecipe = selectRecipeByAgeWeighting(undiscovered, newState, rules, rng);
+
+  // Add to discovered recipes
+  newState.discoveredRecipes.push(selectedRecipe.id);
+
+  // Create prototype entry
+  const prototype = createPrototypeEntry(selectedRecipe, rules);
+  newState.research.awaitingPrototype.push(prototype);
+
+  // Update RNG seed
+  newState.rngSeed = rng.getCurrentSeed();
+
+  return { state: newState, error: null };
+}
+
+/**
+ * Fill a slot in a slot-based prototype with inventory items
+ */
+function fillPrototypeSlot(state, rules, payload) {
+  const newState = deepClone(state);
+  const { recipeId, materialId, quantity } = payload;
+
+  if (typeof quantity !== 'number' || quantity <= 0) {
+    return { state: newState, error: 'Invalid quantity' };
+  }
+
+  // Find the prototype
+  const prototype = newState.research.awaitingPrototype.find(p => p.recipeId === recipeId);
+  if (!prototype) {
+    return { state: newState, error: 'Prototype not found' };
+  }
+
+  if (prototype.mode !== 'slots') {
+    return { state: newState, error: 'This prototype uses flow mode, not slots' };
+  }
+
+  // Find the slot for this material
+  const slot = prototype.slots.find(s => s.material === materialId);
+  if (!slot) {
+    return { state: newState, error: 'Material not required for this prototype' };
+  }
+
+  // Check inventory
+  const available = newState.inventory[materialId] || 0;
+  if (available < quantity) {
+    return { state: newState, error: 'Not enough items in inventory' };
+  }
+
+  // Calculate how much can actually be filled
+  const neededForSlot = slot.quantity - slot.filled;
+  const actualFill = Math.min(quantity, neededForSlot);
+
+  if (actualFill <= 0) {
+    return { state: newState, error: 'Slot is already full' };
+  }
+
+  // Consume from inventory
+  newState.inventory[materialId] -= actualFill;
+  if (newState.inventory[materialId] === 0) {
+    delete newState.inventory[materialId];
+  }
+
+  // Fill the slot
+  slot.filled += actualFill;
+
+  // Check if prototype is complete
+  const isComplete = prototype.slots.every(s => s.filled >= s.quantity);
+  if (isComplete) {
+    // Move to unlocked recipes
+    if (!newState.unlockedRecipes.includes(prototype.recipeId)) {
+      newState.unlockedRecipes.push(prototype.recipeId);
+    }
+    // Remove from awaiting prototype
+    const protoIndex = newState.research.awaitingPrototype.findIndex(p => p.recipeId === recipeId);
+    if (protoIndex !== -1) {
+      newState.research.awaitingPrototype.splice(protoIndex, 1);
+    }
+  }
+
+  return { state: newState, error: null };
+}
+
+// ============================================================================
 // Machine/Generator Building Actions
 // ============================================================================
 
@@ -1493,6 +1873,18 @@ export function engine(state, rules, action) {
     case 'TOGGLE_RESEARCH':
       return toggleResearch(state, rules, action.payload);
 
+    case 'DONATE_CREDITS':
+      return donateCredits(state, rules, action.payload);
+
+    case 'DONATE_PARTS':
+      return donateParts(state, rules, action.payload);
+
+    case 'RUN_EXPERIMENT':
+      return runExperiment(state, rules, action.payload);
+
+    case 'FILL_PROTOTYPE_SLOT':
+      return fillPrototypeSlot(state, rules, action.payload);
+
     case 'UNLOCK_RECIPE':
       return unlockRecipe(state, rules, action.payload);
 
@@ -1534,5 +1926,6 @@ export {
   getMaxStack,
   canPlaceAt,
   getNextExpansionChunk,
-  getNextExplorationExpansion
+  getNextExplorationExpansion,
+  calculateHighestUnlockedAge
 };

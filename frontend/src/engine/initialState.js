@@ -81,7 +81,9 @@ export const initialState = {
   ],
 
   research: {
-    active: false
+    active: false,
+    researchPoints: 0,
+    awaitingPrototype: []
   },
 
   marketPopularity: {},

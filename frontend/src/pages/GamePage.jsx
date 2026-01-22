@@ -42,6 +42,7 @@ import FloatingHUD from '../components/common/FloatingHUD';
 import CollapsibleSidebar from '../components/common/CollapsibleSidebar';
 import CollapsibleActionsPanel from '../components/common/CollapsibleActionsPanel';
 import MarketTab from '../components/market/MarketTab';
+import ResearchTab from '../components/research/ResearchTab';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -897,11 +898,7 @@ export default function GamePage() {
       </TabPanel>
 
       <TabPanel value={tabValue} index={2}>
-        <PlaceholderTab
-          title={t('main.tabs.research')}
-          description={t('main.researchDescription')}
-          icon={ScienceIcon}
-        />
+        <ResearchTab />
       </TabPanel>
 
       <TabPanel value={tabValue} index={3}>

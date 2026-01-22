@@ -137,6 +137,23 @@ const useGameStore = create(
         return get().dispatch({ type: 'TOGGLE_RESEARCH' });
       },
 
+      // Research actions
+      donateCredits: (amount) => {
+        return get().dispatch({ type: 'DONATE_CREDITS', payload: { amount } });
+      },
+
+      donateParts: (itemId, quantity) => {
+        return get().dispatch({ type: 'DONATE_PARTS', payload: { itemId, quantity } });
+      },
+
+      runExperiment: () => {
+        return get().dispatch({ type: 'RUN_EXPERIMENT', payload: {} });
+      },
+
+      fillPrototypeSlot: (recipeId, materialId, quantity) => {
+        return get().dispatch({ type: 'FILL_PROTOTYPE_SLOT', payload: { recipeId, materialId, quantity } });
+      },
+
       unlockRecipe: (recipeId) => {
         return get().dispatch({ type: 'UNLOCK_RECIPE', payload: { recipeId } });
       },
