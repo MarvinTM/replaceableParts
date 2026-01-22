@@ -73,11 +73,12 @@ function calculateHighestUnlockedAge(state, rules) {
 }
 
 /**
- * Select a recipe using age-weighted randomization
- * Higher ages have higher probability based on how many recipes are missing
+ * Select a recipe using cascading age-weighted randomization
+ * The lowest age with missing recipes gets priority.
+ * Probability = (floor + (1 - floor) * missingRatio) * remainingProbabilityPool
  */
 function selectRecipeByAgeWeighting(undiscovered, state, rules, rng) {
-  const { floor, ceiling } = rules.research.ageWeighting;
+  const { floor } = rules.research.ageWeighting;
 
   // Group undiscovered recipes by age
   const recipesByAge = {};
@@ -109,23 +110,38 @@ function selectRecipeByAgeWeighting(undiscovered, state, rules, rng) {
     totalRecipesByAge[recipeAge] = (totalRecipesByAge[recipeAge] || 0) + 1;
   }
 
-  // Calculate probability for each age
+  // Calculate cascading probabilities
   const ages = Object.keys(recipesByAge).map(Number).sort((a, b) => a - b);
   const probabilities = {};
+  let remainingPool = 1.0;
   let totalProb = 0;
 
   for (const age of ages) {
     const missingCount = recipesByAge[age].length;
     const totalCount = totalRecipesByAge[age] || 1;
-    const missingRatio = missingCount / totalCount;
-    const prob = floor + (ceiling - floor) * missingRatio;
-    probabilities[age] = prob;
-    totalProb += prob;
+    const ratio = missingCount / totalCount;
+    
+    // Weight calculation:
+    // If ratio is 1.0 (100% missing), weight becomes 1.0, consuming all remaining pool.
+    // If ratio is small (e.g. 1/30), weight is close to floor (e.g. 0.3).
+    const weight = floor + (1.0 - floor) * ratio;
+    
+    const ageProb = remainingPool * weight;
+    probabilities[age] = ageProb;
+    totalProb += ageProb;
+    
+    remainingPool -= ageProb;
+    
+    // Stop if pool is effectively empty
+    if (remainingPool <= 0.0001) break;
   }
 
   // Normalize probabilities and select
+  // (totalProb effectively sums the slices we took from the pool)
   let roll = rng.next() * totalProb;
   for (const age of ages) {
+    if (!probabilities[age]) continue;
+
     roll -= probabilities[age];
     if (roll <= 0) {
       // Select random recipe from this age
