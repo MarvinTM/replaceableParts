@@ -2,11 +2,14 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ScienceIcon from '@mui/icons-material/Science';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-export default function PassiveDiscoveryPanel({ passiveChance }) {
+export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, activeLabCount = 0 }) {
+  const effectiveChance = baseChance + labBonus;
   // Convert chance to "1 in X" format
-  const oneInX = passiveChance > 0 ? Math.round(1 / passiveChance) : 0;
+  const oneInX = effectiveChance > 0 ? Math.round(1 / effectiveChance) : 0;
+  const baseOneInX = baseChance > 0 ? Math.round(1 / baseChance) : 0;
 
   return (
     <Box>
@@ -34,11 +37,35 @@ export default function PassiveDiscoveryPanel({ passiveChance }) {
           </Typography>
         </Box>
         <Chip
-          label={`${(passiveChance * 100).toFixed(1)}%`}
+          label={`${(effectiveChance * 100).toFixed(1)}%`}
           color="info"
           size="small"
         />
       </Box>
+
+      {activeLabCount > 0 && (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          p: 1,
+          mt: 1,
+          borderRadius: 1,
+          bgcolor: 'success.dark',
+          border: '1px solid',
+          borderColor: 'success.main'
+        }}>
+          <ScienceIcon sx={{ fontSize: 18, color: 'success.light' }} />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="caption" color="success.light">
+              {activeLabCount} Research Lab{activeLabCount > 1 ? 's' : ''} active
+            </Typography>
+            <Typography variant="caption" display="block" color="text.secondary">
+              +{(labBonus * 100).toFixed(1)}% bonus (base: 1 in {baseOneInX})
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mt: 1.5 }}>
         <InfoOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }} />
@@ -46,6 +73,7 @@ export default function PassiveDiscoveryPanel({ passiveChance }) {
           Each tick has a small chance to passively discover a new recipe,
           even without running experiments. Discovered recipes still require
           prototype building to unlock for production.
+          {activeLabCount === 0 && ' Build Research Laboratories to increase this chance.'}
         </Typography>
       </Box>
     </Box>

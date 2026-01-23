@@ -493,10 +493,15 @@ function calculateEnergy(state, rules) {
 
   // Machine consumption only (research is checked separately)
   for (const machine of state.machines) {
-    if (machine.enabled && machine.recipeId && machine.status !== 'blocked') {
+    if (machine.enabled && machine.status !== 'blocked') {
       const machineConfig = rules.machines.find(m => m.id === machine.type);
-      const energyConsumption = machineConfig ? machineConfig.energyConsumption : 0;
-      consumed += energyConsumption;
+      // Research facilities consume energy even without a recipe assigned
+      // Regular machines only consume energy when they have a recipe
+      const isResearchFacility = machineConfig && machineConfig.isResearchFacility;
+      if (machine.recipeId || isResearchFacility) {
+        const energyConsumption = machineConfig ? machineConfig.energyConsumption : 0;
+        consumed += energyConsumption;
+      }
     }
   }
 
@@ -716,9 +721,21 @@ function simulateTick(state, rules) {
   }
 
   // 4b. Passive Discovery (1/500 chance per tick, independent of active research)
-  if (rules.research.passiveDiscoveryChance) {
+  // Calculate bonus from research laboratories
+  let researchLabBonus = 0;
+  for (const machine of newState.machines) {
+    if (machine.enabled && machine.status !== 'blocked') {
+      const machineConfig = rules.machines.find(m => m.id === machine.type);
+      if (machineConfig && machineConfig.isResearchFacility && machineConfig.passiveDiscoveryBonus) {
+        researchLabBonus += machineConfig.passiveDiscoveryBonus;
+      }
+    }
+  }
+
+  const effectivePassiveChance = (rules.research.passiveDiscoveryChance || 0) + researchLabBonus;
+  if (effectivePassiveChance > 0) {
     const passiveRoll = rng.next();
-    if (passiveRoll < rules.research.passiveDiscoveryChance) {
+    if (passiveRoll < effectivePassiveChance) {
       const undiscoveredForPassive = rules.recipes.filter(r => !newState.discoveredRecipes.includes(r.id));
       if (undiscoveredForPassive.length > 0) {
         // Use age-weighted selection for passive discovery too

@@ -73,6 +73,31 @@ export default function ResearchTab() {
   // Count undiscovered recipes
   const undiscoveredCount = rules.recipes.length - discoveredRecipes.length;
 
+  // Calculate research laboratory bonus
+  const researchLabBonus = useMemo(() => {
+    let bonus = 0;
+    const machines = engineState.machines || [];
+    for (const machine of machines) {
+      if (machine.enabled && machine.status !== 'blocked') {
+        const machineConfig = rules.machines.find(m => m.id === machine.type);
+        if (machineConfig && machineConfig.isResearchFacility && machineConfig.passiveDiscoveryBonus) {
+          bonus += machineConfig.passiveDiscoveryBonus;
+        }
+      }
+    }
+    return bonus;
+  }, [engineState.machines, rules.machines]);
+
+  // Count active research labs for display
+  const activeLabCount = useMemo(() => {
+    const machines = engineState.machines || [];
+    return machines.filter(machine => {
+      if (!machine.enabled || machine.status === 'blocked') return false;
+      const machineConfig = rules.machines.find(m => m.id === machine.type);
+      return machineConfig && machineConfig.isResearchFacility;
+    }).length;
+  }, [engineState.machines, rules.machines]);
+
   return (
     <Box sx={{ display: 'flex', height: '100%', gap: 2, p: 2 }}>
       {/* LEFT PANEL - Experiment Chamber & Donation */}
@@ -116,7 +141,11 @@ export default function ResearchTab() {
 
       {/* RIGHT PANEL - Passive Discovery & Unlocked Recipes Grid */}
       <Paper sx={{ width: 350, p: 2, display: 'flex', flexDirection: 'column' }}>
-        <PassiveDiscoveryPanel passiveChance={rules.research.passiveDiscoveryChance} />
+        <PassiveDiscoveryPanel
+          baseChance={rules.research.passiveDiscoveryChance}
+          labBonus={researchLabBonus}
+          activeLabCount={activeLabCount}
+        />
         <Divider sx={{ my: 2 }} />
         <Typography variant="h6" gutterBottom>Unlocked Recipes</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

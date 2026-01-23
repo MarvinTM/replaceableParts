@@ -433,6 +433,7 @@ export const defaultRules = {
     // Machines - Age 4+
     { id: 'precision_assembler', name: 'Precision Assembler', basePrice: 1500, category: 'equipment', weight: 60, age: 4 },
     { id: 'chemical_plant', name: 'Chemical Plant', basePrice: 800, category: 'equipment', weight: 60, age: 4 },
+    { id: 'research_laboratory', name: 'Research Laboratory', basePrice: 2000, category: 'equipment', weight: 80, age: 4 },
     { id: 'electronics_fab', name: 'Electronics Fab', basePrice: 1500, category: 'equipment', weight: 100, age: 6 },
     
     // Generators
@@ -850,6 +851,7 @@ export const defaultRules = {
     { id: 'precision_assembler', inputs: { steel_plate: 10, gear: 10, electric_motor: 2, ball_bearing: 4 }, outputs: { precision_assembler: 1 }, ticksToComplete: 25, tier: 4, age: 4 },
     
     { id: 'chemical_plant', inputs: { steel_plate: 10, pipe: 10, glass: 5 }, outputs: { chemical_plant: 1 }, ticksToComplete: 25, tier: 4, age: 4 },
+    { id: 'research_laboratory', inputs: { steel_plate: 10, pipe: 8, glass: 6, vacuum_tube: 4, gear: 6, copper_wire: 8 }, outputs: { research_laboratory: 1 }, ticksToComplete: 30, tier: 4, age: 4 },
     { id: 'diesel_gen', inputs: { engine_block: 2, generator: 1 }, outputs: { diesel_gen: 1 }, ticksToComplete: 25, tier: 4, age: 4 },
     
     { id: 'electronics_fab', inputs: { composite: 10, electric_motor: 5, heating_element: 10, resistor: 10 }, outputs: { electronics_fab: 1 }, ticksToComplete: 40, tier: 7, age: 7 },
@@ -1113,8 +1115,21 @@ export const defaultRules = {
       ]
     },
     // ============================================
-    // AGE 4+ MACHINE
+    // AGE 4+ MACHINES
     // ============================================
+    {
+      id: 'research_laboratory',
+      itemId: 'research_laboratory',
+      name: 'Research Laboratory',
+      sizeX: 4, sizeY: 4,
+      energyConsumption: 50,
+      animation: { frames: 4, speed: 0.05 },
+      disableAutoScale: true,
+      // Special machine: does not process recipes, provides passive discovery bonus
+      allowedRecipes: [],
+      isResearchFacility: true,
+      passiveDiscoveryBonus: 0.001 // +0.1% per facility
+    },
     {
       id: 'precision_assembler',
       itemId: 'precision_assembler',
@@ -1137,6 +1152,8 @@ export const defaultRules = {
         'plastic_container', 'garden_hose', 'fuel_tank', 'oil_drum', 'flashlight',
         'road_segment', 'radio_transmitter', 'typewriter', 'camera',
         'leather_jacket', 'amplifier', 'chemistry_set', 'raincoat',
+        // Age 4 - Research Equipment
+        'research_laboratory',
 
         // Age 5 - Electrical Intermediates
         'aluminum_sheet', 'aluminum_rod', 'insulated_wire', 'electric_coil', 'electric_motor',
@@ -1313,6 +1330,16 @@ export const defaultRules = {
         { label: 'Vessel Plating', material: 'steel_plate', quantity: 10 },
         { label: 'Piping System', material: 'pipe', quantity: 10 },
         { label: 'Observation Glass', material: 'glass', quantity: 5 }
+      ]
+    },
+    research_laboratory: {
+      slots: [
+        { label: 'Laboratory Frame', material: 'steel_plate', quantity: 10 },
+        { label: 'Workbench Assembly', material: 'pipe', quantity: 8 },
+        { label: 'Observation Windows', material: 'glass', quantity: 6 },
+        { label: 'Analysis Equipment', material: 'vacuum_tube', quantity: 4 },
+        { label: 'Precision Instruments', material: 'gear', quantity: 6 },
+        { label: 'Electrical Wiring', material: 'copper_wire', quantity: 8 }
       ]
     },
     electronics_fab: {
