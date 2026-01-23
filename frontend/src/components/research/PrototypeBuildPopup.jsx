@@ -33,17 +33,8 @@ export default function PrototypeBuildPopup({
   prototype: initialPrototype,
   recipe,
   rules,
-  inventory,
 }) {
   const fillPrototypeSlot = useGameStore((state) => state.fillPrototypeSlot);
-
-  // Get current prototype state directly from store (not the snapshot from props)
-  const prototype = useGameStore((state) => {
-    if (!initialPrototype) return null;
-    const awaiting = state.engineState?.research?.awaitingPrototype || [];
-    return awaiting.find(p => p.recipeId === initialPrototype.recipeId) || null;
-  });
-  const awaitingPrototype = useGameStore((state) => state.engineState?.research?.awaitingPrototype || []);
   const currentInventory = useGameStore((state) => state.engineState?.inventory || {});
 
   // Build state: 'building' or 'success'
@@ -52,29 +43,18 @@ export default function PrototypeBuildPopup({
   // Track which slot is being dragged over
   const [dragOverSlot, setDragOverSlot] = useState(null);
 
+  // LOCAL state for slot fills - only committed to store on Build
+  // Key: slot index, Value: number of units filled locally
+  const [localSlotFills, setLocalSlotFills] = useState({});
+
   // Reset state when popup opens/closes
   useEffect(() => {
     if (open) {
       setBuildState('building');
       setDragOverSlot(null);
+      setLocalSlotFills({});
     }
   }, [open]);
-
-  // Detect when prototype is completed (removed from awaitingPrototype)
-  useEffect(() => {
-    if (open && initialPrototype && buildState === 'building') {
-      const stillExists = awaitingPrototype.some(p => p.recipeId === initialPrototype.recipeId);
-      if (!stillExists) {
-        // Prototype was completed and removed from the queue
-        setBuildState('success');
-        // Auto-close after 3 seconds
-        const timer = setTimeout(() => {
-          onClose();
-        }, 3000);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [awaitingPrototype, initialPrototype, open, buildState, onClose]);
 
   // Get recipe output info
   const outputInfo = useMemo(() => {
@@ -86,20 +66,54 @@ export default function PrototypeBuildPopup({
     return { outputId, qty, material };
   }, [recipe, rules]);
 
-  // Get unique materials needed for slots (use currentInventory from store)
+  // Calculate effective inventory (current inventory minus locally allocated)
+  const effectiveInventory = useMemo(() => {
+    if (!initialPrototype?.slots) return currentInventory;
+
+    const allocated = {};
+    for (const [slotIndexStr, fillAmount] of Object.entries(localSlotFills)) {
+      const slotIndex = parseInt(slotIndexStr);
+      const slot = initialPrototype.slots[slotIndex];
+      if (slot) {
+        allocated[slot.material] = (allocated[slot.material] || 0) + fillAmount;
+      }
+    }
+
+    const effective = { ...currentInventory };
+    for (const [materialId, amount] of Object.entries(allocated)) {
+      effective[materialId] = (effective[materialId] || 0) - amount;
+      if (effective[materialId] <= 0) {
+        delete effective[materialId];
+      }
+    }
+    return effective;
+  }, [currentInventory, localSlotFills, initialPrototype]);
+
+  // Get slots with combined fills (existing + local)
+  const slotsWithFills = useMemo(() => {
+    if (!initialPrototype?.slots) return [];
+    return initialPrototype.slots.map((slot, index) => ({
+      ...slot,
+      // Total filled = existing fills from store + local fills
+      effectiveFilled: slot.filled + (localSlotFills[index] || 0),
+      localFill: localSlotFills[index] || 0,
+    }));
+  }, [initialPrototype, localSlotFills]);
+
+  // Get unique materials needed for display
   const uniqueMaterials = useMemo(() => {
-    if (!prototype?.slots) return [];
-    const materialIds = [...new Set(prototype.slots.map(s => s.material))];
+    if (!slotsWithFills.length) return [];
+    const materialIds = [...new Set(slotsWithFills.map(s => s.material))];
     return materialIds.map(id => {
       const material = rules.materials?.find(m => m.id === id);
-      const neededTotal = prototype.slots
+      const neededTotal = slotsWithFills
         .filter(s => s.material === id)
         .reduce((sum, s) => sum + s.quantity, 0);
-      const filledTotal = prototype.slots
+      const filledTotal = slotsWithFills
         .filter(s => s.material === id)
-        .reduce((sum, s) => sum + s.filled, 0);
+        .reduce((sum, s) => sum + s.effectiveFilled, 0);
       const remaining = neededTotal - filledTotal;
-      const availableInInventory = currentInventory[id] || 0;
+      const availableInInventory = effectiveInventory[id] || 0;
       return {
         id,
         name: material?.name || id,
@@ -111,21 +125,20 @@ export default function PrototypeBuildPopup({
         canDrag: availableInInventory > 0 && remaining > 0,
       };
     });
-  }, [prototype, rules, currentInventory]);
+  }, [slotsWithFills, rules, effectiveInventory]);
 
-  // Check if all slots are filled
+  // Check if all slots are filled (including local fills)
   const allSlotsFilled = useMemo(() => {
-    if (!prototype?.slots) return false;
-    return prototype.slots.every(slot => slot.filled >= slot.quantity);
-  }, [prototype]);
+    return slotsWithFills.every(slot => slot.effectiveFilled >= slot.quantity);
+  }, [slotsWithFills]);
 
   // Calculate overall progress
   const overallProgress = useMemo(() => {
-    if (!prototype?.slots) return 0;
-    const totalRequired = prototype.slots.reduce((sum, slot) => sum + slot.quantity, 0);
-    const totalFilled = prototype.slots.reduce((sum, slot) => sum + slot.filled, 0);
+    if (!slotsWithFills.length) return 0;
+    const totalRequired = slotsWithFills.reduce((sum, slot) => sum + slot.quantity, 0);
+    const totalFilled = slotsWithFills.reduce((sum, slot) => sum + slot.effectiveFilled, 0);
     return totalRequired > 0 ? Math.round((totalFilled / totalRequired) * 100) : 0;
-  }, [prototype]);
+  }, [slotsWithFills]);
 
   // Handle drag start from inventory material
   const handleMaterialDragStart = (e, materialId) => {
@@ -138,7 +151,7 @@ export default function PrototypeBuildPopup({
   };
 
   // Handle drag over a slot - must preventDefault to allow drop
-  const handleSlotDragOver = (e, slotIndex, slot) => {
+  const handleSlotDragOver = (e, slotIndex) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOverSlot(slotIndex);
@@ -150,12 +163,13 @@ export default function PrototypeBuildPopup({
     setDragOverSlot(null);
   };
 
-  // Handle drop on a slot
-  const handleSlotDrop = (e, slotIndex, slot) => {
+  // Handle drop on a slot - updates LOCAL state only
+  const handleSlotDrop = (e, slotIndex) => {
     e.preventDefault();
     setDragOverSlot(null);
 
     const droppedMaterial = e.dataTransfer.getData('text/plain');
+    const slot = slotsWithFills[slotIndex];
 
     // Check if the dropped material matches the slot's required material
     if (droppedMaterial !== slot.material) {
@@ -163,12 +177,12 @@ export default function PrototypeBuildPopup({
     }
 
     // Calculate how much we can fill
-    const neededForSlot = slot.quantity - slot.filled;
+    const neededForSlot = slot.quantity - slot.effectiveFilled;
     if (neededForSlot <= 0) {
       return; // Slot is already full
     }
 
-    const availableInInventory = currentInventory[droppedMaterial] || 0;
+    const availableInInventory = effectiveInventory[droppedMaterial] || 0;
     if (availableInInventory <= 0) {
       return; // No materials available
     }
@@ -177,39 +191,65 @@ export default function PrototypeBuildPopup({
     const unitsToAdd = Math.min(neededForSlot, availableInInventory);
 
     if (unitsToAdd > 0) {
-      fillPrototypeSlot(initialPrototype.recipeId, droppedMaterial, unitsToAdd);
+      setLocalSlotFills(prev => ({
+        ...prev,
+        [slotIndex]: (prev[slotIndex] || 0) + unitsToAdd,
+      }));
     }
   };
 
-  // Handle build button click
+  // Handle clicking a slot to remove one unit (from local fills only)
+  const handleSlotClick = (slotIndex) => {
+    const currentLocalFill = localSlotFills[slotIndex] || 0;
+    if (currentLocalFill > 0) {
+      setLocalSlotFills(prev => {
+        const newFill = currentLocalFill - 1;
+        if (newFill === 0) {
+          const next = { ...prev };
+          delete next[slotIndex];
+          return next;
+        }
+        return { ...prev, [slotIndex]: newFill };
+      });
+    }
+  };
+
+  // Handle build button click - commit all local fills to the store
   const handleBuild = () => {
-    if (allSlotsFilled) {
-      setBuildState('success');
-      // Auto-close after 3 seconds
-      setTimeout(() => {
-        handleClose();
-      }, 3000);
+    if (!allSlotsFilled) return;
+
+    // Commit all local fills to the store
+    for (const [slotIndexStr, fillAmount] of Object.entries(localSlotFills)) {
+      if (fillAmount > 0) {
+        const slotIndex = parseInt(slotIndexStr);
+        const slot = initialPrototype.slots[slotIndex];
+        if (slot) {
+          fillPrototypeSlot(initialPrototype.recipeId, slot.material, fillAmount);
+        }
+      }
     }
+
+    // Show success state
+    setBuildState('success');
+    // Auto-close after 3 seconds
+    setTimeout(() => {
+      handleClose();
+    }, 3000);
   };
 
-  // Handle close
+  // Handle close - just close without committing anything
   const handleClose = () => {
     setBuildState('building');
     setDragOverSlot(null);
+    setLocalSlotFills({});
     onClose();
   };
 
-  // If prototype is null (completed), the success effect should handle it
   // Only render nothing if we don't have basic info
   if (!initialPrototype || !recipe || !outputInfo) return null;
 
-  // If prototype is completed (null), show success state
-  if (!prototype && buildState !== 'success') {
-    return null;
-  }
-
   // Safety check - this popup only works for slots mode prototypes
-  if (prototype && prototype.mode !== 'slots') {
+  if (initialPrototype.mode !== 'slots') {
     return null;
   }
 
@@ -241,7 +281,7 @@ export default function PrototypeBuildPopup({
             </Typography>
             <MaterialIcon materialId={outputInfo.outputId} size={80} />
             <Typography variant="h6">
-              {outputInfo.material?.name || prototype.recipeId}
+              {outputInfo.material?.name || initialPrototype.recipeId}
             </Typography>
             <Typography variant="body1" color="text.secondary" textAlign="center">
               This recipe has been unlocked for production.
@@ -275,7 +315,7 @@ export default function PrototypeBuildPopup({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <BuildIcon color="primary" />
           <Typography variant="h6">
-            Build Prototype: {outputInfo.material?.name || prototype.recipeId}
+            Build Prototype: {outputInfo.material?.name || initialPrototype.recipeId}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} size="small">
@@ -292,7 +332,7 @@ export default function PrototypeBuildPopup({
         {/* Name and Age */}
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           <Typography variant="h5" gutterBottom>
-            {outputInfo.material?.name || prototype.recipeId}
+            {outputInfo.material?.name || initialPrototype.recipeId}
           </Typography>
           <Chip
             label={`Age ${outputInfo.material?.age || '?'}`}
@@ -330,7 +370,7 @@ export default function PrototypeBuildPopup({
           Required Components
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          Drag materials from below to fill each slot
+          Drag materials from below to fill each slot. Click a slot to remove one unit.
         </Typography>
 
         <Box
@@ -346,19 +386,21 @@ export default function PrototypeBuildPopup({
             overflowY: 'auto',
           }}
         >
-          {(prototype?.slots || []).map((slot, index) => {
-            const isFull = slot.filled >= slot.quantity;
-            const isPartial = slot.filled > 0 && slot.filled < slot.quantity;
+          {slotsWithFills.map((slot, index) => {
+            const isFull = slot.effectiveFilled >= slot.quantity;
+            const isPartial = slot.effectiveFilled > 0 && slot.effectiveFilled < slot.quantity;
             const isDragOver = dragOverSlot === index;
             const material = rules.materials?.find(m => m.id === slot.material);
-            const progress = (slot.filled / slot.quantity) * 100;
+            const progress = (slot.effectiveFilled / slot.quantity) * 100;
+            const hasLocalFill = slot.localFill > 0;
 
             return (
               <Box
                 key={index}
-                onDragOver={(e) => handleSlotDragOver(e, index, slot)}
+                onDragOver={(e) => handleSlotDragOver(e, index)}
                 onDragLeave={handleSlotDragLeave}
-                onDrop={(e) => handleSlotDrop(e, index, slot)}
+                onDrop={(e) => handleSlotDrop(e, index)}
+                onClick={() => handleSlotClick(index)}
                 sx={{
                   width: SLOT_SIZE,
                   display: 'flex',
@@ -382,7 +424,12 @@ export default function PrototypeBuildPopup({
                         ? 'primary.light'
                         : 'background.paper',
                   transition: 'all 0.2s ease',
+                  cursor: hasLocalFill ? 'pointer' : 'default',
+                  '&:hover': hasLocalFill ? {
+                    borderColor: 'error.main',
+                  } : {},
                 }}
+                title={hasLocalFill ? 'Click to remove one unit' : ''}
               >
                 <Box sx={{ opacity: isFull ? 1 : isPartial ? 0.7 : 0.3 }}>
                   <MaterialIcon
@@ -402,7 +449,7 @@ export default function PrototypeBuildPopup({
                     mt: 0.5,
                   }}
                 >
-                  {slot.filled}/{slot.quantity}
+                  {slot.effectiveFilled}/{slot.quantity}
                 </Typography>
 
                 {slot.quantity > 1 && (
@@ -524,7 +571,7 @@ export default function PrototypeBuildPopup({
                   }}
                 />
                 <Typography variant="caption" color="text.secondary">
-                  ({material.available} in inv.)
+                  ({material.available} available)
                 </Typography>
               </Box>
             );
