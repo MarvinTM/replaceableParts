@@ -680,8 +680,10 @@ function simulateTick(state, rules) {
     // Calculate discovery chance with proximity bonus
     let discoveryChance = rules.research.discoveryChance;
 
-    // Find undiscovered recipes
-    const undiscovered = rules.recipes.filter(r => !newState.discoveredRecipes.includes(r.id));
+    // Find undiscovered recipes (exclude already unlocked recipes)
+    const undiscovered = rules.recipes.filter(r =>
+      !newState.discoveredRecipes.includes(r.id) && !newState.unlockedRecipes.includes(r.id)
+    );
 
     if (undiscovered.length > 0 && roll < discoveryChance) {
       // Weight recipes by proximity (do we have their input materials?)
@@ -736,7 +738,9 @@ function simulateTick(state, rules) {
   if (effectivePassiveChance > 0) {
     const passiveRoll = rng.next();
     if (passiveRoll < effectivePassiveChance) {
-      const undiscoveredForPassive = rules.recipes.filter(r => !newState.discoveredRecipes.includes(r.id));
+      const undiscoveredForPassive = rules.recipes.filter(r =>
+        !newState.discoveredRecipes.includes(r.id) && !newState.unlockedRecipes.includes(r.id)
+      );
       if (undiscoveredForPassive.length > 0) {
         // Use age-weighted selection for passive discovery too
         const passiveRecipe = selectRecipeByAgeWeighting(undiscoveredForPassive, newState, rules, rng);
@@ -1534,8 +1538,10 @@ function runExperiment(state, rules, payload) {
   initializeResearchState(newState);
   const rng = createRNG(state.rngSeed);
 
-  // Find undiscovered recipes
-  const undiscovered = rules.recipes.filter(r => !newState.discoveredRecipes.includes(r.id));
+  // Find undiscovered recipes (exclude already unlocked recipes)
+  const undiscovered = rules.recipes.filter(r =>
+    !newState.discoveredRecipes.includes(r.id) && !newState.unlockedRecipes.includes(r.id)
+  );
   if (undiscovered.length === 0) {
     return { state: newState, error: 'All recipes have been discovered' };
   }
