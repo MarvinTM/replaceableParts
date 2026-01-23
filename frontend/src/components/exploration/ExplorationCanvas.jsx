@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { Application, Graphics, Container, Assets, Sprite, Texture, TilingSprite } from 'pixi.js';
 import {
   TILE_SIZE,
@@ -39,7 +39,7 @@ function drawNodeIndicator(graphics, x, y, color) {
   graphics.stroke({ color: 0xffffff, width: 2, alpha: 0.9 });
 }
 
-export default function ExplorationCanvas({ explorationMap, rules, onTileClick }) {
+export default function ExplorationCanvas({ explorationMap, rules, unlockedRecipes, onTileClick }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const worldRef = useRef(null);
@@ -50,10 +50,32 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
   const [texturesLoaded, setTexturesLoaded] = useState(false);
   const [appInitialized, setAppInitialized] = useState(false);
 
+  // Compute the set of resources used by unlocked recipes
+  const usedResources = useMemo(() => {
+    const resources = new Set();
+    if (!rules?.recipes || !unlockedRecipes) return resources;
+
+    const recipeMap = new Map(rules.recipes.map(r => [r.id, r]));
+    for (const recipeId of unlockedRecipes) {
+      const recipe = recipeMap.get(recipeId);
+      if (recipe?.inputs) {
+        for (const inputResource of Object.keys(recipe.inputs)) {
+          resources.add(inputResource);
+        }
+      }
+    }
+    return resources;
+  }, [rules?.recipes, unlockedRecipes]);
+  const usedResourcesRef = useRef(usedResources);
+
   // Keep refs updated with latest props
   useEffect(() => {
     explorationMapRef.current = explorationMap;
   }, [explorationMap]);
+
+  useEffect(() => {
+    usedResourcesRef.current = usedResources;
+  }, [usedResources]);
 
   useEffect(() => {
     onTileClickRef.current = onTileClick;
@@ -197,8 +219,8 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
             terrainContainer.addChild(terrainGraphics);
           }
 
-          // Draw extraction node indicator if present
-          if (tile.extractionNode) {
+          // Draw extraction node indicator if present and its resource is used in unlocked recipes
+          if (tile.extractionNode && usedResources.has(tile.extractionNode.resourceType)) {
             const nodeGraphics = new Graphics();
             const nodeColor = tile.extractionNode.unlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
             drawNodeIndicator(nodeGraphics, screenPos.x, screenPos.y, nodeColor);
@@ -218,12 +240,12 @@ export default function ExplorationCanvas({ explorationMap, rules, onTileClick }
     world.addChild(nodeContainer);
   };
 
-  // Re-render when map changes, textures load, or app initializes
+  // Re-render when map changes, textures load, app initializes, or used resources change
   useEffect(() => {
     if (appInitialized) {
       render();
     }
-  }, [explorationMap, texturesLoaded, appInitialized]);
+  }, [explorationMap, texturesLoaded, appInitialized, usedResources]);
 
   // Initialize PixiJS Application
   useEffect(() => {

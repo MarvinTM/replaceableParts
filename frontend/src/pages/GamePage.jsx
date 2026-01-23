@@ -740,6 +740,7 @@ function ExplorationTab() {
               <ExplorationCanvas
                 explorationMap={explorationMap}
                 rules={rules}
+                unlockedRecipes={engineState.unlockedRecipes}
                 onTileClick={handleTileClick}
               />
             </Box>
