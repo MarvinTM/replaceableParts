@@ -96,10 +96,6 @@ export default function ResearchTab() {
             undiscoveredCount={undiscoveredCount}
           />
         </Paper>
-
-        <Paper sx={{ p: 2 }}>
-          <PassiveDiscoveryPanel passiveChance={rules.research.passiveDiscoveryChance} />
-        </Paper>
       </Box>
 
       {/* CENTER PANEL - Prototype Workshop */}
@@ -118,13 +114,14 @@ export default function ResearchTab() {
         </Box>
       </Paper>
 
-      {/* RIGHT PANEL - Unlocked Recipes Grid */}
+      {/* RIGHT PANEL - Passive Discovery & Unlocked Recipes Grid */}
       <Paper sx={{ width: 350, p: 2, display: 'flex', flexDirection: 'column' }}>
+        <PassiveDiscoveryPanel passiveChance={rules.research.passiveDiscoveryChance} />
+        <Divider sx={{ my: 2 }} />
         <Typography variant="h6" gutterBottom>Unlocked Recipes</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Recipes available for production
         </Typography>
-        <Divider sx={{ mb: 2 }} />
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           <UnlockedRecipesGrid recipesByAge={recipesByAge} />
         </Box>

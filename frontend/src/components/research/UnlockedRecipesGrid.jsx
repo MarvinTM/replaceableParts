@@ -25,27 +25,31 @@ const AGE_NAMES = {
 };
 
 export default function UnlockedRecipesGrid({ recipesByAge }) {
-  const ages = Object.keys(recipesByAge).map(Number).sort((a, b) => a - b);
+  // Filter ages to only show those with at least one discovered recipe
+  const ages = Object.keys(recipesByAge)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .filter(age => recipesByAge[age].discovered > 0);
 
   if (ages.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography variant="body2" color="text.secondary">
-          No recipes unlocked yet
+          No recipes discovered yet
         </Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {ages.map(age => {
         const { total, discovered, unlocked } = recipesByAge[age];
         const discoveredPercent = Math.round((discovered / total) * 100);
         const unlockedPercent = Math.round((unlocked / total) * 100);
 
         return (
-          <Box key={age} sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
+          <Box key={age} sx={{ p: 1, borderRadius: 1, bgcolor: 'action.hover' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box
@@ -127,7 +131,7 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
       })}
 
       {/* Summary */}
-      <Box sx={{ mt: 2, p: 1.5, borderRadius: 1, bgcolor: 'primary.dark' }}>
+      <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: 'primary.dark' }}>
         <Typography variant="body2" fontWeight="bold" gutterBottom>
           Total Progress
         </Typography>
