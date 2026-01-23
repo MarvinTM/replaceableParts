@@ -5,6 +5,7 @@ import {
   gridToScreen,
   screenToGrid
 } from './coordinateUtils';
+import { getIconUrl } from '../../services/iconService';
 
 // Fog of war color
 const FOG_COLOR = 0x1a1a2e;
@@ -25,12 +26,41 @@ function drawSquareTile(graphics, x, y, fillColor, lineColor = null) {
   }
 }
 
+// Icon size for extraction nodes
+const NODE_ICON_SIZE = 40;
+
+// Cache for resource icon textures
+const resourceIconCache = new Map();
+const failedResourceIcons = new Set();
+
 /**
- * Draw a circular indicator for extraction nodes
+ * Load a resource icon texture (with caching)
+ * @param {string} resourceType - The resource type ID
+ * @returns {Promise<Texture|null>}
  */
-function drawNodeIndicator(graphics, x, y, color) {
+async function loadResourceIcon(resourceType) {
+  if (resourceIconCache.has(resourceType)) {
+    return resourceIconCache.get(resourceType);
+  }
+  if (failedResourceIcons.has(resourceType)) {
+    return null;
+  }
+
+  try {
+    const texture = await Assets.load(getIconUrl(resourceType));
+    resourceIconCache.set(resourceType, texture);
+    return texture;
+  } catch {
+    failedResourceIcons.add(resourceType);
+    return null;
+  }
+}
+
+/**
+ * Draw a circular indicator for extraction nodes (fallback when icon not loaded)
+ */
+function drawNodeIndicatorFallback(graphics, x, y, color) {
   const radius = 8;
-  // Center the circle on the tile
   const centerX = x + TILE_SIZE / 2;
   const centerY = y + TILE_SIZE / 2;
 
@@ -49,6 +79,7 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
   const texturesRef = useRef({});
   const [texturesLoaded, setTexturesLoaded] = useState(false);
   const [appInitialized, setAppInitialized] = useState(false);
+  const [resourceIconsLoaded, setResourceIconsLoaded] = useState(false);
 
   // Compute the set of resources used by unlocked recipes
   const usedResources = useMemo(() => {
@@ -75,6 +106,21 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
 
   useEffect(() => {
     usedResourcesRef.current = usedResources;
+  }, [usedResources]);
+
+  // Preload resource icons when usedResources changes
+  useEffect(() => {
+    const loadIcons = async () => {
+      if (usedResources.size === 0) return;
+
+      setResourceIconsLoaded(false);
+      await Promise.all(
+        Array.from(usedResources).map(resourceType => loadResourceIcon(resourceType))
+      );
+      setResourceIconsLoaded(true);
+    };
+
+    loadIcons();
   }, [usedResources]);
 
   useEffect(() => {
@@ -221,10 +267,36 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
 
           // Draw extraction node indicator if present and its resource is used in unlocked recipes
           if (tile.extractionNode && usedResources.has(tile.extractionNode.resourceType)) {
-            const nodeGraphics = new Graphics();
-            const nodeColor = tile.extractionNode.unlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
-            drawNodeIndicator(nodeGraphics, screenPos.x, screenPos.y, nodeColor);
-            nodeContainer.addChild(nodeGraphics);
+            const resourceType = tile.extractionNode.resourceType;
+            const isUnlocked = tile.extractionNode.unlocked;
+            const nodeColor = isUnlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
+            const centerX = screenPos.x + TILE_SIZE / 2;
+            const centerY = screenPos.y + TILE_SIZE / 2;
+
+            // Draw background circle to indicate status
+            const bgGraphics = new Graphics();
+            const bgRadius = NODE_ICON_SIZE / 2 + 4;
+            bgGraphics.circle(centerX, centerY, bgRadius);
+            bgGraphics.fill({ color: 0x000000, alpha: 0.6 });
+            bgGraphics.stroke({ color: nodeColor, width: 2, alpha: 1 });
+            nodeContainer.addChild(bgGraphics);
+
+            // Try to use icon texture
+            const iconTexture = resourceIconCache.get(resourceType);
+            if (iconTexture) {
+              const iconSprite = new Sprite(iconTexture);
+              iconSprite.width = NODE_ICON_SIZE;
+              iconSprite.height = NODE_ICON_SIZE;
+              iconSprite.anchor.set(0.5);
+              iconSprite.x = centerX;
+              iconSprite.y = centerY;
+              nodeContainer.addChild(iconSprite);
+            } else {
+              // Fallback to colored circle if icon not loaded
+              const fallbackGraphics = new Graphics();
+              drawNodeIndicatorFallback(fallbackGraphics, screenPos.x, screenPos.y, nodeColor);
+              nodeContainer.addChild(fallbackGraphics);
+            }
           }
         } else {
           // Draw fog tile
@@ -240,12 +312,12 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
     world.addChild(nodeContainer);
   };
 
-  // Re-render when map changes, textures load, app initializes, or used resources change
+  // Re-render when map changes, textures load, app initializes, used resources change, or resource icons load
   useEffect(() => {
     if (appInitialized) {
       render();
     }
-  }, [explorationMap, texturesLoaded, appInitialized, usedResources]);
+  }, [explorationMap, texturesLoaded, appInitialized, usedResources, resourceIconsLoaded]);
 
   // Initialize PixiJS Application
   useEffect(() => {

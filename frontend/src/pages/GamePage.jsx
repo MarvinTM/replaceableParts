@@ -680,9 +680,16 @@ function ExplorationTab() {
           </Box>
           {selectedTile.extractionNode && (
             <>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" color="text.secondary">{t('game.exploration.resource')}</Typography>
-                <Typography variant="body2">{selectedTile.extractionNode.resourceType}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <MaterialIcon
+                    materialId={selectedTile.extractionNode.resourceType}
+                    category="raw"
+                    size={20}
+                  />
+                  <Typography variant="body2">{selectedTile.extractionNode.resourceType}</Typography>
+                </Box>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2" color="text.secondary">{t('game.exploration.rate')}</Typography>
