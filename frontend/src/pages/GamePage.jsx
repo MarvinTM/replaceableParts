@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Chip from '@mui/material/Chip';
+import Badge from '@mui/material/Badge';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
@@ -834,10 +835,24 @@ export default function GamePage() {
     }
   };
 
+  // Calculate pending research count for badge
+  const pendingResearchCount = engineState?.research?.awaitingPrototype?.length || 0;
+
   const tabs = [
     { label: t('main.tabs.factory'), icon: <FactoryIcon /> },
     { label: t('main.tabs.exploration'), icon: <ExploreIcon /> },
-    { label: t('main.tabs.research'), icon: <ScienceIcon /> },
+    {
+      label: t('main.tabs.research'),
+      icon: (
+        <Badge
+          badgeContent={pendingResearchCount}
+          color="error"
+          invisible={pendingResearchCount === 0}
+        >
+          <ScienceIcon />
+        </Badge>
+      )
+    },
     { label: t('main.tabs.market'), icon: <StorefrontIcon /> }
   ];
 
