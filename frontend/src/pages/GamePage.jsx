@@ -32,7 +32,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import Divider from '@mui/material/Divider';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
-import { getNextExpansionChunk } from '../engine/engine.js';
+import { getNextExpansionChunk, getNextExplorationExpansion, expandGeneratedMap } from '../engine/engine.js';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
 import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 import RecipeDropdown from '../components/factory/RecipeDropdown';
@@ -613,6 +613,18 @@ function ExplorationTab() {
   // Calculate expansion cost
   const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
   const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
+  let nextExpansion = getNextExplorationExpansion(explorationMap, rules);
+
+  // If at edge with no cells to explore, simulate map expansion to get actual cost
+  if (nextExpansion?.cellsToExplore === 0 && nextExpansion?.atMapEdge) {
+    const expandedMap = expandGeneratedMap(explorationMap, rules);
+    if (expandedMap) {
+      nextExpansion = getNextExplorationExpansion(expandedMap, rules);
+    }
+  }
+
+  const expansionCost = nextExpansion?.cost || 0;
+  const canExplore = expansionCost > 0;
 
   const handleTileClick = (tile) => {
     setSelectedTile(tile);
@@ -770,9 +782,9 @@ function ExplorationTab() {
           size="small"
           startIcon={<TerrainIcon />}
           onClick={handleExpand}
-          disabled={credits < rules.exploration.baseCostPerCell}
+          disabled={!canExplore || credits < expansionCost}
         >
-          {t('game.exploration.expand')} ({rules.exploration.baseCostPerCell}+)
+          {t('game.exploration.expand')} ({expansionCost} credits)
         </Button>
       </CollapsibleActionsPanel>
     </Box>

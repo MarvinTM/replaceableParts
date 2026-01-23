@@ -2046,5 +2046,6 @@ export {
   canPlaceAt,
   getNextExpansionChunk,
   getNextExplorationExpansion,
+  expandGeneratedMap,
   calculateHighestUnlockedAge
 };
