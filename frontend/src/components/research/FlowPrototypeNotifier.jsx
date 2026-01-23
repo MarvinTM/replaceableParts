@@ -117,7 +117,7 @@ function FlowCompleteDialog({ open, onClose, outputId, materialName }) {
           <Typography variant="h4" color="success.main" fontWeight="bold">
             Prototype Complete!
           </Typography>
-          <MaterialIcon materialId={outputId} size={80} />
+          <MaterialIcon materialId={outputId} size={64} />
           <Typography variant="h6">
             {materialName}
           </Typography>

@@ -279,7 +279,7 @@ export default function PrototypeBuildPopup({
             <Typography variant="h4" color="success.main" fontWeight="bold">
               Prototype Complete!
             </Typography>
-            <MaterialIcon materialId={outputInfo.outputId} size={80} />
+            <MaterialIcon materialId={outputInfo.outputId} size={64} />
             <Typography variant="h6">
               {outputInfo.material?.name || initialPrototype.recipeId}
             </Typography>
@@ -324,9 +324,9 @@ export default function PrototypeBuildPopup({
       </DialogTitle>
 
       <DialogContent dividers>
-        {/* Large Material Preview */}
+        {/* Material Preview */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-          <MaterialIcon materialId={outputInfo.outputId} size={128} />
+          <MaterialIcon materialId={outputInfo.outputId} size={64} />
         </Box>
 
         {/* Name and Age */}

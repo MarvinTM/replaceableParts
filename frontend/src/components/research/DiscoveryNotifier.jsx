@@ -150,7 +150,7 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
             alignItems: 'center',
             gap: 1
           }}>
-            <MaterialIcon materialId={outputId} size={80} />
+            <MaterialIcon materialId={outputId} size={64} />
             <Typography variant="h6">
               {materialName}
             </Typography>

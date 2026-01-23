@@ -13,7 +13,6 @@ import TargetedExperimentPopup from './TargetedExperimentPopup';
 export default function ExperimentChamber({
   researchPoints,
   experimentCost,
-  highestAge,
   undiscoveredCount
 }) {
   const runExperiment = useGameStore((state) => state.runExperiment);
@@ -198,23 +197,6 @@ export default function ExperimentChamber({
             All recipes have been discovered!
           </Typography>
         )}
-      </Box>
-
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="caption" color="text.secondary">
-          Experiment costs increase as you progress through ages:
-        </Typography>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-          {[1, 2, 3, 4, 5, 6, 7].map(age => (
-            <Chip
-              key={age}
-              label={`Age ${age}: ${age === highestAge ? experimentCost : '-'}`}
-              size="small"
-              variant={age === highestAge ? 'filled' : 'outlined'}
-              color={age === highestAge ? 'primary' : 'default'}
-            />
-          ))}
-        </Box>
       </Box>
 
       <TargetedExperimentPopup

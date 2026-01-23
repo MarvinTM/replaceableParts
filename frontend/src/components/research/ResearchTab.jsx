@@ -117,7 +117,6 @@ export default function ResearchTab() {
           <ExperimentChamber
             researchPoints={researchPoints}
             experimentCost={experimentCost}
-            highestAge={highestAge}
             undiscoveredCount={undiscoveredCount}
           />
         </Paper>

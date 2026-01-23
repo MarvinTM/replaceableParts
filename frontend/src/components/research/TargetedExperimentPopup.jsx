@@ -130,8 +130,8 @@ export default function TargetedExperimentPopup({
                 </ListItemIcon>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body1" fontWeight="medium">
+                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography component="span" variant="body1" fontWeight="medium">
                         {materialName}
                       </Typography>
                       {materialAge && (
@@ -145,20 +145,20 @@ export default function TargetedExperimentPopup({
                   }
                   secondary={
                     neededBy.length > 0 && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-                        <Typography variant="caption" color="text.secondary">
+                      <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                        <Typography component="span" variant="caption" color="text.secondary">
                           Needed for:
                         </Typography>
                         {neededBy.slice(0, 3).map((name, idx) => (
-                          <Box key={idx} sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Box component="span" key={idx} sx={{ display: 'inline-flex', alignItems: 'center' }}>
                             <ArrowForwardIcon sx={{ fontSize: 12, color: 'text.secondary', mr: 0.25 }} />
-                            <Typography variant="caption" color="primary.light">
+                            <Typography component="span" variant="caption" color="primary.light">
                               {name}
                             </Typography>
                           </Box>
                         ))}
                         {neededBy.length > 3 && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography component="span" variant="caption" color="text.secondary">
                             +{neededBy.length - 3} more
                           </Typography>
                         )}
