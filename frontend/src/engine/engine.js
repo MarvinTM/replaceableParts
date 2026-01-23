@@ -1574,6 +1574,53 @@ function runExperiment(state, rules, payload) {
 }
 
 /**
+ * Run a targeted experiment to discover a specific recipe
+ * Cost is based on the highest unlocked age multiplied by the targeted experiment multiplier
+ */
+function runTargetedExperiment(state, rules, payload) {
+  const newState = deepClone(state);
+  initializeResearchState(newState);
+  const { recipeId } = payload;
+
+  if (!recipeId) {
+    return { state: newState, error: 'No recipe specified' };
+  }
+
+  // Find the recipe
+  const recipe = rules.recipes.find(r => r.id === recipeId);
+  if (!recipe) {
+    return { state: newState, error: 'Recipe not found' };
+  }
+
+  // Check if already discovered or unlocked
+  if (newState.discoveredRecipes.includes(recipeId) || newState.unlockedRecipes.includes(recipeId)) {
+    return { state: newState, error: 'Recipe already discovered or unlocked' };
+  }
+
+  // Calculate targeted experiment cost
+  const highestAge = calculateHighestUnlockedAge(newState, rules);
+  const baseCost = rules.research.experimentCosts[highestAge] || rules.research.experimentCosts[1];
+  const multiplier = rules.research.targetedExperimentMultiplier || 10;
+  const targetedCost = baseCost * multiplier;
+
+  if (newState.research.researchPoints < targetedCost) {
+    return { state: newState, error: `Not enough Research Points (need ${targetedCost} RP)` };
+  }
+
+  // Deduct cost
+  newState.research.researchPoints -= targetedCost;
+
+  // Add to discovered recipes
+  newState.discoveredRecipes.push(recipe.id);
+
+  // Create prototype entry
+  const prototype = createPrototypeEntry(recipe, rules);
+  newState.research.awaitingPrototype.push(prototype);
+
+  return { state: newState, error: null };
+}
+
+/**
  * Fill a slot in a slot-based prototype with inventory items
  */
 function fillPrototypeSlot(state, rules, payload) {
@@ -1950,6 +1997,9 @@ export function engine(state, rules, action) {
 
     case 'RUN_EXPERIMENT':
       return runExperiment(state, rules, action.payload);
+
+    case 'RUN_TARGETED_EXPERIMENT':
+      return runTargetedExperiment(state, rules, action.payload);
 
     case 'FILL_PROTOTYPE_SLOT':
       return fillPrototypeSlot(state, rules, action.payload);

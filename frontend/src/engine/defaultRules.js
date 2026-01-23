@@ -906,6 +906,7 @@ export const defaultRules = {
     passiveDiscoveryChance: 0.002,  // 1/500 per tick
     ageWeighting: { floor: 0.30, ceiling: 0.85 },
     experimentCosts: { 1: 100, 2: 150, 3: 250, 4: 400, 5: 700, 6: 1200, 7: 2000 },
+    targetedExperimentMultiplier: 10, // Targeted experiments cost 10x random experiments
     prototypeMultiplier: 5          // 5x recipe quantity for prototypes
   },
 

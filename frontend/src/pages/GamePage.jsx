@@ -45,6 +45,7 @@ import CollapsibleActionsPanel from '../components/common/CollapsibleActionsPane
 import MarketTab from '../components/market/MarketTab';
 import ResearchTab from '../components/research/ResearchTab';
 import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier';
+import DiscoveryNotifier from '../components/research/DiscoveryNotifier';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -922,6 +923,9 @@ export default function GamePage() {
 
       {/* Global notifier for flow-mode prototype completions */}
       <FlowPrototypeNotifier />
+
+      {/* Global notifier for recipe discoveries */}
+      <DiscoveryNotifier />
     </Box>
   );
 }

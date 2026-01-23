@@ -150,6 +150,10 @@ const useGameStore = create(
         return get().dispatch({ type: 'RUN_EXPERIMENT', payload: {} });
       },
 
+      runTargetedExperiment: (recipeId) => {
+        return get().dispatch({ type: 'RUN_TARGETED_EXPERIMENT', payload: { recipeId } });
+      },
+
       fillPrototypeSlot: (recipeId, materialId, quantity) => {
         return get().dispatch({ type: 'FILL_PROTOTYPE_SLOT', payload: { recipeId, materialId, quantity } });
       },
