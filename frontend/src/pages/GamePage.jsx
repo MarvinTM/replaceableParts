@@ -44,6 +44,7 @@ import CollapsibleSidebar from '../components/common/CollapsibleSidebar';
 import CollapsibleActionsPanel from '../components/common/CollapsibleActionsPanel';
 import MarketTab from '../components/market/MarketTab';
 import ResearchTab from '../components/research/ResearchTab';
+import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -918,6 +919,9 @@ export default function GamePage() {
       <TabPanel value={tabValue} index={3}>
         <MarketTab />
       </TabPanel>
+
+      {/* Global notifier for flow-mode prototype completions */}
+      <FlowPrototypeNotifier />
     </Box>
   );
 }
