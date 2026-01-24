@@ -47,10 +47,26 @@ router.get('/saves/:id', async (req, res, next) => {
   }
 });
 
+// Maximum number of saves per user
+const MAX_SAVES_PER_USER = 5;
+
 // Create new save
 router.post('/saves', async (req, res, next) => {
   try {
     const { name, data } = req.body;
+
+    // Check current save count
+    const currentSaveCount = await prisma.gameSave.count({
+      where: { userId: req.user.id }
+    });
+
+    if (currentSaveCount >= MAX_SAVES_PER_USER) {
+      return res.status(400).json({
+        error: 'SAVE_LIMIT_REACHED',
+        message: `Maximum save limit of ${MAX_SAVES_PER_USER} reached`,
+        maxSaves: MAX_SAVES_PER_USER
+      });
+    }
 
     const save = await prisma.gameSave.create({
       data: {

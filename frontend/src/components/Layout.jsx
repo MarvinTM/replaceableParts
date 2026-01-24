@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AppBar from '@mui/material/AppBar';
@@ -13,17 +13,20 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import Chip from '@mui/material/Chip';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
+import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 
 export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isAuthenticated, isGuest, exitGuestMode } = useAuth();
   const { exitToMenu, isInGame, saveGame } = useGame();
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,8 +55,17 @@ export default function Layout({ children }) {
 
   const handleLogout = async () => {
     handleClose();
-    exitToMenu();
-    await logout();
+    await exitToMenu();
+    if (isAuthenticated) {
+      await logout();
+    } else if (isGuest) {
+      exitGuestMode();
+    }
+    navigate('/menu');
+  };
+
+  const handleSignIn = () => {
+    handleClose();
     navigate('/login');
   };
 
@@ -72,7 +84,7 @@ export default function Layout({ children }) {
 
   const handleBackToMenu = async () => {
     await exitToMenu();
-    navigate('/');
+    navigate('/menu');
   };
 
   const changeLanguage = (lng) => {
@@ -84,16 +96,21 @@ export default function Layout({ children }) {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static">
         <Toolbar>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ cursor: 'pointer' }}
+          {/* Logo */}
+          <Box
+            component="img"
+            src="/assets/transLogo.png"
+            alt={t('app.name')}
+            sx={{
+              height: 36,
+              width: 'auto',
+              cursor: 'pointer',
+              mr: 2,
+            }}
             onClick={handleBackToMenu}
-          >
-            {t('app.name')}
-          </Typography>
+          />
 
-          <Box sx={{ flexGrow: 1, ml: 4, display: 'flex', gap: 1 }}>
+          <Box sx={{ flexGrow: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
             {isInGame && (
               <Button
                 color="inherit"
@@ -125,6 +142,20 @@ export default function Layout({ children }) {
                 {t('nav.admin')}
               </Button>
             )}
+
+            {/* Guest mode indicator */}
+            {isGuest && !isAuthenticated && (
+              <Chip
+                label={t('menu.guestMode')}
+                size="small"
+                variant="outlined"
+                sx={{
+                  ml: 2,
+                  color: 'inherit',
+                  borderColor: 'rgba(255,255,255,0.5)',
+                }}
+              />
+            )}
           </Box>
 
           <IconButton
@@ -148,11 +179,17 @@ export default function Layout({ children }) {
           </Menu>
 
           <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-            <Avatar
-              alt={user?.name || 'User'}
-              src={user?.picture}
-              sx={{ width: 36, height: 36 }}
-            />
+            {isAuthenticated ? (
+              <Avatar
+                alt={user?.name || 'User'}
+                src={user?.picture}
+                sx={{ width: 36, height: 36 }}
+              />
+            ) : (
+              <Avatar sx={{ width: 36, height: 36, bgcolor: 'secondary.main' }}>
+                <PersonIcon />
+              </Avatar>
+            )}
           </IconButton>
           <Menu
             anchorEl={anchorEl}
@@ -162,10 +199,14 @@ export default function Layout({ children }) {
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >
             <Box sx={{ px: 2, py: 1 }}>
-              <Typography variant="subtitle1">{user?.name}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {user?.email}
+              <Typography variant="subtitle1">
+                {isAuthenticated ? user?.name : t('menu.welcomeGuest')}
               </Typography>
+              {isAuthenticated && (
+                <Typography variant="body2" color="text.secondary">
+                  {user?.email}
+                </Typography>
+              )}
             </Box>
             <Divider />
             <MenuItem onClick={handleBackToMenu}>
@@ -189,11 +230,21 @@ export default function Layout({ children }) {
               </MenuItem>
             )}
             <Divider />
+            {isGuest && !isAuthenticated && (
+              <MenuItem onClick={handleSignIn}>
+                <ListItemIcon>
+                  <LoginIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{t('menu.signIn')}</ListItemText>
+              </MenuItem>
+            )}
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>{t('nav.logout')}</ListItemText>
+              <ListItemText>
+                {isAuthenticated ? t('nav.logout') : t('nav.exitGuest')}
+              </ListItemText>
             </MenuItem>
           </Menu>
         </Toolbar>

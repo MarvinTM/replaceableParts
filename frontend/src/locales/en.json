@@ -3,24 +3,51 @@
     "name": "replaceableParts",
     "tagline": "Manufacturing Simulation Game"
   },
+  "landing": {
+    "clickToContinue": "Click anywhere or press any key to continue"
+  },
   "nav": {
     "home": "Home",
     "admin": "Admin",
-    "logout": "Logout",
-    "mainMenu": "Main Menu"
+    "logout": "Sign Out",
+    "mainMenu": "Main Menu",
+    "exitGuest": "Exit Guest Mode"
   },
   "menu": {
     "welcomeBack": "Welcome back, {{name}}!",
+    "welcomeGuest": "Welcome, Guest",
     "continue": "Continue",
     "newGame": "New Game",
     "loadGame": "Load Game",
-    "settings": "Settings"
+    "settings": "Settings",
+    "signIn": "Sign In",
+    "playAsGuest": "Play as Guest",
+    "guestMode": "Guest Mode",
+    "guestSaveWarning": "Your progress is saved locally on this device only"
   },
   "saves": {
     "noSaves": "No saved games found",
     "lastPlayed": "Last played",
     "created": "Created",
-    "confirmDelete": "Click again to confirm deletion"
+    "confirmDelete": "Click again to confirm deletion",
+    "selectSlot": "Select Save Slot",
+    "slot": "Slot {{number}}",
+    "emptySlot": "Empty Slot",
+    "overwrite": "Overwrite",
+    "create": "Create",
+    "confirmOverwrite": "Click to confirm",
+    "confirmOverwriteHint": "Click the slot again to confirm overwriting the existing save",
+    "guestOverwriteWarning": "Starting a new game will overwrite your existing saved game. Continue?",
+    "limitReached": "Save limit reached ({{max}} saves)",
+    "migrating": "Migrating your local save to cloud...",
+    "migrationSuccess": "Your local save has been uploaded to the cloud!"
+  },
+  "login": {
+    "title": "Welcome to replaceableParts",
+    "subtitle": "Sign in to save your progress across devices",
+    "googleButton": "Sign in with Google",
+    "error": "Login failed. Please try again.",
+    "or": "or"
   },
   "settings": {
     "title": "Settings",

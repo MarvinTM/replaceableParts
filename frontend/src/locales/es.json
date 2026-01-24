@@ -3,24 +3,51 @@
     "name": "replaceableParts",
     "tagline": "Juego de Simulación de Manufactura"
   },
+  "landing": {
+    "clickToContinue": "Haz clic en cualquier lugar o presiona una tecla para continuar"
+  },
   "nav": {
     "home": "Inicio",
     "admin": "Admin",
     "logout": "Cerrar Sesión",
-    "mainMenu": "Menú Principal"
+    "mainMenu": "Menú Principal",
+    "exitGuest": "Salir del Modo Invitado"
   },
   "menu": {
     "welcomeBack": "¡Bienvenido de nuevo, {{name}}!",
+    "welcomeGuest": "Bienvenido, Invitado",
     "continue": "Continuar",
     "newGame": "Nueva Partida",
     "loadGame": "Cargar Partida",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "signIn": "Iniciar Sesión",
+    "playAsGuest": "Jugar como Invitado",
+    "guestMode": "Modo Invitado",
+    "guestSaveWarning": "Tu progreso se guarda localmente solo en este dispositivo"
   },
   "saves": {
     "noSaves": "No se encontraron partidas guardadas",
     "lastPlayed": "Última vez jugado",
     "created": "Creado",
-    "confirmDelete": "Haz clic de nuevo para confirmar"
+    "confirmDelete": "Haz clic de nuevo para confirmar",
+    "selectSlot": "Seleccionar Ranura de Guardado",
+    "slot": "Ranura {{number}}",
+    "emptySlot": "Ranura Vacía",
+    "overwrite": "Sobrescribir",
+    "create": "Crear",
+    "confirmOverwrite": "Clic para confirmar",
+    "confirmOverwriteHint": "Haz clic en la ranura de nuevo para confirmar la sobrescritura",
+    "guestOverwriteWarning": "Iniciar una nueva partida sobrescribirá tu partida guardada existente. ¿Continuar?",
+    "limitReached": "Límite de guardados alcanzado ({{max}} partidas)",
+    "migrating": "Migrando tu partida local a la nube...",
+    "migrationSuccess": "¡Tu partida local ha sido subida a la nube!"
+  },
+  "login": {
+    "title": "Bienvenido a replaceableParts",
+    "subtitle": "Inicia sesión para guardar tu progreso en todos tus dispositivos",
+    "googleButton": "Iniciar sesión con Google",
+    "error": "Error al iniciar sesión. Inténtalo de nuevo.",
+    "or": "o"
   },
   "settings": {
     "title": "Configuración",

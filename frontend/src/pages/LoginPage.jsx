@@ -7,15 +7,18 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import LanguageIcon from '@mui/icons-material/Language';
+import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
-  const { login } = useAuth();
+  const { login, enterGuestMode } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [langAnchorEl, setLangAnchorEl] = useState(null);
@@ -27,7 +30,7 @@ export default function LoginPage() {
 
       // Redirect based on approval status
       if (user.isApproved || user.role === 'ADMIN') {
-        navigate('/');
+        navigate('/menu');
       } else {
         navigate('/pending');
       }
@@ -38,6 +41,11 @@ export default function LoginPage() {
 
   const handleError = () => {
     setError(t('login.error'));
+  };
+
+  const handlePlayAsGuest = () => {
+    enterGuestMode();
+    navigate('/menu');
   };
 
   const handleLangMenu = (event) => {
@@ -66,7 +74,7 @@ export default function LoginPage() {
       }}
     >
       <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-        <IconButton color="inherit" onClick={handleLangMenu}>
+        <IconButton onClick={handleLangMenu} sx={{ color: 'text.secondary' }}>
           <LanguageIcon />
         </IconButton>
         <Menu
@@ -93,7 +101,19 @@ export default function LoginPage() {
             p: 4
           }}
         >
-          <Typography variant="h4" component="h1" textAlign="center">
+          {/* Logo */}
+          <Box
+            component="img"
+            src="/assets/transLogo.png"
+            alt={t('app.name')}
+            sx={{
+              maxWidth: '150px',
+              width: '100%',
+              height: 'auto',
+            }}
+          />
+
+          <Typography variant="h5" component="h1" textAlign="center">
             {t('login.title')}
           </Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
@@ -106,24 +126,39 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 1 }}>
             <GoogleLogin
               onSuccess={handleSuccess}
               onError={handleError}
-              theme="filled_blue"
+              theme="outline"
               size="large"
               text="signin_with"
               shape="rectangular"
             />
           </Box>
 
+          <Divider sx={{ width: '100%' }}>
+            <Typography variant="caption" color="text.secondary">
+              {t('login.or')}
+            </Typography>
+          </Divider>
+
+          <Button
+            variant="outlined"
+            size="large"
+            startIcon={<PersonIcon />}
+            onClick={handlePlayAsGuest}
+            fullWidth
+          >
+            {t('menu.playAsGuest')}
+          </Button>
+
           <Typography
             variant="caption"
             color="text.secondary"
             textAlign="center"
-            sx={{ mt: 2 }}
           >
-            {t('app.tagline')}
+            {t('menu.guestSaveWarning')}
           </Typography>
         </CardContent>
       </Card>

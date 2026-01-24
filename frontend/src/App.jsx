@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import MainMenuPage from './pages/MainMenuPage';
 import GamePage from './pages/GamePage';
@@ -10,6 +11,7 @@ import DebugGraphPage from './pages/DebugGraphPage';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
 
+// Route that requires authentication (for admin-only features)
 function ProtectedRoute({ children, requireAdmin = false, requireApproval = true }) {
   const { user, isLoading, isAuthenticated } = useAuth();
 
@@ -28,21 +30,42 @@ function ProtectedRoute({ children, requireAdmin = false, requireApproval = true
 
   // If route requires admin and user isn't admin
   if (requireAdmin && user.role !== 'ADMIN') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/menu" replace />;
   }
 
   return children;
 }
 
+// Route that requires either authentication OR guest mode
+function GuestOrAuthRoute({ children }) {
+  const { isLoading, isAuthenticated, isGuest } = useAuth();
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  // Allow if authenticated (and approved) or in guest mode
+  if (!isAuthenticated && !isGuest) {
+    return <Navigate to="/menu" replace />;
+  }
+
+  return children;
+}
+
+// Route for login page - redirects authenticated users
 function PublicRoute({ children }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    // If user is authenticated but not approved, go to pending
+    if (user && !user.isApproved && user.role !== 'ADMIN') {
+      return <Navigate to="/pending" replace />;
+    }
+    return <Navigate to="/menu" replace />;
   }
 
   return children;
@@ -51,6 +74,10 @@ function PublicRoute({ children }) {
 export default function App() {
   return (
     <Routes>
+      {/* Landing page - always accessible */}
+      <Route path="/" element={<LandingPage />} />
+
+      {/* Login page - only for non-authenticated users */}
       <Route
         path="/login"
         element={
@@ -59,6 +86,8 @@ export default function App() {
           </PublicRoute>
         }
       />
+
+      {/* Pending approval - only for authenticated but not approved users */}
       <Route
         path="/pending"
         element={
@@ -67,34 +96,35 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <MainMenuPage />
-          </ProtectedRoute>
-        }
-      />
+
+      {/* Main menu - accessible to everyone (shows different UI for guest vs auth) */}
+      <Route path="/menu" element={<MainMenuPage />} />
+
+      {/* Game - requires guest mode or authentication */}
       <Route
         path="/game"
         element={
-          <ProtectedRoute>
+          <GuestOrAuthRoute>
             <Layout>
               <GamePage />
             </Layout>
-          </ProtectedRoute>
+          </GuestOrAuthRoute>
         }
       />
+
+      {/* Settings - requires guest mode or authentication */}
       <Route
         path="/settings"
         element={
-          <ProtectedRoute>
+          <GuestOrAuthRoute>
             <Layout>
               <SettingsPage />
             </Layout>
-          </ProtectedRoute>
+          </GuestOrAuthRoute>
         }
       />
+
+      {/* Admin - requires admin role */}
       <Route
         path="/admin"
         element={
@@ -105,8 +135,11 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
       {/* Debug route - no auth required */}
       <Route path="/debug/graph" element={<DebugGraphPage />} />
+
+      {/* Catch all - redirect to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
