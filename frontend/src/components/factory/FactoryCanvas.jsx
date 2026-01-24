@@ -83,8 +83,8 @@ const RECIPE_ICON_CONFIG = {
   arrowWidth: 14,         // Width of arrow between inputs/outputs
   verticalOffset: -8,     // Offset above the label
   maxIconsPerSide: 3,     // Max icons to show per side (inputs/outputs)
-  backgroundColor: 0x000000,
-  backgroundAlpha: 0.5,
+  backgroundColor: 0x4A3F35,  // Dark warm brown
+  backgroundAlpha: 0.7,
   backgroundPadding: 4,
   backgroundRadius: 4,
   showQuantities: true,   // Whether to show quantity badges

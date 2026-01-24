@@ -108,13 +108,13 @@ export function getGridCenter(gridWidth, gridHeight) {
  * Colors for the factory floor
  */
 export const COLORS = {
-  floorLight: 0x4a5568,    // Light gray for floor
-  floorDark: 0x2d3748,     // Darker gray for floor edge
-  floorLine: 0x718096,     // Grid lines
+  floorLight: 0x6B5B4F,    // Warm brown-gray for floor
+  floorDark: 0x4A3F35,     // Darker warm brown for floor edge
+  floorLine: 0x8B7355,     // Warm tan grid lines
   machine: 0x48bb78,       // Green for machines
-  machineIdle: 0x718096,   // Gray for idle machines
-  machineBlocked: 0xe53e3e, // Red for blocked machines
-  generator: 0xecc94b,     // Yellow for generators
-  highlight: 0x63b3ed,     // Blue highlight
-  empty: 0x1a202c          // Empty/background
+  machineIdle: 0x8B7355,   // Warm tan for idle machines
+  machineBlocked: 0xC62828, // Red for blocked machines
+  generator: 0xD4A84B,     // Warm gold for generators
+  highlight: 0xB8860B,     // Dark goldenrod highlight
+  empty: 0xC9B896          // Warm tan/parchment background
 };

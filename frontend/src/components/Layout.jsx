@@ -96,19 +96,34 @@ export default function Layout({ children }) {
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static">
         <Toolbar>
-          {/* Logo */}
+          {/* Logo with background */}
           <Box
-            component="img"
-            src="/assets/transLogo.png"
-            alt={t('app.name')}
-            sx={{
-              height: 36,
-              width: 'auto',
-              cursor: 'pointer',
-              mr: 2,
-            }}
             onClick={handleBackToMenu}
-          />
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: '#FAF3E6',
+              borderRadius: 1.5,
+              px: 1,
+              py: 0.5,
+              mr: 2,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: '#F4E4C9',
+              },
+            }}
+          >
+            <Box
+              component="img"
+              src="/assets/transLogo.png"
+              alt={t('app.name')}
+              sx={{
+                height: 40,
+                width: 'auto',
+              }}
+            />
+          </Box>
 
           <Box sx={{ flexGrow: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
             {isInGame && (

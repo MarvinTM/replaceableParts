@@ -64,7 +64,7 @@ export default function TargetedExperimentPopup({
     >
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TargetIcon sx={{ color: 'warning.main' }} />
+          <TargetIcon sx={{ color: 'primary.main' }} />
           <Typography variant="h6">Targeted Experiment</Typography>
         </Box>
       </DialogTitle>
@@ -78,7 +78,7 @@ export default function TargetedExperimentPopup({
             <Typography variant="body2">Cost:</Typography>
             <Chip
               label={`${targetedCost} RP`}
-              color={canAfford ? 'warning' : 'error'}
+              color={canAfford ? 'primary' : 'error'}
               size="small"
             />
             {!canAfford && (
@@ -116,11 +116,11 @@ export default function TargetedExperimentPopup({
                   borderRadius: 1,
                   mb: 0.5,
                   border: '1px solid',
-                  borderColor: selectedRecipeId === recipe.id ? 'warning.main' : 'transparent',
+                  borderColor: selectedRecipeId === recipe.id ? 'primary.main' : 'transparent',
                   '&.Mui-selected': {
-                    bgcolor: 'warning.dark',
+                    bgcolor: 'rgba(139, 90, 43, 0.15)',
                     '&:hover': {
-                      bgcolor: 'warning.dark',
+                      bgcolor: 'rgba(139, 90, 43, 0.2)',
                     }
                   }
                 }}
@@ -178,7 +178,7 @@ export default function TargetedExperimentPopup({
         </Button>
         <Button
           variant="contained"
-          color="warning"
+          color="primary"
           onClick={handleRunExperiment}
           disabled={!canRun}
           startIcon={<TargetIcon />}

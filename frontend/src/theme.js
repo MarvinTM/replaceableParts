@@ -29,19 +29,22 @@ export const theme = createTheme({
       dark: '#B71C1C',
     },
     warning: {
-      main: '#E65100',
-      light: '#FF9800',
-      dark: '#E65100',
+      main: '#A0522D',        // Sienna (brownish)
+      light: '#CD853F',       // Peru
+      dark: '#8B4513',        // Saddle brown
+      contrastText: '#FDF8F0',
     },
     success: {
       main: '#2E7D32',
-      light: '#4CAF50',
-      dark: '#1B5E20',
+      light: '#81C784',       // Lighter green for better readability
+      dark: '#E8F5E9',        // Very light green for backgrounds
+      contrastText: '#1B5E20',
     },
     info: {
       main: '#5C4B3A',
       light: '#8B7355',
-      dark: '#3E3228',
+      dark: '#F5ECD8',        // Light parchment for backgrounds
+      contrastText: '#3E3228',
     },
   },
   typography: {

@@ -7,8 +7,8 @@ import {
 } from './coordinateUtils';
 import { getIconUrl } from '../../services/iconService';
 
-// Fog of war color
-const FOG_COLOR = 0x1a1a2e;
+// Fog of war color (warm parchment)
+const FOG_COLOR = 0xC9B896;
 
 // Node indicator colors
 const NODE_UNLOCKED_COLOR = 0x22c55e;  // Green - active

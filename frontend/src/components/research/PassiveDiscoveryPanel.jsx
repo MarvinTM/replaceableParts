@@ -29,7 +29,7 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
         borderColor: 'info.main'
       }}>
         <Box sx={{ flex: 1 }}>
-          <Typography variant="body2">
+          <Typography variant="body2" color="info.contrastText">
             Chance per tick:
           </Typography>
           <Typography variant="caption" color="text.secondary">
@@ -55,9 +55,9 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
           border: '1px solid',
           borderColor: 'success.main'
         }}>
-          <ScienceIcon sx={{ fontSize: 18, color: 'success.light' }} />
+          <ScienceIcon sx={{ fontSize: 18, color: 'success.main' }} />
           <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" color="success.light">
+            <Typography variant="caption" color="success.contrastText">
               {activeLabCount} Research Lab{activeLabCount > 1 ? 's' : ''} active
             </Typography>
             <Typography variant="caption" display="block" color="text.secondary">
