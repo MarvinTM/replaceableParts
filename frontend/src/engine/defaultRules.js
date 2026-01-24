@@ -438,8 +438,9 @@ export const defaultRules = {
     
     // Generators
     { id: 'treadwheel', name: 'Treadwheel', basePrice: 50, category: 'equipment', weight: 20, age: 1 },
-    { id: 'steam_engine_gen', name: 'Steam Turbine', basePrice: 500, category: 'equipment', weight: 80, age: 3 },
+    { id: 'coal_power_plant', name: 'Coal Power Plant', basePrice: 500, category: 'equipment', weight: 80, age: 3 },
     { id: 'diesel_gen', name: 'Diesel Generator', basePrice: 1000, category: 'equipment', weight: 60, age: 4 },
+    { id: 'nuclear_fission_reactor', name: 'Nuclear Fission Reactor', basePrice: 5000, category: 'equipment', weight: 150, age: 6 },
     { id: 'solar_array', name: 'Solar Array', basePrice: 2000, category: 'equipment', weight: 50, age: 7 },
     { id: 'fusion_reactor', name: 'Fusion Reactor', basePrice: 10000, category: 'equipment', weight: 200, age: 7 }
   ],
@@ -767,6 +768,7 @@ export const defaultRules = {
     { id: 'printer', inputs: { electric_motor: 2, circuit_board: 1, plastic: 3 }, outputs: { printer: 1 }, ticksToComplete: 8, tier: 6, age: 6 },
     { id: 'watch_digital', inputs: { circuit_board: 1, plastic: 1, battery: 1 }, outputs: { watch_digital: 1 }, ticksToComplete: 3, tier: 6, age: 6 },
     { id: 'server', inputs: { motherboard: 2, hard_drive: 4, power_supply: 2, steel_plate: 4 }, outputs: { server: 1 }, ticksToComplete: 20, tier: 6, age: 6 },
+    { id: 'solar_panel_item', inputs: { silicon: 4, glass: 2, aluminum_sheet: 1 }, outputs: { solar_panel_item: 1 }, ticksToComplete: 8, tier: 6, age: 6 },
     { id: 'scanner', inputs: { light_bulb: 2, digital_sensor: 1, electric_motor: 1, plastic: 2 }, outputs: { scanner: 1 }, ticksToComplete: 8, tier: 6, age: 6 },
     { id: 'modem', inputs: { circuit_board: 2, plastic: 1 }, outputs: { modem: 1 }, ticksToComplete: 5, tier: 6, age: 6 },
     { id: 'router', inputs: { circuit_board: 2, plastic: 1, radio_transmitter: 1 }, outputs: { router: 1 }, ticksToComplete: 5, tier: 6, age: 6 },
@@ -810,7 +812,6 @@ export const defaultRules = {
     { id: 'vr_headset', inputs: { screen: 2, cpu: 1, plastic: 2, digital_sensor: 2 }, outputs: { vr_headset: 1 }, ticksToComplete: 12, tier: 7, age: 7 },
     { id: 'electric_car', inputs: { composite: 6, adv_battery: 4, electric_motor: 2, screen: 1 }, outputs: { electric_car: 1 }, ticksToComplete: 50, tier: 7, age: 7 },
     { id: 'laser', inputs: { rare_earth_ore: 1, glass: 2, circuit_board: 2 , cpu:1, power_supply:1}, outputs: { laser: 1 }, ticksToComplete: 15, tier: 7, age: 7 },
-    { id: 'solar_panel_item', inputs: { silicon: 4, glass: 2, aluminum_sheet: 1 }, outputs: { solar_panel_item: 1 }, ticksToComplete: 8, tier: 7, age: 7 },
     { id: 'flying_car', inputs: { anti_grav_unit: 2, composite: 6, fusion_core: 1 }, outputs: { flying_car: 1 }, ticksToComplete: 100, tier: 7, age: 7 },
     { id: 'hoverboard', inputs: { anti_grav_unit: 1, composite: 2 }, outputs: { hoverboard: 1 }, ticksToComplete: 30, tier: 7, age: 7 },
     { id: 'printer_3d', inputs: { electric_motor: 3, aluminum_rod: 4, computer: 1 }, outputs: { printer_3d: 1 }, ticksToComplete: 20, tier: 7, age: 7 },
@@ -846,7 +847,7 @@ export const defaultRules = {
     // Age 3 machines
     { id: 'steel_forge', inputs: { steel_plate: 10, bricks: 12, iron_chain: 4 }, outputs: { steel_forge: 1 }, ticksToComplete: 12, tier: 3, age: 3 },
     { id: 'heavy_assembly', inputs: { steel_beam: 8, steel_plate: 8, gear: 6, crane: 1 }, outputs: { heavy_assembly: 1 }, ticksToComplete: 20, tier: 3, age: 3 },
-    { id: 'steam_engine_gen', inputs: { steel_plate: 10, boiler: 1, piston: 2 }, outputs: { steam_engine_gen: 1 }, ticksToComplete: 20, tier: 3, age: 3 },
+    { id: 'coal_power_plant', inputs: { steel_plate: 10, boiler: 1, piston: 2, pressure_gauge:3, pipe: 16 }, outputs: { coal_power_plant: 1 }, ticksToComplete: 20, tier: 3, age: 3 },
     // Age 4 machines
     { id: 'precision_assembler', inputs: { steel_plate: 10, gear: 10, electric_motor: 2, ball_bearing: 4 }, outputs: { precision_assembler: 1 }, ticksToComplete: 25, tier: 4, age: 4 },
     
@@ -854,8 +855,10 @@ export const defaultRules = {
     { id: 'research_laboratory', inputs: { steel_plate: 10, pipe: 8, glass: 6, vacuum_tube: 4, gear: 6, copper_wire: 8 }, outputs: { research_laboratory: 1 }, ticksToComplete: 30, tier: 4, age: 4 },
     { id: 'diesel_gen', inputs: { engine_block: 2, generator: 1 }, outputs: { diesel_gen: 1 }, ticksToComplete: 25, tier: 4, age: 4 },
     
+    { id: 'nuclear_fission_reactor', inputs: { concrete: 50, steel_plate: 20, steel_pipe: 20, industrial_pump: 4, computer: 1, steam_valve: 10 }, outputs: { nuclear_fission_reactor: 1 }, ticksToComplete: 60, tier: 6, age: 6 },
+    
     { id: 'electronics_fab', inputs: { composite: 10, electric_motor: 5, heating_element: 10, resistor: 10 }, outputs: { electronics_fab: 1 }, ticksToComplete: 40, tier: 7, age: 7 },
-    { id: 'solar_array', inputs: { solar_panel_item: 16, aluminum_sheet: 4 }, outputs: { solar_array: 1 }, ticksToComplete: 50, tier: 7, age: 7 },
+    { id: 'solar_array', inputs: { solar_panel_item: 16, aluminum_sheet: 4 }, outputs: { solar_array: 1 }, ticksToComplete: 50, tier: 6, age: 6 },
     { id: 'fusion_reactor', inputs: { fusion_core: 1, superconductor: 20, concrete: 100 }, outputs: { fusion_reactor: 1 }, ticksToComplete: 100, tier: 7, age: 7 }
   ],
 
@@ -1216,11 +1219,11 @@ export const defaultRules = {
       animation: { frames: 4, speed: 0.05 }
     },
     {
-      id: 'steam_engine_gen',
-      itemId: 'steam_engine_gen',
-      name: 'Steam Turbine',
+      id: 'coal_power_plant',
+      itemId: 'coal_power_plant',
+      name: 'Coal Power Plant',
       sizeX: 3, sizeY: 4,
-      energyOutput: 100,
+      energyOutput: 500,
       animation: { frames: 4, speed: 0.08 }
     },
     {
@@ -1228,7 +1231,7 @@ export const defaultRules = {
       itemId: 'diesel_gen',
       name: 'Diesel Generator',
       sizeX: 3, sizeY: 3,
-      energyOutput: 300,
+      energyOutput: 800,
       animation: { frames: 4, speed: 0.08 }
     },
     {
@@ -1236,8 +1239,16 @@ export const defaultRules = {
       itemId: 'solar_array',
       name: 'Solar Array',
       sizeX: 6, sizeY: 6,
-      energyOutput: 800,
+      energyOutput: 100,
       animation: { frames: 1, speed: 0 }
+    },
+    {
+      id: 'nuclear_fission_reactor',
+      itemId: 'nuclear_fission_reactor',
+      name: 'Nuclear Fission Reactor',
+      sizeX: 8, sizeY: 8,
+      energyOutput: 5000,
+      animation: { frames: 4, speed: 0.1 }
     },
     {
       id: 'fusion_reactor',
@@ -1365,17 +1376,29 @@ export const defaultRules = {
         { label: 'Platform Deck', material: 'planks', quantity: 2 }
       ]
     },
-    steam_engine_gen: {
+    coal_power_plant: {
       slots: [
         { label: 'Heavy Frame', material: 'steel_plate', quantity: 10 },
         { label: 'Pressure Boiler', material: 'boiler', quantity: 1 },
-        { label: 'Power Pistons', material: 'piston', quantity: 2 }
+        { label: 'Power Pistons', material: 'piston', quantity: 2 },
+        { label: 'Pressure Control', material: 'pressure_gauge', quantity: 3 },
+        { label: 'Steam Pipes', material: 'pipe', quantity: 16 }
       ]
     },
     diesel_gen: {
       slots: [
         { label: 'Diesel Engines', material: 'engine_block', quantity: 2 },
         { label: 'Electric Generator', material: 'generator', quantity: 1 }
+      ]
+    },
+    nuclear_fission_reactor: {
+      slots: [
+        { label: 'Reactor Vessel', material: 'steel_plate', quantity: 20 },
+        { label: 'Containment Dome', material: 'concrete', quantity: 50 },
+        { label: 'Cooling Loops', material: 'steel_pipe', quantity: 20 },
+        { label: 'Coolant Pumps', material: 'industrial_pump', quantity: 4 },
+        { label: 'Control Systems', material: 'computer', quantity: 1 },
+        { label: 'Steam Valves', material: 'steam_valve', quantity: 10 }
       ]
     },
     solar_array: {
