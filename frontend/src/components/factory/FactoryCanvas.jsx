@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { Application, Graphics, Container, Sprite, Assets, AnimatedSprite, Texture, Text, TextStyle } from 'pixi.js';
+import { Application, Graphics, Container, Sprite, Assets, AnimatedSprite, Texture, Text, TextStyle, TilingSprite } from 'pixi.js';
 import {
   TILE_WIDTH,
   TILE_HEIGHT,
@@ -34,6 +34,8 @@ const ASSET_MANIFEST = {
     ],
     // Road tile (aligned with isometric grid, for path to factory entrance)
     road: `${ASSET_BASE}/terrain_road.png`,
+    // Seamless background texture (optional)
+    background: `${ASSET_BASE}/terrain_background.png`,
   },
   machines: {
     idle: `${ASSET_BASE}/machine_idle.png`,
@@ -283,6 +285,7 @@ async function loadAssets(rules) {
     }
   }
   loaded.terrain.road = await tryLoad(ASSET_MANIFEST.terrain.road);
+  loaded.terrain.background = await tryLoad(ASSET_MANIFEST.terrain.background);
 
   // Load per-type machine sprites
   for (const machineType of rules.machines) {
@@ -515,7 +518,10 @@ function drawIsometricTile(graphics, x, y, fillColor, lineColor = null) {
     x, y + halfHeight,
     x - halfWidth, y
   ]);
-  graphics.fill(fillColor);
+  
+  if (fillColor !== null && fillColor !== undefined) {
+    graphics.fill(fillColor);
+  }
 
   if (lineColor !== null) {
     graphics.stroke({ color: lineColor, width: 1, alpha: 0.3 });
@@ -872,68 +878,115 @@ export default function FactoryCanvas({
 
     // === RENDER TERRAIN (world background) ===
     const terrainContainer = new Container();
-    const { extentTiles, roadWidthTiles, baseGrassProbability } = TERRAIN_CONFIG;
-    const hasTerrainSprites = assets?.terrain?.grass?.length > 0;
+    const { extentTiles, roadWidthTiles } = TERRAIN_CONFIG;
 
-    if (hasTerrainSprites) {
-      const grassTextures = assets.terrain.grass;
-      const roadTexture = assets.terrain.road;
+    // Define terrain bounds (extend beyond factory in all directions)
+    const terrainMinX = -extentTiles;
+    const terrainMinY = -extentTiles;
+    const terrainMaxX = width + extentTiles;
+    const terrainMaxY = height + extentTiles;
 
-      // Define terrain bounds (extend beyond factory in all directions)
-      const terrainMinX = -extentTiles;
-      const terrainMinY = -extentTiles;
-      const terrainMaxX = width + extentTiles;
-      const terrainMaxY = height + extentTiles;
+    // 1. Render Background "Plate"
+    // This represents the "big texture" surface. 
+    // Currently a solid color, but can be replaced with a large Sprite/texture.
+    const backgroundGraphics = new Graphics();
+    const gridGraphics = new Graphics();
 
-      // Road tiles positions: extends in -Y direction toward lower-left border
-      // The road reaches the factory at the LEFT corner (grid 0, 0)
-      // Road is roadWidthTiles wide, extending to the right (positive X)
-      const roadTiles = new Set();
-      for (let roadX = 0; roadX < roadWidthTiles; roadX++) {
-        for (let roadY = -1; roadY >= terrainMinY; roadY--) {
-          roadTiles.add(`${roadX},${roadY}`);
-        }
-      }
+    // Draw the background as a large polygon covering the extent
+    // We calculate the four corners of the entire terrain diamond
+    const top = gridToScreen(terrainMinX, terrainMinY);
+    const right = gridToScreen(terrainMaxX, terrainMinY);
+    const bottom = gridToScreen(terrainMaxX, terrainMaxY);
+    const left = gridToScreen(terrainMinX, terrainMaxY);
 
-      // Render terrain tiles (grass and road)
-      for (let x = terrainMinX; x < terrainMaxX; x++) {
-        for (let y = terrainMinY; y < terrainMaxY; y++) {
-          // Skip tiles that are actually part of the factory floor
-          if (isTileValid(x, y)) {
-            continue;
-          }
+    backgroundGraphics.poly([
+      top.x, top.y,
+      right.x, right.y,
+      bottom.x, bottom.y,
+      left.x, left.y
+    ]);
 
-          const screenPos = gridToScreen(x, y);
-          const tileKey = `${x},${y}`;
+    if (assets.terrain.background) {
+        // Use TilingSprite with mask
+        // Calculate bounding box for the sprite
+        const minX = Math.min(top.x, right.x, bottom.x, left.x);
+        const maxX = Math.max(top.x, right.x, bottom.x, left.x);
+        const minY = Math.min(top.y, right.y, bottom.y, left.y);
+        const maxY = Math.max(top.y, right.y, bottom.y, left.y);
 
-          let texture;
-          if (roadTiles.has(tileKey) && roadTexture) {
-            // Road tile
-            texture = roadTexture;
-          } else {
-            // Grass tile - mostly use base variant, sparse variation with others
-            const hash = tileHash(x, y);
-            if (hash < baseGrassProbability || grassTextures.length === 1) {
-              // Use base grass variant (first texture)
-              texture = grassTextures[0];
-            } else {
-              // Use one of the other variants (spread remaining probability)
-              const remainingProb = 1 - baseGrassProbability;
-              const variantHash = (hash - baseGrassProbability) / remainingProb;
-              const variantIndex = 1 + Math.floor(variantHash * (grassTextures.length - 1));
-              texture = grassTextures[Math.min(variantIndex, grassTextures.length - 1)];
-            }
-          }
+        const width = maxX - minX;
+        const height = maxY - minY;
 
-          const sprite = new Sprite(texture);
-          sprite.anchor.set(0.5, 0.5);
-          sprite.x = screenPos.x;
-          sprite.y = screenPos.y;
-          terrainContainer.addChild(sprite);
-        }
-      }
+        // Note: TilingSprite requires a texture, not a resource
+        const bgSprite = new TilingSprite({
+            texture: assets.terrain.background,
+            width: width,
+            height: height
+        });
+        
+        bgSprite.x = minX;
+        bgSprite.y = minY;
+
+        // Use the graphics as a mask
+        backgroundGraphics.fill(0xffffff); // Color doesn't matter for mask
+        bgSprite.mask = backgroundGraphics;
+
+        terrainContainer.addChild(backgroundGraphics); // Mask must be in display list (or just assigned)
+        terrainContainer.addChild(bgSprite);
+    } else {
+        // Fallback to solid color
+        backgroundGraphics.fill(0x5d6e53); 
+        terrainContainer.addChild(backgroundGraphics);
     }
 
+    // 1.5 Render Road
+    // Restore road logic: extends in -Y direction toward lower-left border
+    const roadTiles = new Set();
+    for (let roadX = 0; roadX < roadWidthTiles; roadX++) {
+      for (let roadY = -1; roadY >= terrainMinY; roadY--) {
+        roadTiles.add(`${roadX},${roadY}`);
+      }
+    }
+    
+    // 2. Render Grid Overlay (Transparent Tiles) & Road Sprites
+    // We draw lines for every tile in the terrain range
+    // Efficiently drawing lines instead of creating sprites
+    
+    // Set grid style
+    gridGraphics.stroke({ width: 1, color: 0x000000, alpha: 0.1 });
+
+    for (let x = terrainMinX; x < terrainMaxX; x++) {
+      for (let y = terrainMinY; y < terrainMaxY; y++) {
+        // Skip if this is actually part of the factory floor (which has its own rendering)
+        if (isTileValid(x, y)) {
+            continue;
+        }
+
+        const screenPos = gridToScreen(x, y);
+
+        // Check for road
+        const tileKey = `${x},${y}`;
+        if (roadTiles.has(tileKey)) {
+             if (assets?.terrain?.road) {
+                 const roadSprite = new Sprite(assets.terrain.road);
+                 roadSprite.anchor.set(0.5, 0.5);
+                 roadSprite.x = screenPos.x;
+                 roadSprite.y = screenPos.y;
+                 // Add directly to container (above background, below grid)
+                 terrainContainer.addChild(roadSprite);
+             } else {
+                 // Fallback if asset missing
+                 const roadG = new Graphics();
+                 drawIsometricTile(roadG, screenPos.x, screenPos.y, 0x808080, null); // Gray road
+                 terrainContainer.addChild(roadG);
+             }
+        }
+
+        drawIsometricTile(gridGraphics, screenPos.x, screenPos.y, null, 0x000000); // Only stroke
+      }
+    }
+    
+    terrainContainer.addChild(gridGraphics);
     world.addChild(terrainContainer);
 
     // === RENDER FLOOR ===
