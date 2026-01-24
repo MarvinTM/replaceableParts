@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
@@ -6,6 +7,7 @@ import ScienceIcon from '@mui/icons-material/Science';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, activeLabCount = 0 }) {
+  const { t } = useTranslation();
   const effectiveChance = baseChance + labBonus;
   // Convert chance to "1 in X" format
   const oneInX = effectiveChance > 0 ? Math.round(1 / effectiveChance) : 0;
@@ -15,7 +17,7 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <AutoAwesomeIcon sx={{ color: 'info.main' }} />
-        <Typography variant="subtitle2">Passive Discovery</Typography>
+        <Typography variant="subtitle2">{t('research.passiveDiscovery')}</Typography>
       </Box>
 
       <Box sx={{
@@ -30,10 +32,10 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
       }}>
         <Box sx={{ flex: 1 }}>
           <Typography variant="body2" color="info.contrastText">
-            Chance per tick:
+            {t('research.chancePerTick')}:
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            ~1 in {oneInX} ticks
+            {t('research.oneInTicks', { count: oneInX })}
           </Typography>
         </Box>
         <Chip
@@ -58,10 +60,10 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
           <ScienceIcon sx={{ fontSize: 18, color: 'success.main' }} />
           <Box sx={{ flex: 1 }}>
             <Typography variant="caption" color="success.contrastText">
-              {activeLabCount} Research Lab{activeLabCount > 1 ? 's' : ''} active
+              {activeLabCount} {t(activeLabCount > 1 ? 'research.researchLabsActive' : 'research.researchLabActive')}
             </Typography>
             <Typography variant="caption" display="block" color="text.secondary">
-              +{(labBonus * 100).toFixed(1)}% bonus (base: 1 in {baseOneInX})
+              +{(labBonus * 100).toFixed(1)}% {t('research.bonus')} ({t('research.base')}: {t('research.oneInTicks', { count: baseOneInX })})
             </Typography>
           </Box>
         </Box>
@@ -70,10 +72,8 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mt: 1.5 }}>
         <InfoOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', mt: 0.25 }} />
         <Typography variant="caption" color="text.secondary">
-          Each tick has a small chance to passively discover a new recipe,
-          even without running experiments. Discovered recipes still require
-          prototype building to unlock for production.
-          {activeLabCount === 0 && ' Build Research Laboratories to increase this chance.'}
+          {t('research.passiveDiscoveryDesc')}
+          {activeLabCount === 0 && ' ' + t('research.buildLabsHint')}
         </Typography>
       </Box>
     </Box>

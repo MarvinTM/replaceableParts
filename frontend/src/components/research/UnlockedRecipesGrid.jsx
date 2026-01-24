@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -14,17 +15,18 @@ const AGE_COLORS = {
   7: '#00CED1'  // Dark turquoise (future)
 };
 
-const AGE_NAMES = {
-  1: 'Stone Age',
-  2: 'Bronze Age',
-  3: 'Industrial',
-  4: 'Combustion',
-  5: 'Electric',
-  6: 'Digital',
-  7: 'Future'
-};
-
 export default function UnlockedRecipesGrid({ recipesByAge }) {
+  const { t } = useTranslation();
+
+  const AGE_NAMES = {
+    1: t('research.stoneAge'),
+    2: t('research.bronzeAge'),
+    3: t('research.industrial'),
+    4: t('research.combustion'),
+    5: t('research.electric'),
+    6: t('research.digital'),
+    7: t('research.future')
+  };
   // Filter ages to only show those with at least one discovered recipe
   const ages = Object.keys(recipesByAge)
     .map(Number)
@@ -35,7 +37,7 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography variant="body2" color="text.secondary">
-          No recipes discovered yet
+          {t('research.noRecipesDiscovered')}
         </Typography>
       </Box>
     );
@@ -61,7 +63,7 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
                   }}
                 />
                 <Typography variant="body2" fontWeight="bold">
-                  Age {age}
+                  {t('market.age')} {age}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {AGE_NAMES[age]}
@@ -82,7 +84,7 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
             <Box sx={{ mb: 0.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
                 <Typography variant="caption" color="text.secondary">
-                  Discovered
+                  {t('research.discovered')}
                 </Typography>
                 <Typography variant="caption">
                   {discovered}/{total} ({discoveredPercent}%)
@@ -107,7 +109,7 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
                 <Typography variant="caption" color="text.secondary">
-                  Unlocked
+                  {t('research.unlocked')}
                 </Typography>
                 <Typography variant="caption">
                   {unlocked}/{total} ({unlockedPercent}%)
@@ -133,18 +135,18 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
       {/* Summary */}
       <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: 'primary.dark' }}>
         <Typography variant="body2" fontWeight="bold" gutterBottom>
-          Total Progress
+          {t('research.totalProgress')}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Box>
-            <Typography variant="caption" color="text.secondary">Discovered</Typography>
+            <Typography variant="caption" color="text.secondary">{t('research.discovered')}</Typography>
             <Typography variant="body1" fontWeight="bold">
               {ages.reduce((sum, age) => sum + recipesByAge[age].discovered, 0)}/
               {ages.reduce((sum, age) => sum + recipesByAge[age].total, 0)}
             </Typography>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary">Unlocked</Typography>
+            <Typography variant="caption" color="text.secondary">{t('research.unlocked')}</Typography>
             <Typography variant="body1" fontWeight="bold">
               {ages.reduce((sum, age) => sum + recipesByAge[age].unlocked, 0)}/
               {ages.reduce((sum, age) => sum + recipesByAge[age].total, 0)}

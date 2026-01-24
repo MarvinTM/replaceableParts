@@ -104,7 +104,7 @@ export default function ResearchTab() {
       <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Paper sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6">Research Points</Typography>
+            <Typography variant="h6">{t('research.researchPoints')}</Typography>
             <Typography variant="h4" color="primary.main" fontWeight="bold">
               {researchPoints.toLocaleString()} RP
             </Typography>
@@ -124,9 +124,9 @@ export default function ResearchTab() {
 
       {/* CENTER PANEL - Prototype Workshop */}
       <Paper sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Typography variant="h6" gutterBottom>Prototype Workshop</Typography>
+        <Typography variant="h6" gutterBottom>{t('research.prototypeWorkshop')}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Build prototypes to unlock discovered recipes for production
+          {t('research.prototypeWorkshopDesc')}
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Box sx={{ flex: 1, overflow: 'auto' }}>
@@ -146,9 +146,9 @@ export default function ResearchTab() {
           activeLabCount={activeLabCount}
         />
         <Divider sx={{ my: 2 }} />
-        <Typography variant="h6" gutterBottom>Unlocked Recipes</Typography>
+        <Typography variant="h6" gutterBottom>{t('research.unlockedRecipes')}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Recipes available for production
+          {t('research.unlockedRecipesDesc')}
         </Typography>
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           <UnlockedRecipesGrid recipesByAge={recipesByAge} />

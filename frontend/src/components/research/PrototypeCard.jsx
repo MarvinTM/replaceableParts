@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -9,6 +10,7 @@ import LoopIcon from '@mui/icons-material/Loop';
 import MaterialIcon from '../common/MaterialIcon';
 
 export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }) {
+  const { t } = useTranslation();
   // Get recipe output info
   const outputInfo = Object.entries(recipe.outputs).map(([outputId, qty]) => {
     const material = rules.materials.find(m => m.id === outputId);
@@ -46,12 +48,12 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
 
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
         <Chip
-          label={`Age ${outputInfo?.material?.age || '?'}`}
+          label={`${t('market.age')} ${outputInfo?.material?.age || '?'}`}
           size="small"
           variant="outlined"
         />
         <Chip
-          label={isFlowMode ? 'Flow' : 'Slots'}
+          label={t(isFlowMode ? 'research.flow' : 'research.slots')}
           size="small"
           color={isFlowMode ? 'info' : 'warning'}
           variant="outlined"
@@ -63,7 +65,7 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'center', mb: 0.5 }}>
             <LoopIcon sx={{ fontSize: 16, color: 'info.main' }} />
             <Typography variant="caption" color="info.main">
-              Auto-filling
+              {t('research.autoFilling')}
             </Typography>
           </Box>
           <LinearProgress
@@ -72,7 +74,7 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
             sx={{ height: 6, borderRadius: 1 }}
           />
           <Typography variant="caption" color="text.secondary">
-            {flowProgress}% complete
+            {flowProgress}% {t('research.complete')}
           </Typography>
         </Box>
       ) : (
@@ -83,7 +85,7 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
           onClick={() => onBuildClick(prototype)}
           sx={{ mt: 1 }}
         >
-          Build Prototype
+          {t('research.buildPrototype')}
         </Button>
       )}
     </Paper>

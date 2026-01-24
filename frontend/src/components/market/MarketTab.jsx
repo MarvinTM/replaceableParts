@@ -388,11 +388,11 @@ export default function MarketTab() {
     <Box sx={{ display: 'flex', height: '100%', gap: 2, p: 2 }}>
       {/* LEFT SIDEBAR - Filters */}
       <Paper sx={{ width: 250, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography variant="h6">Filters</Typography>
+        <Typography variant="h6">{t('market.filters')}</Typography>
         <Divider />
 
         <Box>
-          <Typography variant="subtitle2" gutterBottom>Age Groups</Typography>
+          <Typography variant="subtitle2" gutterBottom>{t('market.ageGroups')}</Typography>
           {[1, 2, 3, 4, 5, 6, 7].map(age => (
             <FormControlLabel
               key={age}
@@ -403,7 +403,7 @@ export default function MarketTab() {
                   size="small"
                 />
               }
-              label={`Age ${age}`}
+              label={`${t('market.age')} ${age}`}
             />
           ))}
         </Box>
@@ -411,7 +411,7 @@ export default function MarketTab() {
         <Divider />
 
         <Box>
-          <Typography variant="subtitle2" gutterBottom>Sort By</Typography>
+          <Typography variant="subtitle2" gutterBottom>{t('market.sortBy')}</Typography>
           {['age', 'price', 'quantity', 'popularity'].map(sort => (
             <Button
               key={sort}
@@ -421,7 +421,7 @@ export default function MarketTab() {
               onClick={() => setSortBy(sort)}
               sx={{ mb: 0.5, justifyContent: 'flex-start' }}
             >
-              {sort.charAt(0).toUpperCase() + sort.slice(1)}
+              {t(`market.${sort}`).charAt(0).toUpperCase() + t(`market.${sort}`).slice(1)}
             </Button>
           ))}
         </Box>
@@ -431,16 +431,16 @@ export default function MarketTab() {
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
         {/* Price Trends Chart */}
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Price Trends</Typography>
+          <Typography variant="h6" gutterBottom>{t('market.priceTrends')}</Typography>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="tick"
-                label={{ value: 'Tick', position: 'insideBottom', offset: -5 }}
+                label={{ value: t('market.tick'), position: 'insideBottom', offset: -5 }}
               />
               <YAxis
-                label={{ value: 'Price', angle: -90, position: 'insideLeft' }}
+                label={{ value: t('market.price'), angle: -90, position: 'insideLeft' }}
               />
               <RechartsTooltip />
               <Legend content={<CustomLegend />} />
@@ -459,20 +459,20 @@ export default function MarketTab() {
           </ResponsiveContainer>
           {discoveredFinalGoods.length === 0 && (
             <Typography variant="body2" color="text.secondary" align="center">
-              No final goods discovered yet. Research recipes to unlock them!
+              {t('market.noFinalGoods')}
             </Typography>
           )}
         </Paper>
 
         {/* Market Intelligence */}
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Market Intelligence</Typography>
+          <Typography variant="h6" gutterBottom>{t('market.marketIntelligence')}</Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             {/* Hot Items */}
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <LocalFireDepartmentIcon color="error" />
-                <Typography variant="subtitle2">Hot Items (High Demand)</Typography>
+                <Typography variant="subtitle2">{t('market.hotItems')}</Typography>
               </Box>
               {marketIntelligence.hot.length > 0 ? (
                 marketIntelligence.hot.map(item => (
@@ -488,7 +488,7 @@ export default function MarketTab() {
                   </Box>
                 ))
               ) : (
-                <Typography variant="body2" color="text.secondary">No hot items</Typography>
+                <Typography variant="body2" color="text.secondary">{t('market.noHotItems')}</Typography>
               )}
             </Box>
 
@@ -496,7 +496,7 @@ export default function MarketTab() {
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <AcUnitIcon color="info" />
-                <Typography variant="subtitle2">Saturated Markets</Typography>
+                <Typography variant="subtitle2">{t('market.saturatedMarkets')}</Typography>
               </Box>
               {marketIntelligence.cold.length > 0 ? (
                 marketIntelligence.cold.map(item => (
@@ -512,7 +512,7 @@ export default function MarketTab() {
                   </Box>
                 ))
               ) : (
-                <Typography variant="body2" color="text.secondary">No saturated markets</Typography>
+                <Typography variant="body2" color="text.secondary">{t('market.noSaturatedMarkets')}</Typography>
               )}
             </Box>
           </Box>
@@ -521,7 +521,7 @@ export default function MarketTab() {
           <Box sx={{ mt: 2, p: 1.5, bgcolor: diversificationStats.bonusPercent > 0 ? 'success.dark' : 'action.hover', borderRadius: 1, border: 1, borderColor: diversificationStats.bonusPercent > 0 ? 'success.main' : 'divider' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="subtitle2" fontWeight="bold">
-                Diversification Bonus
+                {t('market.diversificationBonus')}
               </Typography>
               {diversificationStats.bonusPercent > 0 && (
                 <Chip
@@ -533,16 +533,19 @@ export default function MarketTab() {
               )}
             </Box>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              {diversificationStats.uniqueItemsSold} unique item{diversificationStats.uniqueItemsSold !== 1 ? 's' : ''} sold recently
+              {diversificationStats.uniqueItemsSold} {t(diversificationStats.uniqueItemsSold !== 1 ? 'market.uniqueItemsSoldPlural' : 'market.uniqueItemsSold')} {t('market.soldRecently')}
             </Typography>
             {diversificationStats.nextThreshold && (
               <Typography variant="caption" color="text.secondary">
-                Sell {diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold} more type{(diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold) !== 1 ? 's' : ''} to unlock +{Math.round((diversificationStats.nextBonus - 1) * 100)}% bonus
+                {t((diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold) !== 1 ? 'market.sellMoreTypesPlural' : 'market.sellMoreTypes', {
+                  count: diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold,
+                  bonus: Math.round((diversificationStats.nextBonus - 1) * 100)
+                })}
               </Typography>
             )}
             {!diversificationStats.nextThreshold && diversificationStats.bonusPercent > 0 && (
               <Typography variant="caption" color="success.light">
-                Maximum diversification bonus achieved!
+                {t('market.maxDiversification')}
               </Typography>
             )}
           </Box>
@@ -551,16 +554,16 @@ export default function MarketTab() {
           {obsolescenceStats.length > 0 && (
             <Box sx={{ mt: 2, p: 1.5, bgcolor: 'warning.dark', borderRadius: 1, border: 1, borderColor: 'warning.main' }}>
               <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                Technological Obsolescence
+                {t('market.technologicalObsolescence')}
               </Typography>
               <Typography variant="body2" sx={{ mb: 1.5 }}>
-                Older products lose value as you discover newer technology
+                {t('market.obsolescenceDesc')}
               </Typography>
               {obsolescenceStats.map(stat => (
                 <Box key={stat.age} sx={{ mb: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="body2" fontWeight="bold">
-                      Age {stat.age} goods
+                      {t('market.ageGoods', { age: stat.age })}
                     </Typography>
                     <Chip
                       label={`-${stat.debuffPercent}%`}
@@ -569,12 +572,17 @@ export default function MarketTab() {
                     />
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    {stat.discoveredNextAge}/{stat.totalNextAge} Age {stat.nextAge} recipes discovered ({stat.progressPercent}%)
+                    {t('market.recipesDiscovered', {
+                      discovered: stat.discoveredNextAge,
+                      total: stat.totalNextAge,
+                      age: stat.nextAge,
+                      percent: stat.progressPercent
+                    })}
                   </Typography>
                 </Box>
               ))}
               <Typography variant="caption" color="warning.light" sx={{ mt: 1, display: 'block' }}>
-                Research and produce higher-age goods to maintain profits!
+                {t('market.obsolescenceWarning')}
               </Typography>
             </Box>
           )}
@@ -583,19 +591,19 @@ export default function MarketTab() {
           <Box sx={{ mt: 2, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
             <Typography variant="subtitle2" gutterBottom>
               <InfoOutlinedIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom', mr: 0.5 }} />
-              Recommendations
+              {t('market.recommendations')}
             </Typography>
             {marketIntelligence.cold.length > 3 ? (
               <Typography variant="body2">
-                Many markets are saturated. Consider switching to Age {Math.max(...marketIntelligence.hot.map(i => i.age)) + 1}+ goods for better prices.
+                {t('market.marketsSaturated', { age: Math.max(...marketIntelligence.hot.map(i => i.age)) + 1 })}
               </Typography>
             ) : marketIntelligence.hot.length > 0 ? (
               <Typography variant="body2">
-                Focus on producing {marketIntelligence.hot[0].name} and other high-demand items for maximum profit.
+                {t('market.focusOnDemand', { item: marketIntelligence.hot[0].name })}
               </Typography>
             ) : (
               <Typography variant="body2">
-                Markets are stable. Diversify your production to maintain steady revenue.
+                {t('market.marketsStable')}
               </Typography>
             )}
           </Box>
@@ -603,7 +611,7 @@ export default function MarketTab() {
 
         {/* Item Grid */}
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>Inventory - Final Goods</Typography>
+          <Typography variant="h6" gutterBottom>{t('market.inventoryFinalGoods')}</Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 2 }}>
             {inventoryFinalGoods.map(item => {
               const status = getPopularityStatus(item.popularity);
@@ -627,13 +635,13 @@ export default function MarketTab() {
                     <MaterialIcon materialId={item.id} size={32} />
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="body1" fontWeight="bold">{item.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">Age {item.age}</Typography>
+                      <Typography variant="caption" color="text.secondary">{t('market.age')} {item.age}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      <Chip label={status.label} color={status.color} size="small" />
+                      <Chip label={t(`market.${status.label.toLowerCase()}`)} color={status.color} size="small" />
                       {item.obsolescence < 1.0 && (
                         <Chip
-                          label={`-${Math.round((1 - item.obsolescence) * 100)}% Obsolete`}
+                          label={`-${Math.round((1 - item.obsolescence) * 100)}% ${t('market.obsolete')}`}
                           color="warning"
                           size="small"
                         />
@@ -642,7 +650,7 @@ export default function MarketTab() {
                   </Box>
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2">In Stock: {item.quantity}</Typography>
+                    <Typography variant="body2">{t('market.inStock')}: {item.quantity}</Typography>
                     <Typography variant="body2" fontWeight="bold" color="primary">
                       ${item.currentPrice}
                     </Typography>
@@ -660,7 +668,7 @@ export default function MarketTab() {
                         handleSellAll(item.id);
                       }}
                     >
-                      Sell All (${item.currentPrice * item.quantity})
+                      {t('market.sellAll')} (${item.currentPrice * item.quantity})
                     </Button>
                   </Box>
                 </Paper>
@@ -669,7 +677,7 @@ export default function MarketTab() {
           </Box>
           {inventoryFinalGoods.length === 0 && (
             <Typography variant="body2" color="text.secondary" align="center">
-              No final goods in inventory. Produce some items to sell!
+              {t('market.noInventory')}
             </Typography>
           )}
         </Paper>
@@ -680,31 +688,31 @@ export default function MarketTab() {
         {/* Sell Panel */}
         {selectedItem ? (
           <Box>
-            <Typography variant="h6" gutterBottom>Sell Panel</Typography>
+            <Typography variant="h6" gutterBottom>{t('market.sellPanel')}</Typography>
             <Divider sx={{ mb: 2 }} />
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <MaterialIcon materialId={selectedItem.id} size={48} />
               <Box>
                 <Typography variant="body1" fontWeight="bold">{selectedItem.name}</Typography>
-                <Typography variant="caption" color="text.secondary">Age {selectedItem.age}</Typography>
+                <Typography variant="caption" color="text.secondary">{t('market.age')} {selectedItem.age}</Typography>
               </Box>
             </Box>
 
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" gutterBottom>
-                Available: {selectedItem.quantity}
+                {t('market.available')}: {selectedItem.quantity}
               </Typography>
               <Typography variant="body2" gutterBottom>
-                Price per unit: ${selectedItem.currentPrice}
+                {t('market.pricePerUnit')}: ${selectedItem.currentPrice}
               </Typography>
               <Typography variant="body2" gutterBottom>
-                Market status: {getPopularityStatus(selectedItem.popularity).label}
+                {t('market.marketStatus')}: {t(`market.${getPopularityStatus(selectedItem.popularity).label.toLowerCase()}`)}
               </Typography>
             </Box>
 
             <TextField
-              label="Quantity"
+              label={t('market.quantity')}
               type="number"
               fullWidth
               size="small"
@@ -715,7 +723,7 @@ export default function MarketTab() {
             />
 
             <Typography variant="h6" gutterBottom>
-              Total: ${selectedItem.currentPrice * sellQuantity}
+              {t('market.total')}: ${selectedItem.currentPrice * sellQuantity}
             </Typography>
 
             <Button
@@ -726,13 +734,13 @@ export default function MarketTab() {
               disabled={selectedItem.quantity === 0 || sellQuantity > selectedItem.quantity}
               onClick={() => handleSell(selectedItem.id, sellQuantity)}
             >
-              Sell {sellQuantity} for ${selectedItem.currentPrice * sellQuantity}
+              {t('market.sellFor', { quantity: sellQuantity, price: selectedItem.currentPrice * sellQuantity })}
             </Button>
           </Box>
         ) : (
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography variant="body2" color="text.secondary">
-              Select an item to sell
+              {t('market.selectItem')}
             </Typography>
           </Box>
         )}
@@ -741,17 +749,17 @@ export default function MarketTab() {
 
         {/* Revenue Analytics */}
         <Box>
-          <Typography variant="h6" gutterBottom>Revenue Analytics</Typography>
+          <Typography variant="h6" gutterBottom>{t('market.revenueAnalytics')}</Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Box>
-              <Typography variant="body2" color="text.secondary">Total Revenue</Typography>
+              <Typography variant="body2" color="text.secondary">{t('market.totalRevenue')}</Typography>
               <Typography variant="h5" color="success.main">
                 ${revenueAnalytics.totalRevenue.toLocaleString()}
               </Typography>
             </Box>
 
             <Box>
-              <Typography variant="body2" color="text.secondary">Last 100 Ticks</Typography>
+              <Typography variant="body2" color="text.secondary">{t('market.last100Ticks')}</Typography>
               <Typography variant="h6">
                 ${revenueAnalytics.last100Ticks.toLocaleString()}
               </Typography>
@@ -759,7 +767,7 @@ export default function MarketTab() {
 
             <Divider />
 
-            <Typography variant="subtitle2" gutterBottom>Top Sellers</Typography>
+            <Typography variant="subtitle2" gutterBottom>{t('market.topSellers')}</Typography>
             {revenueAnalytics.topSellers.length > 0 ? (
               revenueAnalytics.topSellers.map((seller, index) => (
                 <Box key={seller.itemId} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -771,14 +779,14 @@ export default function MarketTab() {
                       ${seller.revenue}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {seller.quantity} sold
+                      {seller.quantity} {t('market.sold')}
                     </Typography>
                   </Box>
                 </Box>
               ))
             ) : (
               <Typography variant="body2" color="text.secondary">
-                No sales yet
+                {t('market.noSales')}
               </Typography>
             )}
           </Box>

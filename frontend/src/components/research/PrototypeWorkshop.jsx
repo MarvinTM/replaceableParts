@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import BuildIcon from '@mui/icons-material/Build';
@@ -6,6 +7,7 @@ import PrototypeCard from './PrototypeCard';
 import PrototypeBuildPopup from './PrototypeBuildPopup';
 
 export default function PrototypeWorkshop({ awaitingPrototype, rules, inventory }) {
+  const { t } = useTranslation();
   const [selectedPrototype, setSelectedPrototype] = useState(null);
 
   const handleBuildClick = (prototype) => {
@@ -35,10 +37,10 @@ export default function PrototypeWorkshop({ awaitingPrototype, rules, inventory 
         }}>
           <BuildIcon sx={{ fontSize: 64, opacity: 0.3 }} />
           <Typography variant="body1" textAlign="center">
-            No prototypes awaiting construction
+            {t('research.noPrototypesAwaiting')}
           </Typography>
           <Typography variant="body2" textAlign="center">
-            Run experiments to discover new recipes and begin prototyping
+            {t('research.runExperimentsToPrototype')}
           </Typography>
         </Box>
       ) : (

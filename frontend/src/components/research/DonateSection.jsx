@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -14,6 +15,7 @@ import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
 
 export default function DonateSection() {
+  const { t } = useTranslation();
   const engineState = useGameStore((state) => state.engineState);
   const rules = useGameStore((state) => state.rules);
   const donateCredits = useGameStore((state) => state.donateCredits);
@@ -67,19 +69,19 @@ export default function DonateSection() {
   return (
     <Box>
       <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
-        <Tab icon={<AttachMoneyIcon />} label="Credits" iconPosition="start" />
-        <Tab icon={<InventoryIcon />} label="Parts" iconPosition="start" />
+        <Tab icon={<AttachMoneyIcon />} label={t('research.donateCredits')} iconPosition="start" />
+        <Tab icon={<InventoryIcon />} label={t('research.donateParts')} iconPosition="start" />
       </Tabs>
 
       {/* Credits Tab */}
       {tabValue === 0 && (
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Convert credits to Research Points ({creditsToRPRatio} credits = 1 RP)
+            {t('research.convertCreditsDesc', { ratio: creditsToRPRatio })}
           </Typography>
 
           <TextField
-            label="Amount"
+            label={t('research.amount')}
             type="number"
             fullWidth
             size="small"
@@ -90,7 +92,7 @@ export default function DonateSection() {
           />
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="body2">You have: {credits?.toLocaleString() || 0} credits</Typography>
+            <Typography variant="body2">{t('research.youHave')}: {credits?.toLocaleString() || 0} {t('research.credits')}</Typography>
             <Chip
               label={`+${creditRpGain} RP`}
               color={creditRpGain > 0 ? 'primary' : 'default'}
@@ -118,7 +120,7 @@ export default function DonateSection() {
             disabled={creditRpGain <= 0 || (parseInt(creditAmount) || 0) > credits}
             onClick={handleDonateCredits}
           >
-            Donate {(parseInt(creditAmount) || 0).toLocaleString()} Credits
+            {t('research.donateCreditsButton', { amount: (parseInt(creditAmount) || 0).toLocaleString() })}
           </Button>
         </Box>
       )}
@@ -127,12 +129,12 @@ export default function DonateSection() {
       {tabValue === 1 && (
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Donate parts for RP (basePrice x ageMultiplier)
+            {t('research.donatePartsDesc')}
           </Typography>
 
           {donableItems.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-              No donable items in inventory. Raw materials cannot be donated.
+              {t('research.noDonableItems')}
             </Typography>
           ) : (
             <>
@@ -162,7 +164,7 @@ export default function DonateSection() {
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="body2">{item.material.name}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        x{item.quantity} | Age {item.material.age}
+                        x{item.quantity} | {t('market.age')} {item.material.age}
                       </Typography>
                     </Box>
                     <Chip label={`${item.rpPerUnit} RP/ea`} size="small" color="primary" variant="outlined" />
@@ -181,7 +183,7 @@ export default function DonateSection() {
                   </Box>
 
                   <TextField
-                    label="Quantity"
+                    label={t('research.quantity')}
                     type="number"
                     fullWidth
                     size="small"
@@ -193,7 +195,7 @@ export default function DonateSection() {
 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="body2">
-                      Available: {selectedItem.quantity}
+                      {t('research.available')}: {selectedItem.quantity}
                     </Typography>
                     <Chip label={`+${partRpGain} RP`} color="primary" size="small" />
                   </Box>
@@ -205,7 +207,7 @@ export default function DonateSection() {
                     disabled={itemQuantity > selectedItem.quantity}
                     onClick={handleDonateParts}
                   >
-                    Donate {itemQuantity} {selectedItem.material.name}
+                    {t('research.donatePartsButton', { quantity: itemQuantity, name: selectedItem.material.name })}
                   </Button>
                 </>
               )}

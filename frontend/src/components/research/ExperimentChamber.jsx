@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -15,6 +16,7 @@ export default function ExperimentChamber({
   experimentCost,
   undiscoveredCount
 }) {
+  const { t } = useTranslation();
   const runExperiment = useGameStore((state) => state.runExperiment);
   const rules = useGameStore((state) => state.rules);
   const engineState = useGameStore((state) => state.engineState);
@@ -102,7 +104,7 @@ export default function ExperimentChamber({
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <ScienceIcon sx={{ fontSize: 28, color: 'secondary.main' }} />
-        <Typography variant="h6">Experiment Chamber</Typography>
+        <Typography variant="h6">{t('research.experimentChamber')}</Typography>
       </Box>
 
       <Box sx={{
@@ -122,10 +124,10 @@ export default function ExperimentChamber({
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="body1" gutterBottom>
-            Run experiments to discover new recipes
+            {t('research.runExperimentsDesc')}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {undiscoveredCount} recipes remaining to discover
+            {undiscoveredCount} {t('research.recipesRemaining')}
           </Typography>
         </Box>
 
@@ -134,7 +136,7 @@ export default function ExperimentChamber({
         {/* Random Experiment Section */}
         <Box sx={{ width: '100%', textAlign: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-            <Typography variant="body2">Random:</Typography>
+            <Typography variant="body2">{t('research.random')}:</Typography>
             <Chip
               label={`${experimentCost} RP`}
               color={canRunRandomExperiment ? 'primary' : 'default'}
@@ -151,7 +153,7 @@ export default function ExperimentChamber({
             onClick={handleRunRandomExperiment}
             fullWidth
           >
-            Run Random Experiment
+            {t('research.runRandomExperiment')}
           </Button>
         </Box>
 
@@ -160,7 +162,7 @@ export default function ExperimentChamber({
         {/* Targeted Experiment Section */}
         <Box sx={{ width: '100%', textAlign: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-            <Typography variant="body2">Targeted:</Typography>
+            <Typography variant="body2">{t('research.targeted')}:</Typography>
             <Chip
               label={`${targetedCost} RP`}
               color={canRunTargetedExperiment ? 'warning' : 'default'}
@@ -183,18 +185,18 @@ export default function ExperimentChamber({
             onClick={handleOpenTargetedPopup}
             fullWidth
           >
-            Run Targeted Experiment
+            {t('research.runTargetedExperiment')}
           </Button>
           {eligibleTargetedRecipes.length === 0 && undiscoveredCount > 0 && (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-              No missing inputs for your researched recipes
+              {t('research.noMissingInputs')}
             </Typography>
           )}
         </Box>
 
         {undiscoveredCount === 0 && (
           <Typography variant="body2" color="success.main" sx={{ mt: 1 }}>
-            All recipes have been discovered!
+            {t('research.allRecipesDiscovered')}
           </Typography>
         )}
       </Box>
