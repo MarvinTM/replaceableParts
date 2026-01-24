@@ -893,32 +893,42 @@ export default function FactoryCanvas({
     const gridGraphics = new Graphics();
 
     // Draw the background as a large polygon covering the extent
-    // We calculate the four corners of the entire terrain diamond
-    const top = gridToScreen(terrainMinX, terrainMinY);
-    const right = gridToScreen(terrainMaxX, terrainMinY);
-    const bottom = gridToScreen(terrainMaxX, terrainMaxY);
-    const left = gridToScreen(terrainMinX, terrainMaxY);
+    // We calculate the OUTER corners of the corner tiles to fully enclose the grid
+    const halfTileW = TILE_WIDTH / 2;
+    const halfTileH = TILE_HEIGHT / 2;
+
+    // Centers of the extremity tiles
+    // Note: terrainMaxX/Y is exclusive, so we subtract 1 to get the last valid tile
+    const cTop = gridToScreen(terrainMinX, terrainMaxY - 1);
+    const cRight = gridToScreen(terrainMaxX - 1, terrainMaxY - 1);
+    const cBottom = gridToScreen(terrainMaxX - 1, terrainMinY);
+    const cLeft = gridToScreen(terrainMinX, terrainMinY);
+
+    // Outer vertices of the large diamond
+    const pTop = { x: cTop.x, y: cTop.y - halfTileH };
+    const pRight = { x: cRight.x + halfTileW, y: cRight.y };
+    const pBottom = { x: cBottom.x, y: cBottom.y + halfTileH };
+    const pLeft = { x: cLeft.x - halfTileW, y: cLeft.y };
 
     backgroundGraphics.poly([
-      top.x, top.y,
-      right.x, right.y,
-      bottom.x, bottom.y,
-      left.x, left.y
+      pTop.x, pTop.y,
+      pRight.x, pRight.y,
+      pBottom.x, pBottom.y,
+      pLeft.x, pLeft.y
     ]);
 
     if (assets.terrain.background) {
         // Use TilingSprite with mask
         // Optimize texture for high-res background:
-        // 1. Force linear scaling (smooths out pixels when zoomed in)
         if (assets.terrain.background.source) {
             assets.terrain.background.source.scaleMode = 'linear';
         }
 
-        // Calculate bounding box for the sprite
-        const minX = Math.min(top.x, right.x, bottom.x, left.x);
-        const maxX = Math.max(top.x, right.x, bottom.x, left.x);
-        const minY = Math.min(top.y, right.y, bottom.y, left.y);
-        const maxY = Math.max(top.y, right.y, bottom.y, left.y);
+        // Calculate bounding box from the outer vertices
+        const minX = pLeft.x;
+        const maxX = pRight.x;
+        const minY = pTop.y;
+        const maxY = pBottom.y;
 
         const width = maxX - minX;
         const height = maxY - minY;
@@ -934,15 +944,14 @@ export default function FactoryCanvas({
         bgSprite.y = minY;
 
         // Apply isometric perspective "squash" AND increase density
-        // We use 0.5 for X (instead of 1) to make the texture repeat 2x more often
-        // We use 0.25 for Y (instead of 0.5) to maintain the 2:1 isometric ratio
-        bgSprite.tileScale.set(0.5, 0.25);
+        const scaleX = 0.5;
+        const scaleY = 0.25;
+        bgSprite.tileScale.set(scaleX, scaleY);
 
         // Align the texture origin with the world origin (0,0)
-        // Since the sprite is at (minX, minY), we offset the tile position 
-        // to make the texture's (0,0) align with world (0,0).
-        bgSprite.tilePosition.x = -minX;
-        bgSprite.tilePosition.y = -minY;
+        // Offset = (WorldOrigin - SpritePos) * Scale
+        bgSprite.tilePosition.x = (0 - minX) * scaleX;
+        bgSprite.tilePosition.y = (0 - minY) * scaleY;
 
         // Use the graphics as a mask
         backgroundGraphics.fill(0xffffff); // Color doesn't matter for mask
