@@ -37,10 +37,17 @@
     "create": "Create",
     "confirmOverwrite": "Click to confirm",
     "confirmOverwriteHint": "Click the slot again to confirm overwriting the existing save",
-    "guestOverwriteWarning": "Starting a new game will overwrite your existing saved game. Continue?",
+    "guestOverwriteWarning": "This will overwrite your existing saved game.",
     "limitReached": "Save limit reached ({{max}} saves)",
     "migrating": "Migrating your local save to cloud...",
-    "migrationSuccess": "Your local save has been uploaded to the cloud!"
+    "migrationSuccess": "Your local save has been uploaded to the cloud!",
+    "nameYourGame": "Name Your Game",
+    "gameName": "Game Name",
+    "gameNamePlaceholder": "Enter a name for your game...",
+    "defaultGameName": "My Game",
+    "createGame": "Create Game",
+    "overwriteAndCreate": "Overwrite & Create",
+    "overwriteWarning": "This will overwrite the existing save in this slot."
   },
   "login": {
     "title": "Welcome to replaceableParts",
@@ -191,7 +198,8 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "back": "Back"
   },
   "language": {
     "select": "Language",

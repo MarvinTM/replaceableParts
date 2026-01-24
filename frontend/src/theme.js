@@ -16,7 +16,7 @@ export const theme = createTheme({
     },
     background: {
       default: '#F4E4C9',   // Parchment cream
-      paper: '#FDF8F0',     // Off-white
+      paper: '#FAF3E6',     // Warm cream
     },
     text: {
       primary: '#2D2520',   // Dark brown

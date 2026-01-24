@@ -37,10 +37,17 @@
     "create": "Crear",
     "confirmOverwrite": "Clic para confirmar",
     "confirmOverwriteHint": "Haz clic en la ranura de nuevo para confirmar la sobrescritura",
-    "guestOverwriteWarning": "Iniciar una nueva partida sobrescribirá tu partida guardada existente. ¿Continuar?",
+    "guestOverwriteWarning": "Esto sobrescribirá tu partida guardada existente.",
     "limitReached": "Límite de guardados alcanzado ({{max}} partidas)",
     "migrating": "Migrando tu partida local a la nube...",
-    "migrationSuccess": "¡Tu partida local ha sido subida a la nube!"
+    "migrationSuccess": "¡Tu partida local ha sido subida a la nube!",
+    "nameYourGame": "Nombra Tu Partida",
+    "gameName": "Nombre de la Partida",
+    "gameNamePlaceholder": "Ingresa un nombre para tu partida...",
+    "defaultGameName": "Mi Partida",
+    "createGame": "Crear Partida",
+    "overwriteAndCreate": "Sobrescribir y Crear",
+    "overwriteWarning": "Esto sobrescribirá la partida existente en esta ranura."
   },
   "login": {
     "title": "Bienvenido a replaceableParts",
@@ -191,7 +198,8 @@
     "confirm": "Confirmar",
     "delete": "Eliminar",
     "yes": "Sí",
-    "no": "No"
+    "no": "No",
+    "back": "Volver"
   },
   "language": {
     "select": "Idioma",

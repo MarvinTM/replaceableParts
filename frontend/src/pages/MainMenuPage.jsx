@@ -18,6 +18,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -50,7 +51,9 @@ export default function MainMenuPage() {
   const [loading, setLoading] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
-  const [guestOverwriteDialogOpen, setGuestOverwriteDialogOpen] = useState(false);
+  const [guestNameDialogOpen, setGuestNameDialogOpen] = useState(false);
+  const [guestGameName, setGuestGameName] = useState('');
+  const [isGuestOverwrite, setIsGuestOverwrite] = useState(false);
   const [langAnchorEl, setLangAnchorEl] = useState(null);
 
   useEffect(() => {
@@ -80,12 +83,10 @@ export default function MainMenuPage() {
       // Authenticated users: show slot selection dialog
       setSlotDialogOpen(true);
     } else if (isGuest) {
-      // Guest users: check if there's an existing save
-      if (hasGuestSave()) {
-        setGuestOverwriteDialogOpen(true);
-      } else {
-        await createNewGuestGame();
-      }
+      // Guest users: show naming dialog
+      setIsGuestOverwrite(hasGuestSave());
+      setGuestGameName('');
+      setGuestNameDialogOpen(true);
     } else {
       // Not authenticated or guest - this shouldn't happen from menu
       // but handle it gracefully
@@ -93,10 +94,12 @@ export default function MainMenuPage() {
     }
   };
 
-  const createNewGuestGame = async () => {
+  const handleGuestNameConfirm = async () => {
+    setGuestNameDialogOpen(false);
     setLoading(true);
     try {
-      await startNewGame('Guest Save');
+      const name = guestGameName.trim() || t('saves.defaultGameName');
+      await startNewGame(name);
       navigate('/game');
     } catch (error) {
       console.error('Failed to start new game:', error);
@@ -105,16 +108,16 @@ export default function MainMenuPage() {
     }
   };
 
-  const handleGuestOverwriteConfirm = async () => {
-    setGuestOverwriteDialogOpen(false);
-    await createNewGuestGame();
+  const handleGuestNameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleGuestNameConfirm();
+    }
   };
 
-  const handleSelectSlot = async (slotIndex, isOverwrite, existingSaveId) => {
+  const handleSelectSlot = async (slotIndex, isOverwrite, existingSaveId, name) => {
     setSlotDialogOpen(false);
     setLoading(true);
     try {
-      const name = `Save ${slotIndex + 1}`;
       await startNewGame(name, existingSaveId);
       navigate('/game');
     } catch (error) {
@@ -479,23 +482,42 @@ export default function MainMenuPage() {
         saves={saves}
       />
 
-      {/* Guest overwrite confirmation dialog */}
+      {/* Guest game naming dialog */}
       <Dialog
-        open={guestOverwriteDialogOpen}
-        onClose={() => setGuestOverwriteDialogOpen(false)}
+        open={guestNameDialogOpen}
+        onClose={() => setGuestNameDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
       >
-        <DialogTitle>{t('menu.newGame')}</DialogTitle>
+        <DialogTitle>{t('saves.nameYourGame')}</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            {t('saves.guestOverwriteWarning')}
-          </DialogContentText>
+          {isGuestOverwrite && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {t('saves.guestOverwriteWarning')}
+            </Alert>
+          )}
+          <TextField
+            autoFocus
+            fullWidth
+            label={t('saves.gameName')}
+            placeholder={t('saves.gameNamePlaceholder')}
+            value={guestGameName}
+            onChange={(e) => setGuestGameName(e.target.value)}
+            onKeyDown={handleGuestNameKeyDown}
+            inputProps={{ maxLength: 50 }}
+            sx={{ mt: 1 }}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setGuestOverwriteDialogOpen(false)}>
+          <Button onClick={() => setGuestNameDialogOpen(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleGuestOverwriteConfirm} color="error">
-            {t('common.confirm')}
+          <Button
+            variant="contained"
+            onClick={handleGuestNameConfirm}
+            color={isGuestOverwrite ? 'warning' : 'primary'}
+          >
+            {isGuestOverwrite ? t('saves.overwriteAndCreate') : t('saves.createGame')}
           </Button>
         </DialogActions>
       </Dialog>

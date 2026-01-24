@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -10,15 +10,32 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActionArea from '@mui/material/CardActionArea';
 import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
 import Chip from '@mui/material/Chip';
 import AddIcon from '@mui/icons-material/Add';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const TOTAL_SLOTS = 5;
 
 export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves }) {
   const { t } = useTranslation();
   const [confirmSlot, setConfirmSlot] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [gameName, setGameName] = useState('');
+  const [isOverwrite, setIsOverwrite] = useState(false);
+  const [existingSaveId, setExistingSaveId] = useState(null);
+
+  // Reset state when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setConfirmSlot(null);
+      setSelectedSlot(null);
+      setGameName('');
+      setIsOverwrite(false);
+      setExistingSaveId(null);
+    }
+  }, [open]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString(undefined, {
@@ -31,9 +48,7 @@ export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves }) {
   };
 
   // Create an array of 5 slots, filling in saves where they exist
-  // We'll use the save's position in the array as the slot index
   const slots = Array.from({ length: TOTAL_SLOTS }, (_, index) => {
-    // Find a save for this slot (we'll use array index order)
     const save = saves[index] || null;
     return {
       index,
@@ -44,13 +59,19 @@ export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves }) {
 
   const handleSlotClick = (slot) => {
     if (slot.isEmpty) {
-      // Empty slot - create new game immediately
-      onSelectSlot(slot.index, false, null);
+      // Empty slot - go to naming step
+      setSelectedSlot(slot.index);
+      setIsOverwrite(false);
+      setExistingSaveId(null);
+      setGameName('');
     } else {
-      // Occupied slot - need confirmation
+      // Occupied slot - need confirmation first
       if (confirmSlot === slot.index) {
-        // Second click - confirm overwrite
-        onSelectSlot(slot.index, true, slot.save.id);
+        // Second click - confirmed, go to naming step
+        setSelectedSlot(slot.index);
+        setIsOverwrite(true);
+        setExistingSaveId(slot.save.id);
+        setGameName('');
         setConfirmSlot(null);
       } else {
         // First click - show confirmation state
@@ -59,11 +80,79 @@ export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves }) {
     }
   };
 
+  const handleBack = () => {
+    setSelectedSlot(null);
+    setGameName('');
+    setIsOverwrite(false);
+    setExistingSaveId(null);
+  };
+
+  const handleCreate = () => {
+    const name = gameName.trim() || t('saves.defaultGameName');
+    onSelectSlot(selectedSlot, isOverwrite, existingSaveId, name);
+  };
+
   const handleClose = () => {
     setConfirmSlot(null);
+    setSelectedSlot(null);
+    setGameName('');
     onClose();
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && gameName.trim()) {
+      handleCreate();
+    }
+  };
+
+  // Step 2: Name input
+  if (selectedSlot !== null) {
+    return (
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={handleBack}
+              size="small"
+              sx={{ mr: 1 }}
+            >
+              {t('common.back')}
+            </Button>
+            {t('saves.nameYourGame')}
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ py: 2 }}>
+            <TextField
+              autoFocus
+              fullWidth
+              label={t('saves.gameName')}
+              placeholder={t('saves.gameNamePlaceholder')}
+              value={gameName}
+              onChange={(e) => setGameName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              inputProps={{ maxLength: 50 }}
+              helperText={isOverwrite ? t('saves.overwriteWarning') : ''}
+              FormHelperTextProps={{ sx: { color: 'warning.main' } }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>{t('common.cancel')}</Button>
+          <Button
+            variant="contained"
+            onClick={handleCreate}
+            color={isOverwrite ? 'warning' : 'primary'}
+          >
+            {isOverwrite ? t('saves.overwriteAndCreate') : t('saves.createGame')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+
+  // Step 1: Slot selection
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('saves.selectSlot')}</DialogTitle>
