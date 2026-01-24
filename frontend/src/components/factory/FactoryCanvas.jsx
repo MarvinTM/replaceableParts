@@ -908,6 +908,12 @@ export default function FactoryCanvas({
 
     if (assets.terrain.background) {
         // Use TilingSprite with mask
+        // Optimize texture for high-res background:
+        // 1. Force linear scaling (smooths out pixels when zoomed in)
+        if (assets.terrain.background.source) {
+            assets.terrain.background.source.scaleMode = 'linear';
+        }
+
         // Calculate bounding box for the sprite
         const minX = Math.min(top.x, right.x, bottom.x, left.x);
         const maxX = Math.max(top.x, right.x, bottom.x, left.x);
@@ -927,22 +933,14 @@ export default function FactoryCanvas({
         bgSprite.x = minX;
         bgSprite.y = minY;
 
-        // Apply isometric perspective "squash"
-        // This makes the top-down texture look like it's lying on the isometric ground
-        bgSprite.tileScale.set(1, 0.5);
+        // Apply isometric perspective "squash" AND increase density
+        // We use 0.5 for X (instead of 1) to make the texture repeat 2x more often
+        // We use 0.25 for Y (instead of 0.5) to maintain the 2:1 isometric ratio
+        bgSprite.tileScale.set(0.5, 0.25);
 
         // Align the texture origin with the world origin (0,0)
         // Since the sprite is at (minX, minY), we offset the tile position 
         // to make the texture's (0,0) align with world (0,0).
-        bgSprite.tilePosition.x = -minX;
-        // We also need to account for the squashing in the Y offset? 
-        // Actually, tilePosition is in "texture space" pixels usually, or "screen space"?
-        // In Pixi, tilePosition is the offset in pixels applied to the texture UVs.
-        // If we want world(0,0) to map to texture(0,0):
-        // At local (0,0) which is world (minX, minY), we want texture to be (minX, minY).
-        // So we shift the texture by -minX, -minY.
-        // However, since we scaled Y by 0.5, the Y coordinate in texture space is different.
-        // Let's stick to simple alignment for now.
         bgSprite.tilePosition.x = -minX;
         bgSprite.tilePosition.y = -minY;
 
