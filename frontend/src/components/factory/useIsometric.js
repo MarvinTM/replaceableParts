@@ -115,6 +115,7 @@ export const COLORS = {
   machineIdle: 0x8B7355,   // Warm tan for idle machines
   machineBlocked: 0xC62828, // Red for blocked machines
   generator: 0xD4A84B,     // Warm gold for generators
+  generatorUnpowered: 0x3A3A3A, // Dark gray for unpowered generators
   highlight: 0xB8860B,     // Dark goldenrod highlight
   empty: 0xC9B896          // Warm tan/parchment background
 };

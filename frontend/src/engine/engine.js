@@ -487,7 +487,13 @@ function buyFloorSpace(state, rules, payload) {
 }
 
 function calculateEnergy(state, rules) {
-  const produced = state.generators.reduce((sum, g) => sum + getGeneratorOutput(g.type, rules), 0);
+  // Only count energy from powered generators (backward compatible - default to powered)
+  let produced = 0;
+  for (const generator of state.generators) {
+    if (generator.powered !== false) {
+      produced += getGeneratorOutput(generator.type, rules);
+    }
+  }
 
   let consumed = 0;
 
@@ -533,7 +539,52 @@ function simulateTick(state, rules) {
   // Track items sold this tick for market recovery
   const soldThisTick = new Set();
 
-  // 1. Energy Calculation
+  // 1. Extraction Supply Calculation (Raw materials flow directly to machines and generators)
+  const rawMaterialSupply = {};
+  for (const node of newState.extractionNodes) {
+    if (node.active) {
+      const resourceId = node.resourceType;
+      rawMaterialSupply[resourceId] = (rawMaterialSupply[resourceId] || 0) + node.rate;
+    }
+  }
+
+  // 2. Generator Fuel Processing (must happen before energy calculation)
+  for (const generator of newState.generators) {
+    const genConfig = rules.generators.find(g => g.id === generator.type);
+
+    if (!genConfig?.fuelRequirement) {
+      // No fuel requirement - always powered
+      generator.powered = true;
+      continue;
+    }
+
+    const { materialId, consumptionRate } = genConfig.fuelRequirement;
+    const material = rules.materials.find(m => m.id === materialId);
+    const isRaw = material && material.category === 'raw';
+
+    // Check fuel availability from appropriate source
+    let available = isRaw
+      ? (rawMaterialSupply[materialId] || 0)
+      : (newState.inventory[materialId] || 0);
+
+    if (available >= consumptionRate) {
+      // Consume fuel
+      if (isRaw) {
+        rawMaterialSupply[materialId] -= consumptionRate;
+      } else {
+        newState.inventory[materialId] -= consumptionRate;
+        if (newState.inventory[materialId] === 0) {
+          delete newState.inventory[materialId];
+        }
+      }
+      generator.powered = true;
+    } else {
+      // No fuel available - generator produces no power
+      generator.powered = false;
+    }
+  }
+
+  // 3. Energy Calculation (respects generator powered state)
   const energy = calculateEnergy(newState, rules);
   newState.energy = energy;
 
@@ -554,16 +605,7 @@ function simulateTick(state, rules) {
     newState.energy = calculateEnergy(newState, rules);
   }
 
-  // 2. Extraction Supply Calculation (Raw materials flow directly to machines)
-  const rawMaterialSupply = {};
-  for (const node of newState.extractionNodes) {
-    if (node.active) {
-      const resourceId = node.resourceType;
-      rawMaterialSupply[resourceId] = (rawMaterialSupply[resourceId] || 0) + node.rate;
-    }
-  }
-
-  // 3. Machine Processing
+  // 4. Machine Processing
   for (const machine of newState.machines) {
     if (!machine.enabled || !machine.recipeId || machine.status === 'blocked') {
       continue;

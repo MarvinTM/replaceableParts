@@ -603,6 +603,48 @@ function getMachineColor(status, enabled) {
   }
 }
 
+/**
+ * Create an overlay symbol indicating no power production
+ * Shows a lightning bolt with a red prohibition circle
+ */
+function createNoPowerOverlay(sizeX, sizeY) {
+  const container = new Container();
+
+  // Calculate overlay size based on generator footprint
+  const overlaySize = Math.max(24, Math.min(sizeX, sizeY) * 12);
+
+  // Background circle for visibility
+  const bg = new Graphics();
+  bg.circle(0, 0, overlaySize / 2 + 4);
+  bg.fill({ color: 0x000000, alpha: 0.6 });
+  container.addChild(bg);
+
+  // Lightning bolt symbol (yellow/gold)
+  const bolt = new Graphics();
+  const s = overlaySize / 2;
+  bolt.moveTo(s * 0.1, -s);
+  bolt.lineTo(-s * 0.3, -s * 0.1);
+  bolt.lineTo(s * 0.05, -s * 0.1);
+  bolt.lineTo(-s * 0.2, s);
+  bolt.lineTo(s * 0.3, s * 0.1);
+  bolt.lineTo(-s * 0.05, s * 0.1);
+  bolt.closePath();
+  bolt.fill(0xFFD700);
+  bolt.stroke({ color: 0x000000, width: 1 });
+  container.addChild(bolt);
+
+  // Red prohibition circle with slash
+  const prohibition = new Graphics();
+  prohibition.circle(0, 0, overlaySize / 2);
+  prohibition.stroke({ color: 0xCC0000, width: 3 });
+  prohibition.moveTo(-overlaySize / 2 * 0.7, -overlaySize / 2 * 0.7);
+  prohibition.lineTo(overlaySize / 2 * 0.7, overlaySize / 2 * 0.7);
+  prohibition.stroke({ color: 0xCC0000, width: 3 });
+  container.addChild(prohibition);
+
+  return container;
+}
+
 export default function FactoryCanvas({
   floorSpace,
   machines,
@@ -1132,6 +1174,7 @@ export default function FactoryCanvas({
       let sizeY = 1;
       let spriteScale = 1.0;
       let disableAutoScale = false;
+      let hasFuelRequirement = false;
 
       if (rules && rules.generators) {
         const genConfig = rules.generators.find(g => g.id === gen.type);
@@ -1140,8 +1183,12 @@ export default function FactoryCanvas({
           sizeY = genConfig.sizeY;
           spriteScale = genConfig.spriteScale ?? 1.0;
           disableAutoScale = genConfig.disableAutoScale ?? false;
+          hasFuelRequirement = !!genConfig.fuelRequirement;
         }
       }
+
+      // Check if generator is powered (default to true for backward compatibility)
+      const isPowered = gen.powered !== false;
 
       const screenPos = getStructureScreenPosition(gen.x, gen.y, sizeX, sizeY);
 
@@ -1151,14 +1198,18 @@ export default function FactoryCanvas({
       const genAssets = assets?.generators[gen.type];
       const genKey = `generator-${gen.id}`;
 
-      // Generators animate continuously once placed (if animations are enabled)
-      if (animationsEnabled && genAssets?.anim) {
+      // Generators animate continuously once placed (if animations are enabled AND powered)
+      if (animationsEnabled && isPowered && genAssets?.anim) {
         // Reuse existing sprite if available, otherwise create new one
         let existingSprite = animatedSpritesRef.current[genKey];
 
         if (existingSprite) {
           // Reuse existing sprite to preserve animation state
           displayObject = existingSprite;
+          // Ensure animation is playing when powered
+          if (!displayObject.playing) {
+            displayObject.play();
+          }
         } else {
           // Create new animated sprite
           let framesToUse = ANIM_CONFIG.generator.frames;
@@ -1189,9 +1240,20 @@ export default function FactoryCanvas({
         }
       }
 
-      // Use static sprite when animations are disabled or no animation available
+      // Use static sprite when animations are disabled, no animation available, or unpowered
       if (!displayObject && genAssets?.static) {
         displayObject = new Sprite(genAssets.static);
+      }
+
+      // For unpowered generators with animated sprites, stop animation and use static
+      if (!isPowered && animatedSpritesRef.current[genKey]) {
+        const animSprite = animatedSpritesRef.current[genKey];
+        if (animSprite.playing) {
+          animSprite.stop();
+        }
+        // Use the animated sprite but stopped at first frame
+        displayObject = animSprite;
+        displayObject.gotoAndStop(0);
       }
 
       if (displayObject) {
@@ -1214,16 +1276,45 @@ export default function FactoryCanvas({
           }
         }
 
+        // Apply dark tint and reduced alpha if unpowered
+        if (!isPowered) {
+          displayObject.tint = 0x555555;
+          displayObject.alpha = 0.7;
+        } else {
+          displayObject.tint = 0xFFFFFF; // Reset tint to normal
+          displayObject.alpha = 1.0;
+        }
+
         // zIndex should be based on visual screen Y for correct isometric sorting
         displayObject.zIndex = screenPos.y;
         structuresContainer.addChild(displayObject);
+
+        // Add "no power" overlay if unpowered and requires fuel
+        if (!isPowered && hasFuelRequirement) {
+          const overlay = createNoPowerOverlay(sizeX, sizeY);
+          overlay.x = screenPos.x;
+          // Position overlay above the generator center
+          overlay.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) - 40;
+          overlay.zIndex = screenPos.y + 1; // Render on top of generator
+          structuresContainer.addChild(overlay);
+        }
       } else {
         // Fallback to graphics
         const genGraphics = new Graphics();
         const boxHeight = 20 + Math.max(sizeX, sizeY) * 10;
-        drawStructure(genGraphics, screenPos.x, screenPos.y, sizeX, sizeY, boxHeight, COLORS.generator);
+        const genColor = isPowered ? COLORS.generator : COLORS.generatorUnpowered;
+        drawStructure(genGraphics, screenPos.x, screenPos.y, sizeX, sizeY, boxHeight, genColor);
         genGraphics.zIndex = screenPos.y;
         structuresContainer.addChild(genGraphics);
+
+        // Add "no power" overlay for graphics fallback too
+        if (!isPowered && hasFuelRequirement) {
+          const overlay = createNoPowerOverlay(sizeX, sizeY);
+          overlay.x = screenPos.x;
+          overlay.y = screenPos.y - 20;
+          overlay.zIndex = screenPos.y + 1;
+          structuresContainer.addChild(overlay);
+        }
       }
     });
 

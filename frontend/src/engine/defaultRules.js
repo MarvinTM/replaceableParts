@@ -1224,7 +1224,8 @@ export const defaultRules = {
       name: 'Coal Power Plant',
       sizeX: 3, sizeY: 4,
       energyOutput: 500,
-      animation: { frames: 4, speed: 0.08 }
+      animation: { frames: 4, speed: 0.08 },
+      fuelRequirement: { materialId: 'coal', consumptionRate: 1 }
     },
     {
       id: 'diesel_gen',
@@ -1232,7 +1233,8 @@ export const defaultRules = {
       name: 'Diesel Generator',
       sizeX: 3, sizeY: 3,
       energyOutput: 800,
-      animation: { frames: 4, speed: 0.08 }
+      animation: { frames: 4, speed: 0.08 },
+      fuelRequirement: { materialId: 'diesel_fuel', consumptionRate: 1 }
     },
     {
       id: 'solar_array',
