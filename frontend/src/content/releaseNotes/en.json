@@ -22,6 +22,14 @@
           "text": "Added badge to display pending recipes to unlock in Research tab."
         },
         {
+          "type": "improvement",
+          "text": "Redesigned ground around factory."
+        },
+        {
+          "type": "improvement",
+          "text": "Added fuel requirement to generators, and adjusted generators in general."
+        },
+        {
           "type": "fix",
           "text": "Materials will only be consumed once the prototype is built."
         }
