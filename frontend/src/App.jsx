@@ -136,8 +136,15 @@ export default function App() {
         }
       />
 
-      {/* Debug route - no auth required */}
-      <Route path="/debug/graph" element={<DebugGraphPage />} />
+      {/* Debug route - requires admin role */}
+      <Route
+        path="/debug/graph"
+        element={
+          <ProtectedRoute requireAdmin>
+            <DebugGraphPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Catch all - redirect to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
