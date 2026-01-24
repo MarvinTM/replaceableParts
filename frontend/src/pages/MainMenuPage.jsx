@@ -32,6 +32,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 import SaveSelectorDialog from '../components/SaveSelectorDialog';
 import SaveSlotDialog from '../components/SaveSlotDialog';
+import NewsPanel from '../components/mainMenu/NewsPanel';
+import ReleaseNotesPanel from '../components/mainMenu/ReleaseNotesPanel';
 
 export default function MainMenuPage() {
   const { t, i18n } = useTranslation();
@@ -220,12 +222,13 @@ export default function MainMenuPage() {
     <Box
       sx={{
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
         backgroundColor: 'background.default',
-        p: 2
+        p: 2,
+        gap: 3,
       }}
     >
       {/* Top bar with language and admin */}
@@ -258,6 +261,12 @@ export default function MainMenuPage() {
         )}
       </Box>
 
+      {/* Left Panel - News (hidden on small screens) */}
+      <Box sx={{ display: { xs: 'none', lg: 'block' }, alignSelf: 'center' }}>
+        <NewsPanel />
+      </Box>
+
+      {/* Center - Main Menu Card */}
       <Card sx={{ maxWidth: 400, width: '100%' }}>
         <CardContent sx={{ p: 4 }}>
           {/* Logo */}
@@ -465,6 +474,11 @@ export default function MainMenuPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Right Panel - Release Notes (hidden on small screens) */}
+      <Box sx={{ display: { xs: 'none', lg: 'block' }, alignSelf: 'center' }}>
+        <ReleaseNotesPanel />
+      </Box>
 
       {/* Save selector dialog (for Load Game) */}
       <SaveSelectorDialog

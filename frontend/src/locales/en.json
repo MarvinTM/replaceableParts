@@ -199,7 +199,22 @@
     "delete": "Delete",
     "yes": "Yes",
     "no": "No",
-    "back": "Back"
+    "back": "Back",
+    "new": "NEW"
+  },
+  "mainMenu": {
+    "news": "News",
+    "releaseNotes": "Release Notes",
+    "noNews": "No news at the moment",
+    "noReleaseNotes": "No release notes available"
+  },
+  "news": {
+    "categories": {
+      "update": "Update",
+      "event": "Event",
+      "announcement": "Announcement",
+      "tip": "Tip"
+    }
   },
   "language": {
     "select": "Language",

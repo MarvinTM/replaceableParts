@@ -1,0 +1,31 @@
+{
+  "releases": [
+    {
+      "version": "0.1.0",
+      "date": "2024-01-20",
+      "highlights": "New UI look&feel. Research improvements.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "New UI look&feel, with different colors. Added Game logo."
+        },
+        {
+          "type": "feature",
+          "text": "New research mechanic: Targetted experiment."
+        },
+        {
+          "type": "feature",
+          "text": "Research mechanic: Adjusted the way prototypes are built after the recipe has been unlocked."
+        },
+        {
+          "type": "improvement",
+          "text": "Added badge to display pending recipes to unlock in Research tab."
+        },
+        {
+          "type": "fix",
+          "text": "Materials will only be consumed once the prototype is built."
+        }
+      ]
+    }
+  ]
+}
