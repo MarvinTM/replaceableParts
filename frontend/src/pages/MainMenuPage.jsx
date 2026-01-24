@@ -276,7 +276,7 @@ export default function MainMenuPage() {
               src="/assets/transLogo.png"
               alt={t('app.name')}
               sx={{
-                maxWidth: '180px',
+                maxWidth: '400px',
                 width: '100%',
                 height: 'auto',
                 mb: 2,
