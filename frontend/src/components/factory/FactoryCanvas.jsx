@@ -927,6 +927,25 @@ export default function FactoryCanvas({
         bgSprite.x = minX;
         bgSprite.y = minY;
 
+        // Apply isometric perspective "squash"
+        // This makes the top-down texture look like it's lying on the isometric ground
+        bgSprite.tileScale.set(1, 0.5);
+
+        // Align the texture origin with the world origin (0,0)
+        // Since the sprite is at (minX, minY), we offset the tile position 
+        // to make the texture's (0,0) align with world (0,0).
+        bgSprite.tilePosition.x = -minX;
+        // We also need to account for the squashing in the Y offset? 
+        // Actually, tilePosition is in "texture space" pixels usually, or "screen space"?
+        // In Pixi, tilePosition is the offset in pixels applied to the texture UVs.
+        // If we want world(0,0) to map to texture(0,0):
+        // At local (0,0) which is world (minX, minY), we want texture to be (minX, minY).
+        // So we shift the texture by -minX, -minY.
+        // However, since we scaled Y by 0.5, the Y coordinate in texture space is different.
+        // Let's stick to simple alignment for now.
+        bgSprite.tilePosition.x = -minX;
+        bgSprite.tilePosition.y = -minY;
+
         // Use the graphics as a mask
         backgroundGraphics.fill(0xffffff); // Color doesn't matter for mask
         bgSprite.mask = backgroundGraphics;
