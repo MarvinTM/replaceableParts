@@ -39,7 +39,7 @@ export async function sendWelcomeEmail(user) {
     return;
   }
 
-  const appName = 'Replaceable Parts';
+  const appName = 'replaceableParts';
   const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
 
   const mailOptions = {
@@ -69,17 +69,17 @@ function generateWelcomeEmailHtml(user) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to Replaceable Parts</title>
+  <title>Welcome to replaceableParts</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to Replaceable Parts!</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to replaceableParts!</h1>
   </div>
 
   <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
     <p style="font-size: 18px;">Hello <strong>${name}</strong>,</p>
 
-    <p>Thank you for joining Replaceable Parts - the manufacturing simulation game where you build and manage your own production empire!</p>
+    <p>Thank you for joining replaceableParts - the manufacturing simulation game where you build and manage your own production empire!</p>
 
     <h2 style="color: #667eea; font-size: 18px;">Getting Started</h2>
     <ul style="padding-left: 20px;">
@@ -97,11 +97,11 @@ function generateWelcomeEmailHtml(user) {
     </div>
 
     <p style="margin-top: 30px; color: #666; font-size: 14px;">Happy manufacturing!</p>
-    <p style="color: #666; font-size: 14px;">The Replaceable Parts Team</p>
+    <p style="color: #666; font-size: 14px;">The replaceableParts Team</p>
   </div>
 
   <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
-    <p>This email was sent because you signed up for Replaceable Parts.</p>
+    <p>This email was sent because you signed up for replaceableParts.</p>
   </div>
 </body>
 </html>
@@ -113,11 +113,11 @@ function generateWelcomeEmailText(user) {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
   return `
-Welcome to Replaceable Parts!
+Welcome to replaceableParts!
 
 Hello ${name},
 
-Thank you for joining Replaceable Parts - the manufacturing simulation game where you build and manage your own production empire!
+Thank you for joining replaceableParts - the manufacturing simulation game where you build and manage your own production empire!
 
 GETTING STARTED
 - Build your factory and place machines on the production floor
@@ -131,7 +131,7 @@ As you play, we'd love to hear your thoughts! Your feedback helps us make the ga
 Start playing: ${frontendUrl}
 
 Happy manufacturing!
-The Replaceable Parts Team
+The replaceableParts Team
   `.trim();
 }
 
