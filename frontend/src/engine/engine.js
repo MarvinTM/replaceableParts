@@ -872,7 +872,77 @@ function simulateTick(state, rules) {
     }
   }
 
-  // 6. Sample Price History (periodically)
+  // 6. External Market Events (random price fluctuations)
+  // Initialize marketEvents if it doesn't exist (for old saves)
+  if (!newState.marketEvents) {
+    newState.marketEvents = {};
+  }
+
+  // Get all final goods from discovered recipes (needed for both events and price sampling)
+  const discoveredFinalGoodIds = new Set();
+  for (const recipeId of newState.discoveredRecipes) {
+    const recipe = rules.recipes.find(r => r.id === recipeId);
+    if (recipe && recipe.outputs) {
+      for (const outputId of Object.keys(recipe.outputs)) {
+        const material = rules.materials.find(m => m.id === outputId);
+        if (material && material.category === 'final') {
+          discoveredFinalGoodIds.add(outputId);
+        }
+      }
+    }
+  }
+
+  // Also include unlocked recipes
+  for (const recipeId of newState.unlockedRecipes) {
+    const recipe = rules.recipes.find(r => r.id === recipeId);
+    if (recipe && recipe.outputs) {
+      for (const outputId of Object.keys(recipe.outputs)) {
+        const material = rules.materials.find(m => m.id === outputId);
+        if (material && material.category === 'final') {
+          discoveredFinalGoodIds.add(outputId);
+        }
+      }
+    }
+  }
+
+  // Remove expired events
+  const currentTick = newState.tick;
+  for (const itemId of Object.keys(newState.marketEvents)) {
+    if (newState.marketEvents[itemId].expiresAt <= currentTick) {
+      delete newState.marketEvents[itemId];
+    }
+  }
+
+  // Roll for new events on discovered final goods (only if they don't already have an active event)
+  const eventChance = rules.market.eventChance || 0.003;
+  const eventMinMod = rules.market.eventMinModifier || 0.10;
+  const eventMaxMod = rules.market.eventMaxModifier || 0.20;
+  const eventMinDur = rules.market.eventMinDuration || 30;
+  const eventMaxDur = rules.market.eventMaxDuration || 80;
+
+  for (const itemId of discoveredFinalGoodIds) {
+    // Skip if item already has an active event
+    if (newState.marketEvents[itemId]) {
+      continue;
+    }
+
+    const roll = rng.next();
+    if (roll < eventChance) {
+      // Event triggered! Determine type and strength
+      const isPositive = rng.next() < 0.5;
+      const modifierStrength = eventMinMod + rng.next() * (eventMaxMod - eventMinMod);
+      const duration = Math.floor(eventMinDur + rng.next() * (eventMaxDur - eventMinDur));
+
+      newState.marketEvents[itemId] = {
+        type: isPositive ? 'positive' : 'negative',
+        modifier: isPositive ? (1 + modifierStrength) : (1 - modifierStrength),
+        expiresAt: currentTick + duration
+      };
+    }
+  }
+
+  // 7. Sample Price History (periodically)
+  // Price history is now tracked for ALL discovered final goods, not just those that have been sold
   const nextTick = newState.tick + 1;
   if (nextTick % rules.market.priceHistorySampleInterval === 0) {
     // Initialize price history if needed
@@ -880,13 +950,23 @@ function simulateTick(state, rules) {
       newState.marketPriceHistory = [];
     }
 
-    // Sample current prices for all items with popularity tracking
+    // Sample current prices for all discovered final goods (using set computed above)
     const sample = { tick: nextTick };
-    for (const itemId of Object.keys(newState.marketPopularity)) {
+    for (const itemId of discoveredFinalGoodIds) {
       const material = rules.materials.find(m => m.id === itemId);
       if (material) {
-        const popularity = newState.marketPopularity[itemId] || 1.0;
-        sample[itemId] = Math.floor(material.basePrice * popularity);
+        // Use existing popularity or default to maxPopularity (new items start with high demand)
+        const popularity = newState.marketPopularity[itemId] || rules.market.maxPopularity;
+
+        // Apply event modifier if there's an active event
+        const eventModifier = newState.marketEvents[itemId]?.modifier || 1.0;
+
+        sample[itemId] = Math.floor(material.basePrice * popularity * eventModifier);
+
+        // Initialize market popularity if not yet tracked (so recovery can happen)
+        if (!newState.marketPopularity[itemId]) {
+          newState.marketPopularity[itemId] = rules.market.maxPopularity;
+        }
       }
     }
 
@@ -1313,8 +1393,11 @@ function sellGoods(state, rules, payload) {
   // Get popularity multiplier (default to 1.0 if not tracked)
   const popularity = newState.marketPopularity[itemId] || 1.0;
 
-  // Final price = base × popularity × diversification × obsolescence
-  const pricePerUnit = material.basePrice * popularity * diversificationBonus * obsolescenceMultiplier;
+  // Get event modifier if there's an active market event
+  const eventModifier = newState.marketEvents?.[itemId]?.modifier || 1.0;
+
+  // Final price = base × popularity × diversification × obsolescence × event
+  const pricePerUnit = material.basePrice * popularity * diversificationBonus * obsolescenceMultiplier * eventModifier;
   const totalCredits = Math.floor(pricePerUnit * quantity);
 
   newState.inventory[itemId] -= quantity;

@@ -893,7 +893,13 @@ export const defaultRules = {
     obsolescenceMaxDebuff: 0.5,  // Max 50% price reduction when next age fully discovered
     // Bounds
     minPopularity: 0.25,
-    maxPopularity: 2.5
+    maxPopularity: 2.5,
+    // External Market Events (random price fluctuations)
+    eventChance: 0.003,          // 0.3% chance per item per tick
+    eventMinModifier: 0.10,      // Minimum effect: 10%
+    eventMaxModifier: 0.20,      // Maximum effect: 20%
+    eventMinDuration: 30,        // Minimum duration: 30 ticks
+    eventMaxDuration: 80         // Maximum duration: 80 ticks
   },
 
   // ============================================================================

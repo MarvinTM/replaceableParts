@@ -331,6 +331,9 @@
     "healthy": "Healthy",
     "stable": "Stable",
     "saturated": "Saturated",
-    "crashed": "Crashed"
+    "crashed": "Crashed",
+    "externalEvent": "External market event ({{ticks}} ticks remaining)",
+    "externalEventPositive": "High Demand",
+    "externalEventNegative": "Low Demand"
   }
 }

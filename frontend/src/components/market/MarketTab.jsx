@@ -123,14 +123,26 @@ export default function MarketTab() {
       .filter(Boolean);
   };
 
-  // Calculate current price for an item (includes popularity and obsolescence, but not diversification)
+  // Get market event for an item (if any)
+  const getMarketEvent = (itemId) => {
+    return engineState.marketEvents?.[itemId] || null;
+  };
+
+  // Get event modifier for an item
+  const getEventModifier = (itemId) => {
+    const event = getMarketEvent(itemId);
+    return event?.modifier || 1.0;
+  };
+
+  // Calculate current price for an item (includes popularity, obsolescence, and event modifier)
   const getCurrentPrice = (itemId) => {
     const material = rules.materials.find(m => m.id === itemId);
     if (!material) return 0;
 
     const popularity = engineState.marketPopularity?.[itemId] || 1.0;
     const obsolescence = getObsolescence(material.age);
-    return Math.floor(material.basePrice * popularity * obsolescence);
+    const eventModifier = getEventModifier(itemId);
+    return Math.floor(material.basePrice * popularity * obsolescence * eventModifier);
   };
 
   // Get popularity for an item
@@ -186,13 +198,19 @@ export default function MarketTab() {
     const discovered = getDiscoveredFinalGoods();
 
     return discovered
-      .map(material => ({
-        ...material,
-        quantity: getInventoryQuantity(material.id),
-        currentPrice: getCurrentPrice(material.id),
-        popularity: getPopularity(material.id),
-        obsolescence: getObsolescence(material.age)
-      }))
+      .map(material => {
+        const event = getMarketEvent(material.id);
+        return {
+          ...material,
+          quantity: getInventoryQuantity(material.id),
+          currentPrice: getCurrentPrice(material.id),
+          popularity: getPopularity(material.id),
+          obsolescence: getObsolescence(material.age),
+          eventModifier: event?.modifier || null,
+          eventType: event?.type || null,
+          eventExpiresAt: event?.expiresAt || null
+        };
+      })
       .filter(item => item.quantity > 0 || true) // Show all discovered, even if qty=0
       .filter(item => ageFilters[item.age]) // Apply age filters
       .sort((a, b) => {
@@ -202,7 +220,7 @@ export default function MarketTab() {
         if (sortBy === 'popularity') return b.popularity - a.popularity;
         return 0;
       });
-  }, [engineState.inventory, engineState.marketPopularity, engineState.tick, ageFilters, sortBy]);
+  }, [engineState.inventory, engineState.marketPopularity, engineState.marketEvents, engineState.tick, ageFilters, sortBy]);
 
   // Market intelligence - hot and cold items
   const marketIntelligence = useMemo(() => {
@@ -646,6 +664,17 @@ export default function MarketTab() {
                           size="small"
                         />
                       )}
+                      {item.eventModifier && (
+                        <Tooltip title={t('market.externalEvent', { ticks: item.eventExpiresAt - engineState.tick })}>
+                          <Chip
+                            icon={item.eventType === 'positive' ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                            label={`${item.eventType === 'positive' ? '+' : ''}${Math.round((item.eventModifier - 1) * 100)}%`}
+                            color={item.eventType === 'positive' ? 'success' : 'error'}
+                            size="small"
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        </Tooltip>
+                      )}
                     </Box>
                   </Box>
 
@@ -709,6 +738,25 @@ export default function MarketTab() {
               <Typography variant="body2" gutterBottom>
                 {t('market.marketStatus')}: {t(`market.${getPopularityStatus(selectedItem.popularity).label.toLowerCase()}`)}
               </Typography>
+              {selectedItem.eventModifier && (
+                <Box sx={{
+                  mt: 1,
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: selectedItem.eventType === 'positive' ? 'success.dark' : 'error.dark',
+                  border: 1,
+                  borderColor: selectedItem.eventType === 'positive' ? 'success.main' : 'error.main'
+                }}>
+                  <Typography variant="body2" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {selectedItem.eventType === 'positive' ? <TrendingUpIcon fontSize="small" /> : <TrendingDownIcon fontSize="small" />}
+                    {t(`market.externalEvent${selectedItem.eventType === 'positive' ? 'Positive' : 'Negative'}`)}
+                  </Typography>
+                  <Typography variant="caption">
+                    {selectedItem.eventType === 'positive' ? '+' : ''}{Math.round((selectedItem.eventModifier - 1) * 100)}% price modifier
+                    ({selectedItem.eventExpiresAt - engineState.tick} ticks remaining)
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
             <TextField
