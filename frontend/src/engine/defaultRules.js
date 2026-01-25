@@ -437,7 +437,7 @@ export const defaultRules = {
     { id: 'electronics_fab', name: 'Electronics Fab', basePrice: 1500, category: 'equipment', weight: 100, age: 6 },
     
     // Generators
-    { id: 'wood_oven', name: 'Wood Oven', basePrice: 50, category: 'equipment', weight: 20, age: 1 },
+    { id: 'thermal_generator', name: 'Thermal Generator', basePrice: 50, category: 'equipment', weight: 20, age: 1 },
     { id: 'windmill', name: 'Windmill', basePrice: 150, category: 'equipment', weight: 40, age: 2 },
     { id: 'coal_power_plant', name: 'Coal Power Plant', basePrice: 500, category: 'equipment', weight: 80, age: 3 },
     { id: 'diesel_gen', name: 'Diesel Generator', basePrice: 1000, category: 'equipment', weight: 60, age: 4 },
@@ -840,7 +840,7 @@ export const defaultRules = {
     { id: 'blacksmiths_anvil', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { blacksmiths_anvil: 1 }, ticksToComplete: 5, tier: 1, age: 1 },
     { id: 'masons_workshop', inputs: { stone: 8, wooden_beam: 2 }, outputs: { masons_workshop: 1 }, ticksToComplete: 3, tier: 1, age: 1 },
     { id: 'stone_furnace', inputs: { stone: 8 }, outputs: { stone_furnace: 1 }, ticksToComplete: 2, tier: 1, age: 1 },
-    { id: 'wood_oven', inputs: { wood: 10 }, outputs: { wood_oven: 1 }, ticksToComplete: 5, tier: 1, age: 1 },
+    { id: 'thermal_generator', inputs: { wood: 10 }, outputs: { thermal_generator: 1 }, ticksToComplete: 5, tier: 1, age: 1 },
     { id: 'windmill', inputs: { planks: 20, wooden_beam: 8, iron_rod: 4, nails: 20 }, outputs: { windmill: 1 }, ticksToComplete: 15, tier: 2, age: 2 },
     // Age 2 machines
     { id: 'glassblowers_workshop', inputs: { iron_plate: 4, bricks: 8, copper_tubing: 2 }, outputs: { glassblowers_workshop: 1 }, ticksToComplete: 6, tier: 2, age: 2 },
@@ -1001,7 +1001,7 @@ export const defaultRules = {
         // Stone construction
         'stone_wall', 'stone_pillar', 'well', 'bridge_section', 'gate',
         // Self-build
-        'wood_oven', 'stone_furnace','blacksmiths_anvil',
+        'thermal_generator', 'stone_furnace','blacksmiths_anvil',
         // Copper/Brass Intermediates
         'copper_sheet', 'pipe', 'copper_tubing', 'copper_rod', 'brass_sheet',
         // Scientific Instruments
@@ -1221,12 +1221,13 @@ export const defaultRules = {
   // ============================================================================
   generators: [
     {
-      id: 'wood_oven',
-      itemId: 'wood_oven',
-      name: 'Wood Oven',
-      sizeX: 2, sizeY: 3,
+      id: 'thermal_generator',
+      itemId: 'thermal_generator',
+      name: 'Thermal Generator',
+      sizeX: 3, sizeY: 6,
       energyOutput: 5,
-      animation: { frames: 4, speed: 0.05 },
+      animation: { frames: 4, speed: 0.05, separateFrames: true },
+      disableAutoScale: true,
       fuelRequirement: { materialId: 'wood', consumptionRate: 1 }
     },
     {
@@ -1390,7 +1391,7 @@ export const defaultRules = {
   // Each slot represents a component part of the generator
   // ============================================================================
   generatorRecipes: {
-    wood_oven: {
+    thermal_generator: {
       slots: [
         { label: 'Fire Bricks', material: 'stone_bricks', quantity: 6 },
         { label: 'Iron Grate', material: 'iron_plate', quantity: 2 },
