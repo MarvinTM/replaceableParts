@@ -9,6 +9,7 @@ import MenuItem from '@mui/material/MenuItem';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useState } from 'react';
 import { keyframes } from '@mui/system';
+import { useAuth } from '../contexts/AuthContext';
 
 const fadeIn = keyframes`
   from {
@@ -34,20 +35,18 @@ export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [langAnchorEl, setLangAnchorEl] = useState(null);
+  const { isAuthenticated, isLoading } = useAuth();
 
   const handleContinue = useCallback(() => {
-    // Mark that user has seen the landing page this session
-    sessionStorage.setItem('hasSeenLanding', 'true');
     navigate('/menu');
   }, [navigate]);
 
-  // Check if user has already seen landing page this session
+  // If user is authenticated, skip landing page and go directly to menu
   useEffect(() => {
-    const hasSeenLanding = sessionStorage.getItem('hasSeenLanding');
-    if (hasSeenLanding === 'true') {
+    if (!isLoading && isAuthenticated) {
       navigate('/menu', { replace: true });
     }
-  }, [navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Handle click anywhere
   const handleClick = useCallback((e) => {
