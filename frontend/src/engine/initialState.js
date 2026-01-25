@@ -17,8 +17,8 @@ export const initialState = {
     height: 16,
     chunks: [{ x: 0, y: 0, width: 16, height: 16 }],
     placements: [
-      // Starting generator: Treadwheel (Manual power)
-      { id: 'starter_treadwheel', x: 4, y: 4, structureType: 'treadwheel' }
+      // Starting generator: Wood Oven (burns wood for power)
+      { id: 'starter_wood_oven', x: 4, y: 4, structureType: 'wood_oven' }
     ]
   },
 
@@ -44,7 +44,7 @@ export const initialState = {
 
   // Built Generators (ready to deploy, not in regular inventory)
   builtGenerators: {
-    treadwheel: 2
+    wood_oven: 2
   },
 
   // Deployed Machines
@@ -53,8 +53,8 @@ export const initialState = {
   // Deployed Generators
   generators: [
     {
-      id: 'starter_treadwheel',
-      type: 'treadwheel',
+      id: 'starter_wood_oven',
+      type: 'wood_oven',
       x: 4,
       y: 4,
       active: true
@@ -72,12 +72,12 @@ export const initialState = {
   // Discovery: Start with Age 1 basics
   discoveredRecipes: [
     'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails',
-    'stone_furnace', 'treadwheel', 'chair', 'table'
+    'stone_furnace', 'wood_oven', 'chair', 'table'
   ],
 
   unlockedRecipes: [
     'planks', 'wooden_beam', 'stone_bricks', 'iron_ingot', 'iron_plate', 'iron_rod', 'nails',
-    'stone_furnace', 'treadwheel', 'chair', 'table'
+    'stone_furnace', 'wood_oven', 'chair', 'table'
   ],
 
   research: {

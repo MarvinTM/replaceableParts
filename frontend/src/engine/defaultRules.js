@@ -437,7 +437,8 @@ export const defaultRules = {
     { id: 'electronics_fab', name: 'Electronics Fab', basePrice: 1500, category: 'equipment', weight: 100, age: 6 },
     
     // Generators
-    { id: 'treadwheel', name: 'Treadwheel', basePrice: 50, category: 'equipment', weight: 20, age: 1 },
+    { id: 'wood_oven', name: 'Wood Oven', basePrice: 50, category: 'equipment', weight: 20, age: 1 },
+    { id: 'windmill', name: 'Windmill', basePrice: 150, category: 'equipment', weight: 40, age: 2 },
     { id: 'coal_power_plant', name: 'Coal Power Plant', basePrice: 500, category: 'equipment', weight: 80, age: 3 },
     { id: 'diesel_gen', name: 'Diesel Generator', basePrice: 1000, category: 'equipment', weight: 60, age: 4 },
     { id: 'nuclear_fission_reactor', name: 'Nuclear Fission Reactor', basePrice: 5000, category: 'equipment', weight: 150, age: 6 },
@@ -839,7 +840,8 @@ export const defaultRules = {
     { id: 'blacksmiths_anvil', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { blacksmiths_anvil: 1 }, ticksToComplete: 5, tier: 1, age: 1 },
     { id: 'masons_workshop', inputs: { stone: 8, wooden_beam: 2 }, outputs: { masons_workshop: 1 }, ticksToComplete: 3, tier: 1, age: 1 },
     { id: 'stone_furnace', inputs: { stone: 8 }, outputs: { stone_furnace: 1 }, ticksToComplete: 2, tier: 1, age: 1 },
-    { id: 'treadwheel', inputs: { wood: 10 }, outputs: { treadwheel: 1 }, ticksToComplete: 5, tier: 1, age: 1 },
+    { id: 'wood_oven', inputs: { wood: 10 }, outputs: { wood_oven: 1 }, ticksToComplete: 5, tier: 1, age: 1 },
+    { id: 'windmill', inputs: { planks: 20, wooden_beam: 8, iron_rod: 4, nails: 20 }, outputs: { windmill: 1 }, ticksToComplete: 15, tier: 2, age: 2 },
     // Age 2 machines
     { id: 'glassblowers_workshop', inputs: { iron_plate: 4, bricks: 8, copper_tubing: 2 }, outputs: { glassblowers_workshop: 1 }, ticksToComplete: 6, tier: 2, age: 2 },
     { id: 'potters_wheel_machine', inputs: { wooden_beam: 4, iron_rod: 2, stone: 4 }, outputs: { potters_wheel_machine: 1 }, ticksToComplete: 4, tier: 2, age: 2 },
@@ -955,7 +957,9 @@ export const defaultRules = {
         // Vehicles & Transport
         'wheelbarrow', 'cart', 'wagon',
         // Other
-        'coat_hanger', 'plow'
+        'coat_hanger', 'plow',
+        // Generators
+        'windmill'
       ]
     },
     {
@@ -991,7 +995,7 @@ export const defaultRules = {
         // Stone construction
         'stone_wall', 'stone_pillar', 'well', 'bridge_section', 'gate',
         // Self-build
-        'treadwheel', 'stone_furnace','blacksmiths_anvil',
+        'wood_oven', 'stone_furnace','blacksmiths_anvil',
         // Copper/Brass Intermediates
         'copper_sheet', 'pipe', 'copper_tubing', 'copper_rod', 'brass_sheet',
         // Scientific Instruments
@@ -1211,12 +1215,21 @@ export const defaultRules = {
   // ============================================================================
   generators: [
     {
-      id: 'treadwheel',
-      itemId: 'treadwheel',
-      name: 'Treadwheel',
+      id: 'wood_oven',
+      itemId: 'wood_oven',
+      name: 'Wood Oven',
       sizeX: 2, sizeY: 3,
       energyOutput: 5,
-      animation: { frames: 4, speed: 0.05 }
+      animation: { frames: 4, speed: 0.05 },
+      fuelRequirement: { materialId: 'wood', consumptionRate: 1 }
+    },
+    {
+      id: 'windmill',
+      itemId: 'windmill',
+      name: 'Windmill',
+      sizeX: 4, sizeY: 4,
+      energyOutput: 30,
+      animation: { frames: 4, speed: 0.03 }
     },
     {
       id: 'coal_power_plant',
@@ -1371,11 +1384,20 @@ export const defaultRules = {
   // Each slot represents a component part of the generator
   // ============================================================================
   generatorRecipes: {
-    treadwheel: {
+    wood_oven: {
       slots: [
-        { label: 'Wheel Planks', material: 'planks', quantity: 4 },
-        { label: 'Frame Posts', material: 'wooden_beam', quantity: 4 },
-        { label: 'Platform Deck', material: 'planks', quantity: 2 }
+        { label: 'Fire Bricks', material: 'stone_bricks', quantity: 6 },
+        { label: 'Iron Grate', material: 'iron_plate', quantity: 2 },
+        { label: 'Chimney', material: 'stone_bricks', quantity: 2 }
+      ]
+    },
+    windmill: {
+      slots: [
+        { label: 'Main Sails', material: 'planks', quantity: 20 },
+        { label: 'Tower Frame', material: 'wooden_beam', quantity: 8 },
+        { label: 'Axle Supports', material: 'iron_rod', quantity: 4 },
+        { label: 'Assembly Nails', material: 'nails', quantity: 20 },
+        { label: 'Base Structure', material: 'stone_bricks', quantity: 10 }
       ]
     },
     coal_power_plant: {
