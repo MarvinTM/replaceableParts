@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import prisma from '../db.js';
 import { authenticate } from '../middleware/auth.js';
+import { sendWelcomeEmail } from '../services/email.js';
 
 const router = Router();
 
@@ -43,8 +44,13 @@ router.post('/google', async (req, res, next) => {
           name,
           picture,
           role: isFirstUser ? 'ADMIN' : 'USER',
-          isApproved: isFirstUser // First user (admin) is auto-approved
+          isApproved: true
         }
+      });
+
+      // Send welcome email (non-blocking)
+      sendWelcomeEmail(user).catch(err => {
+        console.error('Failed to send welcome email:', err);
       });
     } else {
       // Update user info on login
