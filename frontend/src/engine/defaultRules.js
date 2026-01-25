@@ -1234,9 +1234,10 @@ export const defaultRules = {
       id: 'windmill',
       itemId: 'windmill',
       name: 'Windmill',
-      sizeX: 4, sizeY: 4,
+      sizeX: 6, sizeY: 8,
       energyOutput: 30,
-      animation: { frames: 4, speed: 0.03 }
+      disableAutoScale: true,
+      animation: { frames: 4, speed: 0.01, separateFrames: true }
     },
     {
       id: 'coal_power_plant',
