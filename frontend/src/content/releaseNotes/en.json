@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.1.5",
+      "date": "2024-01-20",
+      "highlights": "New UI look&feel. Research improvements.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Authentication/first login has been improved. Now it doesn't require admin approval, and a wellcome email is automatically sent to the user."
+        },
+        {
+          "type": "improvement",
+          "text": "Added external market dynamics. Improved market price history management."
+        }
+      ]
+    },
+    {
       "version": "0.1.0",
       "date": "2024-01-20",
       "highlights": "New UI look&feel. Research improvements.",
