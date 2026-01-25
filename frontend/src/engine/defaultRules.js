@@ -443,7 +443,7 @@ export const defaultRules = {
     { id: 'diesel_gen', name: 'Diesel Generator', basePrice: 1000, category: 'equipment', weight: 60, age: 4 },
     { id: 'nuclear_fission_reactor', name: 'Nuclear Fission Reactor', basePrice: 5000, category: 'equipment', weight: 150, age: 6 },
     { id: 'solar_array', name: 'Solar Array', basePrice: 2000, category: 'equipment', weight: 50, age: 7 },
-    { id: 'fusion_reactor', name: 'Fusion Reactor', basePrice: 10000, category: 'equipment', weight: 200, age: 7 }
+    { id: 'fusion_reactor', name: 'Nuclear Fusion Reactor', basePrice: 10000, category: 'equipment', weight: 200, age: 7 }
   ],
 
   // ============================================================================
@@ -1274,7 +1274,7 @@ export const defaultRules = {
     {
       id: 'fusion_reactor',
       itemId: 'fusion_reactor',
-      name: 'Fusion Reactor',
+      name: 'Nuclear Fusion Reactor',
       sizeX: 8, sizeY: 8,
       energyOutput: 100000,
       animation: { frames: 4, speed: 0.1 }
