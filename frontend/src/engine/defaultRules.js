@@ -1243,9 +1243,11 @@ export const defaultRules = {
       id: 'coal_power_plant',
       itemId: 'coal_power_plant',
       name: 'Coal Power Plant',
-      sizeX: 3, sizeY: 4,
+      sizeX: 16, sizeY: 12,
+      offsetX: 0, offsetY: 50,
       energyOutput: 500,
-      animation: { frames: 4, speed: 0.08 },
+      disableAutoScale: true,
+      animation: { frames: 4, speed: 0.01 , separateFrames: true},
       fuelRequirement: { materialId: 'coal', consumptionRate: 1 }
     },
     {
