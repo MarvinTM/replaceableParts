@@ -201,7 +201,9 @@
     "no": "No",
     "back": "Back",
     "new": "NEW",
-    "close": "Close"
+    "close": "Close",
+    "previous": "Previous",
+    "next": "Next"
   },
   "mainMenu": {
     "news": "News",

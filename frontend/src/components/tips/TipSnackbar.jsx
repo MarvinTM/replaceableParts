@@ -5,39 +5,62 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import Slide from '@mui/material/Slide';
 import useGameStore from '../../stores/gameStore';
 
 /**
  * Non-blocking tip snackbar that appears at the bottom of the screen.
- * Tips are queued and shown one at a time. User must dismiss to see the next tip.
+ * Tips are queued and can be navigated with arrows when multiple tips exist.
+ * User must dismiss each tip to mark it as shown.
  */
 export default function TipSnackbar() {
   const { t } = useTranslation();
   const tipQueue = useGameStore((state) => state.tipQueue);
-  const dismissTip = useGameStore((state) => state.dismissTip);
+  const dismissAllTips = useGameStore((state) => state.dismissAllTips);
 
-  const currentTip = tipQueue[0] || null;
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [visible, setVisible] = useState(false);
 
-  // Animate in when a new tip appears
+  const tipCount = tipQueue.length;
+  const hasMultipleTips = tipCount > 1;
+  const currentTip = tipQueue[currentIndex] || null;
+
+  // Reset index if it goes out of bounds (e.g., after dismissing)
   useEffect(() => {
-    if (currentTip) {
-      // Small delay before showing to allow for smooth transition
+    if (currentIndex >= tipCount && tipCount > 0) {
+      setCurrentIndex(tipCount - 1);
+    }
+  }, [tipCount, currentIndex]);
+
+  // Animate in when tips appear
+  useEffect(() => {
+    if (tipCount > 0) {
       const timer = setTimeout(() => setVisible(true), 100);
       return () => clearTimeout(timer);
     } else {
       setVisible(false);
+      setCurrentIndex(0);
     }
-  }, [currentTip?.id]);
+  }, [tipCount > 0]);
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < tipCount - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
 
   const handleDismiss = () => {
-    setVisible(false);
-    // Wait for exit animation before removing from queue
-    setTimeout(() => {
-      dismissTip();
-    }, 200);
+    // Dismiss all tips at once
+    dismissAllTips();
   };
 
   if (!currentTip) {
@@ -54,8 +77,8 @@ export default function TipSnackbar() {
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1400,
-          maxWidth: 480,
-          minWidth: 320,
+          maxWidth: 500,
+          minWidth: 340,
           bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'primary.light',
@@ -99,6 +122,58 @@ export default function TipSnackbar() {
             >
               {t(currentTip.messageKey)}
             </Typography>
+
+            {/* Navigation row - only show when multiple tips */}
+            {hasMultipleTips && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                  mt: 1.5,
+                  pt: 1,
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <IconButton
+                  size="small"
+                  onClick={handlePrev}
+                  disabled={currentIndex === 0}
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': { color: 'text.primary' },
+                    '&.Mui-disabled': { color: 'action.disabled' },
+                  }}
+                  aria-label={t('common.previous', 'Previous')}
+                >
+                  <ChevronLeftIcon fontSize="small" />
+                </IconButton>
+
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ minWidth: 40, textAlign: 'center' }}
+                >
+                  {currentIndex + 1} / {tipCount}
+                </Typography>
+
+                <IconButton
+                  size="small"
+                  onClick={handleNext}
+                  disabled={currentIndex === tipCount - 1}
+                  sx={{
+                    color: 'text.secondary',
+                    '&:hover': { color: 'text.primary' },
+                    '&.Mui-disabled': { color: 'action.disabled' },
+                  }}
+                  aria-label={t('common.next', 'Next')}
+                >
+                  <ChevronRightIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            )}
           </Box>
 
           {/* Close button */}

@@ -201,7 +201,9 @@
     "no": "No",
     "back": "Volver",
     "new": "NUEVO",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "previous": "Anterior",
+    "next": "Siguiente"
   },
   "mainMenu": {
     "news": "Noticias",

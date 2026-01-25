@@ -222,17 +222,31 @@ const useGameStore = create(
         }, false, 'queueTip');
       },
 
-      dismissTip: () => {
+      dismissTip: (index = 0) => {
         const { engineState, tipQueue } = get();
         if (!engineState || tipQueue.length === 0) return;
 
-        const dismissedTip = tipQueue[0];
+        const dismissedTip = tipQueue[index] || tipQueue[0];
         const newShownTips = [...(engineState.shownTips || []), dismissedTip.id];
+        const newQueue = tipQueue.filter((_, i) => i !== index);
 
         set({
           engineState: { ...engineState, shownTips: newShownTips },
-          tipQueue: tipQueue.slice(1)
+          tipQueue: newQueue
         }, false, 'dismissTip');
+      },
+
+      dismissAllTips: () => {
+        const { engineState, tipQueue } = get();
+        if (!engineState || tipQueue.length === 0) return;
+
+        const allTipIds = tipQueue.map(tip => tip.id);
+        const newShownTips = [...(engineState.shownTips || []), ...allTipIds];
+
+        set({
+          engineState: { ...engineState, shownTips: newShownTips },
+          tipQueue: []
+        }, false, 'dismissAllTips');
       },
 
       // Check if a tip has been shown
