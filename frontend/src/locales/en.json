@@ -200,7 +200,8 @@
     "yes": "Yes",
     "no": "No",
     "back": "Back",
-    "new": "NEW"
+    "new": "NEW",
+    "close": "Close"
   },
   "mainMenu": {
     "news": "News",
@@ -276,6 +277,12 @@
     "autoFilling": "Auto-filling",
     "complete": "complete",
     "buildPrototype": "Build Prototype"
+  },
+  "tips": {
+    "factory": "Drag machines and generators from the sidebar onto the grid. Click a machine to assign a recipe, or right-click to remove it.",
+    "exploration": "Click on tiles to see details. Unlock resource nodes to start extracting raw materials automatically.",
+    "research": "Use Research Points to run experiments and discover new recipes. Build prototypes to unlock recipes for production.",
+    "market": "Select items from your inventory to sell. Watch market trends and diversify your sales for bonus credits."
   },
   "tutorial": {
     "skip": "Skip tutorial",

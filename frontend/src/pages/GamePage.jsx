@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
@@ -47,6 +47,7 @@ import ResearchTab from '../components/research/ResearchTab';
 import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier';
 import DiscoveryNotifier from '../components/research/DiscoveryNotifier';
 import TutorialOverlay from '../components/tutorial/TutorialOverlay';
+import TipSnackbar from '../components/tips/TipSnackbar';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -829,6 +830,7 @@ export default function GamePage() {
   const startGameLoop = useGameStore((state) => state.startGameLoop);
   const stopGameLoop = useGameStore((state) => state.stopGameLoop);
   const completeTutorial = useGameStore((state) => state.completeTutorial);
+  const queueTip = useGameStore((state) => state.queueTip);
 
   // Tutorial state - show if not completed
   const showTutorial = engineState && !engineState.tutorialCompleted;
@@ -838,6 +840,33 @@ export default function GamePage() {
   };
 
   const [tabValue, setTabValue] = useState(0);
+
+  // Tab tip triggers - show tip when opening a tab for the first time
+  const tabTips = {
+    0: { id: 'tab-factory', messageKey: 'tips.factory' },
+    1: { id: 'tab-exploration', messageKey: 'tips.exploration' },
+    2: { id: 'tab-research', messageKey: 'tips.research' },
+    3: { id: 'tab-market', messageKey: 'tips.market' },
+  };
+
+  // Track if we've already triggered the initial tab tip
+  const initialTipTriggered = useRef(false);
+
+  useEffect(() => {
+    // Don't show tips until tutorial is complete
+    if (!engineState?.tutorialCompleted) return;
+
+    const tip = tabTips[tabValue];
+    if (tip) {
+      // Small delay to let the tab content render first
+      const timer = setTimeout(() => {
+        queueTip(tip.id, tip.messageKey);
+      }, initialTipTriggered.current ? 500 : 1000);
+
+      initialTipTriggered.current = true;
+      return () => clearTimeout(timer);
+    }
+  }, [tabValue, engineState?.tutorialCompleted, queueTip]);
 
   // If no game is loaded and not auto-restoring, redirect to menu
   if ((!currentGame || !engineState) && !isAutoRestoring) {
@@ -958,6 +987,9 @@ export default function GamePage() {
 
       {/* Tutorial overlay for new games */}
       <TutorialOverlay open={showTutorial} onComplete={handleTutorialComplete} />
+
+      {/* Contextual tips snackbar */}
+      <TipSnackbar />
     </Box>
   );
 }

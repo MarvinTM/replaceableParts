@@ -31,6 +31,9 @@ const useGameStore = create(
       // Production events for animations (cleared after consumed)
       pendingProductionEvents: [],
 
+      // Tip queue for contextual tips (UI state, not persisted)
+      tipQueue: [],
+
       // Initialize a new game
       initNewGame: (seed = null) => {
         const newState = createInitialState(seed ?? Date.now());
@@ -203,6 +206,39 @@ const useGameStore = create(
         set({
           engineState: { ...engineState, tutorialCompleted: true }
         }, false, 'completeTutorial');
+      },
+
+      // Tips system
+      queueTip: (tipId, messageKey) => {
+        const { engineState, tipQueue } = get();
+        if (!engineState) return;
+
+        // Don't queue if already shown or already in queue
+        if (engineState.shownTips?.includes(tipId)) return;
+        if (tipQueue.some(tip => tip.id === tipId)) return;
+
+        set({
+          tipQueue: [...tipQueue, { id: tipId, messageKey }]
+        }, false, 'queueTip');
+      },
+
+      dismissTip: () => {
+        const { engineState, tipQueue } = get();
+        if (!engineState || tipQueue.length === 0) return;
+
+        const dismissedTip = tipQueue[0];
+        const newShownTips = [...(engineState.shownTips || []), dismissedTip.id];
+
+        set({
+          engineState: { ...engineState, shownTips: newShownTips },
+          tipQueue: tipQueue.slice(1)
+        }, false, 'dismissTip');
+      },
+
+      // Check if a tip has been shown
+      hasTipBeenShown: (tipId) => {
+        const { engineState } = get();
+        return engineState?.shownTips?.includes(tipId) || false;
       },
 
       setExpansionType: (type) => {

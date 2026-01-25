@@ -200,7 +200,8 @@
     "yes": "Sí",
     "no": "No",
     "back": "Volver",
-    "new": "NUEVO"
+    "new": "NUEVO",
+    "close": "Cerrar"
   },
   "mainMenu": {
     "news": "Noticias",
@@ -276,6 +277,12 @@
     "autoFilling": "Llenado automático",
     "complete": "completado",
     "buildPrototype": "Construir Prototipo"
+  },
+  "tips": {
+    "factory": "Arrastra máquinas y generadores desde la barra lateral a la cuadrícula. Haz clic en una máquina para asignar una receta, o clic derecho para eliminarla.",
+    "exploration": "Haz clic en las casillas para ver detalles. Desbloquea nodos de recursos para comenzar a extraer materias primas automáticamente.",
+    "research": "Usa Puntos de Investigación para ejecutar experimentos y descubrir nuevas recetas. Construye prototipos para desbloquear recetas para producción.",
+    "market": "Selecciona artículos de tu inventario para vender. Observa las tendencias del mercado y diversifica tus ventas para obtener créditos bonus."
   },
   "tutorial": {
     "skip": "Saltar tutorial",

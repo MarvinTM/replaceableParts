@@ -11,6 +11,7 @@ export const initialState = {
   rngSeed: Date.now(),
   credits: 5000000000,
   tutorialCompleted: false,
+  shownTips: [],  // Array of tip IDs that have been shown
 
   // Floor Space (2D Grid)
   floorSpace: {
