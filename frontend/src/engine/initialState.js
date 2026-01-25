@@ -10,6 +10,7 @@ export const initialState = {
   tick: 0,
   rngSeed: Date.now(),
   credits: 5000000000,
+  tutorialCompleted: false,
 
   // Floor Space (2D Grid)
   floorSpace: {

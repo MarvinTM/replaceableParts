@@ -46,6 +46,7 @@ import MarketTab from '../components/market/MarketTab';
 import ResearchTab from '../components/research/ResearchTab';
 import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier';
 import DiscoveryNotifier from '../components/research/DiscoveryNotifier';
+import TutorialOverlay from '../components/tutorial/TutorialOverlay';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -827,6 +828,14 @@ export default function GamePage() {
   const simulate = useGameStore((state) => state.simulate);
   const startGameLoop = useGameStore((state) => state.startGameLoop);
   const stopGameLoop = useGameStore((state) => state.stopGameLoop);
+  const completeTutorial = useGameStore((state) => state.completeTutorial);
+
+  // Tutorial state - show if not completed
+  const showTutorial = engineState && !engineState.tutorialCompleted;
+
+  const handleTutorialComplete = () => {
+    completeTutorial();
+  };
 
   const [tabValue, setTabValue] = useState(0);
 
@@ -946,6 +955,9 @@ export default function GamePage() {
 
       {/* Global notifier for recipe discoveries */}
       <DiscoveryNotifier />
+
+      {/* Tutorial overlay for new games */}
+      <TutorialOverlay open={showTutorial} onComplete={handleTutorialComplete} />
     </Box>
   );
 }

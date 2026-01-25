@@ -277,6 +277,37 @@
     "complete": "complete",
     "buildPrototype": "Build Prototype"
   },
+  "tutorial": {
+    "skip": "Skip tutorial",
+    "previous": "Previous",
+    "next": "Next",
+    "startPlaying": "Start Playing",
+    "factory": {
+      "title": "Welcome to Your Factory",
+      "description": "This is your factory floor where all production happens. You can place machines to process materials and generators to provide power. Drag machines and generators from the right panel onto the grid to get started.",
+      "hint": "Tip: Right-click on a machine or generator to remove it. Click on a machine to assign a recipe."
+    },
+    "power": {
+      "title": "Power Your Production",
+      "description": "Every machine needs energy to operate. Generators produce energy, while machines consume it. Make sure you have enough generators running to power all your machines, or they won't be able to produce anything!",
+      "hint": "Tip: Watch the energy indicator in the top-right corner. Red means you need more generators!"
+    },
+    "exploration": {
+      "title": "Explore for Resources",
+      "description": "The exploration map reveals resource nodes scattered across the terrain. These nodes automatically extract raw materials like wood, stone, and ore. Unlock nodes to start gathering the materials you need for production.",
+      "hint": "Tip: Expand your exploration area to discover more valuable resource nodes."
+    },
+    "research": {
+      "title": "Research New Recipes",
+      "description": "Run experiments to discover new recipes for your machines. When you discover a recipe, you'll need to build a prototype to unlock it for regular production. More advanced recipes create higher-value goods!",
+      "hint": "Tip: Donate credits or parts to gain Research Points needed for experiments."
+    },
+    "market": {
+      "title": "Sell for Profit",
+      "description": "The market is where you sell your finished goods for credits. Credits are essential for expanding your factory, exploring new areas, and funding research. Watch market trends to maximize your profits!",
+      "hint": "Tip: Diversify what you sell to earn bonus credits. Don't oversaturate any single market!"
+    }
+  },
   "market": {
     "filters": "Filters",
     "ageGroups": "Age Groups",

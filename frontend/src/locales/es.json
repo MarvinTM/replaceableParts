@@ -277,6 +277,37 @@
     "complete": "completado",
     "buildPrototype": "Construir Prototipo"
   },
+  "tutorial": {
+    "skip": "Saltar tutorial",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "startPlaying": "Comenzar a Jugar",
+    "factory": {
+      "title": "Bienvenido a Tu Fábrica",
+      "description": "Este es el piso de tu fábrica donde ocurre toda la producción. Puedes colocar máquinas para procesar materiales y generadores para proporcionar energía. Arrastra máquinas y generadores desde el panel derecho a la cuadrícula para comenzar.",
+      "hint": "Consejo: Haz clic derecho en una máquina o generador para eliminarlo. Haz clic en una máquina para asignar una receta."
+    },
+    "power": {
+      "title": "Energiza Tu Producción",
+      "description": "Cada máquina necesita energía para operar. Los generadores producen energía, mientras que las máquinas la consumen. ¡Asegúrate de tener suficientes generadores funcionando para alimentar todas tus máquinas, o no podrán producir nada!",
+      "hint": "Consejo: Observa el indicador de energía en la esquina superior derecha. ¡Rojo significa que necesitas más generadores!"
+    },
+    "exploration": {
+      "title": "Explora en Busca de Recursos",
+      "description": "El mapa de exploración revela nodos de recursos dispersos por el terreno. Estos nodos extraen automáticamente materias primas como madera, piedra y mineral. Desbloquea nodos para comenzar a recolectar los materiales que necesitas para la producción.",
+      "hint": "Consejo: Expande tu área de exploración para descubrir nodos de recursos más valiosos."
+    },
+    "research": {
+      "title": "Investiga Nuevas Recetas",
+      "description": "Ejecuta experimentos para descubrir nuevas recetas para tus máquinas. Cuando descubras una receta, necesitarás construir un prototipo para desbloquearla para producción regular. ¡Las recetas más avanzadas crean bienes de mayor valor!",
+      "hint": "Consejo: Dona créditos o partes para obtener Puntos de Investigación necesarios para experimentos."
+    },
+    "market": {
+      "title": "Vende para Obtener Ganancias",
+      "description": "El mercado es donde vendes tus productos terminados por créditos. Los créditos son esenciales para expandir tu fábrica, explorar nuevas áreas y financiar la investigación. ¡Observa las tendencias del mercado para maximizar tus ganancias!",
+      "hint": "Consejo: Diversifica lo que vendes para ganar créditos bonus. ¡No satures ningún mercado!"
+    }
+  },
   "market": {
     "filters": "Filtros",
     "ageGroups": "Grupos de Era",

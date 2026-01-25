@@ -196,6 +196,15 @@ const useGameStore = create(
         return get().dispatch({ type: 'BUILD_GENERATOR', payload: { generatorType } });
       },
 
+      // Tutorial
+      completeTutorial: () => {
+        const { engineState } = get();
+        if (!engineState) return;
+        set({
+          engineState: { ...engineState, tutorialCompleted: true }
+        }, false, 'completeTutorial');
+      },
+
       setExpansionType: (type) => {
         set((state) => ({
           rules: {
