@@ -106,18 +106,19 @@ export default function InfoPanel({
       </Box>
 
       {/* Content */}
-      <Collapse in={!collapsed} orientation="horizontal" collapsedSize={0}>
+      {!collapsed && (
         <Box
           sx={{
             width: PANEL_WIDTH,
             flex: 1,
             overflow: 'auto',
             p: 1.5,
+            minHeight: 0,
           }}
         >
           {children}
         </Box>
-      </Collapse>
+      )}
     </Paper>
   );
 }

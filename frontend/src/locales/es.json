@@ -20,10 +20,24 @@
     "newGame": "Nueva Partida",
     "loadGame": "Cargar Partida",
     "settings": "Configuración",
+    "sendFeedback": "Enviar Comentarios",
     "signIn": "Iniciar Sesión",
     "playAsGuest": "Jugar como Invitado",
     "guestMode": "Modo Invitado",
     "guestSaveWarning": "Tu progreso se guarda localmente solo en este dispositivo"
+  },
+  "feedback": {
+    "title": "Enviar Comentarios",
+    "feedbackTitle": "Título",
+    "titlePlaceholder": "Breve resumen de tus comentarios...",
+    "feedbackBody": "Mensaje",
+    "bodyPlaceholder": "Comparte tus ideas, sugerencias o reporta errores...",
+    "send": "Enviar Comentarios",
+    "sending": "Enviando...",
+    "titleRequired": "Por favor ingresa un título para tus comentarios",
+    "bodyRequired": "Por favor ingresa tu mensaje de comentarios",
+    "sendError": "Error al enviar comentarios. Por favor intenta de nuevo.",
+    "sendSuccess": "¡Gracias! Tus comentarios han sido enviados exitosamente."
   },
   "saves": {
     "noSaves": "No se encontraron partidas guardadas",

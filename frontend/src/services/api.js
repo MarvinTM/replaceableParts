@@ -116,6 +116,14 @@ export const api = {
     return request(`/game/saves/${id}`, {
       method: 'DELETE'
     });
+  },
+
+  // Feedback
+  async sendFeedback(title, body) {
+    return request('/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ title, body })
+    });
   }
 };
 

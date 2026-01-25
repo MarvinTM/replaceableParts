@@ -23,6 +23,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SettingsIcon from '@mui/icons-material/Settings';
+import FeedbackIcon from '@mui/icons-material/Feedback';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -32,6 +33,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 import SaveSelectorDialog from '../components/SaveSelectorDialog';
 import SaveSlotDialog from '../components/SaveSlotDialog';
+import FeedbackDialog from '../components/FeedbackDialog';
 import NewsPanel from '../components/mainMenu/NewsPanel';
 import ReleaseNotesPanel from '../components/mainMenu/ReleaseNotesPanel';
 
@@ -54,6 +56,7 @@ export default function MainMenuPage() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
   const [guestNameDialogOpen, setGuestNameDialogOpen] = useState(false);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [guestGameName, setGuestGameName] = useState('');
   const [isGuestOverwrite, setIsGuestOverwrite] = useState(false);
   const [langAnchorEl, setLangAnchorEl] = useState(null);
@@ -148,6 +151,10 @@ export default function MainMenuPage() {
 
   const handleSettings = () => {
     navigate('/settings');
+  };
+
+  const handleFeedback = () => {
+    setFeedbackDialogOpen(true);
   };
 
   const handleAdmin = () => {
@@ -455,6 +462,17 @@ export default function MainMenuPage() {
                 <Button
                   variant="text"
                   size="large"
+                  startIcon={<FeedbackIcon />}
+                  onClick={handleFeedback}
+                  disabled={loading}
+                  fullWidth
+                >
+                  {t('menu.sendFeedback')}
+                </Button>
+
+                <Button
+                  variant="text"
+                  size="large"
                   startIcon={<LogoutIcon />}
                   onClick={handleLogout}
                   disabled={loading}
@@ -535,6 +553,12 @@ export default function MainMenuPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Feedback dialog */}
+      <FeedbackDialog
+        open={feedbackDialogOpen}
+        onClose={() => setFeedbackDialogOpen(false)}
+      />
     </Box>
   );
 }

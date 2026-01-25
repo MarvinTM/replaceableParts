@@ -6,6 +6,18 @@
       "highlights": "New UI look&feel. Research improvements.",
       "changes": [
         {
+          "type": "feature",
+          "text": "Added quick game tutorial, that appears when the user creates a new game"
+        },
+        {
+          "type": "feature",
+          "text": "Added a tips mechanism that helps the user dynamically during the game. This will be expanded in subsequent releases"
+        },
+        {
+          "type": "feature",
+          "text": "Added a feedback mechanism to allow users to send feedback to the developers"
+        },
+        {
           "type": "improvement",
           "text": "Authentication/first login has been improved. Now it doesn't require admin approval, and a wellcome email is automatically sent to the user."
         },

@@ -20,10 +20,24 @@
     "newGame": "New Game",
     "loadGame": "Load Game",
     "settings": "Settings",
+    "sendFeedback": "Send Feedback",
     "signIn": "Sign In",
     "playAsGuest": "Play as Guest",
     "guestMode": "Guest Mode",
     "guestSaveWarning": "Your progress is saved locally on this device only"
+  },
+  "feedback": {
+    "title": "Send Feedback",
+    "feedbackTitle": "Title",
+    "titlePlaceholder": "Brief summary of your feedback...",
+    "feedbackBody": "Message",
+    "bodyPlaceholder": "Share your thoughts, suggestions, or report bugs...",
+    "send": "Send Feedback",
+    "sending": "Sending...",
+    "titleRequired": "Please enter a title for your feedback",
+    "bodyRequired": "Please enter your feedback message",
+    "sendError": "Failed to send feedback. Please try again.",
+    "sendSuccess": "Thank you! Your feedback has been sent successfully."
   },
   "saves": {
     "noSaves": "No saved games found",
