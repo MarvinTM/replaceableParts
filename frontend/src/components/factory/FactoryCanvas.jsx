@@ -1277,6 +1277,8 @@ export default function FactoryCanvas({
       let spriteScale = 1.0;
       let disableAutoScale = false;
       let hasFuelRequirement = false;
+      let offsetX = 0;
+      let offsetY = 0;
 
       if (rules && rules.generators) {
         const genConfig = rules.generators.find(g => g.id === gen.type);
@@ -1286,6 +1288,8 @@ export default function FactoryCanvas({
           spriteScale = genConfig.spriteScale ?? 1.0;
           disableAutoScale = genConfig.disableAutoScale ?? false;
           hasFuelRequirement = !!genConfig.fuelRequirement;
+          offsetX = genConfig.offsetX ?? 0;
+          offsetY = genConfig.offsetY ?? 0;
         }
       }
 
@@ -1363,9 +1367,9 @@ export default function FactoryCanvas({
 
       if (displayObject) {
         displayObject.anchor.set(0.5, 1); // Bottom center anchor for structures
-        displayObject.x = screenPos.x;
+        displayObject.x = screenPos.x + offsetX;
         // Position at the visual bottom of the footprint diamond to avoid "floating"
-        displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+        displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
 
         // Scale sprite to fit the isometric footprint (unless disabled)
         const spriteWidth = displayObject.texture.width;
@@ -1433,6 +1437,8 @@ export default function FactoryCanvas({
       let sizeY = 1;
       let spriteScale = 1.0;
       let disableAutoScale = false;
+      let offsetX = 0;
+      let offsetY = 0;
 
       if (rules && rules.machines) {
         const machineConfig = rules.machines.find(m => m.id === machine.type);
@@ -1441,6 +1447,8 @@ export default function FactoryCanvas({
           sizeY = machineConfig.sizeY;
           spriteScale = machineConfig.spriteScale ?? 1.0;
           disableAutoScale = machineConfig.disableAutoScale ?? false;
+          offsetX = machineConfig.offsetX ?? 0;
+          offsetY = machineConfig.offsetY ?? 0;
         }
       }
 
@@ -1529,9 +1537,9 @@ export default function FactoryCanvas({
 
       if (displayObject) {
         displayObject.anchor.set(0.5, 1);
-        displayObject.x = screenPos.x;
+        displayObject.x = screenPos.x + offsetX;
         // Position at the visual bottom of the footprint diamond to avoid "floating"
-        displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+        displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
 
         // Scale sprite to fit the isometric footprint (unless disabled)
         const spriteWidth = displayObject.texture.width;
@@ -1793,15 +1801,19 @@ export default function FactoryCanvas({
         const sprite = new Sprite(texture);
         sprite.anchor.set(0.5, 1); // Bottom center anchor
 
-        // Look up scaling options from config
+        // Look up scaling and offset options from config
         let spriteScale = 1.0;
         let disableAutoScale = false;
+        let offsetX = 0;
+        let offsetY = 0;
         if (typeId && rules) {
           const configList = isMachine ? rules.machines : rules.generators;
           const config = configList?.find(c => c.id === typeId);
           if (config) {
             spriteScale = config.spriteScale ?? 1.0;
             disableAutoScale = config.disableAutoScale ?? false;
+            offsetX = config.offsetX ?? 0;
+            offsetY = config.offsetY ?? 0;
           }
         }
 
@@ -1817,9 +1829,9 @@ export default function FactoryCanvas({
           }
         }
 
-        // Position at the center of the footprint
-        sprite.x = screenPos.x;
-        sprite.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+        // Position at the center of the footprint (with offset)
+        sprite.x = screenPos.x + offsetX;
+        sprite.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
 
         // Apply tint based on validity (green = valid, red = invalid)
         sprite.tint = isValid ? 0x88ff88 : 0xff8888;
