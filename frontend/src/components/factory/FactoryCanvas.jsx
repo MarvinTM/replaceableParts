@@ -289,19 +289,57 @@ async function loadAssets(rules) {
 
   // Load per-type machine sprites
   for (const machineType of rules.machines) {
+    let workingAnim = null;
+
+    // Check if animation uses separate frame files
+    if (machineType.animation?.separateFrames) {
+      const frameCount = machineType.animation.frames || 4;
+      const frames = [];
+      for (let i = 1; i <= frameCount; i++) {
+        const frame = await tryLoad(`${ASSET_BASE}/${machineType.id}_working_anim_${i}.png`);
+        if (frame) frames.push(frame);
+      }
+      // Only use separate frames if we loaded at least one
+      if (frames.length > 0) {
+        workingAnim = frames;
+      }
+    } else {
+      // Load as sprite sheet
+      workingAnim = await tryLoad(`${ASSET_BASE}/${machineType.id}_working_anim.png`);
+    }
+
     loaded.machines[machineType.id] = {
       idle: await tryLoad(`${ASSET_BASE}/${machineType.id}_idle.png`),
       working: await tryLoad(`${ASSET_BASE}/${machineType.id}_working.png`),
       blocked: await tryLoad(`${ASSET_BASE}/${machineType.id}_blocked.png`),
-      workingAnim: await tryLoad(`${ASSET_BASE}/${machineType.id}_working_anim.png`)
+      workingAnim
     };
   }
 
   // Load per-type generator sprites
   for (const generatorType of rules.generators) {
+    let anim = null;
+
+    // Check if animation uses separate frame files
+    if (generatorType.animation?.separateFrames) {
+      const frameCount = generatorType.animation.frames || 4;
+      const frames = [];
+      for (let i = 1; i <= frameCount; i++) {
+        const frame = await tryLoad(`${ASSET_BASE}/${generatorType.id}_anim_${i}.png`);
+        if (frame) frames.push(frame);
+      }
+      // Only use separate frames if we loaded at least one
+      if (frames.length > 0) {
+        anim = frames;
+      }
+    } else {
+      // Load as sprite sheet
+      anim = await tryLoad(`${ASSET_BASE}/${generatorType.id}_anim.png`);
+    }
+
     loaded.generators[generatorType.id] = {
       static: await tryLoad(`${ASSET_BASE}/${generatorType.id}.png`),
-      anim: await tryLoad(`${ASSET_BASE}/${generatorType.id}_anim.png`)
+      anim
     };
   }
 
@@ -1227,7 +1265,10 @@ export default function FactoryCanvas({
             }
           }
 
-          const frames = createAnimationFrames(genAssets.anim, framesToUse, frameDispositionToUse, colsToUse);
+          // Check if frames are already loaded as separate textures (array) or need to be extracted from sprite sheet
+          const frames = Array.isArray(genAssets.anim)
+            ? genAssets.anim
+            : createAnimationFrames(genAssets.anim, framesToUse, frameDispositionToUse, colsToUse);
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse;
@@ -1376,7 +1417,10 @@ export default function FactoryCanvas({
             }
           }
 
-          const frames = createAnimationFrames(machineAssets.workingAnim, framesToUse, frameDispositionToUse, colsToUse);
+          // Check if frames are already loaded as separate textures (array) or need to be extracted from sprite sheet
+          const frames = Array.isArray(machineAssets.workingAnim)
+            ? machineAssets.workingAnim
+            : createAnimationFrames(machineAssets.workingAnim, framesToUse, frameDispositionToUse, colsToUse);
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse;
