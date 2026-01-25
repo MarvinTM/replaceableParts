@@ -248,6 +248,56 @@ function tileHash(x, y) {
 }
 
 /**
+ * Load an image and convert white/near-white pixels to transparent
+ * @param {string} path - Path to the image file
+ * @param {number} threshold - RGB threshold (pixels with all channels >= threshold become transparent)
+ * @returns {Promise<Texture|null>} - Processed texture or null if loading fails
+ */
+async function loadWithTransparentWhite(path, threshold = 200) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      // Create canvas and draw image
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      // Get pixel data
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      // Process pixels: make white/near-white transparent
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        // If all RGB channels are >= threshold, make transparent
+        if (r >= threshold && g >= threshold && b >= threshold) {
+          data[i + 3] = 0; // Set alpha to 0
+        }
+      }
+
+      // Put processed data back
+      ctx.putImageData(imageData, 0, 0);
+
+      // Create texture from canvas
+      resolve(Texture.from(canvas));
+    };
+
+    img.onerror = () => {
+      resolve(null);
+    };
+
+    img.src = path;
+  });
+}
+
+/**
  * Load assets and return what's available
  * @param {Object} rules - Game rules containing machine and generator types
  */
@@ -290,13 +340,17 @@ async function loadAssets(rules) {
   // Load per-type machine sprites
   for (const machineType of rules.machines) {
     let workingAnim = null;
+    const useTransparentWhite = machineType.animation?.transparentWhite;
 
     // Check if animation uses separate frame files
     if (machineType.animation?.separateFrames) {
       const frameCount = machineType.animation.frames || 4;
       const frames = [];
       for (let i = 1; i <= frameCount; i++) {
-        const frame = await tryLoad(`${ASSET_BASE}/${machineType.id}_working_anim_${i}.png`);
+        const path = `${ASSET_BASE}/${machineType.id}_working_anim_${i}.png`;
+        const frame = useTransparentWhite
+          ? await loadWithTransparentWhite(path)
+          : await tryLoad(path);
         if (frame) frames.push(frame);
       }
       // Only use separate frames if we loaded at least one
@@ -305,7 +359,10 @@ async function loadAssets(rules) {
       }
     } else {
       // Load as sprite sheet
-      workingAnim = await tryLoad(`${ASSET_BASE}/${machineType.id}_working_anim.png`);
+      const path = `${ASSET_BASE}/${machineType.id}_working_anim.png`;
+      workingAnim = useTransparentWhite
+        ? await loadWithTransparentWhite(path)
+        : await tryLoad(path);
     }
 
     loaded.machines[machineType.id] = {
@@ -319,13 +376,17 @@ async function loadAssets(rules) {
   // Load per-type generator sprites
   for (const generatorType of rules.generators) {
     let anim = null;
+    const useTransparentWhite = generatorType.animation?.transparentWhite;
 
     // Check if animation uses separate frame files
     if (generatorType.animation?.separateFrames) {
       const frameCount = generatorType.animation.frames || 4;
       const frames = [];
       for (let i = 1; i <= frameCount; i++) {
-        const frame = await tryLoad(`${ASSET_BASE}/${generatorType.id}_anim_${i}.png`);
+        const path = `${ASSET_BASE}/${generatorType.id}_anim_${i}.png`;
+        const frame = useTransparentWhite
+          ? await loadWithTransparentWhite(path)
+          : await tryLoad(path);
         if (frame) frames.push(frame);
       }
       // Only use separate frames if we loaded at least one
@@ -334,7 +395,10 @@ async function loadAssets(rules) {
       }
     } else {
       // Load as sprite sheet
-      anim = await tryLoad(`${ASSET_BASE}/${generatorType.id}_anim.png`);
+      const path = `${ASSET_BASE}/${generatorType.id}_anim.png`;
+      anim = useTransparentWhite
+        ? await loadWithTransparentWhite(path)
+        : await tryLoad(path);
     }
 
     loaded.generators[generatorType.id] = {
