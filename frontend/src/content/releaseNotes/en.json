@@ -24,6 +24,10 @@
         {
           "type": "improvement",
           "text": "Added external market dynamics. Improved market price history management."
+        },
+        {
+          "type": "improvement",
+          "text": "Added thermal generator and windmill"
         }
       ]
     },
