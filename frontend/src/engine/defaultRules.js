@@ -440,7 +440,7 @@ export const defaultRules = {
     { id: 'thermal_generator', name: 'Thermal Generator', basePrice: 50, category: 'equipment', weight: 20, age: 1 },
     { id: 'windmill', name: 'Windmill', basePrice: 150, category: 'equipment', weight: 40, age: 2 },
     { id: 'coal_power_plant', name: 'Coal Power Plant', basePrice: 500, category: 'equipment', weight: 80, age: 3 },
-    { id: 'diesel_gen', name: 'Diesel Generator', basePrice: 1000, category: 'equipment', weight: 60, age: 4 },
+    { id: 'diesel_gen', name: 'Diesel Power Plant', basePrice: 1000, category: 'equipment', weight: 60, age: 4 },
     { id: 'nuclear_fission_reactor', name: 'Nuclear Fission Reactor', basePrice: 5000, category: 'equipment', weight: 150, age: 6 },
     { id: 'solar_array', name: 'Solar Array', basePrice: 2000, category: 'equipment', weight: 50, age: 7 },
     { id: 'fusion_reactor', name: 'Nuclear Fusion Reactor', basePrice: 10000, category: 'equipment', weight: 200, age: 7 }
@@ -1253,19 +1253,22 @@ export const defaultRules = {
     {
       id: 'diesel_gen',
       itemId: 'diesel_gen',
-      name: 'Diesel Generator',
-      sizeX: 3, sizeY: 3,
+      name: 'Diesel Power Plant',
+      sizeX: 16, sizeY: 12,
+      offsetX: 0, offsetY: 50,
       energyOutput: 800,
-      animation: { frames: 4, speed: 0.08 },
+      disableAutoScale: true,
+      animation: { frames: 4, speed: 0.02, separateFrames: true },
       fuelRequirement: { materialId: 'diesel_fuel', consumptionRate: 1 }
     },
     {
       id: 'solar_array',
       itemId: 'solar_array',
       name: 'Solar Array',
-      sizeX: 6, sizeY: 6,
+      sizeX: 12, sizeY: 12,
+      disableAutoScale: true,
       energyOutput: 100,
-      animation: { frames: 1, speed: 0 }
+      animation: { frames: 3, speed: 0.005, separateFrames: true }
     },
     {
       id: 'nuclear_fission_reactor',
