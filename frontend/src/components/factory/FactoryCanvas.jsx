@@ -1354,15 +1354,20 @@ export default function FactoryCanvas({
         displayObject = new Sprite(genAssets.static);
       }
 
-      // For unpowered generators with animated sprites, stop animation and use static
+      // For unpowered generators with animated sprites, stop animation and use static sprite
       if (!isPowered && animatedSpritesRef.current[genKey]) {
         const animSprite = animatedSpritesRef.current[genKey];
         if (animSprite.playing) {
           animSprite.stop();
         }
-        // Use the animated sprite but stopped at first frame
-        displayObject = animSprite;
-        displayObject.gotoAndStop(0);
+        // Use the static sprite instead of animation frame when out of fuel
+        if (genAssets?.static) {
+          displayObject = new Sprite(genAssets.static);
+        } else {
+          // Fallback to stopped animation if no static sprite available
+          displayObject = animSprite;
+          displayObject.gotoAndStop(0);
+        }
       }
 
       if (displayObject) {
