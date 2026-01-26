@@ -4,7 +4,8 @@
     "tagline": "Juego de Simulación de Manufactura"
   },
   "landing": {
-    "clickToContinue": "Haz clic en cualquier lugar o presiona una tecla para continuar"
+    "clickToContinue": "Haz clic en cualquier lugar o presiona una tecla para continuar",
+    "loadingAssets": "Cargando recursos..."
   },
   "nav": {
     "home": "Inicio",

@@ -3,8 +3,12 @@
     {
       "version": "0.1.6",
       "date": "2024-01-20",
-      "highlights": "New power generators",
+      "highlights": "Asset loading visualization. New power generators",
       "changes": [
+        {
+          "type": "feature",
+          "text": "Added loading progress bar to the landing page"
+        },
         {
           "type": "improvement",
           "text": "Added the diesel power plant, and the solar array"

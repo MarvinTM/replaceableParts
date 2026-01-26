@@ -11,6 +11,7 @@ import {
 } from './useIsometric';
 import { canPlaceAt } from '../../engine/engine.js';
 import { getIconUrl, ICON_FORMAT } from '../../services/iconService';
+import { getFactoryAssets } from '../../services/assetLoaderService';
 import useGameStore from '../../stores/gameStore';
 
 // Asset paths - place your images in frontend/public/assets/factory/
@@ -1904,8 +1905,9 @@ export default function FactoryCanvas({
       containerRef.current.appendChild(app.canvas);
       appRef.current = app;
 
-      // Load assets
-      const assets = await loadAssets(rules);
+      // Use preloaded assets if available, otherwise load them
+      const preloadedAssets = getFactoryAssets();
+      const assets = preloadedAssets || await loadAssets(rules);
 
       // Check again after asset loading
       if (!isMounted) {

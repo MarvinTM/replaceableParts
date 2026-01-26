@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
@@ -7,9 +7,10 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import LanguageIcon from '@mui/icons-material/Language';
-import { useState } from 'react';
 import { keyframes } from '@mui/system';
-import { useAuth } from '../contexts/AuthContext';
+import { loadAllAssets, areAssetsLoaded } from '../services/assetLoaderService';
+import { defaultRules } from '../engine/defaultRules';
+import LoadingProgress from '../components/LoadingProgress';
 
 const fadeIn = keyframes`
   from {
@@ -35,18 +36,29 @@ export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [langAnchorEl, setLangAnchorEl] = useState(null);
-  const { isAuthenticated, isLoading } = useAuth();
+  const [assetsLoading, setAssetsLoading] = useState(!areAssetsLoaded());
+  const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
   const handleContinue = useCallback(() => {
+    // Only allow navigation if assets are loaded
+    if (assetsLoading) return;
     navigate('/menu');
-  }, [navigate]);
+  }, [navigate, assetsLoading]);
 
-  // If user is authenticated, skip landing page and go directly to menu
+  // Load assets on mount
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate('/menu', { replace: true });
+    // Skip if already loaded
+    if (areAssetsLoaded()) {
+      setAssetsLoading(false);
+      return;
     }
-  }, [isAuthenticated, isLoading, navigate]);
+
+    loadAllAssets(defaultRules, (progress) => {
+      setLoadProgress(progress);
+    }).then(() => {
+      setAssetsLoading(false);
+    });
+  }, []);
 
   // Handle click anywhere
   const handleClick = useCallback((e) => {
@@ -54,8 +66,10 @@ export default function LandingPage() {
     if (e.target.closest('[data-lang-menu]')) {
       return;
     }
+    // Don't trigger if still loading
+    if (assetsLoading) return;
     handleContinue();
-  }, [handleContinue]);
+  }, [handleContinue, assetsLoading]);
 
   // Handle any key press
   useEffect(() => {
@@ -64,12 +78,14 @@ export default function LandingPage() {
       if (e.target.tagName === 'INPUT' || langAnchorEl) {
         return;
       }
+      // Ignore if still loading
+      if (assetsLoading) return;
       handleContinue();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleContinue, langAnchorEl]);
+  }, [handleContinue, langAnchorEl, assetsLoading]);
 
   const handleLangMenu = (event) => {
     event.stopPropagation();
@@ -95,7 +111,7 @@ export default function LandingPage() {
         justifyContent: 'center',
         minHeight: '100vh',
         backgroundColor: 'background.default',
-        cursor: 'pointer',
+        cursor: assetsLoading ? 'default' : 'pointer',
         userSelect: 'none',
         p: 2,
         position: 'relative',
@@ -167,19 +183,30 @@ export default function LandingPage() {
         </Typography>
       </Box>
 
-      {/* Click to continue prompt */}
-      <Typography
-        variant="body2"
-        color="text.secondary"
+      {/* Loading progress or click to continue prompt */}
+      <Box
         sx={{
           position: 'absolute',
           bottom: 48,
-          textAlign: 'center',
-          animation: `${fadeIn} 1s ease-out 0.6s both, ${pulse} 2s ease-in-out 1.6s infinite`,
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        {t('landing.clickToContinue')}
-      </Typography>
+        {assetsLoading ? (
+          <LoadingProgress progress={loadProgress} />
+        ) : (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              textAlign: 'center',
+              animation: `${fadeIn} 0.5s ease-out, ${pulse} 2s ease-in-out 0.5s infinite`,
+            }}
+          >
+            {t('landing.clickToContinue')}
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 }

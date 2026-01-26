@@ -6,6 +6,7 @@ import {
   screenToGrid
 } from './coordinateUtils';
 import { getIconUrl } from '../../services/iconService';
+import { getExplorationTextures, getIconTexture } from '../../services/assetLoaderService';
 
 // Fog of war color (warm parchment)
 const FOG_COLOR = 0xC9B896;
@@ -44,6 +45,13 @@ async function loadResourceIcon(resourceType) {
   }
   if (failedResourceIcons.has(resourceType)) {
     return null;
+  }
+
+  // Check for preloaded icon first
+  const preloadedIcon = getIconTexture(resourceType);
+  if (preloadedIcon) {
+    resourceIconCache.set(resourceType, preloadedIcon);
+    return preloadedIcon;
   }
 
   try {
@@ -127,9 +135,18 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
     onTileClickRef.current = onTileClick;
   }, [onTileClick]);
 
-  // Load terrain textures
+  // Load terrain textures (use preloaded if available)
   useEffect(() => {
     const loadTextures = async () => {
+      // Check for preloaded textures first
+      const preloadedTextures = getExplorationTextures();
+      if (preloadedTextures) {
+        texturesRef.current = preloadedTextures;
+        setTexturesLoaded(true);
+        return;
+      }
+
+      // Fallback: load textures manually
       const terrainTypes = ['water', 'plains', 'grassland', 'forest', 'jungle', 'hills', 'mountain', 'desert', 'swamp'];
       const textures = {};
 

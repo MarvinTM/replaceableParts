@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { areAssetsLoaded } from './services/assetLoaderService';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import MainMenuPage from './pages/MainMenuPage';
@@ -10,6 +11,14 @@ import PendingApprovalPage from './pages/PendingApprovalPage';
 import DebugGraphPage from './pages/DebugGraphPage';
 import Layout from './components/Layout';
 import LoadingScreen from './components/LoadingScreen';
+
+// Route guard that ensures assets are loaded before allowing access
+function RequireAssets({ children }) {
+  if (!areAssetsLoaded()) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
 
 // Route that requires authentication (for admin-only features)
 function ProtectedRoute({ children, requireAdmin = false, requireApproval = true }) {
@@ -98,17 +107,26 @@ export default function App() {
       />
 
       {/* Main menu - accessible to everyone (shows different UI for guest vs auth) */}
-      <Route path="/menu" element={<MainMenuPage />} />
+      <Route
+        path="/menu"
+        element={
+          <RequireAssets>
+            <MainMenuPage />
+          </RequireAssets>
+        }
+      />
 
       {/* Game - requires guest mode or authentication */}
       <Route
         path="/game"
         element={
-          <GuestOrAuthRoute>
-            <Layout>
-              <GamePage />
-            </Layout>
-          </GuestOrAuthRoute>
+          <RequireAssets>
+            <GuestOrAuthRoute>
+              <Layout>
+                <GamePage />
+              </Layout>
+            </GuestOrAuthRoute>
+          </RequireAssets>
         }
       />
 
@@ -116,11 +134,13 @@ export default function App() {
       <Route
         path="/settings"
         element={
-          <GuestOrAuthRoute>
-            <Layout>
-              <SettingsPage />
-            </Layout>
-          </GuestOrAuthRoute>
+          <RequireAssets>
+            <GuestOrAuthRoute>
+              <Layout>
+                <SettingsPage />
+              </Layout>
+            </GuestOrAuthRoute>
+          </RequireAssets>
         }
       />
 
@@ -128,11 +148,13 @@ export default function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute requireAdmin>
-            <Layout>
-              <AdminPage />
-            </Layout>
-          </ProtectedRoute>
+          <RequireAssets>
+            <ProtectedRoute requireAdmin>
+              <Layout>
+                <AdminPage />
+              </Layout>
+            </ProtectedRoute>
+          </RequireAssets>
         }
       />
 
@@ -140,9 +162,11 @@ export default function App() {
       <Route
         path="/debug/graph"
         element={
-          <ProtectedRoute requireAdmin>
-            <DebugGraphPage />
-          </ProtectedRoute>
+          <RequireAssets>
+            <ProtectedRoute requireAdmin>
+              <DebugGraphPage />
+            </ProtectedRoute>
+          </RequireAssets>
         }
       />
 

@@ -4,7 +4,8 @@
     "tagline": "Manufacturing Simulation Game"
   },
   "landing": {
-    "clickToContinue": "Click anywhere or press any key to continue"
+    "clickToContinue": "Click anywhere or press any key to continue",
+    "loadingAssets": "Loading assets..."
   },
   "nav": {
     "home": "Home",
