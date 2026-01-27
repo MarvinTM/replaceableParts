@@ -224,7 +224,6 @@ function generateRecipe(item, data) {
     inputs,
     outputs: { [item.id]: 1 },
     ticksToComplete: calculateTime(item),
-    tier: item.age,
     age: item.age
   };
 }
@@ -326,7 +325,7 @@ function formatRecipe(recipe) {
   const inputsStr = JSON.stringify(recipe.inputs).replace(/"/g, '');
   const outputsStr = JSON.stringify(recipe.outputs).replace(/"/g, '');
 
-  return `    { id: '${recipe.id}', inputs: ${inputsStr}, outputs: ${outputsStr}, ticksToComplete: ${recipe.ticksToComplete}, tier: ${recipe.tier}, age: ${recipe.age} }`;
+  return `    { id: '${recipe.id}', inputs: ${inputsStr}, outputs: ${outputsStr}, ticksToComplete: ${recipe.ticksToComplete}, age: ${recipe.age} }`;
 }
 
 async function addRecipesToFile(recipes, age) {

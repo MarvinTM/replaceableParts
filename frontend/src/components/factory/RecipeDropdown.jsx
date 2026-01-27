@@ -161,7 +161,7 @@ export default function RecipeDropdown({
                         {recipe.id.replace(/_/g, ' ')}
                       </Typography>
                       <Chip
-                        label={`T${recipe.tier || 1}`}
+                        label={`T${recipe.age || 1}`}
                         size="small"
                         variant="outlined"
                         sx={{ height: 18, fontSize: '0.65rem' }}
