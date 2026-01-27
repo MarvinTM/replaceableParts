@@ -1430,7 +1430,7 @@ export const defaultRules = {
         { label: 'Steam Valves', material: 'steam_valve', quantity: 10 },
         { label: 'Monitoring Panels', material: 'led_display', quantity: 10 },
         { label: 'Induction Generators', material: 'electric_coil', quantity: 10 },
-        { label: 'Cooling Exhaust', material: 'insulated_pipe', quantity: 20 }
+        { label: 'Cooling Exhaust', material: 'insulated_pipe', quantity: 20 },
         { label: 'Cooling Layers', material: 'insulation', quantity: 30 }
       ]
     },
