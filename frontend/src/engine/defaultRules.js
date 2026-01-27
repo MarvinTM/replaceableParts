@@ -442,8 +442,7 @@ export const defaultRules = {
     { id: 'coal_power_plant', name: 'Coal Power Plant', basePrice: 500, category: 'equipment', weight: 80, age: 3 },
     { id: 'diesel_gen', name: 'Diesel Power Plant', basePrice: 1000, category: 'equipment', weight: 60, age: 4 },
     { id: 'nuclear_fission_reactor', name: 'Nuclear Fission Reactor', basePrice: 5000, category: 'equipment', weight: 150, age: 6 },
-    { id: 'solar_array', name: 'Solar Array', basePrice: 2000, category: 'equipment', weight: 50, age: 7 },
-    { id: 'fusion_reactor', name: 'Nuclear Fusion Reactor', basePrice: 10000, category: 'equipment', weight: 200, age: 7 }
+    { id: 'solar_array', name: 'Solar Array', basePrice: 2000, category: 'equipment', weight: 50, age: 7 }
   ],
 
   // ============================================================================
@@ -857,11 +856,10 @@ export const defaultRules = {
     { id: 'research_laboratory', inputs: { steel_plate: 10, pipe: 8, glass: 6, vacuum_tube: 4, gear: 6, copper_wire: 8 }, outputs: { research_laboratory: 1 }, ticksToComplete: 30, age: 4 },
     { id: 'diesel_gen', inputs: { engine_block: 2, generator: 1 }, outputs: { diesel_gen: 1 }, ticksToComplete: 25, age: 4 },
     
-    { id: 'nuclear_fission_reactor', inputs: { concrete: 50, steel_plate: 20, steel_pipe: 20, industrial_pump: 4, computer: 1, steam_valve: 10 }, outputs: { nuclear_fission_reactor: 1 }, ticksToComplete: 60, age: 6 },
+    { id: 'nuclear_fission_reactor', inputs: { concrete: 50, steel_plate: 20, steel_pipe: 20, industrial_pump: 15, computer: 10, steam_valve: 10, insulation:30, led_display:10, electric_coil:10, insulated_pipe:20 }, outputs: { nuclear_fission_reactor: 1 }, ticksToComplete: 60, age: 6 },
     
     { id: 'electronics_fab', inputs: { composite: 10, electric_motor: 5, heating_element: 10, resistor: 10 }, outputs: { electronics_fab: 1 }, ticksToComplete: 40, age: 7 },
-    { id: 'solar_array', inputs: { solar_panel_item: 16, aluminum_sheet: 4 }, outputs: { solar_array: 1 }, ticksToComplete: 50, age: 6 },
-    { id: 'fusion_reactor', inputs: { fusion_core: 1, superconductor: 20, concrete: 100 }, outputs: { fusion_reactor: 1 }, ticksToComplete: 100, age: 7 }
+    { id: 'solar_array', inputs: { solar_panel_item: 16, aluminum_sheet: 4 }, outputs: { solar_array: 1 }, ticksToComplete: 50, age: 6 }
   ],
 
   // ============================================================================
@@ -1273,18 +1271,12 @@ export const defaultRules = {
     {
       id: 'nuclear_fission_reactor',
       itemId: 'nuclear_fission_reactor',
-      name: 'Nuclear Fission Reactor',
-      sizeX: 8, sizeY: 8,
+      name: 'Nuclear Reactor',
+      sizeX: 30, sizeY: 30,
+      offsetX: 0, offsetY: 400,
       energyOutput: 5000,
-      animation: { frames: 4, speed: 0.1 }
-    },
-    {
-      id: 'fusion_reactor',
-      itemId: 'fusion_reactor',
-      name: 'Nuclear Fusion Reactor',
-      sizeX: 8, sizeY: 8,
-      energyOutput: 100000,
-      animation: { frames: 4, speed: 0.1 }
+      disableAutoScale: true,
+      animation: { frames: 2, speed: 0.005, separateFrames: true }
     }
   ],
 
@@ -1433,32 +1425,19 @@ export const defaultRules = {
         { label: 'Reactor Vessel', material: 'steel_plate', quantity: 20 },
         { label: 'Containment Dome', material: 'concrete', quantity: 50 },
         { label: 'Cooling Loops', material: 'steel_pipe', quantity: 20 },
-        { label: 'Coolant Pumps', material: 'industrial_pump', quantity: 4 },
-        { label: 'Control Systems', material: 'computer', quantity: 1 },
-        { label: 'Steam Valves', material: 'steam_valve', quantity: 10 }
+        { label: 'Coolant Pumps', material: 'industrial_pump', quantity: 15 },
+        { label: 'Control Systems', material: 'computer', quantity: 10 },
+        { label: 'Steam Valves', material: 'steam_valve', quantity: 10 },
+        { label: 'Monitoring Panels', material: 'led_display', quantity: 10 },
+        { label: 'Induction Generators', material: 'electric_coil', quantity: 10 },
+        { label: 'Cooling Exhaust', material: 'insulated_pipe', quantity: 20 }
+        { label: 'Cooling Layers', material: 'insulation', quantity: 30 }
       ]
     },
     solar_array: {
       slots: [
         { label: 'Solar Panels', material: 'solar_panel_item', quantity: 16 },
         { label: 'Mounting Frame', material: 'aluminum_sheet', quantity: 4 }
-      ]
-    },
-    fusion_reactor: {
-      slots: [
-        { label: 'Fusion Core', material: 'fusion_core', quantity: 1 },
-        { label: 'Superconductor Coils', material: 'superconductor', quantity: 10 },
-        { label: 'Field Magnets', material: 'superconductor', quantity: 10 },
-        { label: 'Reactor Foundation', material: 'concrete', quantity: 10 },
-        { label: 'Radiation Shielding', material: 'concrete', quantity: 10 },
-        { label: 'Containment Vessel', material: 'concrete', quantity: 10 },
-        { label: 'Outer Wall', material: 'concrete', quantity: 10 },
-        { label: 'Base Structure', material: 'concrete', quantity: 10 },
-        { label: 'Cap Structure', material: 'concrete', quantity: 10 },
-        { label: 'Support Ring', material: 'concrete', quantity: 10 },
-        { label: 'Stabilizer Ring', material: 'concrete', quantity: 10 },
-        { label: 'Reinforcement Ring', material: 'concrete', quantity: 10 },
-        { label: 'Cooling Structure', material: 'concrete', quantity: 10 }
       ]
     }
   },
