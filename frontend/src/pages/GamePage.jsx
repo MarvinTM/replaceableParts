@@ -895,7 +895,7 @@ export default function GamePage() {
   ];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
       {/* Compact Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

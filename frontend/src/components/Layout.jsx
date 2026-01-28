@@ -93,7 +93,7 @@ export default function Layout({ children }) {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <AppBar position="static">
         <Toolbar>
           {/* Logo with background */}
@@ -265,7 +265,7 @@ export default function Layout({ children }) {
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+      <Box component="main" sx={{ flex: 1, p: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {children}
       </Box>
     </Box>
