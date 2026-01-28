@@ -2,12 +2,16 @@
   "releases": [
     {
       "version": "0.1.6",
-      "date": "2024-01-20",
+      "date": "2024-01-28",
       "highlights": "Asset loading visualization. New power generators",
       "changes": [
         {
           "type": "feature",
           "text": "Added loading progress bar to the landing page"
+        },
+        {
+          "type": "feature",
+          "text": "Changed main layout of the Factory tab"
         },
         {
           "type": "improvement",
@@ -17,7 +21,7 @@
     },
     {
       "version": "0.1.5",
-      "date": "2024-01-20",
+      "date": "2024-01-25",
       "highlights": "Tutorial and tips. New generators.",
       "changes": [
         {
