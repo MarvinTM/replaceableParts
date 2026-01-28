@@ -13,6 +13,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import AddIcon from '@mui/icons-material/Add';
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
+import { CREDIT_SYMBOL } from '../../utils/currency';
 
 export default function DonateSection() {
   const { t } = useTranslation();
@@ -92,7 +93,7 @@ export default function DonateSection() {
           />
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="body2">{t('research.youHave')}: {credits?.toLocaleString() || 0} {t('research.credits')}</Typography>
+            <Typography variant="body2">{t('research.youHave')}: {credits?.toLocaleString() || 0}{CREDIT_SYMBOL}</Typography>
             <Chip
               label={`+${creditRpGain} RP`}
               color={creditRpGain > 0 ? 'primary' : 'default'}
@@ -108,7 +109,7 @@ export default function DonateSection() {
                 size="small"
                 onClick={() => setCreditAmount(String(preset))}
               >
-                {preset.toLocaleString()}
+                {preset.toLocaleString()}{CREDIT_SYMBOL}
               </Button>
             ))}
           </Box>

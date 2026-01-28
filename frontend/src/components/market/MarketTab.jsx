@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
+import { formatCredits } from '../../utils/currency';
 
 // Age-based colors for chart lines
 const AGE_COLORS = {
@@ -681,7 +682,7 @@ export default function MarketTab() {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="body2">{t('market.inStock')}: {item.quantity}</Typography>
                     <Typography variant="body2" fontWeight="bold" color="primary">
-                      ${item.currentPrice}
+                      {formatCredits(item.currentPrice, false)}
                     </Typography>
                   </Box>
 
@@ -697,7 +698,7 @@ export default function MarketTab() {
                         handleSellAll(item.id);
                       }}
                     >
-                      {t('market.sellAll')} (${item.currentPrice * item.quantity})
+                      {t('market.sellAll')} ({formatCredits(item.currentPrice * item.quantity)})
                     </Button>
                   </Box>
                 </Paper>
@@ -733,7 +734,7 @@ export default function MarketTab() {
                 {t('market.available')}: {selectedItem.quantity}
               </Typography>
               <Typography variant="body2" gutterBottom>
-                {t('market.pricePerUnit')}: ${selectedItem.currentPrice}
+                {t('market.pricePerUnit')}: {formatCredits(selectedItem.currentPrice, false)}
               </Typography>
               <Typography variant="body2" gutterBottom>
                 {t('market.marketStatus')}: {t(`market.${getPopularityStatus(selectedItem.popularity).label.toLowerCase()}`)}
@@ -771,7 +772,7 @@ export default function MarketTab() {
             />
 
             <Typography variant="h6" gutterBottom>
-              {t('market.total')}: ${selectedItem.currentPrice * sellQuantity}
+              {t('market.total')}: {formatCredits(selectedItem.currentPrice * sellQuantity)}
             </Typography>
 
             <Button
@@ -802,14 +803,14 @@ export default function MarketTab() {
             <Box>
               <Typography variant="body2" color="text.secondary">{t('market.totalRevenue')}</Typography>
               <Typography variant="h5" color="success.main">
-                ${revenueAnalytics.totalRevenue.toLocaleString()}
+                {formatCredits(revenueAnalytics.totalRevenue)}
               </Typography>
             </Box>
 
             <Box>
               <Typography variant="body2" color="text.secondary">{t('market.last100Ticks')}</Typography>
               <Typography variant="h6">
-                ${revenueAnalytics.last100Ticks.toLocaleString()}
+                {formatCredits(revenueAnalytics.last100Ticks)}
               </Typography>
             </Box>
 
@@ -824,7 +825,7 @@ export default function MarketTab() {
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
                     <Typography variant="body2" fontWeight="bold">
-                      ${seller.revenue}
+                      {formatCredits(seller.revenue)}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {seller.quantity} {t('market.sold')}

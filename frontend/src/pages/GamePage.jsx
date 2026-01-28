@@ -46,6 +46,7 @@ import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier'
 import DiscoveryNotifier from '../components/research/DiscoveryNotifier';
 import TutorialOverlay from '../components/tutorial/TutorialOverlay';
 import TipSnackbar from '../components/tips/TipSnackbar';
+import { formatCredits } from '../utils/currency';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -496,7 +497,7 @@ function FactoryTab() {
                     onClick={handleExpand}
                     disabled={credits < expansion.cost}
                   >
-                    {t('game.factory.expand')} ({expansion.cost})
+                    {t('game.factory.expand')} ({formatCredits(expansion.cost)})
                   </Button>
                 </span>
             </Tooltip>
@@ -757,7 +758,7 @@ function ExplorationTab() {
           onClick={handleExpand}
           disabled={!canExplore || credits < expansionCost}
         >
-          {t('game.exploration.expand')} ({expansionCost} credits)
+          {t('game.exploration.expand')} ({formatCredits(expansionCost)})
         </Button>
       </CollapsibleActionsPanel>
     </Box>

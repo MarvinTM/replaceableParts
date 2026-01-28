@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import BoltIcon from '@mui/icons-material/Bolt';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import { CREDIT_SYMBOL } from '../../utils/currency';
 
 export default function FloatingHUD({ credits, energy }) {
   const energyBalance = energy.produced - energy.consumed;
@@ -25,20 +26,23 @@ export default function FloatingHUD({ credits, energy }) {
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <AccountBalanceIcon sx={{ fontSize: 18, color: 'success.light' }} />
-        <Typography variant="body2" sx={{ color: 'white', fontWeight: 500 }}>
+        <Typography variant="body2" component="span" sx={{ color: 'white', fontWeight: 500 }}>
           {credits}
+          <Typography component="span" sx={{ color: '#FFD700', fontWeight: 500, fontSize: 'inherit', ml: 0.5 }}>{CREDIT_SYMBOL}</Typography>
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
         <BoltIcon sx={{ fontSize: 18, color: isEnergyDeficit ? 'error.light' : 'warning.light' }} />
         <Typography
           variant="body2"
+          component="span"
           sx={{
             color: isEnergyDeficit ? 'error.light' : 'white',
             fontWeight: 500
           }}
         >
           {energyBalance} / {energy.produced}
+          <Typography component="span" sx={{ color: '#FFD700', fontWeight: 500, fontSize: 'inherit', ml: 0.5 }}>MW</Typography>
         </Typography>
       </Box>
     </Box>
