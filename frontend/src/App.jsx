@@ -158,15 +158,13 @@ export default function App() {
         }
       />
 
-      {/* Debug route - requires admin role */}
+      {/* Debug route - requires admin role (no asset preloading required) */}
       <Route
         path="/debug/graph"
         element={
-          <RequireAssets>
-            <ProtectedRoute requireAdmin>
-              <DebugGraphPage />
-            </ProtectedRoute>
-          </RequireAssets>
+          <ProtectedRoute requireAdmin>
+            <DebugGraphPage />
+          </ProtectedRoute>
         }
       />
 
