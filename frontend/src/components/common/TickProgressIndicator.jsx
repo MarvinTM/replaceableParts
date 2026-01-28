@@ -73,7 +73,7 @@ function GearIcon({ size = 32, progress = 0, rotation = 0, fillColor, background
       viewBox={`0 0 ${size} ${size}`}
       style={{
         transform: `rotate(${rotation}deg)`,
-        transition: 'transform 0.3s ease-out',
+        transition: 'transform 0.4s ease-out',
       }}
     >
       <defs>
@@ -94,13 +94,16 @@ function GearIcon({ size = 32, progress = 0, rotation = 0, fillColor, background
       <path d={gearPath} fill={backgroundColor} mask="url(#gearMask)" />
 
       {/* Progress fill - using a pie slice approach */}
-      {progress > 0 && (
+      {progress > 0 && progress < 100 && (
         <g mask="url(#gearMask)">
           <path
             d={describeArc(centerX, centerY, outerRadius + toothHeight, -90, -90 + progressAngle)}
             fill={fillColor}
           />
         </g>
+      )}
+      {progress >= 100 && (
+        <path d={gearPath} fill={fillColor} mask="url(#gearMask)" />
       )}
 
       {/* Center hole accent */}
@@ -143,9 +146,9 @@ function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
 }
 
 // Duration of the rotation animation in ms
-const ROTATION_DURATION_MS = 300;
+const ROTATION_DURATION_MS = 500;
 // Fill up the gear in this fraction of the tick duration (leaves time for rotation while full)
-const FILL_DURATION_FRACTION = 0.85;
+const FILL_DURATION_FRACTION = 0.8;
 
 /**
  * TickProgressIndicator - Shows simulation progress with a mechanical gear
