@@ -512,6 +512,7 @@ function FactoryTab() {
         ref={inventoryPanelRef}
         inventory={inventory}
         rules={rules}
+        tick={engineState.tick}
       />
 
       {/* Machine Info Popup */}
@@ -896,18 +897,8 @@ export default function GamePage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-      {/* Compact Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h5">{currentGame.name}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {t('game.tick')}: {engineState.tick}
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      {/* Tabs and Game Name */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 2 }}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
@@ -927,6 +918,9 @@ export default function GamePage() {
             />
           ))}
         </Tabs>
+        <Typography variant="subtitle1" fontWeight="bold" color="text.secondary">
+          {currentGame.name}
+        </Typography>
       </Box>
 
       <TabPanel value={tabValue} index={0}>

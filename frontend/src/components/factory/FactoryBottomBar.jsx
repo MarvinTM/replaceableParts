@@ -62,7 +62,7 @@ const INVENTORY_MIN_HEIGHT = 160;
 /**
  * FactoryBottomBar - Bottom bar with inventory (wrapping grid) and play controls
  */
-const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules }, ref) {
+const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules, tick }, ref) {
   const { t } = useTranslation();
 
   const inventoryEntries = Object.entries(inventory);
@@ -119,6 +119,9 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules
 
         {/* Tick Progress and Play Controls */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mr: 1, fontFamily: 'monospace' }}>
+            {t('game.tick')}: {tick}
+          </Typography>
           <TickProgressIndicator />
           <PlayControls />
         </Box>
