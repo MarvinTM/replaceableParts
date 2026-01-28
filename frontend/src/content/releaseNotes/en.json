@@ -2,7 +2,7 @@
   "releases": [
     {
       "version": "0.1.6",
-      "date": "2024-01-28",
+      "date": "2024-01-29",
       "highlights": "Asset loading visualization. New Factory layout. New power generators",
       "changes": [
         {
