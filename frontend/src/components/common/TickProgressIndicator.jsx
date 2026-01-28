@@ -157,13 +157,19 @@ export default function TickProgressIndicator() {
   const currentSpeed = useGameStore(state => state.currentSpeed);
   const tick = useGameStore(state => state.engineState?.tick);
 
-  const [progress, setProgress] = useState(0);
-  const [rotation, setRotation] = useState(0);
-  const [isRotating, setIsRotating] = useState(false);
+  // Use a single state object to prevent race conditions between updates
+  const [animState, setAnimState] = useState({
+    progress: 0,
+    rotation: 0,
+    phase: 'filling', // 'filling' | 'rotating'
+  });
+
   const lastTickRef = useRef(tick);
   const animationRef = useRef(null);
   const startTimeRef = useRef(null);
   const rotationTimeoutRef = useRef(null);
+  // Use a ref to track phase for the animation loop (avoids stale closure)
+  const phaseRef = useRef('filling');
 
   // Get the tick duration based on current speed
   const getTickDuration = () => {
@@ -188,32 +194,42 @@ export default function TickProgressIndicator() {
         clearTimeout(rotationTimeoutRef.current);
       }
 
-      // First: set progress to 100 and mark as rotating
-      setProgress(100);
-      setIsRotating(true);
+      // Set to rotating phase with full progress and start rotation
+      phaseRef.current = 'rotating';
+      setAnimState(prev => ({
+        progress: 100,
+        rotation: prev.rotation + ROTATION_PER_TICK,
+        phase: 'rotating',
+      }));
 
-      // Then: start rotation after a micro-delay to ensure full state is rendered
-      requestAnimationFrame(() => {
-        setRotation(prev => prev + ROTATION_PER_TICK);
-
-        // After rotation animation completes, reset and start filling again
-        rotationTimeoutRef.current = setTimeout(() => {
-          setIsRotating(false);
-          setProgress(0);
-          startTimeRef.current = Date.now();
-        }, ROTATION_DURATION_MS);
-      });
+      // After rotation animation completes, reset and start filling again
+      rotationTimeoutRef.current = setTimeout(() => {
+        phaseRef.current = 'filling';
+        startTimeRef.current = Date.now();
+        setAnimState(prev => ({
+          ...prev,
+          progress: 0,
+          phase: 'filling',
+        }));
+      }, ROTATION_DURATION_MS);
     }
   }, [tick]);
 
   // Animate the fill progress
   useEffect(() => {
-    // Don't animate if not running or currently rotating
-    if (!isRunning || isRotating) {
-      if (!isRunning) {
-        setProgress(0);
-        setIsRotating(false);
+    // Don't animate if not running
+    if (!isRunning) {
+      phaseRef.current = 'filling';
+      setAnimState(prev => ({ ...prev, progress: 0, phase: 'filling' }));
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
+      return;
+    }
+
+    // Don't start fill animation while rotating
+    if (animState.phase === 'rotating') {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
@@ -230,11 +246,20 @@ export default function TickProgressIndicator() {
     const fillDuration = tickDuration * FILL_DURATION_FRACTION;
 
     const animate = () => {
+      // Check ref to avoid animating during rotation
+      if (phaseRef.current === 'rotating') {
+        return;
+      }
+
       const elapsed = Date.now() - startTimeRef.current;
       const newProgress = Math.min((elapsed / fillDuration) * 100, 100);
-      setProgress(newProgress);
+      setAnimState(prev => {
+        // Double-check we're still in filling phase
+        if (prev.phase === 'rotating') return prev;
+        return { ...prev, progress: newProgress };
+      });
 
-      if (newProgress < 100 && isRunning) {
+      if (newProgress < 100 && isRunning && phaseRef.current === 'filling') {
         animationRef.current = requestAnimationFrame(animate);
       }
     };
@@ -247,7 +272,7 @@ export default function TickProgressIndicator() {
         animationRef.current = null;
       }
     };
-  }, [isRunning, isRotating, currentSpeed]);
+  }, [isRunning, animState.phase, currentSpeed]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -261,8 +286,9 @@ export default function TickProgressIndicator() {
     };
   }, []);
 
-  // Display progress is 100 during rotation, otherwise actual progress
-  const displayProgress = isRotating ? 100 : progress;
+  const { progress, rotation, phase } = animState;
+  // During rotation phase, always show full progress
+  const displayProgress = phase === 'rotating' ? 100 : progress;
 
   // Colors based on speed
   const fillColor = currentSpeed === 'fast'
