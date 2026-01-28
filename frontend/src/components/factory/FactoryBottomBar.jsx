@@ -12,6 +12,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
+import TickProgressIndicator from '../common/TickProgressIndicator';
 
 /**
  * PlayControls - Three-button play control group (pause, play, fast)
@@ -116,8 +117,11 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules
           )}
         </Box>
 
-        {/* Play Controls */}
-        <PlayControls />
+        {/* Tick Progress and Play Controls */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TickProgressIndicator />
+          <PlayControls />
+        </Box>
       </Box>
 
       {/* Inventory content area - wrapping grid with vertical scroll */}

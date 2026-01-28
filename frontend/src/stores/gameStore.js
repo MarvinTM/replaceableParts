@@ -5,8 +5,8 @@ import { createInitialState } from '../engine/initialState.js';
 import { defaultRules } from '../engine/defaultRules.js';
 
 // Game tick speed constants (in milliseconds)
-export const NORMAL_TICK_MS = 7000;  // 7 seconds per tick
-export const FAST_TICK_MS = 4000;    // 4 seconds per tick (accelerated)
+export const NORMAL_TICK_MS = 5000;  // 7 seconds per tick
+export const FAST_TICK_MS = 3000;    // 4 seconds per tick (accelerated)
 
 /**
  * Game Store using Zustand
