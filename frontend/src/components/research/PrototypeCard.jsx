@@ -7,6 +7,7 @@ import Chip from '@mui/material/Chip';
 import LinearProgress from '@mui/material/LinearProgress';
 import BuildIcon from '@mui/icons-material/Build';
 import LoopIcon from '@mui/icons-material/Loop';
+import StarIcon from '@mui/icons-material/Star';
 import MaterialIcon from '../common/MaterialIcon';
 
 export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }) {
@@ -49,6 +50,11 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
     }
   }
 
+  // Calculate RP bonus for completing this prototype (50 * ageMultiplier)
+  const age = outputInfo?.material?.age || recipe?.age || 1;
+  const ageMultiplier = rules.research?.ageMultipliers?.[age] || 1.0;
+  const rpBonus = Math.floor(50 * ageMultiplier);
+
   return (
     <Paper
       sx={{
@@ -80,6 +86,14 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
           color={isFlowMode ? 'info' : 'warning'}
           variant="outlined"
         />
+      </Box>
+
+      {/* RP Bonus indicator */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+        <StarIcon sx={{ fontSize: 14 }} />
+        <Typography variant="caption" fontWeight="bold">
+          +{rpBonus} {t('research.researchPoints')}
+        </Typography>
       </Box>
 
       {isFlowMode ? (

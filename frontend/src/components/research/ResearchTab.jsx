@@ -23,6 +23,7 @@ export default function ResearchTab() {
   const { research, discoveredRecipes, unlockedRecipes } = engineState;
   const researchPoints = research?.researchPoints || 0;
   const awaitingPrototype = research?.awaitingPrototype || [];
+  const prototypeBoost = research?.prototypeBoost || null;
 
   // Calculate highest unlocked age for experiment cost
   const highestAge = useMemo(() => {
@@ -144,6 +145,7 @@ export default function ResearchTab() {
           baseChance={rules.research.passiveDiscoveryChance}
           labBonus={researchLabBonus}
           activeLabCount={activeLabCount}
+          prototypeBoost={prototypeBoost}
         />
         <Divider sx={{ my: 2 }} />
         <Typography variant="h6" gutterBottom>{t('research.unlockedRecipes')}</Typography>

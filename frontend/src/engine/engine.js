@@ -206,6 +206,41 @@ function createPrototypeEntry(recipe, rules) {
   }
 }
 
+/**
+ * Apply rewards when a prototype is completed:
+ * - RP bonus: 50 × ageMultiplier
+ * - Discovery boost: +100% for 30 ticks (stacks additively, resets duration)
+ */
+function applyPrototypeCompletionRewards(state, rules, recipeId) {
+  const recipe = rules.recipes.find(r => r.id === recipeId);
+  if (!recipe) return;
+
+  // Find the material to get its age
+  const outputId = Object.keys(recipe.outputs)[0];
+  const material = rules.materials.find(m => m.id === outputId);
+  const age = material?.age || recipe.age || 1;
+
+  // Calculate RP bonus: 50 × ageMultiplier
+  const baseRP = 50;
+  const ageMultiplier = rules.research.ageMultipliers[age] || 1.0;
+  const rpBonus = Math.floor(baseRP * ageMultiplier);
+
+  // Add RP
+  if (!state.research) {
+    state.research = { active: false, researchPoints: 0, awaitingPrototype: [] };
+  }
+  state.research.researchPoints = (state.research.researchPoints || 0) + rpBonus;
+
+  // Initialize prototype boost if needed
+  if (!state.research.prototypeBoost) {
+    state.research.prototypeBoost = { bonus: 0, ticksRemaining: 0 };
+  }
+
+  // Add to boost (+100% per prototype) and reset duration to 30 ticks
+  state.research.prototypeBoost.bonus += 100;
+  state.research.prototypeBoost.ticksRemaining = 30;
+}
+
 // ============================================================================
 // Structure Dimension Utilities
 // ============================================================================
@@ -782,7 +817,15 @@ function simulateTick(state, rules) {
     }
   }
 
-  const effectivePassiveChance = (rules.research.passiveDiscoveryChance || 0) + researchLabBonus;
+  // Calculate prototype boost (from completing prototypes)
+  let prototypeBoostMultiplier = 1.0;
+  if (newState.research?.prototypeBoost?.ticksRemaining > 0) {
+    // Convert bonus percentage to multiplier (100% bonus = 2x multiplier)
+    prototypeBoostMultiplier = 1 + (newState.research.prototypeBoost.bonus / 100);
+  }
+
+  const basePassiveChance = (rules.research.passiveDiscoveryChance || 0) + researchLabBonus;
+  const effectivePassiveChance = basePassiveChance * prototypeBoostMultiplier;
   if (effectivePassiveChance > 0) {
     const passiveRoll = rng.next();
     if (passiveRoll < effectivePassiveChance) {
@@ -826,10 +869,12 @@ function simulateTick(state, rules) {
         }
       }
 
-      // If prototype is complete, move to unlocked recipes
+      // If prototype is complete, move to unlocked recipes and apply rewards
       if (prototypeComplete) {
         if (!newState.unlockedRecipes.includes(prototype.recipeId)) {
           newState.unlockedRecipes.push(prototype.recipeId);
+          // Apply completion rewards (RP bonus + discovery boost)
+          applyPrototypeCompletionRewards(newState, rules, prototype.recipeId);
         }
       }
     }
@@ -866,6 +911,8 @@ function simulateTick(state, rules) {
       if (isComplete) {
         if (!newState.unlockedRecipes.includes(prototype.recipeId)) {
           newState.unlockedRecipes.push(prototype.recipeId);
+          // Apply completion rewards (RP bonus + discovery boost)
+          applyPrototypeCompletionRewards(newState, rules, prototype.recipeId);
         }
       }
     }
@@ -888,6 +935,17 @@ function simulateTick(state, rules) {
     }
     return true; // Keep unknown modes (safety)
   });
+
+  // 4e. Prototype boost countdown
+  // Decrement boost ticks and clear when expired
+  if (newState.research?.prototypeBoost?.ticksRemaining > 0) {
+    newState.research.prototypeBoost.ticksRemaining -= 1;
+    if (newState.research.prototypeBoost.ticksRemaining <= 0) {
+      // Boost expired - clear it
+      newState.research.prototypeBoost.bonus = 0;
+      newState.research.prototypeBoost.ticksRemaining = 0;
+    }
+  }
 
   // 5. Market Recovery (for items not sold this tick)
   // Initialize marketDamage if it doesn't exist (for old saves)
@@ -1862,6 +1920,8 @@ function fillPrototypeSlot(state, rules, payload) {
     // Move to unlocked recipes
     if (!newState.unlockedRecipes.includes(prototype.recipeId)) {
       newState.unlockedRecipes.push(prototype.recipeId);
+      // Apply completion rewards (RP bonus + discovery boost)
+      applyPrototypeCompletionRewards(newState, rules, prototype.recipeId);
     }
     // Remove from awaiting prototype
     const protoIndex = newState.research.awaitingPrototype.findIndex(p => p.recipeId === recipeId);

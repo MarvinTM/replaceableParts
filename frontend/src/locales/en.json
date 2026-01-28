@@ -295,7 +295,9 @@
     "autoFilling": "Auto-filling",
     "complete": "complete",
     "buildPrototype": "Build Prototype",
-    "rawMaterials": "Raw Materials"
+    "rawMaterials": "Raw Materials",
+    "prototypeBoost": "Prototype Boost",
+    "ticksRemaining": "ticks remaining"
   },
   "tips": {
     "factory": "Drag machines and generators from the sidebar onto the grid. Click a machine to assign a recipe, or right-click to remove it.",

@@ -295,7 +295,9 @@
     "autoFilling": "Llenado automático",
     "complete": "completado",
     "buildPrototype": "Construir Prototipo",
-    "rawMaterials": "Materias Primas"
+    "rawMaterials": "Materias Primas",
+    "prototypeBoost": "Impulso de Prototipo",
+    "ticksRemaining": "ticks restantes"
   },
   "tips": {
     "factory": "Arrastra máquinas y generadores desde la barra lateral a la cuadrícula. Haz clic en una máquina para asignar una receta, o clic derecho para eliminarla.",
