@@ -17,11 +17,7 @@ import FactoryIcon from '@mui/icons-material/Factory';
 import ExploreIcon from '@mui/icons-material/Explore';
 import ScienceIcon from '@mui/icons-material/Science';
 import StorefrontIcon from '@mui/icons-material/Storefront';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import SkipNextIcon from '@mui/icons-material/SkipNext';
 import BoltIcon from '@mui/icons-material/Bolt';
-import InventoryIcon from '@mui/icons-material/Inventory';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import TerrainIcon from '@mui/icons-material/Terrain';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
@@ -42,6 +38,8 @@ import MaterialIcon from '../components/common/MaterialIcon';
 import FloatingHUD from '../components/common/FloatingHUD';
 import CollapsibleSidebar from '../components/common/CollapsibleSidebar';
 import CollapsibleActionsPanel from '../components/common/CollapsibleActionsPanel';
+import SplitSidebar from '../components/common/SplitSidebar';
+import FactoryBottomBar from '../components/factory/FactoryBottomBar';
 import MarketTab from '../components/market/MarketTab';
 import ResearchTab from '../components/research/ResearchTab';
 import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier';
@@ -285,227 +283,195 @@ function FactoryTab() {
 
   const PREVIEW_SIZE = 48;
 
-  // Sidebar sections
-  const sidebarSections = [
-    {
-      id: 'generators',
-      title: t('game.factory.generators'),
-      icon: <BoltIcon sx={{ color: 'success.main', fontSize: 20 }} />,
-      badge: availableGenerators.length > 0 ? availableGenerators.reduce((sum, g) => sum + g.count, 0) : undefined,
-      content: (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {/* Built generators ready to deploy */}
-          {availableGenerators.length > 0 && (
-            <>
-              <Typography variant="caption" color="text.secondary">
-                {t('game.factory.readyToDeploy', 'Ready to Deploy')}
-              </Typography>
-              {availableGenerators.map((generator) => (
-                <Box
+  // Sidebar sections for SplitSidebar
+  const generatorsSection = {
+    title: t('game.factory.generators'),
+    icon: <BoltIcon sx={{ color: 'success.main', fontSize: 20 }} />,
+    badge: availableGenerators.length > 0 ? availableGenerators.reduce((sum, g) => sum + g.count, 0) : undefined,
+    content: (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {/* Built generators ready to deploy */}
+        {availableGenerators.length > 0 && (
+          <>
+            <Typography variant="caption" color="text.secondary">
+              {t('game.factory.readyToDeploy', 'Ready to Deploy')}
+            </Typography>
+            {availableGenerators.map((generator) => (
+              <Box
+                key={generator.id}
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('application/json', JSON.stringify({
+                    itemType: 'generator', itemId: generator.itemId, generatorType: generator.id,
+                    sizeX: generator.sizeX, sizeY: generator.sizeY
+                  }));
+                  e.dataTransfer.effectAllowed = 'move';
+                  handleDragStart('generator', generator.itemId, generator.id, generator.sizeX, generator.sizeY);
+                }}
+                onDragEnd={handleDragEnd}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1, p: 1,
+                  border: '1px solid', borderColor: 'divider', borderRadius: 1,
+                  cursor: 'grab', backgroundColor: 'background.paper',
+                  '&:hover': { backgroundColor: 'action.hover', borderColor: 'warning.main' },
+                  '&:active': { cursor: 'grabbing' }
+                }}
+              >
+                <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
+                  sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" noWrap>{generator.name}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <BoltIcon sx={{ fontSize: 14, color: 'success.main' }} />
+                    <Typography variant="caption" color="success.main">+{generator.energyOutput}</Typography>
+                  </Box>
+                </Box>
+                <Chip label={`x${generator.count}`} size="small" color="warning" />
+              </Box>
+            ))}
+          </>
+        )}
+        {availableGenerators.length === 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            {t('game.factory.noGeneratorsBuilt', 'No generators built yet')}
+          </Typography>
+        )}
+        {/* Build new generators */}
+        {buildableGenerators.length > 0 && (
+          <>
+            <Divider sx={{ my: 0.5 }} />
+            <Typography variant="caption" color="text.secondary">
+              {t('game.factory.buildNewGenerator', 'Build New Generator')}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {buildableGenerators.map((generator) => (
+                <Button
                   key={generator.id}
-                  draggable={true}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('application/json', JSON.stringify({
-                      itemType: 'generator', itemId: generator.itemId, generatorType: generator.id,
-                      sizeX: generator.sizeX, sizeY: generator.sizeY
-                    }));
-                    e.dataTransfer.effectAllowed = 'move';
-                    handleDragStart('generator', generator.itemId, generator.id, generator.sizeX, generator.sizeY);
-                  }}
-                  onDragEnd={handleDragEnd}
-                  sx={{
-                    display: 'flex', alignItems: 'center', gap: 1, p: 1,
-                    border: '1px solid', borderColor: 'divider', borderRadius: 1,
-                    cursor: 'grab', backgroundColor: 'background.paper',
-                    '&:hover': { backgroundColor: 'action.hover', borderColor: 'warning.main' },
-                    '&:active': { cursor: 'grabbing' }
-                  }}
+                  variant="outlined"
+                  size="small"
+                  color="warning"
+                  startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => handleOpenBuildPopup('generator', generator.id)}
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
                 >
                   <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
-                    sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
+                    sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
-                  <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                    <Typography variant="body2" noWrap>{generator.name}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <BoltIcon sx={{ fontSize: 14, color: 'success.main' }} />
-                      <Typography variant="caption" color="success.main">+{generator.energyOutput}</Typography>
-                    </Box>
-                  </Box>
-                  <Chip label={`x${generator.count}`} size="small" color="warning" />
-                </Box>
+                  {generator.name}
+                </Button>
               ))}
-            </>
-          )}
-          {availableGenerators.length === 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {t('game.factory.noGeneratorsBuilt', 'No generators built yet')}
+            </Box>
+          </>
+        )}
+      </Box>
+    )
+  };
+
+  const machinesSection = {
+    title: t('game.factory.machines'),
+    icon: <PrecisionManufacturingIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
+    badge: availableMachines.length > 0 ? availableMachines.reduce((sum, m) => sum + m.count, 0) : undefined,
+    content: (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {/* Built machines ready to deploy */}
+        {availableMachines.length > 0 && (
+          <>
+            <Typography variant="caption" color="text.secondary">
+              {t('game.factory.readyToDeploy', 'Ready to Deploy')}
             </Typography>
-          )}
-          {/* Build new generators */}
-          {buildableGenerators.length > 0 && (
-            <>
-              <Divider sx={{ my: 0.5 }} />
-              <Typography variant="caption" color="text.secondary">
-                {t('game.factory.buildNewGenerator', 'Build New Generator')}
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                {buildableGenerators.map((generator) => (
-                  <Button
-                    key={generator.id}
-                    variant="outlined"
-                    size="small"
-                    color="warning"
-                    startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => handleOpenBuildPopup('generator', generator.id)}
-                    sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
-                  >
-                    <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
-                      sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                    {generator.name}
-                  </Button>
-                ))}
+            {availableMachines.map((machine) => (
+              <Box
+                key={machine.id}
+                draggable={true}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('application/json', JSON.stringify({
+                    itemType: 'machine', itemId: machine.itemId, machineType: machine.id,
+                    sizeX: machine.sizeX, sizeY: machine.sizeY
+                  }));
+                  e.dataTransfer.effectAllowed = 'move';
+                  handleDragStart('machine', machine.itemId, machine.id, machine.sizeX, machine.sizeY);
+                }}
+                onDragEnd={handleDragEnd}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1, p: 1,
+                  border: '1px solid', borderColor: 'divider', borderRadius: 1,
+                  cursor: 'grab', backgroundColor: 'background.paper',
+                  '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
+                  '&:active': { cursor: 'grabbing' }
+                }}
+              >
+                <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
+                  sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" noWrap>{machine.name}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
+                    <Typography variant="caption" color="text.secondary">-{machine.energyConsumption}</Typography>
+                  </Box>
+                </Box>
+                <Chip label={`x${machine.count}`} size="small" color="primary" />
               </Box>
-            </>
-          )}
-        </Box>
-      )
-    },
-    {
-      id: 'machines',
-      title: t('game.factory.machines'),
-      icon: <PrecisionManufacturingIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
-      badge: availableMachines.length > 0 ? availableMachines.reduce((sum, m) => sum + m.count, 0) : undefined,
-      content: (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {/* Built machines ready to deploy */}
-          {availableMachines.length > 0 && (
-            <>
-              <Typography variant="caption" color="text.secondary">
-                {t('game.factory.readyToDeploy', 'Ready to Deploy')}
-              </Typography>
-              {availableMachines.map((machine) => (
-                <Box
+            ))}
+          </>
+        )}
+        {availableMachines.length === 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            {t('game.factory.noMachinesBuilt', 'No machines built yet')}
+          </Typography>
+        )}
+        {/* Build new machines */}
+        {buildableMachines.length > 0 && (
+          <>
+            <Divider sx={{ my: 0.5 }} />
+            <Typography variant="caption" color="text.secondary">
+              {t('game.factory.buildNewMachine', 'Build New Machine')}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              {buildableMachines.map((machine) => (
+                <Button
                   key={machine.id}
-                  draggable={true}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('application/json', JSON.stringify({
-                      itemType: 'machine', itemId: machine.itemId, machineType: machine.id,
-                      sizeX: machine.sizeX, sizeY: machine.sizeY
-                    }));
-                    e.dataTransfer.effectAllowed = 'move';
-                    handleDragStart('machine', machine.itemId, machine.id, machine.sizeX, machine.sizeY);
-                  }}
-                  onDragEnd={handleDragEnd}
-                  sx={{
-                    display: 'flex', alignItems: 'center', gap: 1, p: 1,
-                    border: '1px solid', borderColor: 'divider', borderRadius: 1,
-                    cursor: 'grab', backgroundColor: 'background.paper',
-                    '&:hover': { backgroundColor: 'action.hover', borderColor: 'primary.main' },
-                    '&:active': { cursor: 'grabbing' }
-                  }}
+                  variant="outlined"
+                  size="small"
+                  startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => handleOpenBuildPopup('machine', machine.id)}
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
                 >
                   <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
-                    sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
+                    sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
-                  <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                    <Typography variant="body2" noWrap>{machine.name}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
-                      <Typography variant="caption" color="text.secondary">-{machine.energyConsumption}</Typography>
-                    </Box>
-                  </Box>
-                  <Chip label={`x${machine.count}`} size="small" color="primary" />
-                </Box>
+                  {machine.name}
+                </Button>
               ))}
-            </>
-          )}
-          {availableMachines.length === 0 && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {t('game.factory.noMachinesBuilt', 'No machines built yet')}
-            </Typography>
-          )}
-          {/* Build new machines */}
-          {buildableMachines.length > 0 && (
-            <>
-              <Divider sx={{ my: 0.5 }} />
-              <Typography variant="caption" color="text.secondary">
-                {t('game.factory.buildNewMachine', 'Build New Machine')}
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                {buildableMachines.map((machine) => (
-                  <Button
-                    key={machine.id}
-                    variant="outlined"
-                    size="small"
-                    startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
-                    onClick={() => handleOpenBuildPopup('machine', machine.id)}
-                    sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
-                  >
-                    <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
-                      sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
-                      onError={(e) => { e.target.style.display = 'none'; }}
-                    />
-                    {machine.name}
-                  </Button>
-                ))}
-              </Box>
-            </>
-          )}
-        </Box>
-      )
-    },
-    {
-      id: 'inventory',
-      title: t('game.factory.inventory'),
-      icon: <InventoryIcon sx={{ color: 'info.main', fontSize: 20 }} />,
-      badge: Object.values(inventory).reduce((a, b) => a + b, 0) || undefined,
-      content: (
-        <Box ref={inventoryPanelRef}>
-          {Object.keys(inventory).length === 0 ? (
-            <Typography variant="body2" color="text.secondary">{t('game.factory.emptyInventory')}</Typography>
-          ) : (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {Object.entries(inventory).map(([itemId, quantity]) => {
-                const material = rules.materials.find(m => m.id === itemId);
-                return (
-                  <Chip
-                    key={itemId}
-                    icon={<MaterialIcon materialId={itemId} materialName={material?.name} category={material?.category} size={16} />}
-                    label={`${material?.name || itemId}: ${quantity}`}
-                    variant="outlined"
-                    size="small"
-                  />
-                );
-              })}
             </Box>
-          )}
-        </Box>
-      )
-    }
-  ];
+          </>
+        )}
+      </Box>
+    )
+  };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
       {/* Main content area with canvas and sidebar */}
-      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+      <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* Canvas container */}
-        <Box sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
+        <Box sx={{ flex: 1, position: 'relative', minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <FloatingHUD credits={credits} energy={engineState.energy} />
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1, py: 0.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t('game.factory.zoomHint')}
-              </Typography>
-            </Box>
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <FactoryCanvas
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1, py: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {t('game.factory.zoomHint')}
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
+            <FactoryCanvas
                 floorSpace={floorSpace}
                 machines={machines}
                 generators={generators}
@@ -520,29 +486,33 @@ function FactoryTab() {
                 machineAnimationMode={machineAnimationMode}
                 inventoryPanelRef={inventoryPanelRef}
               />
-            </Box>
+              {/* Floating Expand Factory Button */}
+              <Tooltip title={t('game.factory.expandInfo', { width: expansion.newWidth, height: expansion.newHeight })}>
+                <span style={{ position: 'absolute', bottom: 16, left: 16, zIndex: 10 }}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<GridViewIcon />}
+                    onClick={handleExpand}
+                    disabled={credits < expansion.cost}
+                  >
+                    {t('game.factory.expand')} ({expansion.cost})
+                  </Button>
+                </span>
+            </Tooltip>
           </Box>
         </Box>
 
-        {/* Right Sidebar */}
-        <CollapsibleSidebar sections={sidebarSections} defaultExpanded="generators" />
+        {/* Right Sidebar - Split view with Generators and Machines */}
+        <SplitSidebar topSection={generatorsSection} bottomSection={machinesSection} />
       </Box>
 
-      {/* Bottom Actions Panel */}
-      <CollapsibleActionsPanel title={t('game.factory.actions')}>
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<GridViewIcon />}
-          onClick={handleExpand}
-          disabled={credits < expansion.cost}
-        >
-          {t('game.factory.expand')} ({expansion.cost})
-        </Button>
-        <Typography variant="caption" color="text.secondary">
-          {t('game.factory.expandInfo', { width: expansion.newWidth, height: expansion.newHeight })} ({t('game.factory.cellsAdded', { count: expansion.cellsAdded })})
-        </Typography>
-      </CollapsibleActionsPanel>
+      {/* Bottom Bar with Inventory and Play Controls */}
+      <FactoryBottomBar
+        ref={inventoryPanelRef}
+        inventory={inventory}
+        rules={rules}
+      />
 
       {/* Machine Info Popup */}
       {selectedMachine && machinePopupPosition && !showRecipeSelector && (
@@ -826,11 +796,27 @@ export default function GamePage() {
 
   const engineState = useGameStore((state) => state.engineState);
   const isRunning = useGameStore((state) => state.isRunning);
-  const simulate = useGameStore((state) => state.simulate);
   const startGameLoop = useGameStore((state) => state.startGameLoop);
-  const stopGameLoop = useGameStore((state) => state.stopGameLoop);
   const completeTutorial = useGameStore((state) => state.completeTutorial);
   const queueTip = useGameStore((state) => state.queueTip);
+
+  // Track if we've auto-started for this game session
+  const hasAutoStarted = useRef(false);
+
+  // Auto-start game loop when engine state becomes available
+  useEffect(() => {
+    if (engineState && !hasAutoStarted.current && !isRunning) {
+      hasAutoStarted.current = true;
+      startGameLoop('normal');
+    }
+  }, [engineState, isRunning, startGameLoop]);
+
+  // Reset the auto-start flag when game is cleared (user exits)
+  useEffect(() => {
+    if (!engineState) {
+      hasAutoStarted.current = false;
+    }
+  }, [engineState]);
 
   // Tutorial state - show if not completed
   const showTutorial = engineState && !engineState.tutorialCompleted;
@@ -887,14 +873,6 @@ export default function GamePage() {
     setTabValue(newValue);
   };
 
-  const toggleGameLoop = () => {
-    if (isRunning) {
-      stopGameLoop();
-    } else {
-      startGameLoop(1000); // 1 tick per second
-    }
-  };
-
   // Calculate pending research count for badge
   const pendingResearchCount = engineState?.research?.awaitingPrototype?.length || 0;
 
@@ -917,7 +895,7 @@ export default function GamePage() {
   ];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', overflow: 'hidden' }}>
       {/* Compact Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -925,18 +903,6 @@ export default function GamePage() {
           <Typography variant="body2" color="text.secondary">
             {t('game.tick')}: {engineState.tick}
           </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title={t('game.controls.singleTick')}>
-            <IconButton onClick={() => simulate()} disabled={isRunning} size="small">
-              <SkipNextIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={isRunning ? t('game.controls.pause') : t('game.controls.play')}>
-            <IconButton onClick={toggleGameLoop} color={isRunning ? 'primary' : 'default'} size="small">
-              {isRunning ? <PauseIcon /> : <PlayArrowIcon />}
-            </IconButton>
-          </Tooltip>
         </Box>
       </Box>
 

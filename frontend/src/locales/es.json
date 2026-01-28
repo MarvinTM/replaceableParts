@@ -120,8 +120,9 @@
   "game": {
     "tick": "Tick",
     "controls": {
-      "play": "Iniciar simulación",
-      "pause": "Pausar simulación",
+      "play": "Reproducir",
+      "pause": "Pausar",
+      "fast": "Rápido",
       "singleTick": "Avanzar un tick"
     },
     "stats": {

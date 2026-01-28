@@ -4,6 +4,10 @@ import { engine } from '../engine/engine.js';
 import { createInitialState } from '../engine/initialState.js';
 import { defaultRules } from '../engine/defaultRules.js';
 
+// Game tick speed constants (in milliseconds)
+export const NORMAL_TICK_MS = 7000;  // 7 seconds per tick
+export const FAST_TICK_MS = 4000;    // 4 seconds per tick (accelerated)
+
 /**
  * Game Store using Zustand
  * Manages game engine state and provides actions to interact with the engine
@@ -21,6 +25,7 @@ const useGameStore = create(
       saveName: null,
       lastError: null,
       isRunning: false,
+      currentSpeed: 'paused',  // 'paused' | 'normal' | 'fast'
       tickInterval: null,
 
       // UI preferences
@@ -287,15 +292,21 @@ const useGameStore = create(
       },
 
       // Game loop controls
-      startGameLoop: (tickMs = 1000) => {
+      startGameLoop: (speed = 'normal') => {
         const { isRunning, tickInterval } = get();
-        if (isRunning) return;
+
+        // If already running at a different speed, stop first
+        if (isRunning && tickInterval) {
+          clearInterval(tickInterval);
+        }
+
+        const tickMs = speed === 'fast' ? FAST_TICK_MS : NORMAL_TICK_MS;
 
         const interval = setInterval(() => {
           get().simulate();
         }, tickMs);
 
-        set({ isRunning: true, tickInterval: interval }, false, 'startGameLoop');
+        set({ isRunning: true, currentSpeed: speed, tickInterval: interval }, false, 'startGameLoop');
       },
 
       stopGameLoop: () => {
@@ -303,7 +314,7 @@ const useGameStore = create(
         if (tickInterval) {
           clearInterval(tickInterval);
         }
-        set({ isRunning: false, tickInterval: null }, false, 'stopGameLoop');
+        set({ isRunning: false, currentSpeed: 'paused', tickInterval: null }, false, 'stopGameLoop');
       },
 
       // Clear game (return to menu)
@@ -318,6 +329,7 @@ const useGameStore = create(
           saveName: null,
           lastError: null,
           isRunning: false,
+          currentSpeed: 'paused',
           tickInterval: null
         }, false, 'clearGame');
       },
