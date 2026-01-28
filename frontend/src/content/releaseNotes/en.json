@@ -3,7 +3,7 @@
     {
       "version": "0.1.6",
       "date": "2024-01-28",
-      "highlights": "Asset loading visualization. New power generators",
+      "highlights": "Asset loading visualization. New Factory layout. New power generators",
       "changes": [
         {
           "type": "feature",
