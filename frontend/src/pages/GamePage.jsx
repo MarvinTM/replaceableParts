@@ -276,12 +276,12 @@ function FactoryTab() {
     .map(machineType => ({ ...machineType, count: builtMachines?.[machineType.id] || 0 }))
     .filter(machine => machine.count > 0);
 
-  // Get buildable machines and generators (those with recipes)
+  // Get buildable machines and generators (those with recipes AND unlocked)
   const buildableMachines = rules.machines
-    .filter(machineType => rules.machineRecipes?.[machineType.id]);
+    .filter(machineType => rules.machineRecipes?.[machineType.id] && unlockedRecipes.includes(machineType.id));
 
   const buildableGenerators = rules.generators
-    .filter(genType => rules.generatorRecipes?.[genType.id]);
+    .filter(genType => rules.generatorRecipes?.[genType.id] && unlockedRecipes.includes(genType.id));
 
   const PREVIEW_SIZE = 48;
 
