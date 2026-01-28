@@ -13,6 +13,7 @@ import Chip from '@mui/material/Chip';
 import CloseIcon from '@mui/icons-material/Close';
 import BuildIcon from '@mui/icons-material/Build';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import AutoModeIcon from '@mui/icons-material/AutoMode';
 import MaterialIcon from '../common/MaterialIcon';
 import useGameStore from '../../stores/gameStore';
 
@@ -100,16 +101,18 @@ export default function PrototypeBuildPopup({
     }));
   }, [initialPrototype, localSlotFills]);
 
-  // Get unique materials needed for display
+  // Get unique materials needed for display (only non-raw materials that need manual filling)
   const uniqueMaterials = useMemo(() => {
     if (!slotsWithFills.length) return [];
-    const materialIds = [...new Set(slotsWithFills.map(s => s.material))];
+    // Only include non-raw materials (raw materials auto-fill from production)
+    const nonRawSlots = slotsWithFills.filter(s => !s.isRaw);
+    const materialIds = [...new Set(nonRawSlots.map(s => s.material))];
     return materialIds.map(id => {
       const material = rules.materials?.find(m => m.id === id);
-      const neededTotal = slotsWithFills
+      const neededTotal = nonRawSlots
         .filter(s => s.material === id)
         .reduce((sum, s) => sum + s.quantity, 0);
-      const filledTotal = slotsWithFills
+      const filledTotal = nonRawSlots
         .filter(s => s.material === id)
         .reduce((sum, s) => sum + s.effectiveFilled, 0);
       const remaining = neededTotal - filledTotal;
@@ -126,6 +129,18 @@ export default function PrototypeBuildPopup({
       };
     });
   }, [slotsWithFills, rules, effectiveInventory]);
+
+  // Check if there are any raw material slots (for display purposes)
+  const hasRawSlots = useMemo(() => {
+    return slotsWithFills.some(s => s.isRaw);
+  }, [slotsWithFills]);
+
+  // Check if all non-raw slots are filled (raw slots auto-fill)
+  const allNonRawSlotsFilled = useMemo(() => {
+    return slotsWithFills
+      .filter(s => !s.isRaw)
+      .every(slot => slot.effectiveFilled >= slot.quantity);
+  }, [slotsWithFills]);
 
   // Check if all slots are filled (including local fills)
   const allSlotsFilled = useMemo(() => {
@@ -371,6 +386,12 @@ export default function PrototypeBuildPopup({
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
           Drag materials from below to fill each slot. Click a slot to remove one unit.
+          {hasRawSlots && (
+            <Box component="span" sx={{ display: 'block', mt: 0.5, color: 'info.main' }}>
+              <AutoModeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
+              Raw material slots auto-fill from production.
+            </Box>
+          )}
         </Typography>
 
         <Box
@@ -389,24 +410,26 @@ export default function PrototypeBuildPopup({
           {slotsWithFills.map((slot, index) => {
             const isFull = slot.effectiveFilled >= slot.quantity;
             const isPartial = slot.effectiveFilled > 0 && slot.effectiveFilled < slot.quantity;
-            const isDragOver = dragOverSlot === index;
+            const isDragOver = dragOverSlot === index && !slot.isRaw;
             const material = rules.materials?.find(m => m.id === slot.material);
             const progress = (slot.effectiveFilled / slot.quantity) * 100;
             const hasLocalFill = slot.localFill > 0;
+            const isRawSlot = slot.isRaw;
 
             return (
               <Box
                 key={index}
-                onDragOver={(e) => handleSlotDragOver(e, index)}
-                onDragLeave={handleSlotDragLeave}
-                onDrop={(e) => handleSlotDrop(e, index)}
-                onClick={() => handleSlotClick(index)}
+                onDragOver={isRawSlot ? undefined : (e) => handleSlotDragOver(e, index)}
+                onDragLeave={isRawSlot ? undefined : handleSlotDragLeave}
+                onDrop={isRawSlot ? undefined : (e) => handleSlotDrop(e, index)}
+                onClick={isRawSlot ? undefined : () => handleSlotClick(index)}
                 sx={{
                   width: SLOT_SIZE,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   p: 1,
+                  position: 'relative',
                   border: '2px solid',
                   borderColor: isFull
                     ? 'success.main'
@@ -414,7 +437,9 @@ export default function PrototypeBuildPopup({
                       ? 'warning.main'
                       : isDragOver
                         ? 'primary.main'
-                        : 'divider',
+                        : isRawSlot
+                          ? 'info.main'
+                          : 'divider',
                   borderRadius: 1,
                   backgroundColor: isFull
                     ? 'success.light'
@@ -422,16 +447,31 @@ export default function PrototypeBuildPopup({
                       ? 'warning.light'
                       : isDragOver
                         ? 'primary.light'
-                        : 'background.paper',
+                        : isRawSlot
+                          ? 'info.light'
+                          : 'background.paper',
                   transition: 'all 0.2s ease',
-                  cursor: hasLocalFill ? 'pointer' : 'default',
-                  '&:hover': hasLocalFill ? {
+                  cursor: isRawSlot ? 'default' : hasLocalFill ? 'pointer' : 'default',
+                  opacity: isRawSlot && !isFull ? 0.8 : 1,
+                  '&:hover': !isRawSlot && hasLocalFill ? {
                     borderColor: 'error.main',
                   } : {},
                 }}
-                title={hasLocalFill ? 'Click to remove one unit' : ''}
+                title={isRawSlot ? 'Auto-fills from production' : hasLocalFill ? 'Click to remove one unit' : ''}
               >
-                <Box sx={{ opacity: isFull ? 1 : isPartial ? 0.7 : 0.3 }}>
+                {/* Auto-fill indicator for raw slots */}
+                {isRawSlot && (
+                  <AutoModeIcon
+                    sx={{
+                      position: 'absolute',
+                      top: 2,
+                      right: 2,
+                      fontSize: 14,
+                      color: isFull ? 'success.main' : 'info.main',
+                    }}
+                  />
+                )}
+                <Box sx={{ opacity: isFull ? 1 : isPartial ? 0.7 : 0.3, position: 'relative' }}>
                   <MaterialIcon
                     materialId={slot.material}
                     materialName={material?.name}
@@ -445,7 +485,7 @@ export default function PrototypeBuildPopup({
                   variant="caption"
                   sx={{
                     fontWeight: 'bold',
-                    color: isFull ? 'success.dark' : isPartial ? 'warning.dark' : 'text.secondary',
+                    color: isFull ? 'success.dark' : isPartial ? 'warning.dark' : isRawSlot ? 'info.dark' : 'text.secondary',
                     mt: 0.5,
                   }}
                 >
@@ -456,7 +496,7 @@ export default function PrototypeBuildPopup({
                   <LinearProgress
                     variant="determinate"
                     value={progress}
-                    color={isFull ? 'success' : isPartial ? 'warning' : 'primary'}
+                    color={isFull ? 'success' : isPartial ? 'warning' : isRawSlot ? 'info' : 'primary'}
                     sx={{
                       width: '100%',
                       height: 4,
@@ -474,7 +514,7 @@ export default function PrototypeBuildPopup({
                     textAlign: 'center',
                     lineHeight: 1.1,
                     mt: 0.25,
-                    color: isFull ? 'success.dark' : 'text.secondary',
+                    color: isFull ? 'success.dark' : isRawSlot ? 'info.dark' : 'text.secondary',
                     maxWidth: SLOT_SIZE - 8,
                     overflow: 'hidden',
                     display: '-webkit-box',
@@ -578,14 +618,25 @@ export default function PrototypeBuildPopup({
           })}
         </Box>
 
-        {/* Warning if not enough materials */}
+        {/* Warning if not enough materials (only for non-raw materials) */}
         {uniqueMaterials.some(m => m.available < m.remaining) && (
           <Typography
             variant="body2"
             color="error"
             sx={{ mt: 2, textAlign: 'center' }}
           >
-            Not enough materials in inventory to complete this prototype
+            Not enough parts in inventory to complete this prototype
+          </Typography>
+        )}
+
+        {/* Info message if waiting for raw materials */}
+        {hasRawSlots && !slotsWithFills.filter(s => s.isRaw).every(s => s.effectiveFilled >= s.quantity) && (
+          <Typography
+            variant="body2"
+            color="info.main"
+            sx={{ mt: 2, textAlign: 'center' }}
+          >
+            Waiting for raw materials to auto-fill from production...
           </Typography>
         )}
       </DialogContent>

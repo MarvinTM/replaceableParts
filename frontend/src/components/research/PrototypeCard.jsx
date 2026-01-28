@@ -18,6 +18,7 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
   })[0];
 
   const isFlowMode = prototype.mode === 'flow';
+  const isSlotsMode = prototype.mode === 'slots';
 
   // Calculate progress for flow mode
   let flowProgress = 0;
@@ -25,6 +26,27 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
     const totalRequired = Object.values(prototype.requiredAmounts).reduce((a, b) => a + b, 0);
     const totalProgress = Object.values(prototype.prototypeProgress).reduce((a, b) => a + b, 0);
     flowProgress = totalRequired > 0 ? Math.round((totalProgress / totalRequired) * 100) : 0;
+  }
+
+  // Check for hybrid mode (slots mode with raw material slots that auto-fill)
+  const hasRawSlots = isSlotsMode && prototype.slots?.some(s => s.isRaw);
+  const hasNonRawSlots = isSlotsMode && prototype.slots?.some(s => !s.isRaw);
+
+  // Calculate progress for slots mode (overall progress including raw slots)
+  let slotsProgress = 0;
+  let rawSlotsProgress = 0;
+  if (isSlotsMode && prototype.slots) {
+    const totalRequired = prototype.slots.reduce((sum, s) => sum + s.quantity, 0);
+    const totalFilled = prototype.slots.reduce((sum, s) => sum + s.filled, 0);
+    slotsProgress = totalRequired > 0 ? Math.round((totalFilled / totalRequired) * 100) : 0;
+
+    // Calculate raw slots progress separately
+    const rawSlots = prototype.slots.filter(s => s.isRaw);
+    if (rawSlots.length > 0) {
+      const rawRequired = rawSlots.reduce((sum, s) => sum + s.quantity, 0);
+      const rawFilled = rawSlots.reduce((sum, s) => sum + s.filled, 0);
+      rawSlotsProgress = rawRequired > 0 ? Math.round((rawFilled / rawRequired) * 100) : 0;
+    }
   }
 
   return (
@@ -76,6 +98,35 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
           <Typography variant="caption" color="text.secondary">
             {flowProgress}% {t('research.complete')}
           </Typography>
+        </Box>
+      ) : hasRawSlots ? (
+        // Hybrid mode: show raw slots progress + build button
+        <Box sx={{ width: '100%', mt: 1 }}>
+          {rawSlotsProgress < 100 && (
+            <Box sx={{ mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'center', mb: 0.5 }}>
+                <LoopIcon sx={{ fontSize: 14, color: 'info.main' }} />
+                <Typography variant="caption" color="info.main">
+                  {t('research.rawMaterials')}: {rawSlotsProgress}%
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={rawSlotsProgress}
+                color="info"
+                sx={{ height: 4, borderRadius: 1 }}
+              />
+            </Box>
+          )}
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<BuildIcon />}
+            onClick={() => onBuildClick(prototype)}
+            fullWidth
+          >
+            {t('research.buildPrototype')}
+          </Button>
         </Box>
       ) : (
         <Button

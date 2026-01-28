@@ -187,11 +187,17 @@ function createPrototypeEntry(recipe, rules) {
     };
   } else {
     // Slots mode: at least one input is non-raw
-    const slots = Object.entries(recipe.inputs).map(([materialId, quantity]) => ({
-      material: materialId,
-      quantity: quantity * multiplier,
-      filled: 0
-    }));
+    // Mark each slot as raw or not, so raw slots can auto-fill from rawMaterialSupply
+    const slots = Object.entries(recipe.inputs).map(([materialId, quantity]) => {
+      const material = rules.materials.find(m => m.id === materialId);
+      const isRaw = material && material.category === 'raw';
+      return {
+        material: materialId,
+        quantity: quantity * multiplier,
+        filled: 0,
+        isRaw
+      };
+    });
     return {
       recipeId: recipe.id,
       mode: 'slots',
@@ -829,7 +835,43 @@ function simulateTick(state, rules) {
     }
   }
 
-  // Remove completed flow prototypes
+  // 4d. Slots Prototype Raw Material Auto-Fill
+  // For slots-mode prototypes, auto-fill any raw material slots from rawMaterialSupply
+  for (const prototype of newState.research.awaitingPrototype) {
+    if (prototype.mode === 'slots') {
+      // Migration: Add isRaw flag to existing slots that don't have it
+      for (const slot of prototype.slots) {
+        if (slot.isRaw === undefined) {
+          const material = rules.materials.find(m => m.id === slot.material);
+          slot.isRaw = material && material.category === 'raw';
+        }
+      }
+
+      for (const slot of prototype.slots) {
+        if (slot.isRaw && slot.filled < slot.quantity) {
+          // Auto-fill raw material slot from rawMaterialSupply
+          const stillNeeded = slot.quantity - slot.filled;
+          const available = rawMaterialSupply[slot.material] || 0;
+          const toPull = Math.min(stillNeeded, available);
+
+          if (toPull > 0) {
+            slot.filled += toPull;
+            rawMaterialSupply[slot.material] -= toPull;
+          }
+        }
+      }
+
+      // Check if slots-mode prototype is now complete (all slots filled)
+      const isComplete = prototype.slots.every(s => s.filled >= s.quantity);
+      if (isComplete) {
+        if (!newState.unlockedRecipes.includes(prototype.recipeId)) {
+          newState.unlockedRecipes.push(prototype.recipeId);
+        }
+      }
+    }
+  }
+
+  // Remove completed prototypes (both flow and slots mode)
   newState.research.awaitingPrototype = newState.research.awaitingPrototype.filter(proto => {
     if (proto.mode === 'flow') {
       // Check if all requirements are met
@@ -839,8 +881,12 @@ function simulateTick(state, rules) {
         }
       }
       return false; // Remove complete prototypes
+    } else if (proto.mode === 'slots') {
+      // Check if all slots are filled
+      const isComplete = proto.slots.every(s => s.filled >= s.quantity);
+      return !isComplete; // Keep incomplete, remove complete
     }
-    return true; // Keep slots-mode prototypes (they're handled separately)
+    return true; // Keep unknown modes (safety)
   });
 
   // 5. Market Recovery (for items not sold this tick)
@@ -1573,7 +1619,7 @@ function buyInventorySpace(state, rules, payload) {
 /**
  * Initialize research state for backward compatibility with old saves
  */
-function initializeResearchState(state) {
+function initializeResearchState(state, rules) {
   if (!state.research) {
     state.research = { active: false, researchPoints: 0, awaitingPrototype: [] };
   }
@@ -1583,6 +1629,20 @@ function initializeResearchState(state) {
   if (typeof state.research.researchPoints !== 'number') {
     state.research.researchPoints = 0;
   }
+
+  // Migration: Add isRaw flag to existing slots-mode prototypes that don't have it
+  if (rules && state.research.awaitingPrototype) {
+    for (const prototype of state.research.awaitingPrototype) {
+      if (prototype.mode === 'slots' && prototype.slots) {
+        for (const slot of prototype.slots) {
+          if (slot.isRaw === undefined) {
+            const material = rules.materials.find(m => m.id === slot.material);
+            slot.isRaw = material && material.category === 'raw';
+          }
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -1591,7 +1651,7 @@ function initializeResearchState(state) {
  */
 function donateCredits(state, rules, payload) {
   const newState = deepClone(state);
-  initializeResearchState(newState);
+  initializeResearchState(newState, rules);
   const { amount } = payload;
 
   if (typeof amount !== 'number' || amount <= 0) {
@@ -1619,7 +1679,7 @@ function donateCredits(state, rules, payload) {
  */
 function donateParts(state, rules, payload) {
   const newState = deepClone(state);
-  initializeResearchState(newState);
+  initializeResearchState(newState, rules);
   const { itemId, quantity } = payload;
 
   if (typeof quantity !== 'number' || quantity <= 0) {
@@ -1660,7 +1720,7 @@ function donateParts(state, rules, payload) {
  */
 function runExperiment(state, rules, payload) {
   const newState = deepClone(state);
-  initializeResearchState(newState);
+  initializeResearchState(newState, rules);
   const rng = createRNG(state.rngSeed);
 
   // Find undiscovered recipes (exclude already unlocked recipes)
@@ -1704,7 +1764,7 @@ function runExperiment(state, rules, payload) {
  */
 function runTargetedExperiment(state, rules, payload) {
   const newState = deepClone(state);
-  initializeResearchState(newState);
+  initializeResearchState(newState, rules);
   const { recipeId } = payload;
 
   if (!recipeId) {
@@ -1750,7 +1810,7 @@ function runTargetedExperiment(state, rules, payload) {
  */
 function fillPrototypeSlot(state, rules, payload) {
   const newState = deepClone(state);
-  initializeResearchState(newState);
+  initializeResearchState(newState, rules);
   const { recipeId, materialId, quantity } = payload;
 
   if (typeof quantity !== 'number' || quantity <= 0) {

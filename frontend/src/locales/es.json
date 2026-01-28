@@ -294,7 +294,8 @@
     "slots": "Ranuras",
     "autoFilling": "Llenado automático",
     "complete": "completado",
-    "buildPrototype": "Construir Prototipo"
+    "buildPrototype": "Construir Prototipo",
+    "rawMaterials": "Materias Primas"
   },
   "tips": {
     "factory": "Arrastra máquinas y generadores desde la barra lateral a la cuadrícula. Haz clic en una máquina para asignar una receta, o clic derecho para eliminarla.",

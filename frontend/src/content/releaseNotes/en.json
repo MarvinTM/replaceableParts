@@ -16,6 +16,10 @@
         {
           "type": "improvement",
           "text": "Added the diesel power plant, the solar array, and the nuclear reactor"
+        },
+        {
+          "type": "fix",
+          "text": "Now recipes that require raw materials for the prototype can be unlocked (prototype will automatically receive the raw materials, if extraction nodes exist for it)."
         }
       ]
     },
