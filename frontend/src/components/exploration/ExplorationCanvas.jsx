@@ -1,12 +1,14 @@
 import { useRef, useEffect, useState, useMemo } from 'react';
-import { Application, Graphics, Container, Assets, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Application, Graphics, Container, Assets, Sprite, Texture } from 'pixi.js';
 import {
-  TILE_SIZE,
+  TILE_WIDTH,
+  TILE_HEIGHT,
   gridToScreen,
-  screenToGrid
+  screenToGrid,
+  getGridBounds
 } from './coordinateUtils';
 import { getIconUrl } from '../../services/iconService';
-import { getExplorationTextures, getIconTexture } from '../../services/assetLoaderService';
+import { getIconTexture } from '../../services/assetLoaderService';
 
 // Fog of war color (warm parchment)
 const FOG_COLOR = 0xC9B896;
@@ -16,14 +18,49 @@ const NODE_UNLOCKED_COLOR = 0x22c55e;  // Green - active
 const NODE_LOCKED_COLOR = 0xf59e0b;     // Orange - available to unlock
 
 /**
- * Draw a top-down square tile
+ * Transform a square texture to an isometric diamond
+ * @param {HTMLImageElement} img - Source image element
+ * @returns {HTMLCanvasElement} Canvas with transformed texture
  */
-function drawSquareTile(graphics, x, y, fillColor, lineColor = null) {
-  graphics.rect(x, y, TILE_SIZE, TILE_SIZE);
+function transformToIsometric(img) {
+  const canvas = document.createElement('canvas');
+  canvas.width = TILE_WIDTH;
+  canvas.height = TILE_HEIGHT;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, TILE_WIDTH, TILE_HEIGHT);
+
+  // Transform: translate to center, scale Y by 0.5, rotate 45 degrees
+  ctx.save();
+  ctx.translate(TILE_WIDTH / 2, TILE_HEIGHT / 2);
+  ctx.scale(1, 0.5);
+  ctx.rotate(Math.PI / 4);
+
+  // Calculate size after rotation to fill the diamond
+  const size = img.width / Math.sqrt(2);
+  ctx.drawImage(img, -size / 2, -size / 2, size, size);
+
+  ctx.restore();
+
+  return canvas;
+}
+
+/**
+ * Draw an isometric diamond tile
+ */
+function drawIsometricTile(graphics, screenX, screenY, fillColor, strokeColor = null) {
+  const halfW = TILE_WIDTH / 2;
+  const halfH = TILE_HEIGHT / 2;
+
+  graphics.moveTo(screenX, screenY - halfH);        // Top
+  graphics.lineTo(screenX + halfW, screenY);        // Right
+  graphics.lineTo(screenX, screenY + halfH);        // Bottom
+  graphics.lineTo(screenX - halfW, screenY);        // Left
+  graphics.closePath();
   graphics.fill(fillColor);
 
-  if (lineColor !== null) {
-    graphics.stroke({ color: lineColor, width: 1, alpha: 0.3 });
+  if (strokeColor !== null) {
+    graphics.stroke({ color: strokeColor, width: 1, alpha: 0.3 });
   }
 }
 
@@ -33,6 +70,32 @@ const NODE_ICON_SIZE = 40;
 // Cache for resource icon textures
 const resourceIconCache = new Map();
 const failedResourceIcons = new Set();
+
+// Cache for transformed isometric textures
+const isometricTextureCache = new Map();
+
+/**
+ * Load an image and transform it to isometric
+ * @param {string} path - Path to the image file
+ * @returns {Promise<Texture>} - Transformed isometric texture
+ */
+async function loadAndTransformTexture(path) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      const canvas = transformToIsometric(img);
+      resolve(Texture.from(canvas));
+    };
+
+    img.onerror = () => {
+      resolve(Texture.WHITE);
+    };
+
+    img.src = path;
+  });
+}
 
 /**
  * Load a resource icon texture (with caching)
@@ -67,12 +130,9 @@ async function loadResourceIcon(resourceType) {
 /**
  * Draw a circular indicator for extraction nodes (fallback when icon not loaded)
  */
-function drawNodeIndicatorFallback(graphics, x, y, color) {
+function drawNodeIndicatorFallback(graphics, screenX, screenY, color) {
   const radius = 8;
-  const centerX = x + TILE_SIZE / 2;
-  const centerY = y + TILE_SIZE / 2;
-
-  graphics.circle(centerX, centerY, radius);
+  graphics.circle(screenX, screenY, radius);
   graphics.fill(color);
   graphics.stroke({ color: 0xffffff, width: 2, alpha: 0.9 });
 }
@@ -88,6 +148,7 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
   const [texturesLoaded, setTexturesLoaded] = useState(false);
   const [appInitialized, setAppInitialized] = useState(false);
   const [resourceIconsLoaded, setResourceIconsLoaded] = useState(false);
+  const hasInitializedViewRef = useRef(false);
 
   // Compute the set of resources used by unlocked recipes
   const usedResources = useMemo(() => {
@@ -135,33 +196,29 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
     onTileClickRef.current = onTileClick;
   }, [onTileClick]);
 
-  // Load terrain textures (use preloaded if available)
+  // Load and transform terrain textures
   useEffect(() => {
     const loadTextures = async () => {
-      // Check for preloaded textures first
-      const preloadedTextures = getExplorationTextures();
-      if (preloadedTextures) {
-        texturesRef.current = preloadedTextures;
-        setTexturesLoaded(true);
-        return;
-      }
-
-      // Fallback: load textures manually
       const terrainTypes = ['water', 'plains', 'grassland', 'forest', 'jungle', 'hills', 'mountain', 'desert', 'swamp'];
-      const textures = {};
+      const transformedTextures = {};
 
-      for (const terrain of terrainTypes) {
-        try {
-          const texture = await Assets.load(`/assets/exploration/${terrain}.png`);
-          textures[terrain] = texture;
-        } catch (error) {
-          console.warn(`Failed to load texture for ${terrain}:`, error);
-          // Create a fallback white texture if loading fails
-          textures[terrain] = Texture.WHITE;
-        }
-      }
+      // Load and transform each terrain texture directly
+      await Promise.all(
+        terrainTypes.map(async (terrain) => {
+          // Check cache first
+          if (isometricTextureCache.has(terrain)) {
+            transformedTextures[terrain] = isometricTextureCache.get(terrain);
+            return;
+          }
 
-      texturesRef.current = textures;
+          // Load and transform
+          const texture = await loadAndTransformTexture(`/assets/exploration/${terrain}.png`);
+          transformedTextures[terrain] = texture;
+          isometricTextureCache.set(terrain, texture);
+        })
+      );
+
+      texturesRef.current = transformedTextures;
       setTexturesLoaded(true);
     };
 
@@ -179,33 +236,34 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
     // Clear previous content
     world.removeChildren();
 
-    // Calculate center and zoom to fit explored area
-    // Only re-center if we haven't manipulated the view? 
-    // For now, let's keep the re-centering behavior as it ensures new chunks are visible
-    // Ideally we might want to preserve user pan/zoom unless bounds change significantly.
-    // Given the 'key' behavior previously forced re-center, this preserves existing UX.
-    
-    const centerX = (exploredBounds.minX + exploredBounds.maxX) / 2;
-    const centerY = (exploredBounds.minY + exploredBounds.maxY) / 2;
-    const center = gridToScreen(centerX, centerY);
+    // Only set initial zoom/pan on first render, preserve user's manual adjustments thereafter
+    if (!hasInitializedViewRef.current) {
+      // Calculate center using isometric coordinates
+      const centerX = (exploredBounds.minX + exploredBounds.maxX) / 2;
+      const centerY = (exploredBounds.minY + exploredBounds.maxY) / 2;
+      const center = gridToScreen(centerX, centerY);
 
-    const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
-    const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
-    const padding = 4;
-    const totalWidth = (exploredWidth + padding * 2) * TILE_SIZE;
-    const totalHeight = (exploredHeight + padding * 2) * TILE_SIZE;
-    const scaleX = app.screen.width / totalWidth;
-    const scaleY = app.screen.height / totalHeight;
-    const initialScale = Math.max(Math.min(scaleX, scaleY, 1), 0.5);
+      // Calculate bounds for the explored area
+      const exploredWidth = exploredBounds.maxX - exploredBounds.minX + 1;
+      const exploredHeight = exploredBounds.maxY - exploredBounds.minY + 1;
+      const bounds = getGridBounds(exploredWidth, exploredHeight);
 
-    world.scale.set(initialScale);
-    world.x = app.screen.width / 2 - center.x * initialScale;
-    world.y = app.screen.height / 2 - center.y * initialScale;
+      // Calculate scale to fit the isometric diamond in view
+      const padding = 1.5;
+      const scaleX = app.screen.width / (bounds.width * padding);
+      const scaleY = app.screen.height / (bounds.height * padding);
+      const initialScale = Math.max(Math.min(scaleX, scaleY, 1), 0.3);
 
-    // Create containers for different layers
-    const fogContainer = new Container();
-    const terrainContainer = new Container();
-    const nodeContainer = new Container();
+      world.scale.set(initialScale);
+      world.x = app.screen.width / 2 - center.x * initialScale;
+      world.y = app.screen.height / 2 - center.y * initialScale;
+
+      hasInitializedViewRef.current = true;
+    }
+
+    // Create a single container for all tiles (needed for proper depth sorting)
+    const tileContainer = new Container();
+    tileContainer.sortableChildren = true;
 
     // Calculate visible bounds (explored area plus some fog around it)
     const fogPadding = 3;
@@ -216,117 +274,102 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
       maxY: Math.min(generatedHeight - 1, exploredBounds.maxY + fogPadding)
     };
 
-    // Draw visible tiles
+    // Collect all visible tiles and sort by depth (back to front)
+    const visibleTiles = [];
     for (let y = visibleBounds.minY; y <= visibleBounds.maxY; y++) {
       for (let x = visibleBounds.minX; x <= visibleBounds.maxX; x++) {
         const key = `${x},${y}`;
         const tile = tiles[key];
-        if (!tile) continue;
-
-        const screenPos = gridToScreen(x, y);
-
-        if (tile.explored) {
-          // Draw terrain tile
-          const texture = texturesRef.current[tile.terrain];
-
-          if (texture && texturesLoaded) {
-            // Use TilingSprite for texture offset variation
-            const sprite = new TilingSprite(texture, TILE_SIZE, TILE_SIZE);
-            sprite.x = screenPos.x;
-            sprite.y = screenPos.y;
-
-            // Add random rotation/flipping and texture offset based on tile position (deterministic)
-            // This breaks up the repetitive pattern
-            const seed = x * 7919 + y * 6421; // Large primes for good distribution
-            const rotationChoice = seed % 8; // 8 possible transformations
-
-            // Random texture offset (sample from different parts of the texture)
-            const offsetSeedX = (x * 5237 + y * 3119) % 128; // Different seed for X offset
-            const offsetSeedY = (x * 4283 + y * 7151) % 128; // Different seed for Y offset
-            sprite.tilePosition.x = -offsetSeedX; // Negative to shift the texture
-            sprite.tilePosition.y = -offsetSeedY;
-
-            // Set anchor to center for rotation
-            sprite.anchor.set(0.5, 0.5);
-            sprite.x = screenPos.x + TILE_SIZE / 2;
-            sprite.y = screenPos.y + TILE_SIZE / 2;
-
-            // Apply rotation (0°, 90°, 180°, 270°) and flipping
-            if (rotationChoice === 0) {
-              // No transformation
-            } else if (rotationChoice === 1) {
-              sprite.rotation = Math.PI / 2; // 90°
-            } else if (rotationChoice === 2) {
-              sprite.rotation = Math.PI; // 180°
-            } else if (rotationChoice === 3) {
-              sprite.rotation = (3 * Math.PI) / 2; // 270°
-            } else if (rotationChoice === 4) {
-              sprite.scale.x = -1; // Flip horizontally
-            } else if (rotationChoice === 5) {
-              sprite.scale.y = -1; // Flip vertically
-            } else if (rotationChoice === 6) {
-              sprite.rotation = Math.PI / 2; // 90°
-              sprite.scale.x = -1; // Flip
-            } else {
-              sprite.rotation = Math.PI; // 180°
-              sprite.scale.x = -1; // Flip
-            }
-
-            terrainContainer.addChild(sprite);
-          } else {
-            // Fallback to solid color if texture not loaded
-            const terrainGraphics = new Graphics();
-            const terrainConfig = terrainTypes[tile.terrain];
-            const color = terrainConfig?.color || 0x808080;
-            drawSquareTile(terrainGraphics, screenPos.x, screenPos.y, color, 0x000000);
-            terrainContainer.addChild(terrainGraphics);
-          }
-
-          // Draw extraction node indicator if present and its resource is used in unlocked recipes
-          if (tile.extractionNode && usedResources.has(tile.extractionNode.resourceType)) {
-            const resourceType = tile.extractionNode.resourceType;
-            const isUnlocked = tile.extractionNode.unlocked;
-            const nodeColor = isUnlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
-            const centerX = screenPos.x + TILE_SIZE / 2;
-            const centerY = screenPos.y + TILE_SIZE / 2;
-
-            // Draw background circle to indicate status
-            const bgGraphics = new Graphics();
-            const bgRadius = NODE_ICON_SIZE / 2 + 4;
-            bgGraphics.circle(centerX, centerY, bgRadius);
-            bgGraphics.fill({ color: 0x000000, alpha: 0.6 });
-            bgGraphics.stroke({ color: nodeColor, width: 2, alpha: 1 });
-            nodeContainer.addChild(bgGraphics);
-
-            // Try to use icon texture
-            const iconTexture = resourceIconCache.get(resourceType);
-            if (iconTexture) {
-              const iconSprite = new Sprite(iconTexture);
-              iconSprite.width = NODE_ICON_SIZE;
-              iconSprite.height = NODE_ICON_SIZE;
-              iconSprite.anchor.set(0.5);
-              iconSprite.x = centerX;
-              iconSprite.y = centerY;
-              nodeContainer.addChild(iconSprite);
-            } else {
-              // Fallback to colored circle if icon not loaded
-              const fallbackGraphics = new Graphics();
-              drawNodeIndicatorFallback(fallbackGraphics, screenPos.x, screenPos.y, nodeColor);
-              nodeContainer.addChild(fallbackGraphics);
-            }
-          }
-        } else {
-          // Draw fog tile
-          const fogGraphics = new Graphics();
-          drawSquareTile(fogGraphics, screenPos.x, screenPos.y, FOG_COLOR, 0x0a0a14);
-          fogContainer.addChild(fogGraphics);
+        if (tile) {
+          visibleTiles.push({ x, y, tile, depth: x + y });
         }
       }
     }
 
-    world.addChild(terrainContainer);
-    world.addChild(fogContainer);
-    world.addChild(nodeContainer);
+    // Sort by depth (lower depth = further back = render first)
+    visibleTiles.sort((a, b) => a.depth - b.depth);
+
+    // Draw tiles in depth order
+    for (const { x, y, tile, depth } of visibleTiles) {
+      const screenPos = gridToScreen(x, y);
+
+      if (tile.explored) {
+        // Draw terrain tile
+        const texture = texturesRef.current[tile.terrain];
+
+        if (texture && texturesLoaded && texture !== Texture.WHITE) {
+          // Use pre-transformed isometric texture
+          const sprite = new Sprite(texture);
+          sprite.anchor.set(0.5, 0.5);
+          sprite.x = screenPos.x;
+          sprite.y = screenPos.y;
+          sprite.zIndex = depth;
+
+          // Add subtle variation through random flipping (deterministic based on position)
+          const seed = x * 7919 + y * 6421;
+          if (seed % 2 === 0) {
+            sprite.scale.x = -1;
+          }
+
+          tileContainer.addChild(sprite);
+        } else {
+          // Fallback to solid color diamond if texture not loaded
+          const terrainGraphics = new Graphics();
+          const terrainConfig = terrainTypes[tile.terrain];
+          const color = terrainConfig?.color || 0x808080;
+          drawIsometricTile(terrainGraphics, screenPos.x, screenPos.y, color, 0x000000);
+          terrainGraphics.zIndex = depth;
+          tileContainer.addChild(terrainGraphics);
+        }
+
+        // Draw extraction node indicator if present and its resource is used in unlocked recipes
+        if (tile.extractionNode && usedResources.has(tile.extractionNode.resourceType)) {
+          const resourceType = tile.extractionNode.resourceType;
+          const isUnlocked = tile.extractionNode.unlocked;
+          const nodeColor = isUnlocked ? NODE_UNLOCKED_COLOR : NODE_LOCKED_COLOR;
+
+          // Node is centered on the tile
+          const nodeCenterX = screenPos.x;
+          const nodeCenterY = screenPos.y;
+
+          // Draw background circle to indicate status
+          const bgGraphics = new Graphics();
+          const bgRadius = NODE_ICON_SIZE / 2 + 4;
+          bgGraphics.circle(nodeCenterX, nodeCenterY, bgRadius);
+          bgGraphics.fill({ color: 0x000000, alpha: 0.6 });
+          bgGraphics.stroke({ color: nodeColor, width: 2, alpha: 1 });
+          bgGraphics.zIndex = depth + 0.1; // Slightly above terrain
+          tileContainer.addChild(bgGraphics);
+
+          // Try to use icon texture
+          const iconTexture = resourceIconCache.get(resourceType);
+          if (iconTexture) {
+            const iconSprite = new Sprite(iconTexture);
+            iconSprite.width = NODE_ICON_SIZE;
+            iconSprite.height = NODE_ICON_SIZE;
+            iconSprite.anchor.set(0.5);
+            iconSprite.x = nodeCenterX;
+            iconSprite.y = nodeCenterY;
+            iconSprite.zIndex = depth + 0.2; // Above background
+            tileContainer.addChild(iconSprite);
+          } else {
+            // Fallback to colored circle if icon not loaded
+            const fallbackGraphics = new Graphics();
+            drawNodeIndicatorFallback(fallbackGraphics, nodeCenterX, nodeCenterY, nodeColor);
+            fallbackGraphics.zIndex = depth + 0.2;
+            tileContainer.addChild(fallbackGraphics);
+          }
+        }
+      } else {
+        // Draw fog tile (unexplored)
+        const fogGraphics = new Graphics();
+        drawIsometricTile(fogGraphics, screenPos.x, screenPos.y, FOG_COLOR, 0x0a0a14);
+        fogGraphics.zIndex = depth;
+        tileContainer.addChild(fogGraphics);
+      }
+    }
+
+    world.addChild(tileContainer);
   };
 
   // Re-render when map changes, textures load, app initializes, used resources change, or resource icons load
@@ -378,7 +421,7 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
         if (!currentWorld) return;
         e.preventDefault();
         const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.min(Math.max(currentWorld.scale.x * scaleFactor, 0.25), 1);
+        const newScale = Math.min(Math.max(currentWorld.scale.x * scaleFactor, 0.15), 1.5);
 
         const rect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
@@ -436,7 +479,7 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
         const worldX = (mouseX - currentWorld.x) / currentWorld.scale.x;
         const worldY = (mouseY - currentWorld.y) / currentWorld.scale.y;
 
-        // Convert world to grid coordinates (top-down is simple)
+        // Convert world to grid coordinates (isometric)
         const gridCoords = screenToGrid(worldX, worldY);
         const gridX = gridCoords.x;
         const gridY = gridCoords.y;
@@ -478,6 +521,7 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
         app.destroy(true, { children: true });
         appRef.current = null;
         worldRef.current = null;
+        hasInitializedViewRef.current = false;
         setAppInitialized(false);
       }
     };
