@@ -133,9 +133,10 @@ function countTotalAssets(rules) {
   // Factory base assets: 2 floor + 2 walls + 4 grass + 2 (road, background) = 10
   count += 10;
 
-  // Machine sprites: each machine has idle, working, blocked + animation frames
+  // Machine sprites: each machine has idle, working + animation frames
+  // Note: blocked sprites are no longer used (we show dimmed idle + overlay instead)
   for (const machineType of rules.machines) {
-    count += 3; // idle, working, blocked
+    count += 2; // idle, working (no longer loading blocked sprites)
     if (machineType.animation?.separateFrames) {
       count += machineType.animation.frames || 4;
     } else {
@@ -268,13 +269,11 @@ export async function loadAllAssets(rules, onProgress = () => {}) {
       updateProgress();
       const working = await tryLoad(`${FACTORY_ASSET_BASE}/${machineType.id}_working.png`);
       updateProgress();
-      const blocked = await tryLoad(`${FACTORY_ASSET_BASE}/${machineType.id}_blocked.png`);
-      updateProgress();
+      // Note: blocked sprites are no longer loaded (we show dimmed idle + overlay instead)
 
       assets.factory.machines[machineType.id] = {
         idle,
         working,
-        blocked,
         workingAnim
       };
     }
