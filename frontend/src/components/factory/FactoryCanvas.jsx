@@ -748,6 +748,46 @@ function createNoPowerOverlay(sizeX, sizeY) {
   return container;
 }
 
+/**
+ * Create an overlay symbol indicating machine is blocked
+ * Shows a stop/prohibition sign
+ */
+function createBlockedOverlay(sizeX, sizeY) {
+  const container = new Container();
+
+  // Calculate overlay size based on machine footprint
+  const overlaySize = Math.max(24, Math.min(sizeX, sizeY) * 12);
+
+  // Background circle for visibility
+  const bg = new Graphics();
+  bg.circle(0, 0, overlaySize / 2 + 4);
+  bg.fill({ color: 0x000000, alpha: 0.6 });
+  container.addChild(bg);
+
+  // White octagon (stop sign shape with flat top)
+  const octagon = new Graphics();
+  const r = overlaySize / 2;
+  // Start at top-right vertex, offset by π/8 for flat top
+  const startAngle = -Math.PI / 2 + Math.PI / 8;
+  octagon.moveTo(r * Math.cos(startAngle), r * Math.sin(startAngle));
+  for (let i = 1; i < 8; i++) {
+    const angle = startAngle + (Math.PI / 4) * i;
+    octagon.lineTo(r * Math.cos(angle), r * Math.sin(angle));
+  }
+  octagon.closePath();
+  octagon.fill(0xFFFFFF);
+  octagon.stroke({ color: 0xCC0000, width: 2 });
+  container.addChild(octagon);
+
+  // Red prohibition bar (horizontal)
+  const bar = new Graphics();
+  bar.rect(-r * 0.7, -r * 0.15, r * 1.4, r * 0.3);
+  bar.fill(0xCC0000);
+  container.addChild(bar);
+
+  return container;
+}
+
 export default function FactoryCanvas({
   floorSpace,
   machines,
@@ -1530,11 +1570,12 @@ export default function FactoryCanvas({
         if (status === 'working' && !isAnimating) {
           // Working but not animating: show idle
           texture = machineAssets?.idle;
+        } else if (status === 'blocked') {
+          // Blocked: use idle sprite (will be dimmed with overlay)
+          texture = machineAssets?.idle;
         } else {
           // Use appropriate texture for status
-          texture = status === 'working' ? machineAssets?.working :
-                   status === 'blocked' ? machineAssets?.blocked :
-                   machineAssets?.idle;
+          texture = status === 'working' ? machineAssets?.working : machineAssets?.idle;
         }
         if (texture) {
           displayObject = new Sprite(texture);
@@ -1561,9 +1602,30 @@ export default function FactoryCanvas({
           }
         }
 
+        // Apply dark tint and reduced alpha if blocked
+        if (status === 'blocked') {
+          displayObject.tint = 0x555555;
+          displayObject.alpha = 0.7;
+        } else {
+          displayObject.tint = 0xFFFFFF; // Reset tint to normal
+          displayObject.alpha = 1.0;
+        }
+
         // zIndex based on screen Y
         displayObject.zIndex = screenPos.y;
         structuresContainer.addChild(displayObject);
+
+        // Add "blocked" overlay if machine is blocked
+        if (status === 'blocked') {
+          const overlay = createBlockedOverlay(sizeX, sizeY);
+          overlay.x = screenPos.x + offsetX;
+          // Position overlay at the center of the machine sprite
+          const spriteBottom = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
+          const renderedHeight = displayObject.texture.height * displayObject.scale.y;
+          overlay.y = spriteBottom - renderedHeight / 2;
+          overlay.zIndex = screenPos.y + 1; // Render on top of machine
+          structuresContainer.addChild(overlay);
+        }
       } else {
         // Fallback to graphics
         const machineGraphics = new Graphics();
