@@ -130,26 +130,149 @@ function getTerrainType(elevation, moisture) {
 }
 
 /**
- * Select a resource type based on terrain affinities
+ * Get the maximum allowed resource age based on distance from map center
+ * Inner ring (0-20): Age 1-2 only
+ * Middle ring (20-48): Age 1-4
+ * Outer ring (48+): All ages
  */
-function selectResourceType(terrain, rng, rules) {
+function getMaxAgeForDistance(distance, rules) {
+  const boundaries = rules.exploration.ringBoundaries;
+  if (!boundaries) return 7; // No boundaries configured, allow all
+
+  if (distance <= boundaries.inner) return 2;
+  if (distance <= boundaries.middle) return 4;
+  return 7;
+}
+
+/**
+ * Get the age of a resource type
+ */
+function getResourceAge(resourceType, rules) {
+  const ages = rules.exploration.resourceAges;
+  return ages?.[resourceType] || 1;
+}
+
+/**
+ * Select a resource type based on terrain affinities, distance from center, and demand weights
+ * @param {string} terrain - The terrain type
+ * @param {function} rng - Random number generator
+ * @param {object} rules - Game rules
+ * @param {number} x - Tile x coordinate
+ * @param {number} y - Tile y coordinate
+ * @param {number} centerX - Map center x coordinate
+ * @param {number} centerY - Map center y coordinate
+ */
+function selectResourceType(terrain, rng, rules, x = null, y = null, centerX = null, centerY = null) {
   const affinities = rules.exploration.resourceAffinities[terrain];
   if (!affinities || Object.keys(affinities).length === 0) {
     return null;
   }
 
-  const roll = rng();
+  // Calculate distance from center for age filtering
+  let maxAge = 7;
+  if (x !== null && y !== null && centerX !== null && centerY !== null) {
+    const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+    maxAge = getMaxAgeForDistance(distance, rules);
+  }
+
+  const spawnWeights = rules.exploration.resourceSpawnWeights || {};
+
+  // Build weighted list of eligible resources
+  const eligible = [];
+  let totalWeight = 0;
+
+  for (const [resource, affinity] of Object.entries(affinities)) {
+    const age = getResourceAge(resource, rules);
+    if (age <= maxAge) {
+      // Combine terrain affinity with demand-based spawn weight
+      const demandWeight = spawnWeights[resource] || 0.1;
+      const combinedWeight = affinity * demandWeight;
+      eligible.push({ resource, weight: combinedWeight });
+      totalWeight += combinedWeight;
+    }
+  }
+
+  if (eligible.length === 0) return null;
+
+  // Weighted random selection
+  const roll = rng() * totalWeight;
   let cumulative = 0;
 
-  for (const [resource, weight] of Object.entries(affinities)) {
+  for (const { resource, weight } of eligible) {
     cumulative += weight;
     if (roll <= cumulative) {
       return resource;
     }
   }
 
-  // Fallback to first resource
-  return Object.keys(affinities)[0];
+  // Fallback to first eligible resource
+  return eligible[0].resource;
+}
+
+/**
+ * Find suitable tiles for placing a guaranteed resource node
+ * Prioritizes tiles that naturally have affinity for the resource
+ */
+function findSuitableTilesForResource(tiles, exploredBounds, resourceType, rules) {
+  const affinities = rules.exploration.resourceAffinities;
+  const candidates = [];
+
+  for (let y = exploredBounds.minY; y <= exploredBounds.maxY; y++) {
+    for (let x = exploredBounds.minX; x <= exploredBounds.maxX; x++) {
+      const tile = tiles[`${x},${y}`];
+      if (!tile || tile.extractionNode || tile.terrain === 'water') continue;
+
+      // Check if this terrain has affinity for the resource
+      const terrainAffinities = affinities[tile.terrain] || {};
+      const affinity = terrainAffinities[resourceType] || 0;
+
+      candidates.push({ tile, affinity });
+    }
+  }
+
+  // Sort by affinity (highest first), then shuffle within same affinity
+  candidates.sort((a, b) => b.affinity - a.affinity);
+
+  return candidates.map(c => c.tile);
+}
+
+/**
+ * Ensure guaranteed starting nodes exist in the initial explored area
+ */
+function ensureGuaranteedNodes(tiles, exploredBounds, rules, rng) {
+  const guaranteed = rules.exploration.guaranteedStartingNodes;
+  if (!guaranteed) return;
+
+  // Count existing nodes in explored area
+  const nodeCounts = {};
+  for (let y = exploredBounds.minY; y <= exploredBounds.maxY; y++) {
+    for (let x = exploredBounds.minX; x <= exploredBounds.maxX; x++) {
+      const tile = tiles[`${x},${y}`];
+      if (tile?.extractionNode) {
+        const rt = tile.extractionNode.resourceType;
+        nodeCounts[rt] = (nodeCounts[rt] || 0) + 1;
+      }
+    }
+  }
+
+  // Add missing guaranteed nodes
+  for (const [resource, minCount] of Object.entries(guaranteed)) {
+    const current = nodeCounts[resource] || 0;
+    if (current < minCount) {
+      const candidates = findSuitableTilesForResource(tiles, exploredBounds, resource, rules);
+      const needed = minCount - current;
+
+      for (let i = 0; i < needed && i < candidates.length; i++) {
+        const tile = candidates[i];
+        tile.extractionNode = {
+          id: `exp_node_${resource}_${tile.x}_${tile.y}`,
+          resourceType: resource,
+          rate: Math.floor(rng() * 2) + 1,
+          unlocked: false
+        };
+      }
+    }
+  }
 }
 
 /**
@@ -169,6 +292,10 @@ export function generateExplorationMap(seed, width, height, rules) {
   const moistureScale = explorationRules.moistureScale || 6;
   const nodeSpawnChance = explorationRules.nodeSpawnChance || 0.12;
 
+  // Calculate center for ring-based resource filtering
+  const centerX = Math.floor(width / 2);
+  const centerY = Math.floor(height / 2);
+
   const tiles = {};
   let nodeIdCounter = 0;
 
@@ -185,7 +312,8 @@ export function generateExplorationMap(seed, width, height, rules) {
       const nodeRoll = rng();
 
       if (nodeRoll < nodeSpawnChance && terrain !== 'water') {
-        const resourceType = selectResourceType(terrain, rng, rules);
+        // Pass coordinates for ring-based age filtering
+        const resourceType = selectResourceType(terrain, rng, rules, x, y, centerX, centerY);
         if (resourceType) {
           nodeIdCounter++;
           extractionNode = {
@@ -210,8 +338,6 @@ export function generateExplorationMap(seed, width, height, rules) {
 
   // Calculate initial explored bounds (center of map)
   const initialSize = explorationRules.initialExploredSize || 4;
-  const centerX = Math.floor(width / 2);
-  const centerY = Math.floor(height / 2);
   const halfSize = Math.floor(initialSize / 2);
 
   const exploredBounds = {
@@ -220,6 +346,9 @@ export function generateExplorationMap(seed, width, height, rules) {
     minY: centerY - halfSize,
     maxY: centerY + halfSize - 1
   };
+
+  // Ensure guaranteed starting nodes exist
+  ensureGuaranteedNodes(tiles, exploredBounds, rules, rng);
 
   // Mark initial tiles as explored
   for (let y = exploredBounds.minY; y <= exploredBounds.maxY; y++) {
@@ -241,6 +370,8 @@ export function generateExplorationMap(seed, width, height, rules) {
   return {
     generatedWidth: width,
     generatedHeight: height,
+    centerX,
+    centerY,
     exploredBounds,
     exploredChunks,
     tiles,
@@ -453,7 +584,7 @@ export function getNextExplorationExpansion(explorationMap, rules) {
  * Returns null if already at max size
  */
 export function expandGeneratedMap(explorationMap, rules) {
-  const { generatedWidth, generatedHeight, tiles, seed } = explorationMap;
+  const { generatedWidth, generatedHeight, tiles, seed, centerX, centerY } = explorationMap;
   const maxSize = rules.exploration.maxGeneratedSize || 256;
 
   // Check if we're already at max size
@@ -475,6 +606,10 @@ export function expandGeneratedMap(explorationMap, rules) {
   const moistureScale = explorationRules.moistureScale || 6;
   const nodeSpawnChance = explorationRules.nodeSpawnChance || 0.12;
 
+  // Use original center for ring calculations (stays constant across expansions)
+  const mapCenterX = centerX ?? Math.floor(generatedWidth / 2);
+  const mapCenterY = centerY ?? Math.floor(generatedHeight / 2);
+
   // Generate three new quadrants
   const quadrants = [
     { startX: generatedWidth, startY: 0, endX: newWidth, endY: generatedHeight }, // top-right
@@ -491,7 +626,8 @@ export function expandGeneratedMap(explorationMap, rules) {
 
         let extractionNode = null;
         if (rng() < nodeSpawnChance && terrain !== 'water') {
-          const resourceType = selectResourceType(terrain, rng, rules);
+          // Pass coordinates for ring-based age filtering
+          const resourceType = selectResourceType(terrain, rng, rules, x, y, mapCenterX, mapCenterY);
           if (resourceType) {
             extractionNode = {
               id: `exp_node_${resourceType}_${x}_${y}`,

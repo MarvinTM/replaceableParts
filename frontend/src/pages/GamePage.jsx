@@ -28,7 +28,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import Divider from '@mui/material/Divider';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
-import { getNextExpansionChunk, getNextExplorationExpansion, expandGeneratedMap } from '../engine/engine.js';
+import { getNextExpansionChunk, getNextExplorationExpansion, expandGeneratedMap, getNodeUnlockCost } from '../engine/engine.js';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
 import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 import RecipeDropdown from '../components/factory/RecipeDropdown';
@@ -681,19 +681,26 @@ function ExplorationTab() {
                 <Typography variant="body2" color="text.secondary">{t('game.exploration.rate')}</Typography>
                 <Typography variant="body2">{selectedTile.extractionNode.rate}/tick</Typography>
               </Box>
-              {!selectedTile.extractionNode.unlocked && (
-                <Button
-                  variant="outlined"
-                  color="warning"
-                  size="small"
-                  startIcon={<LockOpenIcon />}
-                  onClick={handleUnlockNode}
-                  disabled={credits < rules.exploration.nodeUnlockCost}
-                  sx={{ mt: 1 }}
-                >
-                  {t('game.exploration.unlock')} ({rules.exploration.nodeUnlockCost})
-                </Button>
-              )}
+              {!selectedTile.extractionNode.unlocked && (() => {
+                const unlockCost = getNodeUnlockCost(
+                  selectedTile.extractionNode.resourceType,
+                  engineState.extractionNodes,
+                  rules
+                );
+                return (
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    size="small"
+                    startIcon={<LockOpenIcon />}
+                    onClick={handleUnlockNode}
+                    disabled={credits < unlockCost}
+                    sx={{ mt: 1 }}
+                  >
+                    {t('game.exploration.unlock')} ({unlockCost})
+                  </Button>
+                );
+              })()}
               {selectedTile.extractionNode.unlocked && (
                 <Chip
                   label={t('game.exploration.active')}

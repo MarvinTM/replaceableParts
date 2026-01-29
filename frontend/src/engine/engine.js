@@ -2141,6 +2141,25 @@ function expandExploration(state, rules, payload) {
   return { state: newState, error: null };
 }
 
+/**
+ * Calculate the unlock cost for a resource node based on how many of that type are already unlocked
+ * Cost scales exponentially: baseCost * scaleFactor^(count of same resource type)
+ * @param {string} resourceType - The type of resource
+ * @param {Array} extractionNodes - Current extraction nodes array
+ * @param {object} rules - Game rules
+ * @returns {number} The unlock cost
+ */
+export function getNodeUnlockCost(resourceType, extractionNodes, rules) {
+  // Count how many nodes of this resource type are already unlocked
+  const count = extractionNodes.filter(n => n.resourceType === resourceType).length;
+
+  const baseCost = rules.exploration.nodeUnlockCost || 100;
+  const scaleFactors = rules.exploration.unlockScaleFactors || {};
+  const scaleFactor = scaleFactors[resourceType] || 1.2;
+
+  return Math.floor(baseCost * Math.pow(scaleFactor, count));
+}
+
 function unlockExplorationNode(state, rules, payload) {
   const newState = deepClone(state);
   const { x, y } = payload;
@@ -2168,7 +2187,10 @@ function unlockExplorationNode(state, rules, payload) {
     return { state: newState, error: 'Extraction node already unlocked' };
   }
 
-  const cost = rules.exploration.nodeUnlockCost;
+  // Calculate per-resource scaling cost
+  const resourceType = tile.extractionNode.resourceType;
+  const cost = getNodeUnlockCost(resourceType, newState.extractionNodes, rules);
+
   if (newState.credits < cost) {
     return { state: newState, error: `Not enough credits (need ${cost})` };
   }

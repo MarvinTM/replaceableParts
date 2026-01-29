@@ -1492,7 +1492,68 @@ export const defaultRules = {
       mountain:  { stone: 0.2, iron_ore: 0.3, coal: 0.3, rare_earth_ore: 0.1 },
       desert:    { sand: 0.8, oil: 0.3 },
       swamp:     { oil: 0.5, clay: 0.3 },
-      water:     { } 
+      water:     { }
+    },
+
+    // Resource ages for ring-based filtering
+    resourceAges: {
+      wood: 1,
+      stone: 1,
+      iron_ore: 1,
+      sand: 1,
+      copper_ore: 2,
+      clay: 2,
+      coal: 3,
+      oil: 4,
+      bauxite: 5,
+      rare_earth_ore: 7
+    },
+
+    // Ring boundaries (distance from center in tiles)
+    // Inner ring: Age 1-2 resources only
+    // Middle ring: Age 1-4 resources (adds coal, oil)
+    // Outer ring: All ages (adds bauxite, rare earth)
+    ringBoundaries: {
+      inner: 20,
+      middle: 48
+    },
+
+    // Spawn weights based on recipe demand analysis
+    // Higher weight = spawns more frequently when eligible
+    resourceSpawnWeights: {
+      iron_ore: 1.00,
+      copper_ore: 0.57,
+      coal: 0.40,
+      sand: 0.26,
+      oil: 0.18,
+      bauxite: 0.15,
+      wood: 0.08,
+      rare_earth_ore: 0.06,
+      clay: 0.02,
+      stone: 0.02
+    },
+
+    // Per-resource unlock cost scaling factors
+    // Cost = nodeUnlockCost * scaleFactor^(number of nodes already unlocked for this resource)
+    // Higher factor = costs grow faster (for less-needed resources)
+    unlockScaleFactors: {
+      iron_ore: 1.12,
+      copper_ore: 1.15,
+      coal: 1.18,
+      sand: 1.20,
+      oil: 1.25,
+      bauxite: 1.25,
+      wood: 1.35,
+      rare_earth_ore: 1.20,
+      clay: 1.40,
+      stone: 1.40
+    },
+
+    // Guaranteed minimum nodes in initial explored area
+    guaranteedStartingNodes: {
+      iron_ore: 2,
+      wood: 1,
+      stone: 1
     }
   }
 };
