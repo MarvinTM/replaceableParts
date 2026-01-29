@@ -1054,9 +1054,10 @@ export const defaultRules = {
       id: 'steel_forge',
       itemId: 'steel_forge',
       name: 'Steel Forge',
-      sizeX: 2, sizeY: 2,
+      sizeX: 4, sizeY: 6,
       energyConsumption: 8,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 6, speed: 0.01, separateFrames: true },
+      disableAutoScale: true,
       allowedRecipes: [
         // Steel Intermediates
         'steel_plate', 'steel_beam', 'steel_rod', 'steel_gear', 'steel_cable',
