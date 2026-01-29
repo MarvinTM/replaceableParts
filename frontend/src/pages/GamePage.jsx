@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
@@ -574,6 +574,23 @@ function ExplorationTab() {
   const [selectedTile, setSelectedTile] = useState(null);
   const [expandedSection, setExpandedSection] = useState('stats');
 
+  // Compute which resources are used by unlocked recipes (same logic as ExplorationCanvas)
+  const usedResources = useMemo(() => {
+    const resources = new Set();
+    if (!rules?.recipes || !engineState?.unlockedRecipes) return resources;
+
+    const recipeMap = new Map(rules.recipes.map(r => [r.id, r]));
+    for (const recipeId of engineState.unlockedRecipes) {
+      const recipe = recipeMap.get(recipeId);
+      if (recipe?.inputs) {
+        for (const inputResource of Object.keys(recipe.inputs)) {
+          resources.add(inputResource);
+        }
+      }
+    }
+    return resources;
+  }, [rules?.recipes, engineState?.unlockedRecipes]);
+
   if (!engineState?.explorationMap) return null;
 
   const { explorationMap, credits } = engineState;
@@ -664,7 +681,7 @@ function ExplorationTab() {
             <Typography variant="body2" color="text.secondary">{t('game.exploration.position')}</Typography>
             <Typography variant="body2">({selectedTile.x}, {selectedTile.y})</Typography>
           </Box>
-          {selectedTile.extractionNode && (
+          {selectedTile.extractionNode && usedResources.has(selectedTile.extractionNode.resourceType) && (
             <>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" color="text.secondary">{t('game.exploration.resource')}</Typography>
