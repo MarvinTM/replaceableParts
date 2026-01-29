@@ -32,15 +32,17 @@ export function gridToScreen(gridX, gridY) {
  * Convert screen coordinates to grid coordinates
  * @param {number} screenX - Screen X position
  * @param {number} screenY - Screen Y position
- * @returns {{ x: number, y: number }} Grid coordinates (floored to integers)
+ * @returns {{ x: number, y: number }} Grid coordinates (rounded to integers)
  */
 export function screenToGrid(screenX, screenY) {
   // Inverse of isometric projection
+  // Using round() instead of floor() because isometric tiles are diamond-shaped,
+  // and rounding gives correct tile selection by snapping to the nearest tile center
   const x = (screenX / (TILE_WIDTH / 2) + screenY / (TILE_HEIGHT / 2)) / 2;
   const y = (screenX / (TILE_WIDTH / 2) - screenY / (TILE_HEIGHT / 2)) / 2;
   return {
-    x: Math.floor(x),
-    y: Math.floor(y)
+    x: Math.round(x),
+    y: Math.round(y)
   };
 }
 
