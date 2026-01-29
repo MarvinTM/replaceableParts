@@ -109,6 +109,20 @@ async function tryLoad(path) {
 }
 
 /**
+ * Preload an image into browser cache (for use in HTML img tags)
+ * @param {string} path - Image path
+ * @returns {Promise<void>}
+ */
+async function preloadImageToCache(path) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve(); // Resolve even on error to not block loading
+    img.src = path;
+  });
+}
+
+/**
  * Count total number of assets to load
  * @param {Object} rules - Game rules
  * @returns {number}
@@ -144,6 +158,10 @@ function countTotalAssets(rules) {
 
   // Material icons
   count += rules.materials.length;
+
+  // Browser cache preloads for UI preview images
+  count += rules.machines.length; // machine _idle.png for UI previews
+  count += rules.generators.length; // generator .png for UI previews
 
   return count;
 }
@@ -308,12 +326,27 @@ export async function loadAllAssets(rules, onProgress = () => {}) {
 
     // Load material icons
     for (const material of rules.materials) {
+      const iconUrl = getIconUrl(material.id);
       try {
-        const texture = await Assets.load(getIconUrl(material.id));
+        const texture = await Assets.load(iconUrl);
         assets.icons.set(material.id, texture);
       } catch {
         // Icon not found, will use fallback
       }
+      // Also preload into browser cache for React components using <img> tags
+      await preloadImageToCache(iconUrl);
+      updateProgress();
+    }
+
+    // Preload UI preview images into browser cache (for React components using <img> tags)
+    // This ensures images are cached when PlaceableMachinesPanel and PlaceableGeneratorsPanel render
+    for (const machineType of rules.machines) {
+      await preloadImageToCache(`${FACTORY_ASSET_BASE}/${machineType.id}_idle.png`);
+      updateProgress();
+    }
+
+    for (const generatorType of rules.generators) {
+      await preloadImageToCache(`${FACTORY_ASSET_BASE}/${generatorType.id}.png`);
       updateProgress();
     }
 
