@@ -626,7 +626,24 @@ function simulateTick(state, rules) {
   }
 
   // 3. Energy Calculation (respects generator powered state)
-  const energy = calculateEnergy(newState, rules);
+  let energy = calculateEnergy(newState, rules);
+
+  // Try to unblock machines if there's available energy (starting from first added)
+  let availableEnergy = energy.produced - energy.consumed;
+  for (let i = 0; i < newState.machines.length && availableEnergy > 0; i++) {
+    const machine = newState.machines[i];
+    if (machine.enabled && machine.recipeId && machine.status === 'blocked') {
+      const machineConfig = rules.machines.find(m => m.id === machine.type);
+      const energyConsumption = machineConfig ? machineConfig.energyConsumption : 0;
+      if (energyConsumption <= availableEnergy) {
+        machine.status = 'working';
+        availableEnergy -= energyConsumption;
+      }
+    }
+  }
+
+  // Recalculate energy after unblocking
+  energy = calculateEnergy(newState, rules);
   newState.energy = energy;
 
   // If not enough energy, block machines (starting from last added)
