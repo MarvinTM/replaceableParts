@@ -746,8 +746,8 @@ function createNoPowerOverlay(sizeX, sizeY) {
 }
 
 /**
- * Create an overlay symbol indicating machine is blocked
- * Shows a stop/prohibition sign
+ * Create an overlay symbol indicating machine is blocked (due to power shortage)
+ * Shows a lightning bolt with prohibition circle (same as unpowered generators)
  */
 function createBlockedOverlay(sizeX, sizeY) {
   const container = new Container();
@@ -761,26 +761,25 @@ function createBlockedOverlay(sizeX, sizeY) {
   bg.fill({ color: 0x000000, alpha: 0.6 });
   container.addChild(bg);
 
-  // White octagon (stop sign shape with flat top)
-  const octagon = new Graphics();
-  const r = overlaySize / 2;
-  // Start at top-right vertex, offset by π/8 for flat top
-  const startAngle = -Math.PI / 2 + Math.PI / 8;
-  octagon.moveTo(r * Math.cos(startAngle), r * Math.sin(startAngle));
-  for (let i = 1; i < 8; i++) {
-    const angle = startAngle + (Math.PI / 4) * i;
-    octagon.lineTo(r * Math.cos(angle), r * Math.sin(angle));
-  }
-  octagon.closePath();
-  octagon.fill(0xFFFFFF);
-  octagon.stroke({ color: 0xCC0000, width: 2 });
-  container.addChild(octagon);
+  // Lightning bolt symbol using emoji
+  const bolt = new Text({
+    text: '⚡',
+    style: {
+      fontSize: overlaySize * 0.9,
+      fill: 0xFFD700,
+    }
+  });
+  bolt.anchor.set(0.5, 0.5);
+  container.addChild(bolt);
 
-  // Red prohibition bar (horizontal)
-  const bar = new Graphics();
-  bar.rect(-r * 0.7, -r * 0.15, r * 1.4, r * 0.3);
-  bar.fill(0xCC0000);
-  container.addChild(bar);
+  // Red prohibition circle with slash
+  const prohibition = new Graphics();
+  prohibition.circle(0, 0, overlaySize / 2);
+  prohibition.stroke({ color: 0xCC0000, width: 3 });
+  prohibition.moveTo(-overlaySize / 2 * 0.7, -overlaySize / 2 * 0.7);
+  prohibition.lineTo(overlaySize / 2 * 0.7, overlaySize / 2 * 0.7);
+  prohibition.stroke({ color: 0xCC0000, width: 3 });
+  container.addChild(prohibition);
 
   return container;
 }
