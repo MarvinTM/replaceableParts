@@ -2,12 +2,14 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef } f
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 import useGameStore from '../stores/gameStore';
+import { defaultRules } from '../engine/defaultRules';
 
 const GameContext = createContext(null);
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const GUEST_SAVE_KEY = 'replaceableParts-guestSave';
 const MAX_CLOUD_SAVES = 5;
+const SESSION_HEARTBEAT_INTERVAL = 60000; // 1 minute
 
 export function GameProvider({ children }) {
   const { isAuthenticated, isGuest, wasGuestBeforeLogin, clearWasGuestFlag } = useAuth();
@@ -31,6 +33,129 @@ export function GameProvider({ children }) {
 
   // Current game info for compatibility with existing components
   const currentGame = engineState ? { id: saveId, name: saveName, data: engineState } : null;
+
+  // ============ Session Tracking ============
+
+  const sessionIdRef = useRef(null);
+  const sessionStartTimeRef = useRef(null);
+  const heartbeatIntervalRef = useRef(null);
+
+  // Calculate highest unlocked age from state
+  const calculateCurrentAge = useCallback((state) => {
+    if (!state || !state.unlockedRecipes) return 1;
+    let highestAge = 1;
+    for (const recipeId of state.unlockedRecipes) {
+      const recipe = defaultRules.recipes.find(r => r.id === recipeId);
+      if (recipe) {
+        for (const outputId of Object.keys(recipe.outputs)) {
+          const material = defaultRules.materials.find(m => m.id === outputId);
+          if (material && material.age > highestAge) {
+            highestAge = material.age;
+          }
+        }
+      }
+    }
+    return highestAge;
+  }, []);
+
+  // Get session metrics from current engine state
+  const getSessionMetrics = useCallback(() => {
+    const state = useGameStore.getState().engineState;
+    if (!state) return null;
+
+    const currentAge = calculateCurrentAge(state);
+    const maxMachines = (state.machines || []).length;
+    const factoryWidth = state.floorSpace?.width || 16;
+    const factoryHeight = state.floorSpace?.height || 16;
+    const durationSeconds = sessionStartTimeRef.current
+      ? Math.floor((Date.now() - sessionStartTimeRef.current) / 1000)
+      : 0;
+
+    return {
+      currentAge,
+      maxMachines,
+      factoryWidth,
+      factoryHeight,
+      durationSeconds
+    };
+  }, [calculateCurrentAge]);
+
+  // Start session tracking
+  const startSessionTracking = useCallback(async (type, gameSaveId) => {
+    if (!isAuthenticated) return;
+
+    // End any existing session first
+    if (sessionIdRef.current) {
+      await endSessionTracking();
+    }
+
+    try {
+      const state = useGameStore.getState().engineState;
+      const startingAge = calculateCurrentAge(state);
+      const factoryWidth = state?.floorSpace?.width || 16;
+      const factoryHeight = state?.floorSpace?.height || 16;
+
+      const { session } = await api.startSession({
+        gameSaveId,
+        sessionType: type,
+        startingAge,
+        factoryWidth,
+        factoryHeight
+      });
+
+      sessionIdRef.current = session.id;
+      sessionStartTimeRef.current = Date.now();
+
+      // Start heartbeat interval
+      heartbeatIntervalRef.current = setInterval(async () => {
+        const metrics = getSessionMetrics();
+        if (metrics && sessionIdRef.current) {
+          try {
+            await api.sessionHeartbeat(sessionIdRef.current, metrics);
+          } catch (error) {
+            console.error('Session heartbeat failed:', error);
+          }
+        }
+      }, SESSION_HEARTBEAT_INTERVAL);
+
+    } catch (error) {
+      console.error('Failed to start session:', error);
+    }
+  }, [isAuthenticated, calculateCurrentAge, getSessionMetrics]);
+
+  // End session tracking
+  const endSessionTracking = useCallback(async () => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+
+    if (sessionIdRef.current) {
+      try {
+        const metrics = getSessionMetrics();
+        await api.endSession(sessionIdRef.current, metrics || {});
+      } catch (error) {
+        console.error('Failed to end session:', error);
+      }
+      sessionIdRef.current = null;
+      sessionStartTimeRef.current = null;
+    }
+  }, [getSessionMetrics]);
+
+  // Send session beacon (for visibility change / page unload)
+  const sendSessionBeacon = useCallback(() => {
+    if (!sessionIdRef.current) return;
+    const metrics = getSessionMetrics();
+    if (metrics) {
+      api.sendSessionBeacon(sessionIdRef.current, metrics);
+    }
+    sessionIdRef.current = null;
+    sessionStartTimeRef.current = null;
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  }, [getSessionMetrics]);
 
   // ============ Guest Save Functions ============
 
@@ -174,6 +299,10 @@ export function GameProvider({ children }) {
         setSaveInfo(save.id, save.name);
 
         await loadSaves();
+
+        // Start session tracking for authenticated users
+        startSessionTracking('new', save.id);
+
         return save;
       } else if (isGuest) {
         // Guest mode: save to localStorage
@@ -188,7 +317,7 @@ export function GameProvider({ children }) {
       clearGame();
       throw error;
     }
-  }, [initNewGame, isAuthenticated, isGuest, setSaveInfo, clearGame, loadSaves, saveGuestGame]);
+  }, [initNewGame, isAuthenticated, isGuest, setSaveInfo, clearGame, loadSaves, saveGuestGame, startSessionTracking]);
 
   const loadGame = useCallback(async (saveIdToLoad) => {
     try {
@@ -209,13 +338,17 @@ export function GameProvider({ children }) {
         // Explicitly set save info to ensure persist middleware captures it
         // This ensures auto-saves go to the correct slot after page refresh
         setSaveInfo(save.id, save.name);
+
+        // Start session tracking for authenticated users
+        startSessionTracking('load', save.id);
+
         return save;
       }
     } catch (error) {
       console.error('Failed to load game:', error);
       throw error;
     }
-  }, [isGuest, isAuthenticated, loadGuestGame, loadGameState, setSaveInfo]);
+  }, [isGuest, isAuthenticated, loadGuestGame, loadGameState, setSaveInfo, startSessionTracking]);
 
   const continueLatestGame = useCallback(async () => {
     const latest = getLatestSave();
@@ -250,6 +383,9 @@ export function GameProvider({ children }) {
   }, [engineState, getStateForSave, isGuest, isAuthenticated, saveId, saveName, saveGuestGame, setSaveInfo]);
 
   const exitToMenu = useCallback(async () => {
+    // End session tracking before exiting
+    await endSessionTracking();
+
     // Auto-save before exiting if we have a game
     if (engineState) {
       try {
@@ -259,7 +395,7 @@ export function GameProvider({ children }) {
       }
     }
     clearGame();
-  }, [engineState, saveGame, clearGame]);
+  }, [engineState, saveGame, clearGame, endSessionTracking]);
 
   const deleteSave = useCallback(async (saveIdToDelete) => {
     if (saveIdToDelete === 'guest') {
@@ -421,11 +557,13 @@ export function GameProvider({ children }) {
     };
 
     const handleBeforeUnload = () => {
+      sendSessionBeacon();
       saveOnUnload();
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
+        sendSessionBeacon();
         saveOnUnload();
       }
     };
@@ -437,7 +575,16 @@ export function GameProvider({ children }) {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isGuest, isAuthenticated]);
+  }, [isGuest, isAuthenticated, sendSessionBeacon]);
+
+  // Cleanup session tracking on unmount
+  useEffect(() => {
+    return () => {
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+    };
+  }, []);
 
   const value = {
     currentGame,

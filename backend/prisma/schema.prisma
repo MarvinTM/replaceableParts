@@ -19,6 +19,30 @@ model User {
   updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
   gameSaves     GameSave[]
+  sessions      Session[]
+}
+
+model Session {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameSaveId      String?
+
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  durationSeconds Int       @default(0)
+
+  startingAge     Int       @default(1)
+  currentAge      Int       @default(1)
+  maxMachines     Int       @default(0)
+  factoryWidth    Int       @default(16)
+  factoryHeight   Int       @default(16)
+
+  sessionType     String    @default("new")
+  isActive        Boolean   @default(true)
+
+  @@index([userId])
+  @@index([startedAt])
 }
 
 model GameSave {

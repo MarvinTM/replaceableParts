@@ -151,4 +151,79 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
+// Get session stats
+router.get('/sessions/stats', async (req, res, next) => {
+  try {
+    const [totalSessions, activeSessions, avgDurationResult, ageDistribution] = await Promise.all([
+      prisma.session.count(),
+      prisma.session.count({ where: { isActive: true } }),
+      prisma.session.aggregate({
+        _avg: { durationSeconds: true },
+        where: { isActive: false }
+      }),
+      prisma.session.groupBy({
+        by: ['currentAge'],
+        _count: { currentAge: true },
+        orderBy: { currentAge: 'asc' }
+      })
+    ]);
+
+    const avgDuration = Math.round(avgDurationResult._avg.durationSeconds || 0);
+
+    res.json({
+      stats: {
+        totalSessions,
+        activeSessions,
+        avgDuration,
+        ageDistribution: ageDistribution.map(item => ({
+          age: item.currentAge,
+          count: item._count.currentAge
+        }))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get paginated sessions list
+router.get('/sessions', async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const [sessions, total] = await Promise.all([
+      prisma.session.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              picture: true
+            }
+          }
+        },
+        orderBy: { startedAt: 'desc' },
+        skip,
+        take: limit
+      }),
+      prisma.session.count()
+    ]);
+
+    res.json({
+      sessions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

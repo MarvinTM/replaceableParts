@@ -173,6 +173,10 @@
   },
   "admin": {
     "title": "Administración",
+    "tabs": {
+      "users": "Usuarios",
+      "sessions": "Sesiones"
+    },
     "users": {
       "title": "Gestión de Usuarios",
       "email": "Correo",
@@ -207,6 +211,23 @@
     },
     "error": {
       "generic": "Ocurrió un error. Por favor, inténtalo de nuevo."
+    },
+    "sessions": {
+      "totalSessions": "Total Sesiones",
+      "activeSessions": "Activas Ahora",
+      "avgDuration": "Duración Promedio",
+      "ageDistribution": "Distribución por Era",
+      "recentSessions": "Sesiones Recientes",
+      "user": "Usuario",
+      "type": "Tipo",
+      "started": "Iniciada",
+      "duration": "Duración",
+      "ageProgress": "Progreso de Era",
+      "machines": "Máx Máquinas",
+      "factorySize": "Tamaño Fábrica",
+      "status": "Estado",
+      "active": "Activa",
+      "ended": "Terminada"
     }
   },
   "common": {

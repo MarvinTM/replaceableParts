@@ -124,6 +124,63 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ title, body })
     });
+  },
+
+  // Session tracking
+  async startSession(data) {
+    return request('/sessions/start', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async sessionHeartbeat(sessionId, data) {
+    return request(`/sessions/heartbeat/${sessionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async endSession(sessionId, data) {
+    return request(`/sessions/end/${sessionId}`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  sendSessionBeacon(sessionId, data) {
+    const token = localStorage.getItem('token');
+    if (!token || !sessionId) return false;
+
+    const payload = { ...data, _token: token };
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const url = `${API_URL}/sessions/end/${sessionId}`;
+
+    if (navigator.sendBeacon) {
+      return navigator.sendBeacon(url, blob);
+    }
+
+    // Fallback to fetch with keepalive
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data),
+      keepalive: true
+    }).catch(() => {});
+
+    return true;
+  },
+
+  // Admin session endpoints
+  async getSessionStats() {
+    return request('/admin/sessions/stats');
+  },
+
+  async getSessions(page = 1, limit = 20) {
+    return request(`/admin/sessions?page=${page}&limit=${limit}`);
   }
 };
 

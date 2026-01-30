@@ -28,6 +28,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
@@ -40,6 +42,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
+import SessionsTab from '../components/admin/SessionsTab';
 
 function StatCard({ title, value, icon: Icon, color }) {
   return (
@@ -70,6 +73,7 @@ export default function AdminPage() {
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
 
+  const [activeTab, setActiveTab] = useState(0);
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -206,106 +210,124 @@ export default function AdminPage() {
         {t('admin.title')}
       </Typography>
 
-      {/* Stats Cards */}
-      {stats && (
-        <Grid container spacing={2} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title={t('admin.stats.totalUsers')}
-              value={stats.totalUsers}
-              icon={PeopleIcon}
-              color="primary"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title={t('admin.stats.approvedUsers')}
-              value={stats.approvedUsers}
-              icon={HowToRegIcon}
-              color="success"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title={t('admin.stats.pendingUsers')}
-              value={stats.pendingUsers}
-              icon={PendingIcon}
-              color="warning"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <StatCard
-              title={t('admin.stats.adminCount')}
-              value={stats.adminCount}
-              icon={SupervisorAccountIcon}
-              color="secondary"
-            />
-          </Grid>
-        </Grid>
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onChange={(e, newValue) => setActiveTab(newValue)}
+        sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab label={t('admin.tabs.users')} />
+        <Tab label={t('admin.tabs.sessions')} />
+      </Tabs>
+
+      {/* Users Tab */}
+      {activeTab === 0 && (
+        <>
+          {/* Stats Cards */}
+          {stats && (
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <StatCard
+                  title={t('admin.stats.totalUsers')}
+                  value={stats.totalUsers}
+                  icon={PeopleIcon}
+                  color="primary"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <StatCard
+                  title={t('admin.stats.approvedUsers')}
+                  value={stats.approvedUsers}
+                  icon={HowToRegIcon}
+                  color="success"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <StatCard
+                  title={t('admin.stats.pendingUsers')}
+                  value={stats.pendingUsers}
+                  icon={PendingIcon}
+                  color="warning"
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <StatCard
+                  title={t('admin.stats.adminCount')}
+                  value={stats.adminCount}
+                  icon={SupervisorAccountIcon}
+                  color="secondary"
+                />
+              </Grid>
+            </Grid>
+          )}
+
+          {/* Users Table */}
+          <Typography variant="h6" gutterBottom>
+            {t('admin.users.title')}
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>{t('admin.users.name')}</TableCell>
+                  <TableCell>{t('admin.users.email')}</TableCell>
+                  <TableCell>{t('admin.users.role')}</TableCell>
+                  <TableCell>{t('admin.users.status')}</TableCell>
+                  <TableCell>{t('admin.users.lastLogin')}</TableCell>
+                  <TableCell align="right">{t('admin.users.actions')}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar src={user.picture} alt={user.name} sx={{ width: 32, height: 32 }} />
+                        <span>
+                          {user.name}
+                          {user.id === currentUser.id && (
+                            <Typography component="span" color="primary" sx={{ ml: 1 }}>
+                              {t('admin.users.you')}
+                            </Typography>
+                          )}
+                        </span>
+                      </Box>
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.role}
+                        size="small"
+                        color={user.role === 'ADMIN' ? 'secondary' : 'default'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.isApproved ? t('admin.users.approved') : t('admin.users.pending')}
+                        size="small"
+                        color={user.isApproved ? 'success' : 'warning'}
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>{formatDate(user.lastLoginAt)}</TableCell>
+                    <TableCell align="right">
+                      <IconButton
+                        onClick={(e) => handleMenuOpen(e, user)}
+                        disabled={user.id === currentUser.id}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
       )}
 
-      {/* Users Table */}
-      <Typography variant="h6" gutterBottom>
-        {t('admin.users.title')}
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>{t('admin.users.name')}</TableCell>
-              <TableCell>{t('admin.users.email')}</TableCell>
-              <TableCell>{t('admin.users.role')}</TableCell>
-              <TableCell>{t('admin.users.status')}</TableCell>
-              <TableCell>{t('admin.users.lastLogin')}</TableCell>
-              <TableCell align="right">{t('admin.users.actions')}</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Avatar src={user.picture} alt={user.name} sx={{ width: 32, height: 32 }} />
-                    <span>
-                      {user.name}
-                      {user.id === currentUser.id && (
-                        <Typography component="span" color="primary" sx={{ ml: 1 }}>
-                          {t('admin.users.you')}
-                        </Typography>
-                      )}
-                    </span>
-                  </Box>
-                </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={user.role}
-                    size="small"
-                    color={user.role === 'ADMIN' ? 'secondary' : 'default'}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={user.isApproved ? t('admin.users.approved') : t('admin.users.pending')}
-                    size="small"
-                    color={user.isApproved ? 'success' : 'warning'}
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell>{formatDate(user.lastLoginAt)}</TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    onClick={(e) => handleMenuOpen(e, user)}
-                    disabled={user.id === currentUser.id}
-                  >
-                    <MoreVertIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Sessions Tab */}
+      {activeTab === 1 && <SessionsTab />}
 
       {/* Actions Menu */}
       <Menu

@@ -173,6 +173,10 @@
   },
   "admin": {
     "title": "Administration",
+    "tabs": {
+      "users": "Users",
+      "sessions": "Sessions"
+    },
     "users": {
       "title": "User Management",
       "email": "Email",
@@ -207,6 +211,23 @@
     },
     "error": {
       "generic": "An error occurred. Please try again."
+    },
+    "sessions": {
+      "totalSessions": "Total Sessions",
+      "activeSessions": "Active Now",
+      "avgDuration": "Avg Duration",
+      "ageDistribution": "Age Distribution",
+      "recentSessions": "Recent Sessions",
+      "user": "User",
+      "type": "Type",
+      "started": "Started",
+      "duration": "Duration",
+      "ageProgress": "Age Progress",
+      "machines": "Max Machines",
+      "factorySize": "Factory Size",
+      "status": "Status",
+      "active": "Active",
+      "ended": "Ended"
     }
   },
   "common": {
