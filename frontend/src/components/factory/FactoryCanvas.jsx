@@ -1443,9 +1443,11 @@ export default function FactoryCanvas({
         // Add "no power" overlay if unpowered and requires fuel
         if (!isPowered && hasFuelRequirement) {
           const overlay = createNoPowerOverlay(sizeX, sizeY);
-          overlay.x = screenPos.x;
-          // Position overlay above the generator center
-          overlay.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) - 40;
+          overlay.x = screenPos.x + offsetX;
+          // Position overlay at the center of the generator sprite
+          const spriteBottom = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
+          const renderedHeight = displayObject.texture.height * displayObject.scale.y;
+          overlay.y = spriteBottom - renderedHeight / 2;
           overlay.zIndex = screenPos.y + 1; // Render on top of generator
           structuresContainer.addChild(overlay);
         }
@@ -1462,7 +1464,8 @@ export default function FactoryCanvas({
         if (!isPowered && hasFuelRequirement) {
           const overlay = createNoPowerOverlay(sizeX, sizeY);
           overlay.x = screenPos.x;
-          overlay.y = screenPos.y - 20;
+          // Center on the graphics box (boxHeight / 2 above base)
+          overlay.y = screenPos.y - boxHeight / 2;
           overlay.zIndex = screenPos.y + 1;
           structuresContainer.addChild(overlay);
         }
