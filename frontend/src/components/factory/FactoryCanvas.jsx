@@ -722,18 +722,15 @@ function createNoPowerOverlay(sizeX, sizeY) {
   bg.fill({ color: 0x000000, alpha: 0.6 });
   container.addChild(bg);
 
-  // Lightning bolt symbol (yellow/gold)
-  const bolt = new Graphics();
-  const s = overlaySize / 2;
-  bolt.moveTo(s * 0.1, -s);
-  bolt.lineTo(-s * 0.3, -s * 0.1);
-  bolt.lineTo(s * 0.05, -s * 0.1);
-  bolt.lineTo(-s * 0.2, s);
-  bolt.lineTo(s * 0.3, s * 0.1);
-  bolt.lineTo(-s * 0.05, s * 0.1);
-  bolt.closePath();
-  bolt.fill(0xFFD700);
-  bolt.stroke({ color: 0x000000, width: 1 });
+  // Lightning bolt symbol using emoji
+  const bolt = new Text({
+    text: '⚡',
+    style: {
+      fontSize: overlaySize * 0.9,
+      fill: 0xFFD700,
+    }
+  });
+  bolt.anchor.set(0.5, 0.5);
   container.addChild(bolt);
 
   // Red prohibition circle with slash
