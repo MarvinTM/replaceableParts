@@ -199,18 +199,23 @@ export function GameProvider({ children }) {
           throw new Error('No guest save found');
         }
         loadGameState(guestSave.id, guestSave.name, guestSave.data);
+        // Explicitly set save info to ensure persist middleware captures it
+        setSaveInfo(guestSave.id, guestSave.name);
         return guestSave;
       } else {
         // Load from backend
         const { save } = await api.getSave(saveIdToLoad);
         loadGameState(save.id, save.name, save.data);
+        // Explicitly set save info to ensure persist middleware captures it
+        // This ensures auto-saves go to the correct slot after page refresh
+        setSaveInfo(save.id, save.name);
         return save;
       }
     } catch (error) {
       console.error('Failed to load game:', error);
       throw error;
     }
-  }, [isGuest, isAuthenticated, loadGuestGame, loadGameState]);
+  }, [isGuest, isAuthenticated, loadGuestGame, loadGameState, setSaveInfo]);
 
   const continueLatestGame = useCallback(async () => {
     const latest = getLatestSave();
@@ -386,13 +391,29 @@ export function GameProvider({ children }) {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      fetch(`${API_URL}/game/saves/${currentSaveId}`, {
+      const saveData = JSON.stringify({ data: currentEngineState });
+      const saveUrl = `${API_URL}/game/saves/${currentSaveId}`;
+
+      // Use sendBeacon for more reliable unload saves
+      // sendBeacon doesn't support custom headers, so we include token in body
+      // and the backend should accept it from there as a fallback
+      if (navigator.sendBeacon) {
+        const blob = new Blob(
+          [JSON.stringify({ data: currentEngineState, _token: token })],
+          { type: 'application/json' }
+        );
+        const sent = navigator.sendBeacon(saveUrl, blob);
+        if (sent) return; // sendBeacon succeeded, no need for fallback
+      }
+
+      // Fallback to fetch with keepalive
+      fetch(saveUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ data: currentEngineState }),
+        body: saveData,
         keepalive: true
       }).catch(() => {
         // Ignore errors on unload

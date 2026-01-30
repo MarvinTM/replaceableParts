@@ -150,7 +150,7 @@ function checkIconLoads(materialId) {
 
 /**
  * Find materials that are missing icons
- * @param {Array<{id: string, name: string}>} materials - Array of material objects
+ * @param {Array<{id: string, name: string, category?: string}>} materials - Array of material objects
  * @returns {Promise<Array<{id: string, name: string}>>} Array of materials missing icons
  */
 export async function findMaterialsMissingIcons(materials) {
@@ -158,6 +158,11 @@ export async function findMaterialsMissingIcons(materials) {
 
   await Promise.all(
     materials.map(async (material) => {
+      // Skip equipment - they use factory assets (/assets/factory/{id}_idle.png) instead of icons
+      if (material.category === 'equipment') {
+        return;
+      }
+
       // Check cache first
       if (iconCache.has(material.id)) {
         return; // Icon exists

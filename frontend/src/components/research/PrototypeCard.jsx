@@ -68,7 +68,21 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
         textAlign: 'center',
       }}
     >
-      <MaterialIcon materialId={outputInfo?.outputId} size={48} />
+      {outputInfo?.material?.category === 'equipment' ? (
+        <Box
+          component="img"
+          src={`/assets/factory/${outputInfo?.outputId}_idle.png`}
+          alt={outputInfo?.material?.name}
+          sx={{
+            width: 48,
+            height: 48,
+            objectFit: 'contain',
+            imageRendering: 'pixelated',
+          }}
+        />
+      ) : (
+        <MaterialIcon materialId={outputInfo?.outputId} size={48} />
+      )}
 
       <Typography variant="subtitle2" noWrap sx={{ maxWidth: 150 }}>
         {outputInfo?.material?.name || prototype.recipeId}

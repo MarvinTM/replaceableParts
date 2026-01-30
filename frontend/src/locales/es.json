@@ -118,6 +118,9 @@
     "marketDescription": "Comercia bienes y gestiona tu economía"
   },
   "game": {
+    "save": "Guardar Partida",
+    "saved": "Guardado!",
+    "restoring": "Restaurando partida...",
     "tick": "Tick",
     "controls": {
       "play": "Reproducir",

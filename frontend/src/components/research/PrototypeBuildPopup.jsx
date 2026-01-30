@@ -294,7 +294,21 @@ export default function PrototypeBuildPopup({
             <Typography variant="h4" color="success.main" fontWeight="bold">
               Prototype Complete!
             </Typography>
-            <MaterialIcon materialId={outputInfo.outputId} size={64} />
+            {outputInfo.material?.category === 'equipment' ? (
+              <Box
+                component="img"
+                src={`/assets/factory/${outputInfo.outputId}_idle.png`}
+                alt={outputInfo.material?.name}
+                sx={{
+                  width: 64,
+                  height: 64,
+                  objectFit: 'contain',
+                  imageRendering: 'pixelated',
+                }}
+              />
+            ) : (
+              <MaterialIcon materialId={outputInfo.outputId} size={64} />
+            )}
             <Typography variant="h6">
               {outputInfo.material?.name || initialPrototype.recipeId}
             </Typography>
@@ -341,7 +355,21 @@ export default function PrototypeBuildPopup({
       <DialogContent dividers>
         {/* Material Preview */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-          <MaterialIcon materialId={outputInfo.outputId} size={64} />
+          {outputInfo.material?.category === 'equipment' ? (
+            <Box
+              component="img"
+              src={`/assets/factory/${outputInfo.outputId}_idle.png`}
+              alt={outputInfo.material?.name}
+              sx={{
+                width: 64,
+                height: 64,
+                objectFit: 'contain',
+                imageRendering: 'pixelated',
+              }}
+            />
+          ) : (
+            <MaterialIcon materialId={outputInfo.outputId} size={64} />
+          )}
         </Box>
 
         {/* Name and Age */}

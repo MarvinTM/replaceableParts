@@ -5,11 +5,20 @@ export async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
+    // Try Authorization header first, fall back to _token in body (for sendBeacon)
+    let token;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.body && req.body._token) {
+      // Fallback for sendBeacon requests which can't set headers
+      token = req.body._token;
+      // Remove _token from body so it doesn't interfere with other processing
+      delete req.body._token;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const user = await prisma.user.findUnique({

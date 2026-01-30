@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
@@ -25,6 +25,8 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import InfoIcon from '@mui/icons-material/Info';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import BuildIcon from '@mui/icons-material/Build';
+import SaveIcon from '@mui/icons-material/Save';
+import CheckIcon from '@mui/icons-material/Check';
 import Divider from '@mui/material/Divider';
 import { useGame } from '../contexts/GameContext';
 import useGameStore from '../stores/gameStore';
@@ -818,13 +820,17 @@ function PlaceholderTab({ title, description, icon: Icon }) {
 
 export default function GamePage() {
   const { t } = useTranslation();
-  const { currentGame, isAutoRestoring } = useGame();
+  const { currentGame, isAutoRestoring, saveGame } = useGame();
 
   const engineState = useGameStore((state) => state.engineState);
   const isRunning = useGameStore((state) => state.isRunning);
   const startGameLoop = useGameStore((state) => state.startGameLoop);
   const completeTutorial = useGameStore((state) => state.completeTutorial);
   const queueTip = useGameStore((state) => state.queueTip);
+
+  // Save state for manual save button
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Track if we've auto-started for this game session
   const hasAutoStarted = useRef(false);
@@ -864,6 +870,30 @@ export default function GamePage() {
   // Track if we've already triggered the initial tab tip
   const initialTipTriggered = useRef(false);
 
+  // Manual save handler - must be before conditional returns
+  const handleManualSave = useCallback(async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setSaveSuccess(false);
+    try {
+      await saveGame();
+      setSaveSuccess(true);
+      // Reset success indicator after 2 seconds
+      setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to save game:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [isSaving, saveGame]);
+
+  // Tab change handler - must be before conditional returns
+  const handleTabChange = useCallback((event, newValue) => {
+    // Save game when switching tabs (fire and forget)
+    saveGame().catch(console.error);
+    setTabValue(newValue);
+  }, [saveGame]);
+
   useEffect(() => {
     // Don't show tips until tutorial is complete
     if (!engineState?.tutorialCompleted) return;
@@ -894,10 +924,6 @@ export default function GamePage() {
       </Box>
     );
   }
-
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
 
   // Calculate pending research count for badge
   const pendingResearchCount = engineState?.research?.awaitingPrototype?.length || 0;
@@ -943,9 +969,30 @@ export default function GamePage() {
             />
           ))}
         </Tabs>
-        <Typography variant="subtitle1" fontWeight="bold" color="text.secondary">
-          {currentGame.name}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="subtitle1" fontWeight="bold" color="text.secondary">
+            {currentGame.name}
+          </Typography>
+          <Tooltip title={saveSuccess ? t('game.saved', 'Saved!') : t('game.save', 'Save Game')}>
+            <IconButton
+              size="small"
+              onClick={handleManualSave}
+              disabled={isSaving}
+              sx={{
+                color: saveSuccess ? 'success.main' : 'text.secondary',
+                transition: 'color 0.2s',
+              }}
+            >
+              {isSaving ? (
+                <CircularProgress size={20} />
+              ) : saveSuccess ? (
+                <CheckIcon fontSize="small" />
+              ) : (
+                <SaveIcon fontSize="small" />
+              )}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       <TabPanel value={tabValue} index={0}>

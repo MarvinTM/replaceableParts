@@ -118,6 +118,9 @@
     "marketDescription": "Trade goods and manage your economy"
   },
   "game": {
+    "save": "Save Game",
+    "saved": "Saved!",
+    "restoring": "Restoring game...",
     "tick": "Tick",
     "controls": {
       "play": "Play",
