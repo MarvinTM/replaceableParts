@@ -575,44 +575,70 @@ export class BalancedBot extends BaseStrategy {
 
   /**
    * Explore the map and unlock extraction nodes
+   * This is a key progression mechanic - unlocking nodes increases production throughput
    */
   decideExploration(sim) {
     const { state, rules } = sim;
     const actions = [];
 
-    // Don't explore too frequently
-    if (sim.currentTick - this.lastExploration < 200) {
+    if (!state.explorationMap) return actions;
+
+    // Only check for nodes periodically to avoid expensive map scans
+    if (sim.currentTick - this.lastExploration < 50) {
       return actions;
     }
 
-    if (!state.explorationMap) return actions;
+    // PRIORITY 1: Unlock available nodes
+    const nodeUnlockBaseCost = rules.exploration.nodeUnlockCost || 15;
 
-    // Check if we should expand exploration
-    const explorationCost = rules.exploration.baseCostPerCell * 16; // Rough chunk cost
-    if (state.credits > explorationCost + this.minCreditsBuffer * 2) {
+    // Find unlockable nodes - only scan explored bounds to limit iterations
+    const bounds = state.explorationMap.exploredBounds;
+    let bestNode = null;
+    let bestScore = -Infinity;
+
+    for (let y = bounds.minY; y <= bounds.maxY; y++) {
+      for (let x = bounds.minX; x <= bounds.maxX; x++) {
+        const tile = state.explorationMap.tiles[`${x},${y}`];
+        if (!tile?.explored || !tile.extractionNode || tile.extractionNode.unlocked) continue;
+
+        const resourceType = tile.extractionNode.resourceType;
+        const existingCount = state.extractionNodes.filter(n => n.resourceType === resourceType).length;
+        const scaleFactor = rules.exploration.unlockScaleFactors?.[resourceType] || 1.2;
+        const cost = Math.floor(nodeUnlockBaseCost * Math.pow(scaleFactor, existingCount));
+
+        // Can we afford it?
+        if (state.credits <= cost + this.minCreditsBuffer) continue;
+
+        // Score: prioritize fewer existing nodes (diversify), lower cost
+        const score = -existingCount * 1000 - cost;
+        if (score > bestScore) {
+          bestScore = score;
+          bestNode = { x, y, cost };
+        }
+      }
+    }
+
+    if (bestNode) {
       actions.push({
-        type: 'EXPAND_EXPLORATION',
-        payload: {}
+        type: 'UNLOCK_EXPLORATION_NODE',
+        payload: { x: bestNode.x, y: bestNode.y }
       });
       this.lastExploration = sim.currentTick;
       return actions;
     }
 
-    // Try to unlock extraction nodes
-    const nodeUnlockCost = rules.exploration.nodeUnlockCost || 25;
-    if (state.credits > nodeUnlockCost + this.minCreditsBuffer) {
-      // Find explored but unlocked nodes
-      for (const [key, tile] of Object.entries(state.explorationMap.tiles)) {
-        if (tile.explored && tile.extractionNode && !tile.extractionNode.unlocked) {
-          const [x, y] = key.split(',').map(Number);
-          actions.push({
-            type: 'UNLOCK_EXPLORATION_NODE',
-            payload: { x, y }
-          });
-          this.lastExploration = sim.currentTick;
-          return actions;
-        }
-      }
+    // PRIORITY 2: Expand exploration (less frequent)
+    if (sim.currentTick - this.lastExploration < 200) {
+      return actions;
+    }
+
+    const explorationCost = rules.exploration.baseCostPerCell * 16;
+    if (state.credits > explorationCost + this.minCreditsBuffer * 3) {
+      actions.push({
+        type: 'EXPAND_EXPLORATION',
+        payload: {}
+      });
+      this.lastExploration = sim.currentTick;
     }
 
     return actions;
