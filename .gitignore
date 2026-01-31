@@ -30,3 +30,6 @@ coverage/
 # Prisma
 *.db
 *.db-journal
+
+# Simulator
+frontend/scripts/balancing/results/
