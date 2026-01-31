@@ -48,17 +48,17 @@ export const defaultRules = {
     { id: 'wheel', name: 'Wooden Wheel', basePrice: 10, category: 'intermediate', weight: 4, age: 1 },
     { id: 'wooden_handle', name: 'Wooden Handle', basePrice: 3, category: 'intermediate', weight: 1, age: 1 },
 
-    // Final Goods (Furniture, Basic Tools, Structures)
+    // Final Goods (Furniture, Basic Tools, Structures) - Original prices, balanced by low early-game costs
     { id: 'chair', name: 'Wooden Chair', basePrice: 25, category: 'final', weight: 5, age: 1 },
     { id: 'table', name: 'Wooden Table', basePrice: 80, category: 'final', weight: 10, age: 1 },
-    { id: 'wardrobe', name: 'Wardrobe', basePrice: 125, category: 'final', weight: 15, age: 1 },
+    { id: 'wardrobe', name: 'Wardrobe', basePrice: 120, category: 'final', weight: 15, age: 1 },
     { id: 'chest', name: 'Storage Chest', basePrice: 100, category: 'final', weight: 8, age: 1 },
     { id: 'bucket', name: 'Iron Bucket', basePrice: 60, category: 'final', weight: 3, age: 1 },
     { id: 'hammer', name: 'Hammer', basePrice: 20, category: 'final', weight: 4, age: 1 },
     { id: 'pickaxe', name: 'Pickaxe', basePrice: 35, category: 'final', weight: 5, age: 1 },
     { id: 'shovel', name: 'Shovel', basePrice: 40, category: 'final', weight: 4, age: 1 },
     { id: 'fence', name: 'Fence Section', basePrice: 10, category: 'final', weight: 5, age: 1 },
-    { id: 'door', name: 'Reinforced Door', basePrice: 125, category: 'final', weight: 12, age: 1 },
+    { id: 'door', name: 'Reinforced Door', basePrice: 120, category: 'final', weight: 12, age: 1 },
     { id: 'stone_wall', name: 'Stone Wall', basePrice: 10, category: 'final', weight: 10, age: 1 },
     { id: 'bed', name: 'Wooden Bed', basePrice: 90, category: 'final', weight: 12, age: 1 },
     { id: 'bench', name: 'Wooden Bench', basePrice: 20, category: 'final', weight: 6, age: 1 },
@@ -74,10 +74,10 @@ export const defaultRules = {
     { id: 'mallet', name: 'Wooden Mallet', basePrice: 15, category: 'final', weight: 3, age: 1 },
     { id: 'shield', name: 'Iron Shield', basePrice: 60, category: 'final', weight: 10, age: 1 },
     { id: 'spear', name: 'Iron Spear', basePrice: 15, category: 'final', weight: 4, age: 1 },
-    { id: 'gate', name: 'Wooden Gate', basePrice: 125, category: 'final', weight: 15, age: 1 },
+    { id: 'gate', name: 'Wooden Gate', basePrice: 120, category: 'final', weight: 15, age: 1 },
     { id: 'staircase', name: 'Wooden Staircase', basePrice: 90, category: 'final', weight: 12, age: 1 },
     { id: 'roof_tile_section', name: 'Roof Tile Section', basePrice: 10, category: 'final', weight: 8, age: 1 },
-    { id: 'well', name: 'Stone Well', basePrice: 125, category: 'final', weight: 25, age: 1 },
+    { id: 'well', name: 'Stone Well', basePrice: 120, category: 'final', weight: 25, age: 1 },
     { id: 'workbench', name: 'Workbench', basePrice: 60, category: 'final', weight: 15, age: 1 },
     { id: 'forge', name: 'Stone Forge', basePrice: 100, category: 'final', weight: 35, age: 1 },
     { id: 'crate', name: 'Wooden Crate', basePrice: 25, category: 'final', weight: 6, age: 1 },
@@ -90,7 +90,7 @@ export const defaultRules = {
     { id: 'coat_hanger', name: 'Coat Hanger', basePrice: 10, category: 'final', weight: 2, age: 1 },
     { id: 'shingled_roof', name: 'Shingled Roof Section', basePrice: 30, category: 'final', weight: 12, age: 1 },
     { id: 'wagon', name: 'Wooden Wagon', basePrice: 450, category: 'final', weight: 35, age: 1 },
-    { id: 'water_wheel', name: 'Water Wheel', basePrice: 275, category: 'final', weight: 30, age: 1 },
+    { id: 'water_wheel', name: 'Water Wheel', basePrice: 280, category: 'final', weight: 30, age: 1 },
     { id: 'anchor', name: 'Iron Anchor', basePrice: 60, category: 'final', weight: 25, age: 1 },
 
     // ========================
@@ -906,17 +906,17 @@ export const defaultRules = {
   research: {
     // Existing
     energyCost: 3,
-    discoveryChance: 0.20,
+    discoveryChance: 0.25,          // Increased from 0.20
     proximityWeight: 0.5,
 
-    // Research Points system
-    creditsToRPRatio: 10,           // 10 credits = 1 RP
+    // Research Points system - cheap early, scales with age
+    creditsToRPRatio: 2,            // 2 credits = 1 RP (very efficient early game)
     ageMultipliers: { 1: 1.0, 2: 1.5, 3: 2.0, 4: 3.0, 5: 5.0, 6: 8.0, 7: 12.0 },
-    passiveDiscoveryChance: 0.002,  // 1/500 per tick
+    passiveDiscoveryChance: 0.005,  // 1/200 per tick
     ageWeighting: { floor: 0.30, ceiling: 0.85 },
-    experimentCosts: { 1: 100, 2: 150, 3: 250, 4: 400, 5: 700, 6: 1200, 7: 2000 },
-    targetedExperimentMultiplier: 10, // Targeted experiments cost 10x random experiments
-    prototypeMultiplier: 5          // 5x recipe quantity for prototypes
+    experimentCosts: { 1: 15, 2: 35, 3: 75, 4: 150, 5: 350, 6: 700, 7: 1400 }, // Cheap early, scales up
+    targetedExperimentMultiplier: 5, // Was 10 - now 5x for targeted (cheaper)
+    prototypeMultiplier: 3          // Was 5 - now 3x recipe quantity (easier prototypes)
   },
 
   // ============================================================================
@@ -1468,9 +1468,9 @@ export const defaultRules = {
     initialExploredSize: 8,
     initialGeneratedSize: 64,
     maxGeneratedSize: 256,
-    baseCostPerCell: 15,
-    nodeUnlockCost: 100,
-    nodeSpawnChance: 0.15,
+    baseCostPerCell: 2,             // Very cheap early exploration
+    nodeUnlockCost: 8,              // Very cheap node unlocking to encourage exploration
+    nodeSpawnChance: 0.20,          // Was 0.15 - more nodes spawn
     terrainScale: 10,
     moistureScale: 8,
 
@@ -1553,10 +1553,12 @@ export const defaultRules = {
     },
 
     // Guaranteed minimum nodes in initial explored area
+    // Players should unlock these for better production throughput
     guaranteedStartingNodes: {
-      iron_ore: 2,
-      wood: 1,
-      stone: 1
+      iron_ore: 3,
+      wood: 2,
+      stone: 2,
+      sand: 2
     }
   }
 };

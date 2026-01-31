@@ -9,19 +9,16 @@ import { defaultRules } from './defaultRules.js';
 export const initialState = {
   tick: 0,
   rngSeed: Date.now(),
-  credits: 5000000000,
+  credits: 500,
   tutorialCompleted: false,
   shownTips: [],  // Array of tip IDs that have been shown
 
-  // Floor Space (2D Grid)
+  // Floor Space (2D Grid) - Larger starting area
   floorSpace: {
     width: 16,
     height: 16,
     chunks: [{ x: 0, y: 0, width: 16, height: 16 }],
-    placements: [
-      // Starting generator: Wood Oven (burns wood for power)
-      { id: 'starter_thermal_generator', x: 4, y: 4, structureType: 'thermal_generator' }
-    ]
+    placements: []
   },
 
   energy: {
@@ -36,12 +33,11 @@ export const initialState = {
   inventory: {},
 
   // Built Machines (ready to deploy, not in regular inventory)
+  // Moderate increase for better throughput
   builtMachines: {
-    stone_furnace: 1,
-    blacksmiths_anvil: 1,
-    carpenters_bench: 1,
-    glassblowers_workshop: 1,
-    potters_wheel_machine: 1
+    stone_furnace: 2,
+    blacksmiths_anvil: 2,
+    carpenters_bench: 2
   },
 
   // Built Generators (ready to deploy, not in regular inventory)
@@ -64,11 +60,11 @@ export const initialState = {
   ],
 
   // Pre-defined extraction nodes (Age 1 Resources)
+  // Normal rates - player should unlock more nodes from the map for better throughput
   extractionNodes: [
     { id: 'node_wood_1', resourceType: 'wood', rate: 2, active: true },
     { id: 'node_stone_1', resourceType: 'stone', rate: 2, active: true },
-    { id: 'node_iron_1', resourceType: 'iron_ore', rate: 1, active: true },
-    { id: 'node_sand_1', resourceType: 'sand', rate: 1, active: true }
+    { id: 'node_iron_1', resourceType: 'iron_ore', rate: 2, active: true }
   ],
 
   // Discovery: Start with Age 1 basics
