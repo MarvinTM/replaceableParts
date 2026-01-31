@@ -27,7 +27,7 @@
         },
         {
           "type": "fix",
-          "text": "Improved picking and dragging of buildings, now if two buildings are beside each other it works much more reliably."
+          "text": "Improved picking and dragging of buildings, now if two buildings are beside each other it works much more reliably, and with much greater performance."
         }
       ]
     },

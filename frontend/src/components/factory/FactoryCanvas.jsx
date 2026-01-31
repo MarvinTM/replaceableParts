@@ -837,6 +837,7 @@ export default function FactoryCanvas({
 
   // Drag-and-drop placement state
   const [hoverGridPos, setHoverGridPos] = useState({ x: -1, y: -1 });
+  const lastHoverGridPosRef = useRef({ x: -1, y: -1 }); // Track last position to avoid unnecessary updates
 
   // Structure drag tracking (machines and generators)
   const structureDragRef = useRef({ type: null, item: null, startX: 0, startY: 0, hasMoved: false });
@@ -896,6 +897,7 @@ export default function FactoryCanvas({
   // Clear hover position when drag ends
   useEffect(() => {
     if (!dragState?.isDragging) {
+      lastHoverGridPosRef.current = { x: -1, y: -1 };
       setHoverGridPos({ x: -1, y: -1 });
     }
   }, [dragState?.isDragging]);
@@ -1050,8 +1052,23 @@ export default function FactoryCanvas({
     const world = worldRef.current;
     const assets = assetsRef.current;
 
-    // Clear previous content
-    world.removeChildren();
+    // Clear previous content and destroy non-reusable children to prevent memory leaks
+    const removedChildren = world.removeChildren();
+    const reusableSprites = new Set(Object.values(animatedSpritesRef.current));
+
+    // First, detach reusable sprites from their parent containers so they don't get destroyed
+    reusableSprites.forEach(sprite => {
+      if (sprite && sprite.parent) {
+        sprite.parent.removeChild(sprite);
+      }
+    });
+
+    // Now safely destroy the removed children (containers, graphics, etc.)
+    removedChildren.forEach(child => {
+      if (child && child.destroy) {
+        child.destroy({ children: true });
+      }
+    });
 
     // Clean up animated sprite refs for removed machines/generators
     const currentKeys = new Set([
@@ -1060,8 +1077,14 @@ export default function FactoryCanvas({
     ]);
     Object.keys(animatedSpritesRef.current).forEach(key => {
       if (!currentKeys.has(key)) {
+        // Destroy the orphaned animated sprite
+        const sprite = animatedSpritesRef.current[key];
+        if (sprite && sprite.destroy) {
+          sprite.destroy();
+        }
         delete animatedSpritesRef.current[key];
         delete currentlyAnimatingRef.current[key];
+        delete continuousRestartTimesRef.current[key];
         delete animationStateRef.current[key.split('-')[1]];
       }
     });
@@ -2018,7 +2041,7 @@ export default function FactoryCanvas({
       // Setup animation ticker to trigger animations for machines
       // In 'sometimes' mode: random triggers; in 'continuous' mode: always animate working machines
       // Generators animate continuously when enabled
-      app.ticker.add(() => {
+      const tickerCallback = () => {
         // Skip animation logic if animations are disabled
         if (!animationsEnabledRef.current) return;
 
@@ -2201,7 +2224,11 @@ export default function FactoryCanvas({
             anims.splice(i, 1);
           }
         }
-      });
+      };
+
+      // Add ticker callback and store reference for cleanup
+      app.ticker.add(tickerCallback);
+      app._tickerCallback = tickerCallback;
 
       // Setup zoom (mouse wheel)
       const canvas = app.canvas;
@@ -2286,6 +2313,11 @@ export default function FactoryCanvas({
           canvas.removeEventListener('mouseleave', handlers.handleMouseLeave);
           window.removeEventListener('mousemove', handlers.handleMouseMove);
           window.removeEventListener('mouseup', handlers.handleMouseUp);
+        }
+
+        // Remove ticker callback before destroying app
+        if (app._tickerCallback) {
+          app.ticker.remove(app._tickerCallback);
         }
 
         app.destroy(true, { children: true });
@@ -2437,7 +2469,11 @@ export default function FactoryCanvas({
 
     const gridPos = screenToGridCoords(e.clientX, e.clientY);
     if (gridPos) {
-      setHoverGridPos(gridPos);
+      // Only update if position changed to avoid excessive re-renders
+      if (gridPos.x !== lastHoverGridPosRef.current.x || gridPos.y !== lastHoverGridPosRef.current.y) {
+        lastHoverGridPosRef.current = { x: gridPos.x, y: gridPos.y };
+        setHoverGridPos(gridPos);
+      }
     }
   }, [screenToGridCoords]);
 
@@ -2470,11 +2506,13 @@ export default function FactoryCanvas({
       console.warn('Failed to parse drop data:', err);
     }
 
+    lastHoverGridPosRef.current = { x: -1, y: -1 };
     setHoverGridPos({ x: -1, y: -1 });
   }, [screenToGridCoords, onDrop]);
 
   // Handle drag leave to clear hover
   const handleDragLeave = useCallback(() => {
+    lastHoverGridPosRef.current = { x: -1, y: -1 };
     setHoverGridPos({ x: -1, y: -1 });
   }, []);
 
@@ -2824,7 +2862,7 @@ export default function FactoryCanvas({
       }
     }
 
-    // Update hover position during drag
+    // Update hover position during drag (only if grid position changed to avoid excessive re-renders)
     if (dragData.hasMoved && containerRef.current && worldRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const world = worldRef.current;
@@ -2834,10 +2872,14 @@ export default function FactoryCanvas({
       const worldY = (canvasY - world.y) / world.scale.y;
       const gridPos = screenToGrid(worldX, worldY);
 
-      setHoverGridPos({
-        x: Math.floor(gridPos.x),
-        y: Math.floor(gridPos.y)
-      });
+      const newX = Math.floor(gridPos.x);
+      const newY = Math.floor(gridPos.y);
+
+      // Only update state if the grid position actually changed
+      if (newX !== lastHoverGridPosRef.current.x || newY !== lastHoverGridPosRef.current.y) {
+        lastHoverGridPosRef.current = { x: newX, y: newY };
+        setHoverGridPos({ x: newX, y: newY });
+      }
     }
   }, [rules, onStructureDragStart]);
 
@@ -2891,6 +2933,7 @@ export default function FactoryCanvas({
 
     // Reset drag state
     structureDragRef.current = { type: null, item: null, startX: 0, startY: 0, hasMoved: false };
+    lastHoverGridPosRef.current = { x: -1, y: -1 };
     setHoverGridPos({ x: -1, y: -1 });
   }, [onDrop, onMachineClick, rules]);
 
