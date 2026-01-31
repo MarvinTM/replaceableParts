@@ -853,6 +853,9 @@ export default function FactoryCanvas({
   // Track restart times for continuous mode (when animation should restart after idle pause)
   const continuousRestartTimesRef = useRef({});
 
+  // Cache for texture alpha data (for pixel-perfect hit detection)
+  const textureAlphaCacheRef = useRef(new Map());
+
   // Store latest machines/generators for ticker access
   const machinesRef = useRef(machines);
   const generatorsRef = useRef(generators);
@@ -2475,13 +2478,158 @@ export default function FactoryCanvas({
     setHoverGridPos({ x: -1, y: -1 });
   }, []);
 
+  // Extract alpha data from a texture (cached for performance)
+  const getTextureAlphaData = useCallback((texture) => {
+    if (!texture || !texture.source) return null;
+
+    // Check cache first
+    const cacheKey = texture.uid || texture.source.uid || 'tex_' + Math.random();
+    if (textureAlphaCacheRef.current.has(cacheKey)) {
+      return textureAlphaCacheRef.current.get(cacheKey);
+    }
+
+    try {
+      const source = texture.source;
+      const width = Math.floor(texture.width);
+      const height = Math.floor(texture.height);
+
+      if (width <= 0 || height <= 0) return null;
+
+      // Create offscreen canvas to extract pixel data
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+      // Get the underlying resource - try multiple access patterns for different Pixi versions
+      const resource = source.resource || source._resource || source;
+
+      // Try to draw from various source types
+      if (resource instanceof HTMLImageElement ||
+          resource instanceof HTMLCanvasElement ||
+          resource instanceof ImageBitmap ||
+          (typeof OffscreenCanvas !== 'undefined' && resource instanceof OffscreenCanvas)) {
+        ctx.drawImage(resource, 0, 0, width, height);
+      } else if (source.source instanceof HTMLImageElement ||
+                 source.source instanceof HTMLCanvasElement ||
+                 source.source instanceof ImageBitmap) {
+        // Some Pixi versions nest the resource differently
+        ctx.drawImage(source.source, 0, 0, width, height);
+      } else {
+        // Can't extract pixel data from this source type
+        console.warn('FactoryCanvas: Cannot extract alpha data from texture source type:', typeof resource, resource);
+        return null;
+      }
+
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const alphaData = {
+        width,
+        height,
+        data: new Uint8Array(width * height)
+      };
+
+      // Extract just the alpha channel
+      for (let i = 0; i < width * height; i++) {
+        alphaData.data[i] = imageData.data[i * 4 + 3];
+      }
+
+      // Cache for future use
+      textureAlphaCacheRef.current.set(cacheKey, alphaData);
+      return alphaData;
+    } catch (e) {
+      // Failed to extract alpha data
+      console.warn('FactoryCanvas: Failed to extract alpha data:', e);
+      return null;
+    }
+  }, []);
+
+  // Check if a world position hits a visible pixel of a structure's sprite
+  const isPixelHit = useCallback((worldX, worldY, item, type, sizeX, sizeY) => {
+    // Get the texture for this structure
+    let texture = null;
+    if (type === 'machine') {
+      const assets = assetsRef.current?.machines[item.type];
+      texture = assets?.idle;
+    } else {
+      const assets = assetsRef.current?.generators[item.type];
+      texture = assets?.static;
+    }
+
+    if (!texture) return true; // No texture = assume hit (fall back to bounding box)
+
+    // Get alpha data
+    const alphaData = getTextureAlphaData(texture);
+    if (!alphaData) return true; // Can't get alpha = assume hit
+
+    // Get machine config for scaling info
+    let disableAutoScale = false;
+    let spriteScale = 1.0;
+    if (type === 'machine' && rules?.machines) {
+      const config = rules.machines.find(m => m.id === item.type);
+      disableAutoScale = config?.disableAutoScale || false;
+      spriteScale = config?.spriteScale || 1.0;
+    } else if (type === 'generator' && rules?.generators) {
+      const config = rules.generators.find(g => g.id === item.type);
+      disableAutoScale = config?.disableAutoScale || false;
+      spriteScale = config?.spriteScale || 1.0;
+    }
+
+    // Calculate the sprite's actual scale
+    let scale;
+    if (disableAutoScale) {
+      scale = spriteScale;
+    } else {
+      const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+      const autoScale = expectedWidth / texture.width;
+      scale = autoScale * spriteScale;
+    }
+
+    // Calculate sprite position (anchor is 0.5, 1 - center bottom)
+    const screenPos = getStructureScreenPosition(item.x, item.y, sizeX, sizeY);
+    const spriteX = screenPos.x;
+    const spriteY = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4);
+
+    // Transform world coordinates to local texture coordinates
+    // With anchor (0.5, 1): texture extends from (spriteX - width*scale/2) to (spriteX + width*scale/2) horizontally
+    // and from (spriteY - height*scale) to spriteY vertically
+    const localX = (worldX - spriteX) / scale + (texture.width / 2);
+    const localY = (worldY - spriteY) / scale + texture.height;
+
+    // Check bounds
+    if (localX < 0 || localX >= alphaData.width || localY < 0 || localY >= alphaData.height) {
+      return false;
+    }
+
+    // Get alpha value at this position (threshold of 32 to account for antialiasing)
+    const pixelIndex = Math.floor(localY) * alphaData.width + Math.floor(localX);
+    const alpha = alphaData.data[pixelIndex];
+
+    return alpha > 32;
+  }, [getTextureAlphaData, rules]);
+
+  // Check if a screen position is within a structure's isometric footprint (diamond on the ground)
+  const isOnFootprint = useCallback((worldX, worldY, item, sizeX, sizeY) => {
+    // Convert screen coordinates to grid coordinates
+    const gridPos = screenToGrid(worldX, worldY);
+
+    // Check if within the structure's grid footprint (with small tolerance for edges)
+    const tolerance = 0.1;
+    return gridPos.x >= item.x - tolerance &&
+           gridPos.x < item.x + sizeX + tolerance &&
+           gridPos.y >= item.y - tolerance &&
+           gridPos.y < item.y + sizeY + tolerance;
+  }, []);
+
   // Find structure (machine or generator) at world coordinates
   const findStructureAtWorldPos = useCallback((worldX, worldY) => {
     if (!rules) return null;
 
-    // Helper to check collision with a list of items
-    const checkItems = (items, type) => {
-      if (!items) return null;
+    // Collect all matching structures with their screen Y position for z-ordering
+    const matches = [];
+
+    // Helper to check collision with a list of items and collect all matches
+    const collectMatches = (items, type) => {
+      if (!items) return;
       for (const item of items) {
         let sizeX = 1;
         let sizeY = 1;
@@ -2509,7 +2657,7 @@ export default function FactoryCanvas({
         const structureScreenPos = getStructureScreenPosition(item.x, item.y, sizeX, sizeY);
         const baseOffset = (sizeX + sizeY) * (TILE_HEIGHT / 4);
         const visualBottom = structureScreenPos.y + baseOffset;
-        
+
         // Approximate height based on assets or defaults
         let visualHeight = 40;
         if (type === 'machine') {
@@ -2531,20 +2679,51 @@ export default function FactoryCanvas({
         const clickBottom = visualBottom + 5;
 
         if (worldX >= left && worldX <= right && worldY >= clickTop && worldY <= clickBottom) {
-          return item;
+          // Check if click is on the structure's ground footprint (higher priority)
+          const onFootprint = isOnFootprint(worldX, worldY, item, sizeX, sizeY);
+          // Store match with screen Y for z-order sorting (higher Y = visually in front)
+          matches.push({ type, item, screenY: structureScreenPos.y, sizeX, sizeY, onFootprint });
         }
       }
-      return null;
     };
 
-    const machine = checkItems(machines, 'machine');
-    if (machine) return { type: 'machine', item: machine };
+    // Collect all matching machines and generators
+    collectMatches(machines, 'machine');
+    collectMatches(generators, 'generator');
 
-    const generator = checkItems(generators, 'generator');
-    if (generator) return { type: 'generator', item: generator };
+    if (matches.length === 0) return null;
 
+    // Separate matches into footprint hits and non-footprint hits
+    const footprintMatches = matches.filter(m => m.onFootprint);
+    const spriteOnlyMatches = matches.filter(m => !m.onFootprint);
+
+    // Prioritize footprint matches - if click is on a building's actual floor area, select that one
+    if (footprintMatches.length > 0) {
+      // Sort by screen Y descending (highest Y = visually in front)
+      footprintMatches.sort((a, b) => b.screenY - a.screenY);
+      // Try pixel-perfect detection among footprint matches
+      for (const match of footprintMatches) {
+        if (isPixelHit(worldX, worldY, match.item, match.type, match.sizeX, match.sizeY)) {
+          return { type: match.type, item: match.item };
+        }
+      }
+      // If pixel detection failed/unavailable, return frontmost footprint match
+      return { type: footprintMatches[0].type, item: footprintMatches[0].item };
+    }
+
+    // No footprint matches - fall back to sprite-only matches with z-order
+    spriteOnlyMatches.sort((a, b) => b.screenY - a.screenY);
+
+    // Find the first match that passes pixel-perfect hit detection
+    for (const match of spriteOnlyMatches) {
+      if (isPixelHit(worldX, worldY, match.item, match.type, match.sizeX, match.sizeY)) {
+        return { type: match.type, item: match.item };
+      }
+    }
+
+    // No pixel hit found, return null (click was on transparent areas of all candidates)
     return null;
-  }, [machines, generators, rules]);
+  }, [machines, generators, rules, isPixelHit, isOnFootprint]);
 
   // Handle mouse down to detect potential machine drag OR start camera pan
   const handleMouseDown = useCallback((e) => {
