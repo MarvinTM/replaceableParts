@@ -2,7 +2,7 @@
   "releases": [
     {
       "version": "0.2.0",
-      "date": "2024-01-29",
+      "date": "2024-01-30",
       "highlights": "Asset loading visualization. New Factory layout. New power generators",
       "changes": [
         {
@@ -14,12 +14,16 @@
           "text": "Changed main layout of the Factory tab"
         },
         {
+          "type": "feature",
+          "text": "Added user audit session information"
+        },
+        {
           "type": "improvement",
           "text": "Unlocking researched recipes will now give additional research points, and also boost overall research production"
         },
         {
           "type": "improvement",
-          "text": "Added steel forge"
+          "text": "Added steel forge and heavy assembly plant"
         }
       ]
     },

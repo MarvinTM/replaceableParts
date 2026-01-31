@@ -1072,9 +1072,11 @@ export const defaultRules = {
       id: 'heavy_assembly',
       itemId: 'heavy_assembly',
       name: 'Heavy Assembly Plant',
-      sizeX: 3, sizeY: 2,
+      sizeX: 6, sizeY: 15,
       energyConsumption: 10,
-      animation: { frames: 4, speed: 0.1 },
+      offsetX: 0, offsetY: 50,
+      animation: { frames: 4, speed: 0.02, separateFrames: true},
+      disableAutoScale: true,
       allowedRecipes: [
         // Mechanical Intermediates
         'gear', 'crankshaft', 'piston', 'coupling',
