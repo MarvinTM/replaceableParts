@@ -2,8 +2,8 @@
   "releases": [
     {
       "version": "0.2.0",
-      "date": "2024-01-30",
-      "highlights": "Asset loading visualization. New Factory layout. New power generators",
+      "date": "2024-01-31",
+      "highlights": "Exploration map visual improvements. Factory layout redesign. User audit info.",
       "changes": [
         {
           "type": "feature",
