@@ -3,9 +3,13 @@
  * Runs the game engine without UI for balancing analysis
  */
 
-import { engine } from '../../src/engine/engine.js';
+import { engine, setMutableMode } from '../../src/engine/engine.js';
 import { createInitialState } from '../../src/engine/initialState.js';
 import { defaultRules } from '../../src/engine/defaultRules.js';
+
+// Enable mutable mode for simulation (skips expensive deep cloning)
+// This is safe because simulations don't need immutability (no React, no undo)
+setMutableMode(true);
 
 /**
  * Create a new simulation instance

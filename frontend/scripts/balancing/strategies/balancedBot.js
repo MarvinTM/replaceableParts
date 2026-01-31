@@ -12,12 +12,14 @@ export class BalancedBot extends BaseStrategy {
     this.name = 'balanced';
 
     // Tunable parameters
-    this.sellThreshold = params.sellThreshold ?? 5;  // Sell when we have > N of an item
-    this.researchBudgetRatio = params.researchBudgetRatio ?? 0.3;  // Spend 30% on research
-    this.minCreditsBuffer = params.minCreditsBuffer ?? 100;  // Keep some credits in reserve
+    this.sellThreshold = params.sellThreshold ?? 3;  // Sell when we have > N of an item
+    this.researchBudgetRatio = params.researchBudgetRatio ?? 0.2;  // Spend 20% on research
+    this.minCreditsBuffer = params.minCreditsBuffer ?? 50;  // Keep some credits in reserve
 
     // State tracking
     this.lastResearchDonation = 0;
+    this.lastExploration = 0;
+    this.lastBuild = 0;
     this.machinesDeployed = 0;
   }
 
@@ -25,25 +27,33 @@ export class BalancedBot extends BaseStrategy {
     const actions = [];
     const { state, rules } = sim;
 
-    // Priority 1: Sell final goods above threshold
+    // Priority 1: Sell final goods above threshold (get income flowing)
     const sellActions = this.decideSelling(sim);
     actions.push(...sellActions);
 
-    // Priority 2: Deploy machines if we have them and space
+    // Priority 2: Build machines/generators if we have materials
+    const buildActions = this.decideBuildingMachines(sim);
+    actions.push(...buildActions);
+
+    // Priority 3: Deploy machines if we have them and space
     const deployActions = this.decideDeployment(sim);
     actions.push(...deployActions);
 
-    // Priority 3: Assign recipes to idle machines
+    // Priority 4: Assign recipes to idle machines
     const recipeActions = this.decideRecipeAssignment(sim);
     actions.push(...recipeActions);
 
-    // Priority 4: Research (donate credits, run experiments)
+    // Priority 5: Research (donate credits, run experiments)
     const researchActions = this.decideResearch(sim);
     actions.push(...researchActions);
 
-    // Priority 5: Expand floor if needed
+    // Priority 6: Expand floor/map if needed
     const expansionActions = this.decideExpansion(sim);
     actions.push(...expansionActions);
+
+    // Priority 7: Explore and unlock extraction nodes
+    const explorationActions = this.decideExploration(sim);
+    actions.push(...explorationActions);
 
     return actions;
   }
@@ -66,6 +76,113 @@ export class BalancedBot extends BaseStrategy {
     }
 
     return actions;
+  }
+
+  /**
+   * Decide whether to build new machines or generators from materials
+   */
+  decideBuildingMachines(sim) {
+    const { state, rules } = sim;
+    const actions = [];
+
+    // Don't build too frequently
+    if (sim.currentTick - this.lastBuild < 100) {
+      return actions;
+    }
+
+    // Check if we need more machines (have materials but few machines)
+    const totalMachines = state.machines.length +
+      Object.values(state.builtMachines || {}).reduce((a, b) => a + b, 0);
+
+    // Try to build generators first if we need power
+    const potentialEnergyNeed = this.calculatePotentialEnergyNeed(state, rules);
+    if (state.energy.produced < potentialEnergyNeed + 5) {
+      const genAction = this.tryBuildGenerator(state, rules);
+      if (genAction) {
+        actions.push(genAction);
+        this.lastBuild = sim.currentTick;
+        return actions;
+      }
+    }
+
+    // Build machines if we have capacity and materials
+    if (totalMachines < 20) {  // Cap at 20 machines
+      const machineAction = this.tryBuildMachine(state, rules);
+      if (machineAction) {
+        actions.push(machineAction);
+        this.lastBuild = sim.currentTick;
+      }
+    }
+
+    return actions;
+  }
+
+  calculatePotentialEnergyNeed(state, rules) {
+    let need = state.energy.consumed;
+    for (const machine of state.machines) {
+      if (machine.status === 'blocked') {
+        const config = rules.machines.find(m => m.id === machine.type);
+        need += config?.energyConsumption || 1;
+      }
+    }
+    for (const [type, count] of Object.entries(state.builtMachines || {})) {
+      const config = rules.machines.find(m => m.id === type);
+      need += (config?.energyConsumption || 1) * count;
+    }
+    return need;
+  }
+
+  tryBuildGenerator(state, rules) {
+    // Find a generator we can build
+    for (const genConfig of rules.generators) {
+      const recipe = rules.generatorRecipes?.[genConfig.id];
+      if (!recipe?.slots) continue;
+
+      // Check if we have all materials
+      let canBuild = true;
+      for (const slot of recipe.slots) {
+        const have = state.inventory[slot.material] || 0;
+        if (have < slot.quantity) {
+          canBuild = false;
+          break;
+        }
+      }
+
+      if (canBuild) {
+        return {
+          type: 'BUILD_GENERATOR',
+          payload: { generatorType: genConfig.id }
+        };
+      }
+    }
+    return null;
+  }
+
+  tryBuildMachine(state, rules) {
+    // Prioritize machines that can produce what we need
+    // For now, just build any machine we can afford
+    for (const machineConfig of rules.machines) {
+      const recipe = rules.machineRecipes?.[machineConfig.id];
+      if (!recipe?.slots) continue;
+
+      // Check if we have all materials
+      let canBuild = true;
+      for (const slot of recipe.slots) {
+        const have = state.inventory[slot.material] || 0;
+        if (have < slot.quantity) {
+          canBuild = false;
+          break;
+        }
+      }
+
+      if (canBuild) {
+        return {
+          type: 'BUILD_MACHINE',
+          payload: { machineType: machineConfig.id }
+        };
+      }
+    }
+    return null;
   }
 
   decideDeployment(sim) {
@@ -92,12 +209,30 @@ export class BalancedBot extends BaseStrategy {
       }
     }
 
-    // Deploy generators only if we're in energy deficit
-    const energyNeeded = state.energy.consumed;
+    // Deploy generators if we need more power
     const energyProduced = state.energy.produced;
 
-    // Only deploy if we're actually short on energy
-    if (energyProduced < energyNeeded) {
+    // Calculate potential energy needs: current consumption + blocked machines + undeployed machines
+    let potentialNeeds = state.energy.consumed;
+
+    // Add blocked machines
+    for (const machine of state.machines) {
+      if (machine.status === 'blocked') {
+        const machineConfig = rules.machines.find(m => m.id === machine.type);
+        potentialNeeds += machineConfig?.energyConsumption || 1;
+      }
+    }
+
+    // Add undeployed machines (we'll want power for them)
+    for (const [machineType, count] of Object.entries(state.builtMachines || {})) {
+      if (count > 0) {
+        const machineConfig = rules.machines.find(m => m.id === machineType);
+        potentialNeeds += (machineConfig?.energyConsumption || 1) * count;
+      }
+    }
+
+    // Deploy generators if we don't have enough for potential needs
+    if (energyProduced < potentialNeeds) {
       const builtGenerators = state.builtGenerators || {};
       for (const [genType, count] of Object.entries(builtGenerators)) {
         if (count <= 0) continue;
@@ -132,8 +267,8 @@ export class BalancedBot extends BaseStrategy {
     );
 
     // Check if we should reassign any machine to make a final good
-    // Do this periodically (every 200 ticks) to avoid constant switching
-    if (sim.currentTick % 200 === 0) {
+    // Do this frequently (every 50 ticks) to keep production flowing
+    if (sim.currentTick % 50 === 0) {
       const reassignAction = this.tryReassignForFinal(sim, rules, recipePriority);
       if (reassignAction) {
         actions.push(reassignAction);
@@ -402,7 +537,7 @@ export class BalancedBot extends BaseStrategy {
                   type: 'FILL_PROTOTYPE_SLOT',
                   payload: {
                     recipeId: proto.recipeId,
-                    slotIndex: i,
+                    materialId: slot.material,
                     quantity: fillAmount
                   }
                 });
@@ -424,12 +559,59 @@ export class BalancedBot extends BaseStrategy {
 
     // Expand floor if we can't place more machines
     const hasUndeployedMachines = Object.values(state.builtMachines || {}).some(c => c > 0);
-    if (hasUndeployedMachines && !this.findPlacement(sim, 3, 3)) {
+    const hasUndeployedGenerators = Object.values(state.builtGenerators || {}).some(c => c > 0);
+
+    if ((hasUndeployedMachines || hasUndeployedGenerators) && !this.findPlacement(sim, 3, 3)) {
       if (affordable.canExpandFloor && state.credits > affordable.floorCost + this.minCreditsBuffer) {
         actions.push({
           type: 'BUY_FLOOR_SPACE',
           payload: {}
         });
+      }
+    }
+
+    return actions;
+  }
+
+  /**
+   * Explore the map and unlock extraction nodes
+   */
+  decideExploration(sim) {
+    const { state, rules } = sim;
+    const actions = [];
+
+    // Don't explore too frequently
+    if (sim.currentTick - this.lastExploration < 200) {
+      return actions;
+    }
+
+    if (!state.explorationMap) return actions;
+
+    // Check if we should expand exploration
+    const explorationCost = rules.exploration.baseCostPerCell * 16; // Rough chunk cost
+    if (state.credits > explorationCost + this.minCreditsBuffer * 2) {
+      actions.push({
+        type: 'EXPAND_EXPLORATION',
+        payload: {}
+      });
+      this.lastExploration = sim.currentTick;
+      return actions;
+    }
+
+    // Try to unlock extraction nodes
+    const nodeUnlockCost = rules.exploration.nodeUnlockCost || 25;
+    if (state.credits > nodeUnlockCost + this.minCreditsBuffer) {
+      // Find explored but unlocked nodes
+      for (const [key, tile] of Object.entries(state.explorationMap.tiles)) {
+        if (tile.explored && tile.extractionNode && !tile.extractionNode.unlocked) {
+          const [x, y] = key.split(',').map(Number);
+          actions.push({
+            type: 'UNLOCK_EXPLORATION_NODE',
+            payload: { x, y }
+          });
+          this.lastExploration = sim.currentTick;
+          return actions;
+        }
       }
     }
 
@@ -443,10 +625,35 @@ export class BalancedBot extends BaseStrategy {
     const { state } = sim;
     const materialCategory = new Map(rules.materials.map(m => [m.id, m.category]));
 
+    // Get raw materials we're extracting
+    const extractingRaw = new Set(
+      state.extractionNodes.filter(n => n.active).map(n => n.resourceType)
+    );
+
+    // Get what's being produced by machines
+    const beingProduced = new Set();
+    for (const machine of state.machines) {
+      if (machine.recipeId && machine.status !== 'blocked') {
+        const r = rules.recipes.find(rec => rec.id === machine.recipeId);
+        if (r) {
+          for (const outputId of Object.keys(r.outputs)) {
+            beingProduced.add(outputId);
+          }
+        }
+      }
+    }
+
     // Find final good recipes and check what's blocking them
     const finalRecipes = rules.recipes.filter(r => {
       const outputIds = Object.keys(r.outputs);
       return outputIds.some(id => materialCategory.get(id) === 'final');
+    });
+
+    // Sort by simpler recipes first (fewer non-raw inputs)
+    finalRecipes.sort((a, b) => {
+      const aNonRaw = Object.keys(a.inputs).filter(id => materialCategory.get(id) !== 'raw').length;
+      const bNonRaw = Object.keys(b.inputs).filter(id => materialCategory.get(id) !== 'raw').length;
+      return aNonRaw - bNonRaw;
     });
 
     for (const recipe of finalRecipes) {
@@ -457,17 +664,35 @@ export class BalancedBot extends BaseStrategy {
       let canMake = true;
 
       for (const [inputId, needed] of Object.entries(recipe.inputs)) {
-        const have = state.inventory[inputId] || 0;
-        if (have < needed) {
-          canMake = false;
-          missingInputs.push({ id: inputId, needed, have });
+        const material = rules.materials.find(m => m.id === inputId);
+        const isRaw = material?.category === 'raw';
+
+        if (isRaw) {
+          // Raw materials come from extraction
+          if (!extractingRaw.has(inputId)) {
+            canMake = false;
+            missingInputs.push({ id: inputId, needed, have: 0, isRaw: true });
+          }
+        } else {
+          // Non-raw from inventory or production
+          const have = state.inventory[inputId] || 0;
+          const producing = beingProduced.has(inputId);
+          if (have < needed && !producing) {
+            canMake = false;
+            missingInputs.push({ id: inputId, needed, have, isRaw: false });
+          } else if (have >= needed) {
+            // We have it in inventory - can make!
+          } else if (producing) {
+            // It's being produced - wait for it
+            canMake = false;
+          }
         }
       }
 
       if (canMake) {
         // We CAN make this final! Reassign a machine to make it
         for (const machine of state.machines) {
-          if (!machine.enabled) continue;
+          if (!machine.enabled || machine.status === 'blocked') continue;
 
           const machineConfig = rules.machines.find(m => m.id === machine.type);
           if (!machineConfig || !machineConfig.allowedRecipes) continue;
@@ -480,39 +705,44 @@ export class BalancedBot extends BaseStrategy {
             };
           }
         }
-      } else if (missingInputs.length === 1) {
-        // We're only missing ONE input - try to produce it
-        const missing = missingInputs[0];
+      } else if (missingInputs.length > 0) {
+        // Try to produce missing inputs (prioritize non-raw ones)
+        for (const missing of missingInputs.filter(m => !m.isRaw)) {
+          // Find a recipe that produces this missing input
+          const producerRecipe = rules.recipes.find(r => {
+            const outputs = Object.keys(r.outputs);
+            return outputs.includes(missing.id) && state.unlockedRecipes.includes(r.id);
+          });
 
-        // Find a recipe that produces this missing input
-        const producerRecipe = rules.recipes.find(r => {
-          const outputs = Object.keys(r.outputs);
-          return outputs.includes(missing.id) && state.unlockedRecipes.includes(r.id);
-        });
-
-        if (producerRecipe) {
-          // Check if we can make the producer recipe
-          let canMakeProducer = true;
-          for (const [inputId, needed] of Object.entries(producerRecipe.inputs)) {
-            if ((state.inventory[inputId] || 0) < needed) {
-              canMakeProducer = false;
-              break;
+          if (producerRecipe) {
+            // Check if we can make the producer recipe
+            let canMakeProducer = true;
+            for (const [inputId, needed] of Object.entries(producerRecipe.inputs)) {
+              const mat = rules.materials.find(m => m.id === inputId);
+              if (mat?.category === 'raw') {
+                if (!extractingRaw.has(inputId)) canMakeProducer = false;
+              } else {
+                if ((state.inventory[inputId] || 0) < needed && !beingProduced.has(inputId)) {
+                  canMakeProducer = false;
+                }
+              }
             }
-          }
 
-          if (canMakeProducer) {
-            // Find a machine that can make the missing input
-            for (const machine of state.machines) {
-              if (!machine.enabled || machine.recipeId === producerRecipe.id) continue;
+            if (canMakeProducer) {
+              // Find a machine that can make the missing input
+              for (const machine of state.machines) {
+                if (!machine.enabled || machine.status === 'blocked') continue;
+                if (machine.recipeId === producerRecipe.id) continue;
 
-              const machineConfig = rules.machines.find(m => m.id === machine.type);
-              if (!machineConfig || !machineConfig.allowedRecipes) continue;
+                const machineConfig = rules.machines.find(m => m.id === machine.type);
+                if (!machineConfig || !machineConfig.allowedRecipes) continue;
 
-              if (machineConfig.allowedRecipes.includes(producerRecipe.id)) {
-                return {
-                  type: 'ASSIGN_RECIPE',
-                  payload: { machineId: machine.id, recipeId: producerRecipe.id }
-                };
+                if (machineConfig.allowedRecipes.includes(producerRecipe.id)) {
+                  return {
+                    type: 'ASSIGN_RECIPE',
+                    payload: { machineId: machine.id, recipeId: producerRecipe.id }
+                  };
+                }
               }
             }
           }
@@ -521,6 +751,27 @@ export class BalancedBot extends BaseStrategy {
     }
 
     return null;
+  }
+
+  /**
+   * Get a diverse set of final goods to produce
+   */
+  getTargetFinalGoods(state, rules) {
+    const unlocked = new Set(state.unlockedRecipes);
+    const finals = [];
+
+    for (const recipe of rules.recipes) {
+      if (!unlocked.has(recipe.id)) continue;
+      for (const outputId of Object.keys(recipe.outputs)) {
+        const mat = rules.materials.find(m => m.id === outputId);
+        if (mat?.category === 'final') {
+          finals.push({ recipeId: recipe.id, materialId: outputId, age: mat.age });
+        }
+      }
+    }
+
+    // Sort by age (lower first for easier production)
+    return finals.sort((a, b) => a.age - b.age);
   }
 }
 
