@@ -11,6 +11,29 @@ const GUEST_SAVE_KEY = 'replaceableParts-guestSave';
 const MAX_CLOUD_SAVES = 5;
 const SESSION_HEARTBEAT_INTERVAL = 60000; // 1 minute
 
+/**
+ * Validate that a game state is a real played game, not an initial/empty state.
+ * This prevents saving corrupted states during HMR or refresh race conditions.
+ */
+function isValidGameStateForSave(state) {
+  if (!state) return false;
+
+  // A state that has been played should have at least one of these:
+  // - tick > 0 (game has progressed)
+  // - machines.length > 0 (player has placed machines)
+  // - credits different from initial (5000000000)
+  // - inventory has items
+  const hasProgressed = state.tick > 0;
+  const hasMachines = state.machines && state.machines.length > 0;
+  const hasSpentCredits = state.credits !== 5000000000;
+  const hasInventory = state.inventory && Object.keys(state.inventory).length > 0;
+
+  // At least one of these should be true for a "real" save
+  // For a brand new game, tick could be 0, but if the user manually saves,
+  // that's intentional. This check mainly catches corrupted/reset states.
+  return hasProgressed || hasMachines || hasSpentCredits || hasInventory;
+}
+
 export function GameProvider({ children }) {
   const { isAuthenticated, isGuest, wasGuestBeforeLogin, clearWasGuestFlag } = useAuth();
 
@@ -18,6 +41,13 @@ export function GameProvider({ children }) {
   const [isLoadingSaves, setIsLoadingSaves] = useState(false);
   const [isAutoRestoring, setIsAutoRestoring] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+
+  // Ref to track when saves should be blocked (during restore operations)
+  // This prevents race conditions during HMR/refresh where stale saves could overwrite good data
+  const saveLockRef = useRef(false);
+
+  // Store the last known good state hash to detect if state has meaningfully changed
+  const lastSavedStateRef = useRef(null);
 
   // Get state and actions from Zustand store
   const engineState = useGameStore((state) => state.engineState);
@@ -159,7 +189,25 @@ export function GameProvider({ children }) {
 
   // ============ Guest Save Functions ============
 
-  const saveGuestGame = useCallback((state, name = 'Guest Save') => {
+  const saveGuestGame = useCallback((state, name = 'Guest Save', options = {}) => {
+    const { bypassValidation = false, bypassLock = false } = options;
+
+    // Don't save if save lock is active (during restore operations)
+    if (saveLockRef.current && !bypassLock) {
+      console.log('[SaveGuard] Blocked guest save: restore in progress');
+      return null;
+    }
+
+    // Validate state before saving to prevent corrupted saves
+    if (!bypassValidation && !isValidGameStateForSave(state)) {
+      console.warn('[SaveGuard] Blocked guest save: state appears to be initial/empty state', {
+        tick: state?.tick,
+        machineCount: state?.machines?.length,
+        credits: state?.credits
+      });
+      return null;
+    }
+
     const guestSave = {
       id: 'guest',
       name,
@@ -168,6 +216,8 @@ export function GameProvider({ children }) {
       updatedAt: new Date().toISOString(),
     };
     localStorage.setItem(GUEST_SAVE_KEY, JSON.stringify(guestSave));
+    lastSavedStateRef.current = state?.tick; // Track what we saved
+    console.log('[SaveGuard] Guest save successful', { tick: state?.tick, machines: state?.machines?.length });
     return guestSave;
   }, []);
 
@@ -306,7 +356,8 @@ export function GameProvider({ children }) {
         return save;
       } else if (isGuest) {
         // Guest mode: save to localStorage
-        const guestSave = saveGuestGame(newEngineState, name);
+        // New games intentionally have initial state, so bypass validation
+        const guestSave = saveGuestGame(newEngineState, name, { bypassValidation: true });
         setSaveInfo(guestSave.id, guestSave.name);
         return guestSave;
       } else {
@@ -358,23 +409,41 @@ export function GameProvider({ children }) {
     return null;
   }, [getLatestSave, loadGame]);
 
-  const saveGame = useCallback(async () => {
+  const saveGame = useCallback(async (options = {}) => {
+    const { bypassLock = false, bypassValidation = false } = options;
+
     if (!engineState) return null;
+
+    // Check save lock (can be bypassed for manual saves)
+    if (saveLockRef.current && !bypassLock) {
+      console.log('[SaveGame] Blocked: save lock active');
+      return null;
+    }
 
     const currentState = getStateForSave();
 
+    // Validate state (can be bypassed for intentional saves)
+    if (!bypassValidation && !isValidGameStateForSave(currentState)) {
+      console.warn('[SaveGame] Blocked: state appears invalid', {
+        tick: currentState?.tick,
+        machines: currentState?.machines?.length
+      });
+      return null;
+    }
+
     if (isGuest && !isAuthenticated) {
       // Guest mode: save to localStorage
-      const guestSave = saveGuestGame(currentState, saveName || 'Guest Save');
+      const guestSave = saveGuestGame(currentState, saveName || 'Guest Save', { bypassValidation: true });
       return guestSave;
     } else if (isAuthenticated && saveId && saveId !== 'guest') {
       // Authenticated: save to backend
       try {
         const { save } = await api.updateSave(saveId, { data: currentState });
         setSaveInfo(save.id, save.name);
+        console.log('[SaveGame] Backend save successful, tick:', currentState?.tick);
         return save;
       } catch (error) {
-        console.error('Failed to save game:', error);
+        console.error('[SaveGame] Failed to save game:', error);
         throw error;
       }
     }
@@ -432,13 +501,19 @@ export function GameProvider({ children }) {
         if (guestSave) {
           hasAttemptedRestore.current = true;
           setIsAutoRestoring(true);
+          saveLockRef.current = true; // Block saves during restore
           try {
-            console.log('Auto-restoring guest save');
+            console.log('[AutoRestore] Restoring guest save, tick:', guestSave.data?.tick);
             loadGameState(guestSave.id, guestSave.name, guestSave.data);
           } catch (error) {
-            console.error('Failed to auto-restore guest game:', error);
+            console.error('[AutoRestore] Failed to auto-restore guest game:', error);
           } finally {
             setIsAutoRestoring(false);
+            // Delay unlock to let any pending state updates settle
+            setTimeout(() => {
+              saveLockRef.current = false;
+              console.log('[AutoRestore] Save lock released');
+            }, 1000);
           }
         }
         return;
@@ -448,14 +523,20 @@ export function GameProvider({ children }) {
       if (isAuthenticated && saveId && saveId !== 'guest') {
         hasAttemptedRestore.current = true;
         setIsAutoRestoring(true);
+        saveLockRef.current = true; // Block saves during restore
         try {
-          console.log(`Auto-restoring last played game: ${saveName} (ID: ${saveId})`);
+          console.log(`[AutoRestore] Restoring from backend: ${saveName} (ID: ${saveId})`);
           await loadGame(saveId);
         } catch (error) {
-          console.error('Failed to auto-restore game:', error);
+          console.error('[AutoRestore] Failed to auto-restore game:', error);
           clearGame();
         } finally {
           setIsAutoRestoring(false);
+          // Delay unlock to let any pending state updates settle
+          setTimeout(() => {
+            saveLockRef.current = false;
+            console.log('[AutoRestore] Save lock released');
+          }, 1000);
         }
       }
     };
@@ -470,24 +551,62 @@ export function GameProvider({ children }) {
     if (!isInGame || !isAuthenticated || saveId === 'guest') return;
 
     const autoSaveInterval = setInterval(() => {
-      saveGame().catch(console.error);
+      // The saveGame function already checks saveLockRef internally
+      saveGame().catch(err => {
+        // Only log actual errors, not blocked saves
+        if (err) console.error('[AutoSave] Error:', err);
+      });
     }, 30000);
 
     return () => clearInterval(autoSaveInterval);
   }, [isInGame, isAuthenticated, saveId, saveGame]);
 
   // Auto-save for guests when engine state changes (debounced)
+  // Use a stable ref for the timeout ID to handle HMR better
   const guestSaveTimeoutRef = useRef(null);
+  // Track the tick at which we scheduled the save to detect stale saves
+  const scheduledSaveTickRef = useRef(null);
+
   useEffect(() => {
     if (!isInGame || !isGuest || isAuthenticated) return;
 
-    // Debounce guest saves to every 5 seconds max
-    if (guestSaveTimeoutRef.current) {
-      clearTimeout(guestSaveTimeoutRef.current);
+    // Don't schedule saves while restore is in progress
+    if (saveLockRef.current) {
+      console.log('[GuestAutoSave] Skipped scheduling: save lock active');
+      return;
     }
 
+    // Clear any existing timeout
+    if (guestSaveTimeoutRef.current) {
+      clearTimeout(guestSaveTimeoutRef.current);
+      guestSaveTimeoutRef.current = null;
+    }
+
+    // Record the tick we're scheduling a save for
+    const currentTick = engineState?.tick;
+    scheduledSaveTickRef.current = currentTick;
+
     guestSaveTimeoutRef.current = setTimeout(() => {
+      // Double-check the save lock at execution time
+      if (saveLockRef.current) {
+        console.log('[GuestAutoSave] Blocked at execution: save lock active');
+        return;
+      }
+
       const currentState = getStateForSave();
+
+      // Verify the state we're about to save is the same or newer than what we scheduled
+      // This catches cases where the state regressed (e.g., during HMR)
+      if (currentState?.tick !== undefined && scheduledSaveTickRef.current !== undefined) {
+        if (currentState.tick < scheduledSaveTickRef.current) {
+          console.warn('[GuestAutoSave] Blocked: state regressed', {
+            scheduledTick: scheduledSaveTickRef.current,
+            currentTick: currentState.tick
+          });
+          return;
+        }
+      }
+
       if (currentState) {
         saveGuestGame(currentState, saveName || 'Guest Save');
       }
@@ -496,6 +615,7 @@ export function GameProvider({ children }) {
     return () => {
       if (guestSaveTimeoutRef.current) {
         clearTimeout(guestSaveTimeoutRef.current);
+        guestSaveTimeoutRef.current = null;
       }
     };
   }, [isInGame, isGuest, isAuthenticated, engineState, getStateForSave, saveGuestGame, saveName]);
@@ -506,7 +626,26 @@ export function GameProvider({ children }) {
       const currentSaveId = useGameStore.getState().saveId;
       const currentEngineState = useGameStore.getState().engineState;
 
-      if (!currentEngineState) return;
+      if (!currentEngineState) {
+        console.log('[SaveOnUnload] Skipped: no engine state');
+        return;
+      }
+
+      // Check save lock - don't save during restore operations
+      if (saveLockRef.current) {
+        console.log('[SaveOnUnload] Skipped: save lock active (restore in progress)');
+        return;
+      }
+
+      // Validate state to prevent saving corrupted/initial state
+      if (!isValidGameStateForSave(currentEngineState)) {
+        console.warn('[SaveOnUnload] Skipped: state appears invalid', {
+          tick: currentEngineState?.tick,
+          machines: currentEngineState?.machines?.length,
+          credits: currentEngineState?.credits
+        });
+        return;
+      }
 
       // For guests, save to localStorage
       if (isGuest && !isAuthenticated) {
@@ -518,6 +657,7 @@ export function GameProvider({ children }) {
           updatedAt: new Date().toISOString(),
         };
         localStorage.setItem(GUEST_SAVE_KEY, JSON.stringify(guestSave));
+        console.log('[SaveOnUnload] Guest save successful, tick:', currentEngineState?.tick);
         return;
       }
 
