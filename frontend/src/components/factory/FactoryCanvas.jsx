@@ -12,7 +12,7 @@ import {
 import { canPlaceAt } from '../../engine/engine.js';
 import { getIconUrl, ICON_FORMAT } from '../../services/iconService';
 import { getFactoryAssets } from '../../services/assetLoaderService';
-import useGameStore from '../../stores/gameStore';
+import useGameStore, { NORMAL_TICK_MS, FAST_TICK_MS } from '../../stores/gameStore';
 
 // Asset paths - place your images in frontend/public/assets/factory/
 const ASSET_BASE = '/assets/factory';
@@ -797,10 +797,14 @@ export default function FactoryCanvas({
   onGeneratorRightClick,
   engineState,
   machineAnimationMode = 'continuous', // 'disabled' | 'sometimes' | 'continuous'
+  simulationSpeed = 'normal', // 'paused' | 'normal' | 'fast'
   inventoryPanelRef = null
 }) {
   // Derive animationsEnabled from machineAnimationMode
   const animationsEnabled = machineAnimationMode !== 'disabled';
+  // Calculate animation speed multiplier based on simulation speed
+  // Fast mode runs proportionally faster, so animations should match
+  const animationSpeedMultiplier = simulationSpeed === 'fast' ? (NORMAL_TICK_MS / FAST_TICK_MS) : 1.0;
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const worldRef = useRef(null);
@@ -811,6 +815,7 @@ export default function FactoryCanvas({
   const floorDimensionsRef = useRef({ width: 0, height: 0 }); // Store floor dimensions for hover check
   const animationsEnabledRef = useRef(animationsEnabled); // Track animations enabled state
   const machineAnimationModeRef = useRef(machineAnimationMode); // Track animation mode
+  const animationSpeedMultiplierRef = useRef(animationSpeedMultiplier); // Track speed multiplier for simulation speed
   const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   // Production animation state from store
@@ -863,6 +868,22 @@ export default function FactoryCanvas({
     animationsEnabledRef.current = animationsEnabled;
     machineAnimationModeRef.current = machineAnimationMode;
   }, [animationsEnabled, machineAnimationMode]);
+
+  // Update animation speed multiplier ref and existing animations when simulation speed changes
+  useEffect(() => {
+    const oldMultiplier = animationSpeedMultiplierRef.current;
+    animationSpeedMultiplierRef.current = animationSpeedMultiplier;
+
+    // Update animation speed of existing animated sprites if multiplier changed
+    if (oldMultiplier !== animationSpeedMultiplier && animatedSpritesRef.current) {
+      const ratio = animationSpeedMultiplier / oldMultiplier;
+      Object.values(animatedSpritesRef.current).forEach(sprite => {
+        if (sprite && sprite.animationSpeed) {
+          sprite.animationSpeed *= ratio;
+        }
+      });
+    }
+  }, [animationSpeedMultiplier]);
 
   // Update inventory panel ref when it changes
   useEffect(() => {
@@ -1376,7 +1397,7 @@ export default function FactoryCanvas({
             : createAnimationFrames(genAssets.anim, framesToUse, frameDispositionToUse, colsToUse);
           if (frames) {
             displayObject = new AnimatedSprite(frames);
-            displayObject.animationSpeed = speedToUse;
+            displayObject.animationSpeed = speedToUse * animationSpeedMultiplier;
             displayObject.loop = true; // Loop continuously
             displayObject.play(); // Start playing immediately
 
@@ -1540,7 +1561,7 @@ export default function FactoryCanvas({
             : createAnimationFrames(machineAssets.workingAnim, framesToUse, frameDispositionToUse, colsToUse);
           if (frames) {
             displayObject = new AnimatedSprite(frames);
-            displayObject.animationSpeed = speedToUse;
+            displayObject.animationSpeed = speedToUse * animationSpeedMultiplier;
             displayObject.loop = false; // Always play once, ticker handles restarts
             displayObject.stop(); // Don't auto-play
 
@@ -1548,8 +1569,9 @@ export default function FactoryCanvas({
 
             displayObject.onComplete = () => {
               if (isContinuousMode) {
-                // In continuous mode, schedule restart after idle pause
-                continuousRestartTimesRef.current[machineKey] = Date.now() + CONTINUOUS_MODE_IDLE_PAUSE;
+                // In continuous mode, schedule restart after idle pause (adjusted for simulation speed)
+                const adjustedPause = CONTINUOUS_MODE_IDLE_PAUSE / animationSpeedMultiplierRef.current;
+                continuousRestartTimesRef.current[machineKey] = Date.now() + adjustedPause;
               }
               // Mark as not animating and clean up sprite
               currentlyAnimatingRef.current[machineKey] = false;

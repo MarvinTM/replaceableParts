@@ -70,6 +70,7 @@ function FactoryTab() {
   const engineState = useGameStore((state) => state.engineState);
   const rules = useGameStore((state) => state.rules);
   const machineAnimationMode = useGameStore((state) => state.machineAnimationMode);
+  const currentSpeed = useGameStore((state) => state.currentSpeed);
   const buyFloorSpace = useGameStore((state) => state.buyFloorSpace);
   const addMachine = useGameStore((state) => state.addMachine);
   const addGenerator = useGameStore((state) => state.addGenerator);
@@ -487,6 +488,7 @@ function FactoryTab() {
                 onGeneratorRightClick={handleGeneratorRightClick}
                 engineState={engineState}
                 machineAnimationMode={machineAnimationMode}
+                simulationSpeed={currentSpeed}
                 inventoryPanelRef={inventoryPanelRef}
               />
               {/* Floating Expand Factory Button */}
