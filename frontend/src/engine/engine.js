@@ -34,8 +34,21 @@ function generateId() {
   return Math.random().toString(36).substring(2, 9);
 }
 
+// Mutable mode flag for simulation - skips cloning for massive performance gains
+let mutableMode = false;
+
+export function setMutableMode(enabled) {
+  mutableMode = enabled;
+}
+
 function deepClone(obj) {
-  return JSON.parse(JSON.stringify(obj));
+  // In mutable mode (simulations), skip cloning entirely
+  if (mutableMode) {
+    return obj;
+  }
+  // structuredClone is faster than JSON.parse/stringify
+  // Available in Node 17+ and modern browsers
+  return structuredClone(obj);
 }
 
 function getItemWeight(itemId, rules) {
