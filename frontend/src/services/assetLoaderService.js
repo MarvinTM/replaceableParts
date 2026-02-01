@@ -13,6 +13,11 @@ import { getIconUrl } from './iconService';
 const FACTORY_ASSET_BASE = '/assets/factory';
 const EXPLORATION_ASSET_BASE = '/assets/exploration';
 
+// Batch size for parallel asset loading - adjust this to tune loading performance
+// Higher values = faster loading but more concurrent connections
+// Lower values = smoother progress updates but slower overall
+const ASSET_LOAD_BATCH_SIZE = 10;
+
 // Cached assets
 let loadedAssets = null;
 let isLoading = false;
@@ -123,6 +128,27 @@ async function preloadImageToCache(path) {
 }
 
 /**
+ * Load assets in parallel batches
+ * @param {Array<{load: Function, onResult: Function}>} tasks - Array of load tasks
+ * @param {Function} updateProgress - Progress callback
+ * @param {number} batchSize - Number of concurrent loads per batch
+ */
+async function loadInBatches(tasks, updateProgress, batchSize = ASSET_LOAD_BATCH_SIZE) {
+  for (let i = 0; i < tasks.length; i += batchSize) {
+    const batch = tasks.slice(i, i + batchSize);
+    const results = await Promise.allSettled(batch.map(task => task.load()));
+
+    // Process results and update progress for each item
+    results.forEach((result, index) => {
+      const task = batch[index];
+      const value = result.status === 'fulfilled' ? result.value : null;
+      task.onResult(value);
+      updateProgress();
+    });
+  }
+}
+
+/**
  * Count total number of assets to load
  * @param {Object} rules - Game rules
  * @returns {number}
@@ -211,143 +237,169 @@ export async function loadAllAssets(rules, onProgress = () => {}) {
       icons: new Map()
     };
 
-    // Load factory floor tiles
-    assets.factory.floor.light = await tryLoad(FACTORY_BASE_ASSETS.floor.light);
-    updateProgress();
-    assets.factory.floor.dark = await tryLoad(FACTORY_BASE_ASSETS.floor.dark);
-    updateProgress();
+    // Collect all load tasks
+    const tasks = [];
 
-    // Load wall sprites
-    assets.factory.walls.segment = await tryLoad(FACTORY_BASE_ASSETS.walls.segment);
-    updateProgress();
-    assets.factory.walls.door = await tryLoad(FACTORY_BASE_ASSETS.walls.door);
-    updateProgress();
+    // Factory floor tiles
+    tasks.push({
+      load: () => tryLoad(FACTORY_BASE_ASSETS.floor.light),
+      onResult: (texture) => { assets.factory.floor.light = texture; }
+    });
+    tasks.push({
+      load: () => tryLoad(FACTORY_BASE_ASSETS.floor.dark),
+      onResult: (texture) => { assets.factory.floor.dark = texture; }
+    });
 
-    // Load terrain tiles
+    // Wall sprites
+    tasks.push({
+      load: () => tryLoad(FACTORY_BASE_ASSETS.walls.segment),
+      onResult: (texture) => { assets.factory.walls.segment = texture; }
+    });
+    tasks.push({
+      load: () => tryLoad(FACTORY_BASE_ASSETS.walls.door),
+      onResult: (texture) => { assets.factory.walls.door = texture; }
+    });
+
+    // Terrain tiles - grass
     for (const grassPath of FACTORY_BASE_ASSETS.terrain.grass) {
-      const texture = await tryLoad(grassPath);
-      if (texture) {
-        assets.factory.terrain.grass.push(texture);
-      }
-      updateProgress();
+      tasks.push({
+        load: () => tryLoad(grassPath),
+        onResult: (texture) => { if (texture) assets.factory.terrain.grass.push(texture); }
+      });
     }
-    assets.factory.terrain.road = await tryLoad(FACTORY_BASE_ASSETS.terrain.road);
-    updateProgress();
-    assets.factory.terrain.background = await tryLoad(FACTORY_BASE_ASSETS.terrain.background);
-    updateProgress();
+    tasks.push({
+      load: () => tryLoad(FACTORY_BASE_ASSETS.terrain.road),
+      onResult: (texture) => { assets.factory.terrain.road = texture; }
+    });
+    tasks.push({
+      load: () => tryLoad(FACTORY_BASE_ASSETS.terrain.background),
+      onResult: (texture) => { assets.factory.terrain.background = texture; }
+    });
 
-    // Load machine sprites
+    // Machine sprites
     for (const machineType of rules.machines) {
-      let workingAnim = null;
       const useTransparentWhite = machineType.animation?.transparentWhite;
 
-      // Check if animation uses separate frame files
+      // Initialize machine asset container
+      assets.factory.machines[machineType.id] = {
+        idle: null,
+        working: null,
+        workingAnim: null
+      };
+
+      // Animation frames
       if (machineType.animation?.separateFrames) {
         const frameCount = machineType.animation.frames || 4;
         const frames = [];
+        assets.factory.machines[machineType.id].workingAnim = frames;
+
         for (let i = 1; i <= frameCount; i++) {
           const path = `${FACTORY_ASSET_BASE}/${machineType.id}_working_anim_${i}.png`;
-          const frame = useTransparentWhite
-            ? await loadWithTransparentWhite(path)
-            : await tryLoad(path);
-          if (frame) frames.push(frame);
-          updateProgress();
-        }
-        if (frames.length > 0) {
-          workingAnim = frames;
+          tasks.push({
+            load: () => useTransparentWhite ? loadWithTransparentWhite(path) : tryLoad(path),
+            onResult: (frame) => { if (frame) frames.push(frame); }
+          });
         }
       } else {
-        // Load as sprite sheet
         const path = `${FACTORY_ASSET_BASE}/${machineType.id}_working_anim.png`;
-        workingAnim = useTransparentWhite
-          ? await loadWithTransparentWhite(path)
-          : await tryLoad(path);
-        updateProgress();
+        tasks.push({
+          load: () => useTransparentWhite ? loadWithTransparentWhite(path) : tryLoad(path),
+          onResult: (texture) => { assets.factory.machines[machineType.id].workingAnim = texture; }
+        });
       }
 
-      const idle = await tryLoad(`${FACTORY_ASSET_BASE}/${machineType.id}_idle.png`);
-      updateProgress();
-      const working = await tryLoad(`${FACTORY_ASSET_BASE}/${machineType.id}_working.png`);
-      updateProgress();
-      // Note: blocked sprites are no longer loaded (we show dimmed idle + overlay instead)
-
-      assets.factory.machines[machineType.id] = {
-        idle,
-        working,
-        workingAnim
-      };
+      // Idle and working sprites
+      tasks.push({
+        load: () => tryLoad(`${FACTORY_ASSET_BASE}/${machineType.id}_idle.png`),
+        onResult: (texture) => { assets.factory.machines[machineType.id].idle = texture; }
+      });
+      tasks.push({
+        load: () => tryLoad(`${FACTORY_ASSET_BASE}/${machineType.id}_working.png`),
+        onResult: (texture) => { assets.factory.machines[machineType.id].working = texture; }
+      });
     }
 
-    // Load generator sprites
+    // Generator sprites
     for (const generatorType of rules.generators) {
-      let anim = null;
       const useTransparentWhite = generatorType.animation?.transparentWhite;
 
-      // Check if animation uses separate frame files
+      // Initialize generator asset container
+      assets.factory.generators[generatorType.id] = {
+        static: null,
+        anim: null
+      };
+
+      // Animation frames
       if (generatorType.animation?.separateFrames) {
         const frameCount = generatorType.animation.frames || 4;
         const frames = [];
+        assets.factory.generators[generatorType.id].anim = frames;
+
         for (let i = 1; i <= frameCount; i++) {
           const path = `${FACTORY_ASSET_BASE}/${generatorType.id}_anim_${i}.png`;
-          const frame = useTransparentWhite
-            ? await loadWithTransparentWhite(path)
-            : await tryLoad(path);
-          if (frame) frames.push(frame);
-          updateProgress();
-        }
-        if (frames.length > 0) {
-          anim = frames;
+          tasks.push({
+            load: () => useTransparentWhite ? loadWithTransparentWhite(path) : tryLoad(path),
+            onResult: (frame) => { if (frame) frames.push(frame); }
+          });
         }
       } else {
-        // Load as sprite sheet
         const path = `${FACTORY_ASSET_BASE}/${generatorType.id}_anim.png`;
-        anim = useTransparentWhite
-          ? await loadWithTransparentWhite(path)
-          : await tryLoad(path);
-        updateProgress();
+        tasks.push({
+          load: () => useTransparentWhite ? loadWithTransparentWhite(path) : tryLoad(path),
+          onResult: (texture) => { assets.factory.generators[generatorType.id].anim = texture; }
+        });
       }
 
-      const staticTexture = await tryLoad(`${FACTORY_ASSET_BASE}/${generatorType.id}.png`);
-      updateProgress();
-
-      assets.factory.generators[generatorType.id] = {
-        static: staticTexture,
-        anim
-      };
+      // Static texture
+      tasks.push({
+        load: () => tryLoad(`${FACTORY_ASSET_BASE}/${generatorType.id}.png`),
+        onResult: (texture) => { assets.factory.generators[generatorType.id].static = texture; }
+      });
     }
 
-    // Load exploration terrain textures
+    // Exploration terrain textures
     for (const terrain of EXPLORATION_TERRAIN_TYPES) {
-      const texture = await tryLoad(`${EXPLORATION_ASSET_BASE}/${terrain}.png`);
-      assets.exploration.terrain[terrain] = texture || Texture.WHITE;
-      updateProgress();
+      tasks.push({
+        load: () => tryLoad(`${EXPLORATION_ASSET_BASE}/${terrain}.png`),
+        onResult: (texture) => { assets.exploration.terrain[terrain] = texture || Texture.WHITE; }
+      });
     }
 
-    // Load material icons
+    // Material icons (load texture + preload to browser cache)
     for (const material of rules.materials) {
       const iconUrl = getIconUrl(material.id);
-      try {
-        const texture = await Assets.load(iconUrl);
-        assets.icons.set(material.id, texture);
-      } catch {
-        // Icon not found, will use fallback
-      }
-      // Also preload into browser cache for React components using <img> tags
-      await preloadImageToCache(iconUrl);
-      updateProgress();
+      tasks.push({
+        load: async () => {
+          let texture = null;
+          try {
+            texture = await Assets.load(iconUrl);
+          } catch {
+            // Icon not found, will use fallback
+          }
+          // Also preload into browser cache for React components
+          await preloadImageToCache(iconUrl);
+          return texture;
+        },
+        onResult: (texture) => { if (texture) assets.icons.set(material.id, texture); }
+      });
     }
 
-    // Preload UI preview images into browser cache (for React components using <img> tags)
-    // This ensures images are cached when PlaceableMachinesPanel and PlaceableGeneratorsPanel render
+    // UI preview images for browser cache
     for (const machineType of rules.machines) {
-      await preloadImageToCache(`${FACTORY_ASSET_BASE}/${machineType.id}_idle.png`);
-      updateProgress();
+      tasks.push({
+        load: () => preloadImageToCache(`${FACTORY_ASSET_BASE}/${machineType.id}_idle.png`),
+        onResult: () => {}
+      });
+    }
+    for (const generatorType of rules.generators) {
+      tasks.push({
+        load: () => preloadImageToCache(`${FACTORY_ASSET_BASE}/${generatorType.id}.png`),
+        onResult: () => {}
+      });
     }
 
-    for (const generatorType of rules.generators) {
-      await preloadImageToCache(`${FACTORY_ASSET_BASE}/${generatorType.id}.png`);
-      updateProgress();
-    }
+    // Load all assets in parallel batches
+    await loadInBatches(tasks, updateProgress);
 
     loadedAssets = assets;
     isLoading = false;
