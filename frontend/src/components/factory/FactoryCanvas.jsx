@@ -838,6 +838,10 @@ export default function FactoryCanvas({
   // Drag-and-drop placement state
   const [hoverGridPos, setHoverGridPos] = useState({ x: -1, y: -1 });
   const lastHoverGridPosRef = useRef({ x: -1, y: -1 }); // Track last position to avoid unnecessary updates
+  const hoverGridPosRef = useRef({ x: -1, y: -1 }); // Ref for use in render without dependency
+  const dragStateRef = useRef(null); // Ref for dragState to avoid render dependency
+  const dragOverlayContainerRef = useRef(null); // Persistent container for drag overlay
+  const updateDragOverlayRef = useRef(null); // Ref to call overlay update from render
 
   // Structure drag tracking (machines and generators)
   const structureDragRef = useRef({ type: null, item: null, startX: 0, startY: 0, hasMoved: false });
@@ -893,6 +897,16 @@ export default function FactoryCanvas({
   useEffect(() => {
     inventoryPanelRefInternal.current = inventoryPanelRef;
   }, [inventoryPanelRef]);
+
+  // Keep dragState ref in sync
+  useEffect(() => {
+    dragStateRef.current = dragState;
+  }, [dragState]);
+
+  // Keep hoverGridPos ref in sync
+  useEffect(() => {
+    hoverGridPosRef.current = hoverGridPos;
+  }, [hoverGridPos]);
 
   // Clear hover position when drag ends
   useEffect(() => {
@@ -1868,134 +1882,172 @@ export default function FactoryCanvas({
       world.addChild(lowerWallContainer);
     }
 
-    // === RENDER PLACEMENT OVERLAY (when dragging) ===
-    if (dragState?.isDragging && hoverGridPos.x >= 0 && hoverGridPos.y >= 0) {
-      const { sizeX, sizeY, movingStructureId, typeId, itemType } = dragState;
+    // === CREATE DRAG OVERLAY CONTAINER ===
+    // The overlay content is managed separately by updateDragOverlay for performance
+    // Always create a new container since the previous one was destroyed during world.removeChildren()
+    dragOverlayContainerRef.current = new Container();
+    dragOverlayContainerRef.current.zIndex = 9999;
+    world.addChild(dragOverlayContainerRef.current);
 
-      // Check if placement is valid
-      let isValid = false;
-      if (engineState) {
-        if (movingStructureId) {
-          // When moving a structure, exclude it from collision detection
-          const placementsWithoutThis = engineState.floorSpace.placements.filter(p => p.id !== movingStructureId);
-          const tempState = {
-            ...engineState,
-            floorSpace: { ...engineState.floorSpace, placements: placementsWithoutThis }
-          };
-          isValid = canPlaceAt(tempState, hoverGridPos.x, hoverGridPos.y, sizeX, sizeY, rules).valid;
-        } else {
-          isValid = canPlaceAt(engineState, hoverGridPos.x, hoverGridPos.y, sizeX, sizeY, rules).valid;
-        }
-      }
-
-      // Get the center position of the structure footprint
-      const screenPos = getStructureScreenPosition(hoverGridPos.x, hoverGridPos.y, sizeX, sizeY);
-
-      // Try to render a fixed-size sprite preview
-      let previewRendered = false;
-      const previewContainer = new Container();
-      previewContainer.zIndex = 9999;
-
-      // Get the appropriate texture based on item type
-      let texture = null;
-      const isMachine = itemType === 'machine' || itemType === 'machine-move';
-      const isGenerator = itemType === 'generator' || itemType === 'generator-move';
-
-      if (typeId && assets) {
-        if (isMachine && assets.machines?.[typeId]?.idle) {
-          texture = assets.machines[typeId].idle;
-        } else if (isGenerator && assets.generators?.[typeId]?.static) {
-          texture = assets.generators[typeId].static;
-        }
-      }
-
-      if (texture) {
-        // First, draw the tile indicators underneath to show exact footprint
-        const tileGraphics = new Graphics();
-        const tileColor = isValid ? 0x00ff00 : 0xff0000;
-
-        for (let dx = 0; dx < sizeX; dx++) {
-          for (let dy = 0; dy < sizeY; dy++) {
-            const tileX = hoverGridPos.x + dx;
-            const tileY = hoverGridPos.y + dy;
-            const tileScreenPos = gridToScreen(tileX, tileY);
-            drawIsometricTile(tileGraphics, tileScreenPos.x, tileScreenPos.y, tileColor, null);
-          }
-        }
-        tileGraphics.alpha = 0.3;
-        previewContainer.addChild(tileGraphics);
-
-        // Then add the sprite on top
-        const sprite = new Sprite(texture);
-        sprite.anchor.set(0.5, 1); // Bottom center anchor
-
-        // Look up scaling and offset options from config
-        let spriteScale = 1.0;
-        let disableAutoScale = false;
-        let specificScaleFactor = null;
-        let offsetX = 0;
-        let offsetY = 0;
-        if (typeId && rules) {
-          const configList = isMachine ? rules.machines : rules.generators;
-          const config = configList?.find(c => c.id === typeId);
-          if (config) {
-            spriteScale = config.spriteScale ?? 1.0;
-            disableAutoScale = config.disableAutoScale ?? false;
-            specificScaleFactor = config.specificScaleFactor ?? null;
-            offsetX = config.offsetX ?? 0;
-            offsetY = config.offsetY ?? 0;
-          }
-        }
-
-        // Scale sprite to fit the isometric footprint (unless disabled or overridden)
-        const spriteWidth = texture.width;
-        if (spriteWidth > 0) {
-          if (specificScaleFactor != null) {
-            // Use specificScaleFactor directly (overrides all other scaling logic)
-            sprite.scale.set(specificScaleFactor);
-          } else if (disableAutoScale) {
-            sprite.scale.set(spriteScale);
-          } else {
-            const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
-            const autoScale = expectedWidth / spriteWidth;
-            sprite.scale.set(autoScale * spriteScale);
-          }
-        }
-
-        // Position at the center of the footprint (with offset)
-        sprite.x = screenPos.x + offsetX;
-        sprite.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
-
-        // Apply tint based on validity (green = valid, red = invalid)
-        sprite.tint = isValid ? 0x88ff88 : 0xff8888;
-        sprite.alpha = 0.8;
-
-        previewContainer.addChild(sprite);
-        previewRendered = true;
-      }
-
-      // Fallback to polygon tiles if no sprite available
-      if (!previewRendered) {
-        const overlayGraphics = new Graphics();
-        const color = isValid ? 0x00ff00 : 0xff0000;
-
-        for (let dx = 0; dx < sizeX; dx++) {
-          for (let dy = 0; dy < sizeY; dy++) {
-            const tileX = hoverGridPos.x + dx;
-            const tileY = hoverGridPos.y + dy;
-            const tileScreenPos = gridToScreen(tileX, tileY);
-            drawIsometricTile(overlayGraphics, tileScreenPos.x, tileScreenPos.y, color, null);
-          }
-        }
-
-        overlayGraphics.alpha = 0.4;
-        previewContainer.addChild(overlayGraphics);
-      }
-
-      world.addChild(previewContainer);
+    // Populate the drag overlay if currently dragging (needed after full render)
+    if (updateDragOverlayRef.current) {
+      updateDragOverlayRef.current();
     }
 
-  }, [floorSpace, machines, generators, assetsLoaded, isHovering, dragState, hoverGridPos, engineState, rules]);
+  }, [floorSpace, machines, generators, assetsLoaded, isHovering, engineState, rules]);
+
+  // Lightweight function to update only the drag overlay without re-rendering the entire factory
+  const updateDragOverlay = useCallback(() => {
+    const overlayContainer = dragOverlayContainerRef.current;
+    if (!overlayContainer) return;
+
+    // Clear previous overlay content
+    const removedChildren = overlayContainer.removeChildren();
+    removedChildren.forEach(child => {
+      if (child && child.destroy) {
+        child.destroy({ children: true });
+      }
+    });
+
+    const currentDragState = dragStateRef.current;
+    const currentHoverPos = hoverGridPosRef.current;
+    const assets = assetsRef.current;
+
+    // Only render if dragging and have valid hover position
+    if (!currentDragState?.isDragging || currentHoverPos.x < 0 || currentHoverPos.y < 0) {
+      return;
+    }
+
+    const { sizeX, sizeY, movingStructureId, typeId, itemType } = currentDragState;
+
+    // Check if placement is valid
+    let isValid = false;
+    if (engineState) {
+      if (movingStructureId) {
+        // When moving a structure, exclude it from collision detection
+        const placementsWithoutThis = engineState.floorSpace.placements.filter(p => p.id !== movingStructureId);
+        const tempState = {
+          ...engineState,
+          floorSpace: { ...engineState.floorSpace, placements: placementsWithoutThis }
+        };
+        isValid = canPlaceAt(tempState, currentHoverPos.x, currentHoverPos.y, sizeX, sizeY, rules).valid;
+      } else {
+        isValid = canPlaceAt(engineState, currentHoverPos.x, currentHoverPos.y, sizeX, sizeY, rules).valid;
+      }
+    }
+
+    // Get the center position of the structure footprint
+    const screenPos = getStructureScreenPosition(currentHoverPos.x, currentHoverPos.y, sizeX, sizeY);
+
+    // Try to render a fixed-size sprite preview
+    let previewRendered = false;
+
+    // Get the appropriate texture based on item type
+    let texture = null;
+    const isMachine = itemType === 'machine' || itemType === 'machine-move';
+    const isGenerator = itemType === 'generator' || itemType === 'generator-move';
+
+    if (typeId && assets) {
+      if (isMachine && assets.machines?.[typeId]?.idle) {
+        texture = assets.machines[typeId].idle;
+      } else if (isGenerator && assets.generators?.[typeId]?.static) {
+        texture = assets.generators[typeId].static;
+      }
+    }
+
+    if (texture) {
+      // First, draw the tile indicators underneath to show exact footprint
+      const tileGraphics = new Graphics();
+      const tileColor = isValid ? 0x00ff00 : 0xff0000;
+
+      for (let dx = 0; dx < sizeX; dx++) {
+        for (let dy = 0; dy < sizeY; dy++) {
+          const tileX = currentHoverPos.x + dx;
+          const tileY = currentHoverPos.y + dy;
+          const tileScreenPos = gridToScreen(tileX, tileY);
+          drawIsometricTile(tileGraphics, tileScreenPos.x, tileScreenPos.y, tileColor, null);
+        }
+      }
+      tileGraphics.alpha = 0.3;
+      overlayContainer.addChild(tileGraphics);
+
+      // Then add the sprite on top
+      const sprite = new Sprite(texture);
+      sprite.anchor.set(0.5, 1); // Bottom center anchor
+
+      // Look up scaling and offset options from config
+      let spriteScale = 1.0;
+      let disableAutoScale = false;
+      let specificScaleFactor = null;
+      let offsetX = 0;
+      let offsetY = 0;
+      if (typeId && rules) {
+        const configList = isMachine ? rules.machines : rules.generators;
+        const config = configList?.find(c => c.id === typeId);
+        if (config) {
+          spriteScale = config.spriteScale ?? 1.0;
+          disableAutoScale = config.disableAutoScale ?? false;
+          specificScaleFactor = config.specificScaleFactor ?? null;
+          offsetX = config.offsetX ?? 0;
+          offsetY = config.offsetY ?? 0;
+        }
+      }
+
+      // Scale sprite to fit the isometric footprint (unless disabled or overridden)
+      const spriteWidth = texture.width;
+      if (spriteWidth > 0) {
+        if (specificScaleFactor != null) {
+          // Use specificScaleFactor directly (overrides all other scaling logic)
+          sprite.scale.set(specificScaleFactor);
+        } else if (disableAutoScale) {
+          sprite.scale.set(spriteScale);
+        } else {
+          const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
+          const autoScale = expectedWidth / spriteWidth;
+          sprite.scale.set(autoScale * spriteScale);
+        }
+      }
+
+      // Position at the center of the footprint (with offset)
+      sprite.x = screenPos.x + offsetX;
+      sprite.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
+
+      // Apply tint based on validity (green = valid, red = invalid)
+      sprite.tint = isValid ? 0x88ff88 : 0xff8888;
+      sprite.alpha = 0.8;
+
+      overlayContainer.addChild(sprite);
+      previewRendered = true;
+    }
+
+    // Fallback to polygon tiles if no sprite available
+    if (!previewRendered) {
+      const overlayGraphics = new Graphics();
+      const color = isValid ? 0x00ff00 : 0xff0000;
+
+      for (let dx = 0; dx < sizeX; dx++) {
+        for (let dy = 0; dy < sizeY; dy++) {
+          const tileX = currentHoverPos.x + dx;
+          const tileY = currentHoverPos.y + dy;
+          const tileScreenPos = gridToScreen(tileX, tileY);
+          drawIsometricTile(overlayGraphics, tileScreenPos.x, tileScreenPos.y, color, null);
+        }
+      }
+
+      overlayGraphics.alpha = 0.4;
+      overlayContainer.addChild(overlayGraphics);
+    }
+  }, [engineState, rules]);
+
+  // Keep the updateDragOverlay ref in sync so render can call it
+  useEffect(() => {
+    updateDragOverlayRef.current = updateDragOverlay;
+  }, [updateDragOverlay]);
+
+  // Update drag overlay when hover position or drag state changes (lightweight update, no full re-render)
+  useEffect(() => {
+    updateDragOverlay();
+  }, [hoverGridPos, dragState, updateDragOverlay]);
 
   // Update lower wall transparency on hover change
   useEffect(() => {
