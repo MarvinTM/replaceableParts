@@ -16,7 +16,7 @@ const EXPLORATION_ASSET_BASE = '/assets/exploration';
 // Batch size for parallel asset loading - adjust this to tune loading performance
 // Higher values = faster loading but more concurrent connections
 // Lower values = smoother progress updates but slower overall
-const ASSET_LOAD_BATCH_SIZE = 10;
+const ASSET_LOAD_BATCH_SIZE = 20;
 
 // Cached assets
 let loadedAssets = null;
