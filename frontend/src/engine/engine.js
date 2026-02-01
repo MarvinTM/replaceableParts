@@ -1973,7 +1973,7 @@ function fillPrototypeSlot(state, rules, payload) {
  */
 function buildMachine(state, rules, payload) {
   const newState = deepClone(state);
-  const { machineType } = payload;
+  const { machineType, cheat = false } = payload;
 
   // Validate machine type exists
   const machineConfig = rules.machines.find(m => m.id === machineType);
@@ -1987,29 +1987,32 @@ function buildMachine(state, rules, payload) {
     return { state: newState, error: 'No build recipe found for this machine type' };
   }
 
-  // Calculate required materials from slots
-  const requiredMaterials = {};
-  for (const slot of buildRecipe.slots) {
-    const materialId = slot.material;
-    const qty = slot.quantity || 1;
-    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
-  }
-
-  // Check if all materials are available in inventory
-  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
-    const available = newState.inventory[materialId] || 0;
-    if (available < needed) {
-      const material = rules.materials.find(m => m.id === materialId);
-      const name = material ? material.name : materialId;
-      return { state: newState, error: `Not enough ${name} (need ${needed}, have ${available})` };
+  // Skip material checks and consumption if cheat mode is enabled
+  if (!cheat) {
+    // Calculate required materials from slots
+    const requiredMaterials = {};
+    for (const slot of buildRecipe.slots) {
+      const materialId = slot.material;
+      const qty = slot.quantity || 1;
+      requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
     }
-  }
 
-  // Consume materials from inventory
-  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
-    newState.inventory[materialId] -= needed;
-    if (newState.inventory[materialId] === 0) {
-      delete newState.inventory[materialId];
+    // Check if all materials are available in inventory
+    for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+      const available = newState.inventory[materialId] || 0;
+      if (available < needed) {
+        const material = rules.materials.find(m => m.id === materialId);
+        const name = material ? material.name : materialId;
+        return { state: newState, error: `Not enough ${name} (need ${needed}, have ${available})` };
+      }
+    }
+
+    // Consume materials from inventory
+    for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+      newState.inventory[materialId] -= needed;
+      if (newState.inventory[materialId] === 0) {
+        delete newState.inventory[materialId];
+      }
     }
   }
 
@@ -2030,7 +2033,7 @@ function buildMachine(state, rules, payload) {
  */
 function buildGenerator(state, rules, payload) {
   const newState = deepClone(state);
-  const { generatorType } = payload;
+  const { generatorType, cheat = false } = payload;
 
   // Validate generator type exists
   const genConfig = rules.generators.find(g => g.id === generatorType);
@@ -2044,29 +2047,32 @@ function buildGenerator(state, rules, payload) {
     return { state: newState, error: 'No build recipe found for this generator type' };
   }
 
-  // Calculate required materials from slots
-  const requiredMaterials = {};
-  for (const slot of buildRecipe.slots) {
-    const materialId = slot.material;
-    const qty = slot.quantity || 1;
-    requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
-  }
-
-  // Check if all materials are available in inventory
-  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
-    const available = newState.inventory[materialId] || 0;
-    if (available < needed) {
-      const material = rules.materials.find(m => m.id === materialId);
-      const name = material ? material.name : materialId;
-      return { state: newState, error: `Not enough ${name} (need ${needed}, have ${available})` };
+  // Skip material checks and consumption if cheat mode is enabled
+  if (!cheat) {
+    // Calculate required materials from slots
+    const requiredMaterials = {};
+    for (const slot of buildRecipe.slots) {
+      const materialId = slot.material;
+      const qty = slot.quantity || 1;
+      requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
     }
-  }
 
-  // Consume materials from inventory
-  for (const [materialId, needed] of Object.entries(requiredMaterials)) {
-    newState.inventory[materialId] -= needed;
-    if (newState.inventory[materialId] === 0) {
-      delete newState.inventory[materialId];
+    // Check if all materials are available in inventory
+    for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+      const available = newState.inventory[materialId] || 0;
+      if (available < needed) {
+        const material = rules.materials.find(m => m.id === materialId);
+        const name = material ? material.name : materialId;
+        return { state: newState, error: `Not enough ${name} (need ${needed}, have ${available})` };
+      }
+    }
+
+    // Consume materials from inventory
+    for (const [materialId, needed] of Object.entries(requiredMaterials)) {
+      newState.inventory[materialId] -= needed;
+      if (newState.inventory[materialId] === 0) {
+        delete newState.inventory[materialId];
+      }
     }
   }
 

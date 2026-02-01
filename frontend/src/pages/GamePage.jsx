@@ -28,7 +28,10 @@ import BuildIcon from '@mui/icons-material/Build';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
 import Divider from '@mui/material/Divider';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import { useGame } from '../contexts/GameContext';
+import { useAuth } from '../contexts/AuthContext';
 import useGameStore from '../stores/gameStore';
 import { getNextExpansionChunk, getNextExplorationExpansion, expandGeneratedMap, getNodeUnlockCost } from '../engine/engine.js';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
@@ -67,6 +70,7 @@ function TabPanel({ children, value, index, ...other }) {
 
 function FactoryTab() {
   const { t } = useTranslation();
+  const { isAdmin } = useAuth();
   const engineState = useGameStore((state) => state.engineState);
   const rules = useGameStore((state) => state.rules);
   const machineAnimationMode = useGameStore((state) => state.machineAnimationMode);
@@ -82,6 +86,9 @@ function FactoryTab() {
   const moveGenerator = useGameStore((state) => state.moveGenerator);
   const buildMachineAction = useGameStore((state) => state.buildMachine);
   const buildGeneratorAction = useGameStore((state) => state.buildGenerator);
+
+  // Admin cheat mode - only visible to admins
+  const [cheatMode, setCheatMode] = useState(false);
 
   // Drag state for placing machines/generators or moving existing ones
   const [dragState, setDragState] = useState({
@@ -263,9 +270,9 @@ function FactoryTab() {
 
   const handleBuild = (itemType) => {
     if (buildPopupType === 'machine') {
-      buildMachineAction(itemType);
+      buildMachineAction(itemType, cheatMode);
     } else if (buildPopupType === 'generator') {
-      buildGeneratorAction(itemType);
+      buildGeneratorAction(itemType, cheatMode);
     }
   };
 
@@ -278,12 +285,12 @@ function FactoryTab() {
     .map(machineType => ({ ...machineType, count: builtMachines?.[machineType.id] || 0 }))
     .filter(machine => machine.count > 0);
 
-  // Get buildable machines and generators (those with recipes AND unlocked)
+  // Get buildable machines and generators (those with recipes AND unlocked, or all if cheat mode)
   const buildableMachines = rules.machines
-    .filter(machineType => rules.machineRecipes?.[machineType.id] && unlockedRecipes.includes(machineType.id));
+    .filter(machineType => rules.machineRecipes?.[machineType.id] && (cheatMode || unlockedRecipes.includes(machineType.id)));
 
   const buildableGenerators = rules.generators
-    .filter(genType => rules.generatorRecipes?.[genType.id] && unlockedRecipes.includes(genType.id));
+    .filter(genType => rules.generatorRecipes?.[genType.id] && (cheatMode || unlockedRecipes.includes(genType.id)));
 
   const PREVIEW_SIZE = 48;
 
@@ -470,6 +477,24 @@ function FactoryTab() {
             <Typography variant="caption" color="text.secondary">
               {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })}
             </Typography>
+            {isAdmin && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={cheatMode}
+                    onChange={(e) => setCheatMode(e.target.checked)}
+                    size="small"
+                    color="warning"
+                  />
+                }
+                label={
+                  <Typography variant="caption" sx={{ color: cheatMode ? 'warning.main' : 'text.secondary' }}>
+                    Cheat
+                  </Typography>
+                }
+                sx={{ m: 0 }}
+              />
+            )}
             <Typography variant="caption" color="text.secondary">
               {t('game.factory.zoomHint')}
             </Typography>
@@ -563,6 +588,7 @@ function FactoryTab() {
         inventory={inventory}
         rules={rules}
         onBuild={handleBuild}
+        cheatMode={cheatMode}
       />
     </Box>
   );

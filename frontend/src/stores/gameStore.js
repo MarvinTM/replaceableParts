@@ -196,12 +196,12 @@ const useGameStore = create(
       },
 
       // Machine/Generator building actions
-      buildMachine: (machineType) => {
-        return get().dispatch({ type: 'BUILD_MACHINE', payload: { machineType } });
+      buildMachine: (machineType, cheat = false) => {
+        return get().dispatch({ type: 'BUILD_MACHINE', payload: { machineType, cheat } });
       },
 
-      buildGenerator: (generatorType) => {
-        return get().dispatch({ type: 'BUILD_GENERATOR', payload: { generatorType } });
+      buildGenerator: (generatorType, cheat = false) => {
+        return get().dispatch({ type: 'BUILD_GENERATOR', payload: { generatorType, cheat } });
       },
 
       // Tutorial

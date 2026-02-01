@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
@@ -33,6 +33,7 @@ export default function BuildPopup({
   inventory,
   rules,
   onBuild,
+  cheatMode = false, // Admin cheat mode - auto-fill and skip material checks
 }) {
   const { t } = useTranslation();
 
@@ -45,6 +46,18 @@ export default function BuildPopup({
 
   // Track if preview image failed to load
   const [imageError, setImageError] = useState(false);
+
+  // Auto-fill all slots when cheat mode is enabled
+  useEffect(() => {
+    if (open && cheatMode && buildRecipe?.slots) {
+      const autoFilledSlots = {};
+      buildRecipe.slots.forEach((slot, index) => {
+        const required = slot.quantity || 1;
+        autoFilledSlots[index] = required;
+      });
+      setSlotFills(autoFilledSlots);
+    }
+  }, [open, cheatMode, buildRecipe]);
 
   // Calculate materials needed and available
   const materialInfo = useMemo(() => {
@@ -197,7 +210,7 @@ export default function BuildPopup({
 
   // Handle build button click
   const handleBuild = () => {
-    if (allSlotsFilled && onBuild) {
+    if ((allSlotsFilled || cheatMode) && onBuild) {
       onBuild(itemType);
       handleClose();
     }
@@ -500,8 +513,8 @@ export default function BuildPopup({
           })}
         </Box>
 
-        {/* Warning if not enough materials */}
-        {!materialInfo.canBuild && (
+        {/* Warning if not enough materials (hidden in cheat mode) */}
+        {!materialInfo.canBuild && !cheatMode && (
           <Typography
             variant="body2"
             color="error"
@@ -520,7 +533,7 @@ export default function BuildPopup({
           onClick={handleBuild}
           variant="contained"
           color="primary"
-          disabled={!allSlotsFilled}
+          disabled={!allSlotsFilled && !cheatMode}
           startIcon={<BuildIcon />}
         >
           {t('game.factory.build', 'Build')}
