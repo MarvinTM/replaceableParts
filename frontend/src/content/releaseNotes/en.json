@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.3.0",
+      "date": "2024-02-01",
+      "highlights": "Significant mechanics rebalance.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Significant rebalance of the game mechanics."
+        },
+        {
+          "type": "improvement",
+          "text": "Added foundry"
+        }
+      ]
+    },
+    {
       "version": "0.2.0",
       "date": "2024-01-31",
       "highlights": "Exploration map visual improvements. Factory layout redesign. User audit info.",
@@ -23,7 +38,7 @@
         },
         {
           "type": "improvement",
-          "text": "Added steel forge, heavy assembly plant, and foundry"
+          "text": "Added steel forge, heavy assembly plant"
         },
         {
           "type": "fix",
