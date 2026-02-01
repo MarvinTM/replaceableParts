@@ -5,8 +5,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Path to frontend assets (relative to backend/src/services/)
-const ASSETS_PATH = path.join(__dirname, '../../../frontend/public/assets');
+// Path to backend assets (relative to backend/src/services/)
+const ASSETS_PATH = path.join(__dirname, '../../assets');
 
 // Create reusable transporter
 const createTransporter = () => {
