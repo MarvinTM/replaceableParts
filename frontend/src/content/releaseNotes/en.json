@@ -8,6 +8,10 @@
         {
           "type": "feature",
           "text": "Added Invite to Game feature."
+        },
+        {
+          "type": "improvement",
+          "text": "Added precision assembler"
         }
       ]
     },

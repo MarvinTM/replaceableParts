@@ -1152,9 +1152,10 @@ export const defaultRules = {
       id: 'precision_assembler',
       itemId: 'precision_assembler',
       name: 'Precision Assembler',
-      sizeX: 2, sizeY: 2,
+      sizeX: 8, sizeY: 8,
       energyConsumption: 15,
-      animation: { frames: 4, speed: 0.2 },
+      animation: { frames: 4, speed: 0.2, separateFrames: true  },
+      specificScaleFactor: 0.7,
       allowedRecipes: [
         // Age 4 - Electrical Components
         'copper_wire', 'battery', 'light_bulb', 'vacuum_tube',
