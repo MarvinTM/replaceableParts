@@ -1694,7 +1694,10 @@ export default function FactoryCanvas({
       }
 
       // Calculate machine visual top for positioning labels/icons
-      const machineVisualTop = (screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4)) - (machineAssets?.idle?.height || 30);
+      // Use tile-based height calculation instead of image height to avoid positioning issues
+      // when machine images have large transparent areas
+      const tileBasedHeight = 25 + Math.max(sizeX, sizeY) * 8;
+      const machineVisualTop = (screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4)) - tileBasedHeight;
 
       // Add recipe icon display above the machine (if recipe is assigned)
       if (machine.recipeId) {
