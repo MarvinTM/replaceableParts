@@ -6,6 +6,10 @@
       "highlights": "Significant mechanics rebalance.",
       "changes": [
         {
+          "type": "feature",
+          "text": "Added production deployment mechanism."
+        },
+        {
           "type": "improvement",
           "text": "Significant rebalance of the game mechanics."
         },
