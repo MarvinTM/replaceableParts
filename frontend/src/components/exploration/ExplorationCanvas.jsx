@@ -137,7 +137,7 @@ function drawNodeIndicatorFallback(graphics, screenX, screenY, color) {
   graphics.stroke({ color: 0xffffff, width: 2, alpha: 0.9 });
 }
 
-export default function ExplorationCanvas({ explorationMap, rules, unlockedRecipes, onTileClick }) {
+export default function ExplorationCanvas({ explorationMap, rules, unlockedRecipes, discoveredRecipes, onTileClick }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const worldRef = useRef(null);
@@ -150,22 +150,40 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
   const [resourceIconsLoaded, setResourceIconsLoaded] = useState(false);
   const hasInitializedViewRef = useRef(false);
 
-  // Compute the set of resources used by unlocked recipes
+  // Compute the set of resources used by discovered or unlocked recipes
+  // Resources appear on map as soon as a recipe requiring them is discovered
   const usedResources = useMemo(() => {
     const resources = new Set();
-    if (!rules?.recipes || !unlockedRecipes) return resources;
+    if (!rules?.recipes) return resources;
 
     const recipeMap = new Map(rules.recipes.map(r => [r.id, r]));
-    for (const recipeId of unlockedRecipes) {
-      const recipe = recipeMap.get(recipeId);
-      if (recipe?.inputs) {
-        for (const inputResource of Object.keys(recipe.inputs)) {
-          resources.add(inputResource);
+
+    // Include resources from unlocked recipes
+    if (unlockedRecipes) {
+      for (const recipeId of unlockedRecipes) {
+        const recipe = recipeMap.get(recipeId);
+        if (recipe?.inputs) {
+          for (const inputResource of Object.keys(recipe.inputs)) {
+            resources.add(inputResource);
+          }
         }
       }
     }
+
+    // Include resources from discovered recipes (not yet unlocked)
+    if (discoveredRecipes) {
+      for (const recipeId of discoveredRecipes) {
+        const recipe = recipeMap.get(recipeId);
+        if (recipe?.inputs) {
+          for (const inputResource of Object.keys(recipe.inputs)) {
+            resources.add(inputResource);
+          }
+        }
+      }
+    }
+
     return resources;
-  }, [rules?.recipes, unlockedRecipes]);
+  }, [rules?.recipes, unlockedRecipes, discoveredRecipes]);
   const usedResourcesRef = useRef(usedResources);
 
   // Keep refs updated with latest props

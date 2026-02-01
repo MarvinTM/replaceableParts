@@ -3,7 +3,7 @@
     {
       "version": "0.4.0",
       "date": "2024-02-01",
-      "highlights": "Invite to Game.",
+      "highlights": "Invite to Game. Huge performance improvements in Factory construction.",
       "changes": [
         {
           "type": "feature",
@@ -11,7 +11,15 @@
         },
         {
           "type": "improvement",
+          "text": "Greatly improved performance when dragging machines and generators in the factory"
+        },
+        {
+          "type": "improvement",
           "text": "Added precision assembler and electronics fab"
+        },
+        {
+          "type": "fix",
+          "text": "Solved problem with nodes not being visible in the map even if there are recipes requiring those materials."
         }
       ]
     },

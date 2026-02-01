@@ -593,22 +593,39 @@ function ExplorationTab() {
   const [selectedTile, setSelectedTile] = useState(null);
   const [expandedSection, setExpandedSection] = useState('stats');
 
-  // Compute which resources are used by unlocked recipes (same logic as ExplorationCanvas)
+  // Compute which resources are used by discovered or unlocked recipes (same logic as ExplorationCanvas)
   const usedResources = useMemo(() => {
     const resources = new Set();
-    if (!rules?.recipes || !engineState?.unlockedRecipes) return resources;
+    if (!rules?.recipes) return resources;
 
     const recipeMap = new Map(rules.recipes.map(r => [r.id, r]));
-    for (const recipeId of engineState.unlockedRecipes) {
-      const recipe = recipeMap.get(recipeId);
-      if (recipe?.inputs) {
-        for (const inputResource of Object.keys(recipe.inputs)) {
-          resources.add(inputResource);
+
+    // Include resources from unlocked recipes
+    if (engineState?.unlockedRecipes) {
+      for (const recipeId of engineState.unlockedRecipes) {
+        const recipe = recipeMap.get(recipeId);
+        if (recipe?.inputs) {
+          for (const inputResource of Object.keys(recipe.inputs)) {
+            resources.add(inputResource);
+          }
         }
       }
     }
+
+    // Include resources from discovered recipes
+    if (engineState?.discoveredRecipes) {
+      for (const recipeId of engineState.discoveredRecipes) {
+        const recipe = recipeMap.get(recipeId);
+        if (recipe?.inputs) {
+          for (const inputResource of Object.keys(recipe.inputs)) {
+            resources.add(inputResource);
+          }
+        }
+      }
+    }
+
     return resources;
-  }, [rules?.recipes, engineState?.unlockedRecipes]);
+  }, [rules?.recipes, engineState?.unlockedRecipes, engineState?.discoveredRecipes]);
 
   if (!engineState?.explorationMap) return null;
 
@@ -777,6 +794,7 @@ function ExplorationTab() {
                 explorationMap={explorationMap}
                 rules={rules}
                 unlockedRecipes={engineState.unlockedRecipes}
+                discoveredRecipes={engineState.discoveredRecipes}
                 onTileClick={handleTileClick}
               />
             </Box>
