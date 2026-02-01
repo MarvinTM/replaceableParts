@@ -31,13 +31,15 @@ chmod +x /tmp/setup-server.sh
 sudo /tmp/setup-server.sh
 ```
 
-### 3. Configure SSL certificate
+### 3. First deployment
 
-On the server, run:
+From your local machine, run the first deploy (this copies the app files to the server):
 
 ```bash
-sudo certbot --nginx -d your-domain.com
+./deploy.sh --skip-migrate
 ```
+
+Note: Use `--skip-migrate` on the first run since the database isn't configured yet.
 
 ### 4. Configure environment variables
 
@@ -45,11 +47,35 @@ On the server:
 
 ```bash
 cp /var/www/replaceableParts/.env.production /var/www/replaceableParts/backend/.env
-# Edit .env with your actual values
 nano /var/www/replaceableParts/backend/.env
+# Edit with your actual values (JWT_SECRET, etc.)
 ```
 
-### 5. Deploy the application
+### 5. Run database migrations
+
+From your local machine:
+
+```bash
+./deploy.sh --skip-build
+```
+
+Or on the server:
+
+```bash
+cd /var/www/replaceableParts/backend
+npx prisma migrate deploy
+pm2 restart replaceableParts
+```
+
+### 6. Configure SSL certificate
+
+On the server, run:
+
+```bash
+sudo certbot --nginx -d your-domain.com
+```
+
+### 7. Future deployments
 
 From your local machine:
 
