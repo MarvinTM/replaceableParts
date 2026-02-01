@@ -71,7 +71,7 @@ export default function SplitSidebar({ topSection, bottomSection }) {
             backgroundColor: 'background.paper',
           }}
         >
-          {/* Top Section */}
+          {/* Top Section (smaller - for generators) */}
           <Box
             sx={{
               flex: 1,
@@ -138,10 +138,10 @@ export default function SplitSidebar({ topSection, bottomSection }) {
             </Box>
           </Box>
 
-          {/* Bottom Section */}
+          {/* Bottom Section (larger - for machines) */}
           <Box
             sx={{
-              flex: 1,
+              flex: 2,
               display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
