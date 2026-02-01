@@ -32,9 +32,9 @@ export default function PlaceableGeneratorsPanel({
     }))
     .filter(gen => gen.count > 0);
 
-  // Get all generator types that can be built (have recipes AND unlocked)
+  // Get all generator types that can be built (have recipes AND unlocked AND not disabled)
   const buildableGenerators = rules.generators
-    .filter(genType => rules.generatorRecipes?.[genType.id] && unlockedRecipes.includes(genType.id))
+    .filter(genType => !genType.disabled && rules.generatorRecipes?.[genType.id] && unlockedRecipes.includes(genType.id))
     .map(genType => ({
       ...genType,
       recipe: rules.generatorRecipes[genType.id],

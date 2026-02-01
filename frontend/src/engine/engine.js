@@ -61,6 +61,24 @@ function getMaxStack(itemId, inventoryCapacity, rules) {
   return Math.floor(inventoryCapacity / weight);
 }
 
+/**
+ * Check if a recipe corresponds to a disabled machine or generator
+ * Returns true if the recipe should be excluded from discovery
+ */
+function isRecipeForDisabledStructure(recipeId, rules) {
+  // Check if this recipe builds a disabled machine
+  if (rules.machineRecipes?.[recipeId]) {
+    const machine = rules.machines.find(m => m.id === recipeId);
+    if (machine?.disabled) return true;
+  }
+  // Check if this recipe builds a disabled generator
+  if (rules.generatorRecipes?.[recipeId]) {
+    const generator = rules.generators.find(g => g.id === recipeId);
+    if (generator?.disabled) return true;
+  }
+  return false;
+}
+
 // ============================================================================
 // Research Helper Functions
 // ============================================================================
@@ -793,9 +811,11 @@ function simulateTick(state, rules) {
     // Calculate discovery chance with proximity bonus
     let discoveryChance = rules.research.discoveryChance;
 
-    // Find undiscovered recipes (exclude already unlocked recipes)
+    // Find undiscovered recipes (exclude already unlocked recipes and disabled machine/generator recipes)
     const undiscovered = rules.recipes.filter(r =>
-      !newState.discoveredRecipes.includes(r.id) && !newState.unlockedRecipes.includes(r.id)
+      !newState.discoveredRecipes.includes(r.id) &&
+      !newState.unlockedRecipes.includes(r.id) &&
+      !isRecipeForDisabledStructure(r.id, rules)
     );
 
     if (undiscovered.length > 0 && roll < discoveryChance) {
@@ -860,7 +880,9 @@ function simulateTick(state, rules) {
     const passiveRoll = rng.next();
     if (passiveRoll < effectivePassiveChance) {
       const undiscoveredForPassive = rules.recipes.filter(r =>
-        !newState.discoveredRecipes.includes(r.id) && !newState.unlockedRecipes.includes(r.id)
+        !newState.discoveredRecipes.includes(r.id) &&
+        !newState.unlockedRecipes.includes(r.id) &&
+        !isRecipeForDisabledStructure(r.id, rules)
       );
       if (undiscoveredForPassive.length > 0) {
         // Use age-weighted selection for passive discovery too
@@ -1811,9 +1833,11 @@ function runExperiment(state, rules, payload) {
   initializeResearchState(newState, rules);
   const rng = createRNG(state.rngSeed);
 
-  // Find undiscovered recipes (exclude already unlocked recipes)
+  // Find undiscovered recipes (exclude already unlocked recipes and disabled machine/generator recipes)
   const undiscovered = rules.recipes.filter(r =>
-    !newState.discoveredRecipes.includes(r.id) && !newState.unlockedRecipes.includes(r.id)
+    !newState.discoveredRecipes.includes(r.id) &&
+    !newState.unlockedRecipes.includes(r.id) &&
+    !isRecipeForDisabledStructure(r.id, rules)
   );
   if (undiscovered.length === 0) {
     return { state: newState, error: 'All recipes have been discovered' };
@@ -1863,6 +1887,11 @@ function runTargetedExperiment(state, rules, payload) {
   const recipe = rules.recipes.find(r => r.id === recipeId);
   if (!recipe) {
     return { state: newState, error: 'Recipe not found' };
+  }
+
+  // Check if recipe is for a disabled machine/generator
+  if (isRecipeForDisabledStructure(recipeId, rules)) {
+    return { state: newState, error: 'Cannot target disabled machine/generator recipes' };
   }
 
   // Check if already discovered or unlocked

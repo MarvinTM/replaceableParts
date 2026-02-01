@@ -32,9 +32,9 @@ export default function PlaceableMachinesPanel({
     }))
     .filter(machine => machine.count > 0);
 
-  // Get all machine types that can be built (have recipes AND unlocked)
+  // Get all machine types that can be built (have recipes AND unlocked AND not disabled)
   const buildableMachines = rules.machines
-    .filter(machineType => rules.machineRecipes?.[machineType.id] && unlockedRecipes.includes(machineType.id))
+    .filter(machineType => !machineType.disabled && rules.machineRecipes?.[machineType.id] && unlockedRecipes.includes(machineType.id))
     .map(machineType => ({
       ...machineType,
       recipe: rules.machineRecipes[machineType.id],

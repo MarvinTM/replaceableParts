@@ -1146,7 +1146,8 @@ export const defaultRules = {
       // Special machine: does not process recipes, provides passive discovery bonus
       allowedRecipes: [],
       isResearchFacility: true,
-      passiveDiscoveryBonus: 0.001 // +0.1% per facility
+      passiveDiscoveryBonus: 0.001, // +0.1% per facility
+      disabled: true // Disabled until the mechanic is finalized
     },
     {
       id: 'precision_assembler',
