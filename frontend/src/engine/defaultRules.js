@@ -1105,9 +1105,10 @@ export const defaultRules = {
       id: 'foundry',
       itemId: 'foundry',
       name: 'Industrial Foundry',
-      sizeX: 3, sizeY: 3,
+      sizeX: 6, sizeY: 4,
       energyConsumption: 10,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 4, speed: 0.02, separateFrames: true },
+      disableAutoScale: true,
       allowedRecipes: [
         'steel_ingot', 'aluminum_ingot', 'silicon', 'brass_ingot', 'bronze_ingot' // Consolidating all ingot/hot processing
       ]
