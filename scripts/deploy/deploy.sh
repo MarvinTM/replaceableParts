@@ -157,6 +157,7 @@ cp -r "${FRONTEND_DIR}/dist" "${DEPLOY_TMP}/frontend/"
 mkdir -p "${DEPLOY_TMP}/backend"
 cp -r "${BACKEND_DIR}/src" "${DEPLOY_TMP}/backend/"
 cp -r "${BACKEND_DIR}/prisma" "${DEPLOY_TMP}/backend/"
+cp -r "${BACKEND_DIR}/assets" "${DEPLOY_TMP}/backend/"
 cp "${BACKEND_DIR}/package.json" "${DEPLOY_TMP}/backend/"
 cp "${BACKEND_DIR}/package-lock.json" "${DEPLOY_TMP}/backend/"
 
