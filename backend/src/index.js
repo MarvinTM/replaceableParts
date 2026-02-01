@@ -6,6 +6,7 @@ import userRoutes from './routes/users.js';
 import adminRoutes from './routes/admin.js';
 import gameRoutes from './routes/game.js';
 import feedbackRoutes from './routes/feedback.js';
+import inviteRoutes from './routes/invite.js';
 import sessionRoutes from './routes/sessions.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -27,6 +28,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/game', gameRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/invite', inviteRoutes);
 app.use('/api/sessions', sessionRoutes);
 
 // Health check

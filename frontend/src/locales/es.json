@@ -40,6 +40,18 @@
     "sendError": "Error al enviar comentarios. Por favor intenta de nuevo.",
     "sendSuccess": "¡Gracias! Tus comentarios han sido enviados exitosamente."
   },
+  "invite": {
+    "button": "Invitar a un amigo a replaceableParts",
+    "title": "Invitar a un Amigo",
+    "emailLabel": "Correo electrónico del amigo",
+    "emailPlaceholder": "Ingresa el correo de tu amigo",
+    "send": "Enviar Invitación",
+    "sending": "Enviando...",
+    "emailRequired": "El correo electrónico es requerido",
+    "emailInvalid": "Por favor ingresa un correo electrónico válido",
+    "sendSuccess": "¡Invitación enviada exitosamente!",
+    "sendError": "Error al enviar la invitación. Por favor intenta de nuevo."
+  },
   "saves": {
     "noSaves": "No se encontraron partidas guardadas",
     "lastPlayed": "Última vez jugado",

@@ -40,6 +40,18 @@
     "sendError": "Failed to send feedback. Please try again.",
     "sendSuccess": "Thank you! Your feedback has been sent successfully."
   },
+  "invite": {
+    "button": "Invite a friend to replaceableParts",
+    "title": "Invite a Friend",
+    "emailLabel": "Friend's email address",
+    "emailPlaceholder": "Enter your friend's email",
+    "send": "Send Invitation",
+    "sending": "Sending...",
+    "emailRequired": "Email address is required",
+    "emailInvalid": "Please enter a valid email address",
+    "sendSuccess": "Invitation sent successfully!",
+    "sendError": "Failed to send invitation. Please try again."
+  },
   "saves": {
     "noSaves": "No saved games found",
     "lastPlayed": "Last played",

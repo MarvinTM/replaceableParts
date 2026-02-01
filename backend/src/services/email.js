@@ -1,4 +1,12 @@
 import nodemailer from 'nodemailer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Path to frontend assets (relative to backend/src/services/)
+const ASSETS_PATH = path.join(__dirname, '../../../frontend/public/assets');
 
 // Create reusable transporter
 const createTransporter = () => {
@@ -226,7 +234,132 @@ You can reply directly to this email to respond to the user.
   `.trim();
 }
 
+/**
+ * Send invite email to a friend
+ * @param {Object} inviter - User object of the person sending the invite
+ * @param {string} recipientEmail - Email address of the friend to invite
+ */
+export async function sendInviteEmail(inviter, recipientEmail) {
+  const transport = getTransporter();
+
+  if (!transport) {
+    console.log(`Skipping invite email to ${recipientEmail} - email not configured`);
+    return;
+  }
+
+  const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
+
+  const mailOptions = {
+    from: `"replaceableParts" <${fromAddress}>`,
+    to: recipientEmail,
+    subject: `${inviter.name || 'A friend'} has invited you to play replaceableParts!`,
+    html: generateInviteEmailHtml(inviter),
+    text: generateInviteEmailText(inviter),
+    attachments: [
+      {
+        filename: 'logo.png',
+        path: path.join(ASSETS_PATH, 'smallLogo.png'),
+        cid: 'logo@replaceableparts'
+      },
+      {
+        filename: 'preview.png',
+        path: path.join(ASSETS_PATH, 'invite_preview.png'),
+        cid: 'preview@replaceableparts'
+      }
+    ]
+  };
+
+  try {
+    const info = await transport.sendMail(mailOptions);
+    console.log(`Invite email sent to ${recipientEmail} from ${inviter.email}: ${info.messageId}`);
+    return info;
+  } catch (error) {
+    console.error(`Failed to send invite email to ${recipientEmail}:`, error.message);
+    throw error;
+  }
+}
+
+function generateInviteEmailHtml(inviter) {
+  const inviterName = inviter.name || 'A friend';
+  const gameUrl = 'https://replaceable.parts/';
+
+  // Theme colors from theme.js
+  const colors = {
+    headerBg: '#8B5A2B',      // Copper/bronze primary
+    contentBg: '#F4E4C9',     // Parchment cream
+    cardBg: '#FAF3E6',        // Warm cream
+    textPrimary: '#2D2520',   // Dark brown
+    textSecondary: '#5C4B3A', // Medium brown
+    border: '#D4C4A8',        // Light tan
+    ctaButton: '#8B5A2B',     // Copper/bronze
+    ctaText: '#FDF8F0'        // Light text
+  };
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're invited to play replaceableParts!</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: ${colors.textPrimary}; max-width: 600px; margin: 0 auto; padding: 20px; background-color: ${colors.contentBg};">
+  <div style="background: ${colors.headerBg}; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <img src="cid:logo@replaceableparts" alt="replaceableParts" style="max-width: 200px; height: auto;" />
+  </div>
+
+  <div style="background: ${colors.cardBg}; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid ${colors.border}; border-top: none;">
+    <h1 style="color: ${colors.textPrimary}; font-size: 24px; margin-top: 0; text-align: center;">
+      ${inviterName} has invited you to play replaceableParts!
+    </h1>
+
+    <div style="text-align: center; margin: 25px 0;">
+      <img src="cid:preview@replaceableparts" alt="replaceableParts Game Preview" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid ${colors.border};" />
+    </div>
+
+    <p style="color: ${colors.textSecondary}; font-size: 16px; text-align: center;">
+      Build and manage your own manufacturing empire in this engaging simulation game.
+      Explore new territories, research technologies, and trade goods to grow your factory!
+    </p>
+
+    <div style="text-align: center; margin-top: 30px;">
+      <a href="${gameUrl}" style="background: ${colors.ctaButton}; color: ${colors.ctaText}; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; font-size: 18px;">Play Now</a>
+    </div>
+
+    <p style="margin-top: 30px; color: ${colors.textSecondary}; font-size: 14px; text-align: center;">
+      Join ${inviterName} and start building your manufacturing empire today!
+    </p>
+  </div>
+
+  <div style="text-align: center; padding: 20px; color: ${colors.textSecondary}; font-size: 12px;">
+    <p>This invitation was sent by ${inviterName} via replaceableParts.</p>
+  </div>
+</body>
+</html>
+  `;
+}
+
+function generateInviteEmailText(inviter) {
+  const inviterName = inviter.name || 'A friend';
+  const gameUrl = 'https://replaceable.parts/';
+
+  return `
+${inviterName} has invited you to play replaceableParts!
+
+Build and manage your own manufacturing empire in this engaging simulation game.
+Explore new territories, research technologies, and trade goods to grow your factory!
+
+Start playing now: ${gameUrl}
+
+Join ${inviterName} and start building your manufacturing empire today!
+
+---
+This invitation was sent by ${inviterName} via replaceableParts.
+  `.trim();
+}
+
 export default {
   sendWelcomeEmail,
-  sendFeedbackEmail
+  sendFeedbackEmail,
+  sendInviteEmail
 };

@@ -126,6 +126,14 @@ export const api = {
     });
   },
 
+  // Invite
+  async sendInvite(email) {
+    return request('/invite', {
+      method: 'POST',
+      body: JSON.stringify({ email })
+    });
+  },
+
   // Session tracking
   async startSession(data) {
     return request('/sessions/start', {

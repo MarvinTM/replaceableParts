@@ -24,6 +24,7 @@ import AddIcon from '@mui/icons-material/Add';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FeedbackIcon from '@mui/icons-material/Feedback';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -34,6 +35,7 @@ import { useGame } from '../contexts/GameContext';
 import SaveSelectorDialog from '../components/SaveSelectorDialog';
 import SaveSlotDialog from '../components/SaveSlotDialog';
 import FeedbackDialog from '../components/FeedbackDialog';
+import InviteFriendDialog from '../components/InviteFriendDialog';
 import NewsPanel from '../components/mainMenu/NewsPanel';
 import ReleaseNotesPanel from '../components/mainMenu/ReleaseNotesPanel';
 
@@ -57,6 +59,7 @@ export default function MainMenuPage() {
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
   const [guestNameDialogOpen, setGuestNameDialogOpen] = useState(false);
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [guestGameName, setGuestGameName] = useState('');
   const [isGuestOverwrite, setIsGuestOverwrite] = useState(false);
   const [langAnchorEl, setLangAnchorEl] = useState(null);
@@ -155,6 +158,10 @@ export default function MainMenuPage() {
 
   const handleFeedback = () => {
     setFeedbackDialogOpen(true);
+  };
+
+  const handleInvite = () => {
+    setInviteDialogOpen(true);
   };
 
   const handleAdmin = () => {
@@ -473,6 +480,17 @@ export default function MainMenuPage() {
                 <Button
                   variant="text"
                   size="large"
+                  startIcon={<PersonAddIcon />}
+                  onClick={handleInvite}
+                  disabled={loading}
+                  fullWidth
+                >
+                  {t('invite.button')}
+                </Button>
+
+                <Button
+                  variant="text"
+                  size="large"
                   startIcon={<LogoutIcon />}
                   onClick={handleLogout}
                   disabled={loading}
@@ -558,6 +576,12 @@ export default function MainMenuPage() {
       <FeedbackDialog
         open={feedbackDialogOpen}
         onClose={() => setFeedbackDialogOpen(false)}
+      />
+
+      {/* Invite friend dialog */}
+      <InviteFriendDialog
+        open={inviteDialogOpen}
+        onClose={() => setInviteDialogOpen(false)}
       />
     </Box>
   );
