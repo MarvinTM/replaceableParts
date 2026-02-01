@@ -1154,7 +1154,7 @@ export const defaultRules = {
       name: 'Precision Assembler',
       sizeX: 8, sizeY: 8,
       energyConsumption: 15,
-      animation: { frames: 4, speed: 0.2, separateFrames: true  },
+      animation: { frames: 4, speed: 0.01, separateFrames: true  },
       specificScaleFactor: 0.7,
       allowedRecipes: [
         // Age 4 - Electrical Components
@@ -1193,9 +1193,10 @@ export const defaultRules = {
       id: 'electronics_fab',
       itemId: 'electronics_fab',
       name: 'Electronics Fab',
-      sizeX: 3, sizeY: 3,
+      sizeX: 8, sizeY: 8,
       energyConsumption: 50,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 3, speed: 0.01, separateFrames: true },
+      specificScaleFactor: 0.7,
       allowedRecipes: [
         // Age 6 (Digital) - Intermediates
         'circuit_board', 'cpu', 'led', 'screen', 'ram_module', 'hard_drive', 'motherboard', 
