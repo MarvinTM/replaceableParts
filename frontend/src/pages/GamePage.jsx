@@ -39,6 +39,7 @@ import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 import RecipeDropdown from '../components/factory/RecipeDropdown';
 import MachineInfoPopup from '../components/factory/MachineInfoPopup';
 import BuildPopup from '../components/factory/BuildPopup';
+import BuildSelectionPopup from '../components/factory/BuildSelectionPopup';
 import MaterialIcon from '../components/common/MaterialIcon';
 import FloatingHUD from '../components/common/FloatingHUD';
 import CollapsibleSidebar from '../components/common/CollapsibleSidebar';
@@ -112,6 +113,10 @@ function FactoryTab() {
   const [buildPopupOpen, setBuildPopupOpen] = useState(false);
   const [buildPopupType, setBuildPopupType] = useState(null); // 'machine' or 'generator'
   const [buildPopupItemType, setBuildPopupItemType] = useState(null); // e.g., 'stone_furnace'
+
+  // State for build selection popup (selecting which machine/generator to build)
+  const [buildSelectionOpen, setBuildSelectionOpen] = useState(false);
+  const [buildSelectionType, setBuildSelectionType] = useState(null); // 'machine' or 'generator'
 
   // Ref for inventory panel (used for fly-to-inventory animations)
   const inventoryPanelRef = useRef(null);
@@ -276,6 +281,23 @@ function FactoryTab() {
     }
   };
 
+  // Build selection popup handlers
+  const handleOpenBuildSelection = (type) => {
+    setBuildSelectionType(type);
+    setBuildSelectionOpen(true);
+  };
+
+  const handleCloseBuildSelection = () => {
+    setBuildSelectionOpen(false);
+    setBuildSelectionType(null);
+  };
+
+  const handleSelectItemToBuild = (item) => {
+    // Close selection popup and open build popup
+    handleCloseBuildSelection();
+    handleOpenBuildPopup(buildSelectionType, item.id);
+  };
+
   // Get available generators and machines from built pools (ready to deploy)
   const availableGenerators = rules.generators
     .map(genType => ({ ...genType, count: builtGenerators?.[genType.id] || 0 }))
@@ -299,6 +321,12 @@ function FactoryTab() {
     title: t('game.factory.generators'),
     icon: <BoltIcon sx={{ color: 'success.main', fontSize: 20 }} />,
     badge: availableGenerators.length > 0 ? availableGenerators.reduce((sum, g) => sum + g.count, 0) : undefined,
+    action: buildableGenerators.length > 0 ? {
+      label: t('game.factory.build', 'Build'),
+      icon: <BuildIcon sx={{ fontSize: 14 }} />,
+      color: 'warning',
+      onClick: () => handleOpenBuildSelection('generator'),
+    } : undefined,
     content: (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {/* Built generators ready to deploy */}
@@ -345,37 +373,9 @@ function FactoryTab() {
           </>
         )}
         {availableGenerators.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
             {t('game.factory.noGeneratorsBuilt', 'No generators built yet')}
           </Typography>
-        )}
-        {/* Build new generators */}
-        {buildableGenerators.length > 0 && (
-          <>
-            <Divider sx={{ my: 0.5 }} />
-            <Typography variant="caption" color="text.secondary">
-              {t('game.factory.buildNewGenerator', 'Build New Generator')}
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              {buildableGenerators.map((generator) => (
-                <Button
-                  key={generator.id}
-                  variant="outlined"
-                  size="small"
-                  color="warning"
-                  startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => handleOpenBuildPopup('generator', generator.id)}
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
-                >
-                  <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
-                    sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                  {generator.name}
-                </Button>
-              ))}
-            </Box>
-          </>
         )}
       </Box>
     )
@@ -385,6 +385,12 @@ function FactoryTab() {
     title: t('game.factory.machines'),
     icon: <PrecisionManufacturingIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
     badge: availableMachines.length > 0 ? availableMachines.reduce((sum, m) => sum + m.count, 0) : undefined,
+    action: buildableMachines.length > 0 ? {
+      label: t('game.factory.build', 'Build'),
+      icon: <BuildIcon sx={{ fontSize: 14 }} />,
+      color: 'primary',
+      onClick: () => handleOpenBuildSelection('machine'),
+    } : undefined,
     content: (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {/* Built machines ready to deploy */}
@@ -431,36 +437,9 @@ function FactoryTab() {
           </>
         )}
         {availableMachines.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
             {t('game.factory.noMachinesBuilt', 'No machines built yet')}
           </Typography>
-        )}
-        {/* Build new machines */}
-        {buildableMachines.length > 0 && (
-          <>
-            <Divider sx={{ my: 0.5 }} />
-            <Typography variant="caption" color="text.secondary">
-              {t('game.factory.buildNewMachine', 'Build New Machine')}
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              {buildableMachines.map((machine) => (
-                <Button
-                  key={machine.id}
-                  variant="outlined"
-                  size="small"
-                  startIcon={<BuildIcon sx={{ fontSize: 16 }} />}
-                  onClick={() => handleOpenBuildPopup('machine', machine.id)}
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 0.5, px: 1 }}
-                >
-                  <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
-                    sx={{ width: 24, height: 24, objectFit: 'contain', imageRendering: 'pixelated', mr: 1 }}
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                  {machine.name}
-                </Button>
-              ))}
-            </Box>
-          </>
         )}
       </Box>
     )
@@ -569,6 +548,15 @@ function FactoryTab() {
           cheatMode={cheatMode}
         />
       )}
+
+      {/* Build Selection Popup */}
+      <BuildSelectionPopup
+        open={buildSelectionOpen}
+        onClose={handleCloseBuildSelection}
+        onSelect={handleSelectItemToBuild}
+        items={buildSelectionType === 'generator' ? buildableGenerators : buildableMachines}
+        itemType={buildSelectionType}
+      />
 
       {/* Build Popup */}
       <BuildPopup

@@ -4,6 +4,7 @@ import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 
@@ -87,7 +88,7 @@ export default function SplitSidebar({ topSection, bottomSection }) {
                 alignItems: 'center',
                 gap: 1,
                 px: 1.5,
-                py: 1,
+                py: 0.75,
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 backgroundColor: 'action.hover',
@@ -97,6 +98,26 @@ export default function SplitSidebar({ topSection, bottomSection }) {
               <Typography variant="subtitle2" fontWeight={600}>
                 {topSection.title}
               </Typography>
+              <Box sx={{ flex: 1 }} />
+              {topSection.action && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color={topSection.action.color || 'primary'}
+                  startIcon={topSection.action.icon}
+                  onClick={topSection.action.onClick}
+                  disabled={topSection.action.disabled}
+                  sx={{
+                    py: 0.25,
+                    px: 1,
+                    minWidth: 'auto',
+                    fontSize: '0.75rem',
+                    textTransform: 'none',
+                  }}
+                >
+                  {topSection.action.label}
+                </Button>
+              )}
               {topSection.badge !== undefined && (
                 <Typography
                   variant="caption"
@@ -132,7 +153,7 @@ export default function SplitSidebar({ topSection, bottomSection }) {
                 alignItems: 'center',
                 gap: 1,
                 px: 1.5,
-                py: 1,
+                py: 0.75,
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 backgroundColor: 'action.hover',
@@ -142,6 +163,26 @@ export default function SplitSidebar({ topSection, bottomSection }) {
               <Typography variant="subtitle2" fontWeight={600}>
                 {bottomSection.title}
               </Typography>
+              <Box sx={{ flex: 1 }} />
+              {bottomSection.action && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color={bottomSection.action.color || 'primary'}
+                  startIcon={bottomSection.action.icon}
+                  onClick={bottomSection.action.onClick}
+                  disabled={bottomSection.action.disabled}
+                  sx={{
+                    py: 0.25,
+                    px: 1,
+                    minWidth: 'auto',
+                    fontSize: '0.75rem',
+                    textTransform: 'none',
+                  }}
+                >
+                  {bottomSection.action.label}
+                </Button>
+              )}
               {bottomSection.badge !== undefined && (
                 <Typography
                   variant="caption"
