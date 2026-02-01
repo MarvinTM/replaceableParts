@@ -1117,9 +1117,11 @@ export const defaultRules = {
       id: 'chemical_plant',
       itemId: 'chemical_plant',
       name: 'Chemical Plant',
-      sizeX: 3, sizeY: 2,
-      energyConsumption: 8,
-      animation: { frames: 4, speed: 0.1 },
+      sizeX: 10, sizeY: 10,
+      energyConsumption: 20,
+      offsetX: 0, offsetY: 30,
+      animation: { frames: 4, speed: 0.01, separateFrames: true  },
+      disableAutoScale: true,
       allowedRecipes: [
         // Age 4 Chemical
         'gasoline', 'diesel_fuel', 'lubricant', 'plastic', 'rubber', 'asphalt', 'concrete',
