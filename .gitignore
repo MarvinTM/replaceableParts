@@ -36,3 +36,4 @@ frontend/scripts/balancing/results/
 
 # Deployment secrets
 scripts/deploy/deploy.config.local.sh
+scripts/deploy/ubuntu*
