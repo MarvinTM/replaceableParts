@@ -1360,6 +1360,7 @@ export default function FactoryCanvas({
       let sizeY = 1;
       let spriteScale = 1.0;
       let disableAutoScale = false;
+      let specificScaleFactor = null;
       let hasFuelRequirement = false;
       let offsetX = 0;
       let offsetY = 0;
@@ -1371,6 +1372,7 @@ export default function FactoryCanvas({
           sizeY = genConfig.sizeY;
           spriteScale = genConfig.spriteScale ?? 1.0;
           disableAutoScale = genConfig.disableAutoScale ?? false;
+          specificScaleFactor = genConfig.specificScaleFactor ?? null;
           hasFuelRequirement = !!genConfig.fuelRequirement;
           offsetX = genConfig.offsetX ?? 0;
           offsetY = genConfig.offsetY ?? 0;
@@ -1460,10 +1462,13 @@ export default function FactoryCanvas({
         // Position at the visual bottom of the footprint diamond to avoid "floating"
         displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
 
-        // Scale sprite to fit the isometric footprint (unless disabled)
+        // Scale sprite to fit the isometric footprint (unless disabled or overridden)
         const spriteWidth = displayObject.texture.width;
         if (spriteWidth > 0) {
-          if (disableAutoScale) {
+          if (specificScaleFactor != null) {
+            // Use specificScaleFactor directly (overrides all other scaling logic)
+            displayObject.scale.set(specificScaleFactor);
+          } else if (disableAutoScale) {
             // Use spriteScale directly (no auto-fitting to footprint)
             displayObject.scale.set(spriteScale);
           } else {
@@ -1529,6 +1534,7 @@ export default function FactoryCanvas({
       let sizeY = 1;
       let spriteScale = 1.0;
       let disableAutoScale = false;
+      let specificScaleFactor = null;
       let offsetX = 0;
       let offsetY = 0;
 
@@ -1539,6 +1545,7 @@ export default function FactoryCanvas({
           sizeY = machineConfig.sizeY;
           spriteScale = machineConfig.spriteScale ?? 1.0;
           disableAutoScale = machineConfig.disableAutoScale ?? false;
+          specificScaleFactor = machineConfig.specificScaleFactor ?? null;
           offsetX = machineConfig.offsetX ?? 0;
           offsetY = machineConfig.offsetY ?? 0;
         }
@@ -1635,10 +1642,13 @@ export default function FactoryCanvas({
         // Position at the visual bottom of the footprint diamond to avoid "floating"
         displayObject.y = screenPos.y + (sizeX + sizeY) * (TILE_HEIGHT / 4) + offsetY;
 
-        // Scale sprite to fit the isometric footprint (unless disabled)
+        // Scale sprite to fit the isometric footprint (unless disabled or overridden)
         const spriteWidth = displayObject.texture.width;
         if (spriteWidth > 0) {
-          if (disableAutoScale) {
+          if (specificScaleFactor != null) {
+            // Use specificScaleFactor directly (overrides all other scaling logic)
+            displayObject.scale.set(specificScaleFactor);
+          } else if (disableAutoScale) {
             // Use spriteScale directly (no auto-fitting to footprint)
             displayObject.scale.set(spriteScale);
           } else {
@@ -1919,6 +1929,7 @@ export default function FactoryCanvas({
         // Look up scaling and offset options from config
         let spriteScale = 1.0;
         let disableAutoScale = false;
+        let specificScaleFactor = null;
         let offsetX = 0;
         let offsetY = 0;
         if (typeId && rules) {
@@ -1927,15 +1938,19 @@ export default function FactoryCanvas({
           if (config) {
             spriteScale = config.spriteScale ?? 1.0;
             disableAutoScale = config.disableAutoScale ?? false;
+            specificScaleFactor = config.specificScaleFactor ?? null;
             offsetX = config.offsetX ?? 0;
             offsetY = config.offsetY ?? 0;
           }
         }
 
-        // Scale sprite to fit the isometric footprint (unless disabled)
+        // Scale sprite to fit the isometric footprint (unless disabled or overridden)
         const spriteWidth = texture.width;
         if (spriteWidth > 0) {
-          if (disableAutoScale) {
+          if (specificScaleFactor != null) {
+            // Use specificScaleFactor directly (overrides all other scaling logic)
+            sprite.scale.set(specificScaleFactor);
+          } else if (disableAutoScale) {
             sprite.scale.set(spriteScale);
           } else {
             const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
@@ -2602,19 +2617,25 @@ export default function FactoryCanvas({
     // Get machine config for scaling info
     let disableAutoScale = false;
     let spriteScale = 1.0;
+    let specificScaleFactor = null;
     if (type === 'machine' && rules?.machines) {
       const config = rules.machines.find(m => m.id === item.type);
       disableAutoScale = config?.disableAutoScale || false;
       spriteScale = config?.spriteScale || 1.0;
+      specificScaleFactor = config?.specificScaleFactor ?? null;
     } else if (type === 'generator' && rules?.generators) {
       const config = rules.generators.find(g => g.id === item.type);
       disableAutoScale = config?.disableAutoScale || false;
       spriteScale = config?.spriteScale || 1.0;
+      specificScaleFactor = config?.specificScaleFactor ?? null;
     }
 
     // Calculate the sprite's actual scale
     let scale;
-    if (disableAutoScale) {
+    if (specificScaleFactor != null) {
+      // Use specificScaleFactor directly (overrides all other scaling logic)
+      scale = specificScaleFactor;
+    } else if (disableAutoScale) {
       scale = spriteScale;
     } else {
       const expectedWidth = (sizeX + sizeY) * (TILE_WIDTH / 2);
