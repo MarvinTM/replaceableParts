@@ -56,7 +56,8 @@ export default function RecipeDropdown({
   unlockedRecipes,
   rules,
   onSelectRecipe,
-  onClose
+  onClose,
+  cheatMode = false
 }) {
   const { t } = useTranslation();
 
@@ -66,9 +67,11 @@ export default function RecipeDropdown({
   const machineConfig = rules?.machines?.find(m => m.id === machine.type);
   const allowedRecipes = machineConfig?.allowedRecipes || [];
 
-  // Get available recipes (only unlocked ones that this machine type supports)
-  const availableRecipes = (unlockedRecipes || [])
-    .filter(recipeId => allowedRecipes.includes(recipeId)) // Filter by machine's allowed recipes
+  // Get available recipes
+  // In cheat mode: show all recipes this machine supports (even if not unlocked)
+  // Normal mode: only show recipes that are both unlocked AND supported by this machine
+  const availableRecipes = allowedRecipes
+    .filter(recipeId => cheatMode || (unlockedRecipes || []).includes(recipeId)) // Skip unlock check if cheat mode
     .map(recipeId => rules?.recipes?.find(r => r.id === recipeId))
     .filter(Boolean);
 

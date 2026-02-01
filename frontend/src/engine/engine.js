@@ -1264,7 +1264,7 @@ function moveMachine(state, rules, payload) {
 
 function assignRecipe(state, rules, payload) {
   const newState = deepClone(state);
-  const { machineId, recipeId } = payload;
+  const { machineId, recipeId, cheat } = payload;
 
   const machine = newState.machines.find(m => m.id === machineId);
   if (!machine) {
@@ -1277,7 +1277,7 @@ function assignRecipe(state, rules, payload) {
       return { state: newState, error: 'Recipe not found' };
     }
 
-    if (!newState.unlockedRecipes.includes(recipeId)) {
+    if (!cheat && !newState.unlockedRecipes.includes(recipeId)) {
       return { state: newState, error: 'Recipe not unlocked' };
     }
 

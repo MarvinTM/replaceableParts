@@ -222,7 +222,7 @@ function FactoryTab() {
 
   // Select a recipe (close everything after selection)
   const handleRecipeSelect = (machineId, recipeId) => {
-    assignRecipe(machineId, recipeId);
+    assignRecipe(machineId, recipeId, cheatMode);
     setSelectedMachineId(null);
     setMachinePopupPosition(null);
     setShowRecipeSelector(false);
@@ -566,6 +566,7 @@ function FactoryTab() {
           rules={rules}
           onSelectRecipe={handleRecipeSelect}
           onClose={handleCloseRecipeSelector}
+          cheatMode={cheatMode}
         />
       )}
 
