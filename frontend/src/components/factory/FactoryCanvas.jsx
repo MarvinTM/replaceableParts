@@ -13,6 +13,8 @@ import { canPlaceAt } from '../../engine/engine.js';
 import { getIconUrl, ICON_FORMAT } from '../../services/iconService';
 import { getFactoryAssets } from '../../services/assetLoaderService';
 import useGameStore, { NORMAL_TICK_MS, FAST_TICK_MS } from '../../stores/gameStore';
+import i18n from '../../i18n';
+import { getRecipeName } from '../../utils/translationHelpers';
 
 // Asset paths - place your images in frontend/public/assets/factory/
 const ASSET_BASE = '/assets/factory';
@@ -1727,8 +1729,8 @@ export default function FactoryCanvas({
 
       // Add recipe label above the machine (below icons)
       const labelText = machine.recipeId
-        ? machine.recipeId.replace(/_/g, ' ')
-        : (machine.enabled ? 'No Recipe' : 'Disabled');
+        ? getRecipeName(machine.recipeId)
+        : (machine.enabled ? i18n.t('game.factory.noRecipe') : i18n.t('game.factory.statusDisabled'));
       const label = new Text({ text: labelText, style: MACHINE_LABEL_STYLE });
       label.anchor.set(0.5, 1);
       label.x = screenPos.x;

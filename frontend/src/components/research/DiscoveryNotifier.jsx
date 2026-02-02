@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -95,6 +96,8 @@ export default function DiscoveryNotifier() {
 
 // Dialog for recipe discovery
 function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, mode }) {
+  const { t } = useTranslation();
+
   // Auto-close after 4 seconds
   useEffect(() => {
     if (open) {
@@ -104,6 +107,8 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
       return () => clearTimeout(timer);
     }
   }, [open, onClose]);
+
+  const locationText = mode === 'flow' ? t('research.autoFillQueue') : t('research.prototypeWorkshop');
 
   return (
     <Dialog
@@ -139,7 +144,7 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
             }
           }} />
           <Typography variant="h4" color="secondary.main" fontWeight="bold">
-            New Discovery!
+            {t('research.newDiscovery')}
           </Typography>
           <Box sx={{
             p: 2,
@@ -156,7 +161,7 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
             </Typography>
             {materialAge && (
               <Chip
-                label={`Age ${materialAge}`}
+                label={t('research.age', { age: materialAge })}
                 size="small"
                 color="secondary"
                 variant="outlined"
@@ -164,9 +169,9 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
             )}
           </Box>
           <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mt: 1 }}>
-            Your experiment was successful!
+            {t('research.experimentSuccessful')}
             <br />
-            Build a prototype in the {mode === 'flow' ? 'auto-fill queue' : 'Prototype Workshop'} to unlock this recipe.
+            {t('research.buildPrototypeHint', { location: locationText })}
           </Typography>
           <Button
             variant="contained"
@@ -174,7 +179,7 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
             onClick={onClose}
             sx={{ mt: 2 }}
           >
-            Continue
+            {t('research.continue')}
           </Button>
         </Box>
       </DialogContent>

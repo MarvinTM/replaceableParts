@@ -10,6 +10,7 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import MaterialIcon from '../common/MaterialIcon';
+import { getRecipeName } from '../../utils/translationHelpers';
 
 export default function MachineInfoPopup({
   machine,
@@ -29,7 +30,7 @@ export default function MachineInfoPopup({
     ? rules?.recipes?.find(r => r.id === machine.recipeId)
     : null;
   const recipeName = machine.recipeId
-    ? machine.recipeId.replace(/_/g, ' ')
+    ? getRecipeName(machine.recipeId)
     : t('game.factory.noRecipeAssigned', 'No recipe assigned');
 
   // Helper to render material items with icons

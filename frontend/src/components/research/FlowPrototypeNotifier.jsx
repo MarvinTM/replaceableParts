@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -85,6 +86,8 @@ export default function FlowPrototypeNotifier() {
 
 // Dialog for flow-mode prototype completion
 function FlowCompleteDialog({ open, onClose, outputId, materialName }) {
+  const { t } = useTranslation();
+
   // Auto-close after 3 seconds
   useEffect(() => {
     if (open) {
@@ -115,16 +118,16 @@ function FlowCompleteDialog({ open, onClose, outputId, materialName }) {
         }}>
           <CheckCircleIcon sx={{ fontSize: 96, color: 'success.main' }} />
           <Typography variant="h4" color="success.main" fontWeight="bold">
-            Prototype Complete!
+            {t('research.prototypeComplete')}
           </Typography>
           <MaterialIcon materialId={outputId} size={64} />
           <Typography variant="h6">
             {materialName}
           </Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center">
-            This recipe has been unlocked for production.
+            {t('research.recipeUnlocked')}
             <br />
-            You can now assign it to your machines.
+            {t('research.assignToMachines')}
           </Typography>
           <Button
             variant="contained"
@@ -132,7 +135,7 @@ function FlowCompleteDialog({ open, onClose, outputId, materialName }) {
             onClick={onClose}
             sx={{ mt: 2 }}
           >
-            Continue
+            {t('research.continue')}
           </Button>
         </Box>
       </DialogContent>

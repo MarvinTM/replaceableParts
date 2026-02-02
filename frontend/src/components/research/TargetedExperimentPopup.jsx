@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -23,6 +24,7 @@ export default function TargetedExperimentPopup({
   targetedCost,
   researchPoints
 }) {
+  const { t } = useTranslation();
   const runTargetedExperiment = useGameStore((state) => state.runTargetedExperiment);
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
 
@@ -65,17 +67,17 @@ export default function TargetedExperimentPopup({
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TargetIcon sx={{ color: 'primary.main' }} />
-          <Typography variant="h6">Targeted Experiment</Typography>
+          <Typography variant="h6">{t('research.targetedExperiment')}</Typography>
         </Box>
       </DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Select a specific recipe to research. These are materials needed by recipes you've already discovered or unlocked.
+            {t('research.targetedExperimentDesc')}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-            <Typography variant="body2">Cost:</Typography>
+            <Typography variant="body2">{t('research.cost')}:</Typography>
             <Chip
               label={`${targetedCost} RP`}
               color={canAfford ? 'primary' : 'error'}
@@ -83,7 +85,7 @@ export default function TargetedExperimentPopup({
             />
             {!canAfford && (
               <Typography variant="caption" color="error.main">
-                (Need {targetedCost - researchPoints} more RP)
+                ({t('research.needMoreRP', { amount: targetedCost - researchPoints })})
               </Typography>
             )}
           </Box>
@@ -99,10 +101,10 @@ export default function TargetedExperimentPopup({
             color: 'text.secondary'
           }}>
             <Typography variant="body1">
-              No eligible recipes available
+              {t('research.noEligibleRecipes')}
             </Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              All required materials have already been researched.
+              {t('research.allMaterialsResearched')}
             </Typography>
           </Box>
         ) : (
@@ -136,7 +138,7 @@ export default function TargetedExperimentPopup({
                       </Typography>
                       {materialAge && (
                         <Chip
-                          label={`Age ${materialAge}`}
+                          label={t('research.age', { age: materialAge })}
                           size="small"
                           variant="outlined"
                         />
@@ -147,7 +149,7 @@ export default function TargetedExperimentPopup({
                     neededBy.length > 0 && (
                       <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
                         <Typography component="span" variant="caption" color="text.secondary">
-                          Needed for:
+                          {t('research.neededFor')}
                         </Typography>
                         {neededBy.slice(0, 3).map((name, idx) => (
                           <Box component="span" key={idx} sx={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -159,7 +161,7 @@ export default function TargetedExperimentPopup({
                         ))}
                         {neededBy.length > 3 && (
                           <Typography component="span" variant="caption" color="text.secondary">
-                            +{neededBy.length - 3} more
+                            {t('research.andMore', { count: neededBy.length - 3 })}
                           </Typography>
                         )}
                       </Box>
@@ -174,7 +176,7 @@ export default function TargetedExperimentPopup({
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} color="inherit">
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           variant="contained"
@@ -183,7 +185,7 @@ export default function TargetedExperimentPopup({
           disabled={!canRun}
           startIcon={<TargetIcon />}
         >
-          Research Selected ({targetedCost} RP)
+          {t('research.researchSelected', { cost: targetedCost })}
         </Button>
       </DialogActions>
     </Dialog>

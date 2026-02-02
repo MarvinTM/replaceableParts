@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
+import { getRecipeName } from '../../utils/translationHelpers';
 import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -154,8 +155,8 @@ export default function RecipeDropdown({
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                        {recipe.id.replace(/_/g, ' ')}
+                      <Typography variant="body2">
+                        {getRecipeName(recipe.id)}
                       </Typography>
                       <Chip
                         label={`T${recipe.age || 1}`}

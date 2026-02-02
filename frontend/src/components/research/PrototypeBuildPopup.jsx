@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -35,6 +36,7 @@ export default function PrototypeBuildPopup({
   recipe,
   rules,
 }) {
+  const { t } = useTranslation();
   const fillPrototypeSlot = useGameStore((state) => state.fillPrototypeSlot);
   const currentInventory = useGameStore((state) => state.engineState?.inventory || {});
 
@@ -292,7 +294,7 @@ export default function PrototypeBuildPopup({
           }}>
             <CheckCircleIcon sx={{ fontSize: 96, color: 'success.main' }} />
             <Typography variant="h4" color="success.main" fontWeight="bold">
-              Prototype Complete!
+              {t('research.prototypeComplete')}
             </Typography>
             {outputInfo.material?.category === 'equipment' ? (
               <Box
@@ -313,9 +315,9 @@ export default function PrototypeBuildPopup({
               {outputInfo.material?.name || initialPrototype.recipeId}
             </Typography>
             <Typography variant="body1" color="text.secondary" textAlign="center">
-              This recipe has been unlocked for production.
+              {t('research.recipeUnlocked')}
               <br />
-              You can now assign it to your machines.
+              {t('research.assignToMachines')}
             </Typography>
             <Button
               variant="contained"
@@ -323,7 +325,7 @@ export default function PrototypeBuildPopup({
               onClick={handleClose}
               sx={{ mt: 2 }}
             >
-              Continue
+              {t('research.continue')}
             </Button>
           </Box>
         </DialogContent>
