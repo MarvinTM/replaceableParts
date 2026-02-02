@@ -28,6 +28,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
 import Divider from '@mui/material/Divider';
+import { getMaterialName } from '../utils/translationHelpers';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import { useGame } from '../contexts/GameContext';
@@ -356,12 +357,12 @@ function FactoryTab() {
                   '&:active': { cursor: 'grabbing' }
                 }}
               >
-                <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={generator.name}
+                <Box component="img" src={`/assets/factory/${generator.id}.png`} alt={getMaterialName(generator.id, generator.name)}
                   sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
                 <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" noWrap>{generator.name}</Typography>
+                  <Typography variant="body2" noWrap>{getMaterialName(generator.id, generator.name)}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <BoltIcon sx={{ fontSize: 14, color: 'success.main' }} />
                     <Typography variant="caption" color="success.main">+{generator.energyOutput}</Typography>
@@ -420,12 +421,12 @@ function FactoryTab() {
                   '&:active': { cursor: 'grabbing' }
                 }}
               >
-                <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={machine.name}
+                <Box component="img" src={`/assets/factory/${machine.id}_idle.png`} alt={getMaterialName(machine.id, machine.name)}
                   sx={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE, objectFit: 'contain', flexShrink: 0, imageRendering: 'pixelated' }}
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
                 <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" noWrap>{machine.name}</Typography>
+                  <Typography variant="body2" noWrap>{getMaterialName(machine.id, machine.name)}</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
                     <Typography variant="caption" color="text.secondary">-{machine.energyConsumption}</Typography>

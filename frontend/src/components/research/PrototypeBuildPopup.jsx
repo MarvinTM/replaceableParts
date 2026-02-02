@@ -362,7 +362,7 @@ export default function PrototypeBuildPopup({
             <Box
               component="img"
               src={`/assets/factory/${outputInfo.outputId}_idle.png`}
-              alt={outputInfo.material?.name}
+              alt={getMaterialName(outputInfo.outputId, outputInfo.material?.name)}
               sx={{
                 width: 64,
                 height: 64,
@@ -381,7 +381,7 @@ export default function PrototypeBuildPopup({
             {getMaterialName(outputInfo.outputId, outputInfo.material?.name || initialPrototype.recipeId)}
           </Typography>
           <Chip
-            label={`Age ${outputInfo.material?.age || '?'}`}
+            label={t('market.age') + ` ${outputInfo.material?.age || '?'}`}
             sx={{
               bgcolor: AGE_COLORS[outputInfo.material?.age] || '#666',
               color: 'white',
@@ -392,7 +392,7 @@ export default function PrototypeBuildPopup({
 
         {/* Description Placeholder */}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-          {outputInfo.material?.description || 'Description coming soon...'}
+          {outputInfo.material?.description || t('research.descriptionComingSoon', 'Description coming soon...')}
         </Typography>
 
         <Divider sx={{ mb: 2 }} />
@@ -400,7 +400,7 @@ export default function PrototypeBuildPopup({
         {/* Overall Progress */}
         <Box sx={{ mb: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-            <Typography variant="body2">Overall Progress</Typography>
+            <Typography variant="body2">{t('research.overallProgress', 'Overall Progress')}</Typography>
             <Typography variant="body2">{overallProgress}%</Typography>
           </Box>
           <LinearProgress
@@ -413,14 +413,14 @@ export default function PrototypeBuildPopup({
 
         {/* Component Slots Section */}
         <Typography variant="subtitle2" gutterBottom>
-          Required Components
+          {t('game.factory.componentSlots', 'Required Components')}
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          Drag materials from below to fill each slot. Click a slot to remove one unit.
+          {t('game.factory.dragMaterialsHint', 'Drag materials from below to fill each slot. Click a slot to remove one unit.')}
           {hasRawSlots && (
             <Box component="span" sx={{ display: 'block', mt: 0.5, color: 'info.main' }}>
               <AutoModeIcon sx={{ fontSize: 12, verticalAlign: 'middle', mr: 0.5 }} />
-              Raw material slots auto-fill from production.
+              {t('research.rawMaterialsAutoFill', 'Raw material slots auto-fill from production.')}
             </Box>
           )}
         </Typography>
@@ -505,7 +505,7 @@ export default function PrototypeBuildPopup({
                 <Box sx={{ opacity: isFull ? 1 : isPartial ? 0.7 : 0.3, position: 'relative' }}>
                   <MaterialIcon
                     materialId={slot.material}
-                    materialName={material?.name}
+                    materialName={getMaterialName(slot.material, material?.name)}
                     category={material?.category}
                     size={40}
                     showTooltip={false}
@@ -565,7 +565,7 @@ export default function PrototypeBuildPopup({
 
         {/* Available Materials Section */}
         <Typography variant="subtitle2" gutterBottom>
-          Available Materials
+          {t('game.factory.availableMaterials', 'Available Materials')}
         </Typography>
 
         <Box
@@ -612,13 +612,13 @@ export default function PrototypeBuildPopup({
               >
                 <MaterialIcon
                   materialId={material.id}
-                  materialName={material.name}
+                  materialName={getMaterialName(material.id, material.name)}
                   category={material.category}
                   size={44}
                   showTooltip
                 />
                 <Typography variant="caption" sx={{ fontWeight: 500, mt: 0.5, textAlign: 'center' }}>
-                  {material.name}
+                  {getMaterialName(material.id, material.name)}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -642,7 +642,7 @@ export default function PrototypeBuildPopup({
                   }}
                 />
                 <Typography variant="caption" color="text.secondary">
-                  ({material.available} available)
+                  ({material.available} {t('research.available', 'available')})
                 </Typography>
               </Box>
             );
@@ -656,7 +656,7 @@ export default function PrototypeBuildPopup({
             color="error"
             sx={{ mt: 2, textAlign: 'center' }}
           >
-            Not enough parts in inventory to complete this prototype
+            {t('game.factory.notEnoughMaterials', 'Not enough parts in inventory to complete this prototype')}
           </Typography>
         )}
 
@@ -667,14 +667,14 @@ export default function PrototypeBuildPopup({
             color="info.main"
             sx={{ mt: 2, textAlign: 'center' }}
           >
-            Waiting for raw materials to auto-fill from production...
+            {t('research.waitingForRawMaterials', 'Waiting for raw materials to auto-fill from production...')}
           </Typography>
         )}
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} color="inherit">
-          Cancel
+          {t('common.cancel', 'Cancel')}
         </Button>
         <Button
           onClick={handleBuild}
@@ -683,7 +683,7 @@ export default function PrototypeBuildPopup({
           disabled={!allSlotsFilled}
           startIcon={<BuildIcon />}
         >
-          Build Prototype
+          {t('research.buildPrototype', 'Build Prototype')}
         </Button>
       </DialogActions>
     </Dialog>

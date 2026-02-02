@@ -368,7 +368,7 @@ export default function BuildPopup({
                 <Box sx={{ opacity: isFull ? 1 : isPartial ? 0.7 : 0.3, position: 'relative' }}>
                   <MaterialIcon
                     materialId={slot.material}
-                    materialName={material?.name}
+                    materialName={getMaterialName(slot.material, material?.name)}
                     category={material?.category}
                     size={MATERIAL_ICON_SIZE}
                     showTooltip={false}

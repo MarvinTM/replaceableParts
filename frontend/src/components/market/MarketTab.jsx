@@ -619,7 +619,7 @@ export default function MarketTab() {
               </Typography>
             ) : marketIntelligence.hot.length > 0 ? (
               <Typography variant="body2">
-                {t('market.focusOnDemand', { item: marketIntelligence.hot[0].name })}
+                {t('market.focusOnDemand', { item: getMaterialName(marketIntelligence.hot[0].id, marketIntelligence.hot[0].name) })}
               </Typography>
             ) : (
               <Typography variant="body2">

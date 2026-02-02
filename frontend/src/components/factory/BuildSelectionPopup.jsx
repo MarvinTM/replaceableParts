@@ -7,6 +7,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import BoltIcon from '@mui/icons-material/Bolt';
 import { useTranslation } from 'react-i18next';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 /**
  * BuildSelectionPopup - A modal for selecting which machine/generator to build
@@ -102,7 +103,7 @@ export default function BuildSelectionPopup({
                 <Box
                   component="img"
                   src={getImageSrc(item)}
-                  alt={item.name}
+                  alt={getMaterialName(item.id, item.name)}
                   sx={{
                     width: 64,
                     height: 64,
@@ -123,7 +124,7 @@ export default function BuildSelectionPopup({
                     mb: 0.5,
                   }}
                 >
-                  {item.name}
+                  {getMaterialName(item.id, item.name)}
                 </Typography>
                 <Box
                   sx={{

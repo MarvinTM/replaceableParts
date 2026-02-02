@@ -13,6 +13,7 @@ import FastForwardIcon from '@mui/icons-material/FastForward';
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
 import TickProgressIndicator from '../common/TickProgressIndicator';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 /**
  * PlayControls - Three-button play control group (pause, play, fast)
@@ -160,12 +161,12 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules
                 icon={
                   <MaterialIcon
                     materialId={itemId}
-                    materialName={material?.name}
+                    materialName={getMaterialName(itemId, material?.name)}
                     category={material?.category}
                     size={16}
                   />
                 }
-                label={`${material?.name || itemId}: ${quantity}`}
+                label={`${getMaterialName(itemId, material?.name)}: ${quantity}`}
                 variant="outlined"
                 size="small"
               />

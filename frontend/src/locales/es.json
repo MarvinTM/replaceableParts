@@ -185,7 +185,17 @@
       "inInventory": "en inv.",
       "notEnoughMaterials": "No hay suficientes materiales en el inventario para construir esto",
       "clickToRemove": "Clic para quitar",
-      "build": "Construir"
+      "build": "Construir",
+      "selectMachine": "Seleccionar Máquina para Construir",
+      "selectGenerator": "Seleccionar Generador para Construir",
+      "noMachinesAvailable": "No hay máquinas disponibles para construir",
+      "noGeneratorsAvailable": "No hay generadores disponibles para construir",
+      "productionMachine": "Máquina de Producción",
+      "machineEnabled": "Activada",
+      "machineDisabled": "Desactivada",
+      "currentRecipeLabel": "Receta Actual:",
+      "energyConsumption": "Energía:",
+      "perTick": "/ tick"
     },
     "exploration": {
       "title": "Mapa de Exploración",
