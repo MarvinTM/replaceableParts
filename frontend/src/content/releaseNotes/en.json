@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "0.4.5",
+      "date": "2024-02-02",
+      "highlights": "Translations for French, German and Italian added.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Translations for French, German and Italian added."
+        }
+      ]
+    },
+    {
       "version": "0.4.0",
       "date": "2024-02-01",
       "highlights": "Invite to Game. Huge performance improvements in Factory construction.",

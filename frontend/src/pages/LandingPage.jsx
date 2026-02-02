@@ -3,14 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import LanguageIcon from '@mui/icons-material/Language';
 import { keyframes } from '@mui/system';
 import { loadAllAssets, areAssetsLoaded } from '../services/assetLoaderService';
 import { defaultRules } from '../engine/defaultRules';
 import LoadingProgress from '../components/LoadingProgress';
+import LanguageMenu from '../components/common/LanguageMenu';
 
 const fadeIn = keyframes`
   from {
@@ -33,9 +30,8 @@ const pulse = keyframes`
 `;
 
 export default function LandingPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [langAnchorEl, setLangAnchorEl] = useState(null);
   const [assetsLoading, setAssetsLoading] = useState(!areAssetsLoaded());
   const [loadProgress, setLoadProgress] = useState({ loaded: 0, total: 0 });
 
@@ -74,8 +70,8 @@ export default function LandingPage() {
   // Handle any key press
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignore if typing in an input or if menu is open
-      if (e.target.tagName === 'INPUT' || langAnchorEl) {
+      // Ignore if typing in an input
+      if (e.target.tagName === 'INPUT') {
         return;
       }
       // Ignore if still loading
@@ -85,21 +81,7 @@ export default function LandingPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleContinue, langAnchorEl, assetsLoading]);
-
-  const handleLangMenu = (event) => {
-    event.stopPropagation();
-    setLangAnchorEl(event.currentTarget);
-  };
-
-  const handleLangClose = () => {
-    setLangAnchorEl(null);
-  };
-
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
-    handleLangClose();
-  };
+  }, [handleContinue, assetsLoading]);
 
   return (
     <Box
@@ -119,33 +101,17 @@ export default function LandingPage() {
     >
       {/* Language selector */}
       <Box
-        data-lang-menu
         sx={{ position: 'absolute', top: 16, right: 16 }}
         onClick={(e) => e.stopPropagation()}
       >
-        <IconButton
-          onClick={handleLangMenu}
+        <LanguageMenu 
+          color="text.secondary"
           sx={{
-            color: 'text.secondary',
             '&:hover': {
               color: 'text.primary',
             },
           }}
-        >
-          <LanguageIcon />
-        </IconButton>
-        <Menu
-          anchorEl={langAnchorEl}
-          open={Boolean(langAnchorEl)}
-          onClose={handleLangClose}
-        >
-          <MenuItem onClick={() => changeLanguage('en')}>
-            {t('language.en')}
-          </MenuItem>
-          <MenuItem onClick={() => changeLanguage('es')}>
-            {t('language.es')}
-          </MenuItem>
-        </Menu>
+        />
       </Box>
 
       {/* Main content */}

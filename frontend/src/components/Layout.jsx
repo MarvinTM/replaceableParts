@@ -23,9 +23,10 @@ import LanguageIcon from '@mui/icons-material/Language';
 import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
+import LanguageMenu from './common/LanguageMenu';
 
 export default function Layout({ children }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user, logout, isAdmin, isAuthenticated, isGuest, exitGuestMode } = useAuth();
   const { exitToMenu, isInGame, saveGame } = useGame();
   const navigate = useNavigate();
@@ -35,7 +36,6 @@ export default function Layout({ children }) {
   const isOnGamePage = location.pathname === '/game';
 
   const [anchorEl, setAnchorEl] = useState(null);
-  const [langAnchorEl, setLangAnchorEl] = useState(null);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -43,14 +43,6 @@ export default function Layout({ children }) {
 
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleLangMenu = (event) => {
-    setLangAnchorEl(event.currentTarget);
-  };
-
-  const handleLangClose = () => {
-    setLangAnchorEl(null);
   };
 
   const handleLogout = async () => {
@@ -85,11 +77,6 @@ export default function Layout({ children }) {
   const handleBackToMenu = async () => {
     await exitToMenu();
     navigate('/menu');
-  };
-
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
-    handleLangClose();
   };
 
   return (
@@ -173,31 +160,7 @@ export default function Layout({ children }) {
             )}
           </Box>
 
-          <IconButton
-            color="inherit"
-            onClick={handleLangMenu}
-            sx={{ mr: 1 }}
-          >
-            <LanguageIcon />
-          </IconButton>
-          <Menu
-            anchorEl={langAnchorEl}
-            open={Boolean(langAnchorEl)}
-            onClose={handleLangClose}
-          >
-            <MenuItem onClick={() => changeLanguage('en')}>
-              {t('language.en')}
-            </MenuItem>
-            <MenuItem onClick={() => changeLanguage('es')}>
-              {t('language.es')}
-            </MenuItem>
-            <MenuItem onClick={() => changeLanguage('fr')}>
-              {t('language.fr')}
-            </MenuItem>
-            <MenuItem onClick={() => changeLanguage('de')}>
-              {t('language.de')}
-            </MenuItem>
-          </Menu>
+          <LanguageMenu sx={{ mr: 1 }} />
 
           <IconButton onClick={handleMenu} sx={{ p: 0 }}>
             {isAuthenticated ? (

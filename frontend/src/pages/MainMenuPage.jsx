@@ -28,7 +28,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import LanguageIcon from '@mui/icons-material/Language';
+import LanguageMenu from '../components/common/LanguageMenu';
 import PersonIcon from '@mui/icons-material/Person';
 import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
@@ -40,7 +40,7 @@ import NewsPanel from '../components/mainMenu/NewsPanel';
 import ReleaseNotesPanel from '../components/mainMenu/ReleaseNotesPanel';
 
 export default function MainMenuPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout, isAdmin, isAuthenticated, isGuest, enterGuestMode } = useAuth();
   const {
@@ -62,7 +62,6 @@ export default function MainMenuPage() {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [guestGameName, setGuestGameName] = useState('');
   const [isGuestOverwrite, setIsGuestOverwrite] = useState(false);
-  const [langAnchorEl, setLangAnchorEl] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -181,19 +180,6 @@ export default function MainMenuPage() {
     enterGuestMode();
   };
 
-  const handleLangMenu = (event) => {
-    setLangAnchorEl(event.currentTarget);
-  };
-
-  const handleLangClose = () => {
-    setLangAnchorEl(null);
-  };
-
-  const changeLanguage = (lng) => {
-    i18n.changeLanguage(lng);
-    handleLangClose();
-  };
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric',
@@ -247,30 +233,7 @@ export default function MainMenuPage() {
     >
       {/* Top bar with language and admin */}
       <Box sx={{ position: 'absolute', top: 16, right: 16, display: 'flex', gap: 1 }}>
-        <IconButton
-          onClick={handleLangMenu}
-          sx={{ color: 'text.secondary' }}
-        >
-          <LanguageIcon />
-        </IconButton>
-        <Menu
-          anchorEl={langAnchorEl}
-          open={Boolean(langAnchorEl)}
-          onClose={handleLangClose}
-        >
-          <MenuItem onClick={() => changeLanguage('en')}>
-            {t('language.en')}
-          </MenuItem>
-          <MenuItem onClick={() => changeLanguage('es')}>
-            {t('language.es')}
-          </MenuItem>
-          <MenuItem onClick={() => changeLanguage('fr')}>
-            {t('language.fr')}
-          </MenuItem>
-          <MenuItem onClick={() => changeLanguage('de')}>
-            {t('language.de')}
-          </MenuItem>
-        </Menu>
+        <LanguageMenu color="text.secondary" />
         {isAdmin && (
           <IconButton
             onClick={handleAdmin}

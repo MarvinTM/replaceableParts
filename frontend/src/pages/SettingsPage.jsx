@@ -11,6 +11,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
 import SettingsIcon from '@mui/icons-material/Settings';
 import useGameStore from '../stores/gameStore';
+import { SUPPORTED_LANGUAGES } from '../i18n';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -63,10 +64,11 @@ export default function SettingsPage() {
               label={t('language.select')}
               onChange={handleLanguageChange}
             >
-              <MenuItem value="en">{t('language.en')}</MenuItem>
-              <MenuItem value="es">{t('language.es')}</MenuItem>
-              <MenuItem value="fr">{t('language.fr')}</MenuItem>
-              <MenuItem value="de">{t('language.de')}</MenuItem>
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <MenuItem key={lang.code} value={lang.code}>
+                  {t(lang.labelKey)}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
