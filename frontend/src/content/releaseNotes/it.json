@@ -1,0 +1,166 @@
+{
+  "releases": [
+    {
+      "version": "0.4.0",
+      "date": "2024-02-01",
+      "highlights": "Invita al Gioco. Enormi miglioramenti delle prestazioni nella costruzione della Fabbrica.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Aggiunta funzionalità Invita al Gioco."
+        },
+        {
+          "type": "improvement",
+          "text": "Prestazioni notevolmente migliorate durante il trascinamento di macchine e generatori nella fabbrica"
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunto l'assemblatore di precisione e la fabbrica di elettronica"
+        },
+        {
+          "type": "fix",
+          "text": "Risolto il problema con i giacimenti non visibili nella mappa anche se ci sono ricette che richiedono quei materiali."
+        }
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2024-02-01",
+      "highlights": "Ribilanciamento significativo delle meccaniche.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Aggiunto meccanismo di dispiegamento della produzione."
+        },
+        {
+          "type": "improvement",
+          "text": "Ribilanciamento significativo delle meccaniche di gioco."
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunta fonderia e impianto chimico"
+        }
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2024-01-31",
+      "highlights": "Miglioramenti visivi della mappa di esplorazione. Riprogettazione layout Fabbrica. Info audit utente.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "La mappa di esplorazione è di nuovo isometrica e segue un modello di generazione diverso e più bilanciato."
+        },
+        {
+          "type": "feature",
+          "text": "Cambiato il layout principale della scheda Fabbrica"
+        },
+        {
+          "type": "feature",
+          "text": "Aggiunte informazioni sulla sessione di audit utente"
+        },
+        {
+          "type": "improvement",
+          "text": "Sbloccare le ricette ricercate ora darà punti ricerca aggiuntivi e aumenterà anche la produzione complessiva di ricerca"
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunta forgia d'acciaio, impianto di assemblaggio pesante"
+        },
+        {
+          "type": "fix",
+          "text": "Migliorata la selezione e il trascinamento degli edifici, ora se due edifici sono uno accanto all'altro funziona in modo molto più affidabile e con prestazioni molto migliori."
+        }
+      ]
+    },
+    {
+      "version": "0.1.6",
+      "date": "2024-01-29",
+      "highlights": "Visualizzazione caricamento risorse. Nuovo layout Fabbrica. Nuovi generatori di energia",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Aggiunta barra di avanzamento del caricamento alla pagina di destinazione"
+        },
+        {
+          "type": "feature",
+          "text": "Cambiato il layout principale della scheda Fabbrica"
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunta centrale diesel, impianto solare e reattore nucleare"
+        },
+        {
+          "type": "fix",
+          "text": "Ora le ricette che richiedono materie prime per il prototipo possono essere sbloccate (il prototipo riceverà automaticamente le materie prime, se esistono giacimenti di estrazione per esse)."
+        }
+      ]
+    },
+    {
+      "version": "0.1.5",
+      "date": "2024-01-25",
+      "highlights": "Tutorial e suggerimenti. Nuovi generatori.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Aggiunto tutorial rapido del gioco, che appare quando l'utente crea una nuova partita"
+        },
+        {
+          "type": "feature",
+          "text": "Aggiunto un meccanismo di suggerimenti che aiuta l'utente dinamicamente durante il gioco. Questo verrà ampliato nelle versioni successive"
+        },
+        {
+          "type": "feature",
+          "text": "Aggiunto un meccanismo di feedback per consentire agli utenti di inviare feedback agli sviluppatori"
+        },
+        {
+          "type": "improvement",
+          "text": "L'autenticazione/primo accesso è stata migliorata. Ora non richiede l'approvazione dell'amministratore e una email di benvenuto viene inviata automaticamente all'utente."
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunte dinamiche di mercato esterne. Migliorata la gestione della cronologia dei prezzi di mercato."
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunto generatore termico, mulino a vento e centrale a carbone"
+        }
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2024-01-20",
+      "highlights": "Nuovo look&feel dell'UI. Miglioramenti alla ricerca.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Nuovo look&feel dell'UI, con colori diversi. Aggiunto logo del Gioco."
+        },
+        {
+          "type": "feature",
+          "text": "Nuova meccanica di ricerca: Esperimento mirato."
+        },
+        {
+          "type": "feature",
+          "text": "Meccanica di ricerca: Modificato il modo in cui vengono costruiti i prototipi dopo aver sbloccato la ricetta."
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunto badge per visualizzare le ricette in attesa di sblocco nella scheda Ricerca."
+        },
+        {
+          "type": "improvement",
+          "text": "Riprogettato il terreno intorno alla fabbrica."
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunto requisito di carburante ai generatori e regolati i generatori in generale."
+        },
+        {
+          "type": "fix",
+          "text": "I materiali verranno consumati solo una volta costruito il prototipo."
+        }
+      ]
+    }
+  ]
+}
