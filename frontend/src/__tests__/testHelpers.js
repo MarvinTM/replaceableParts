@@ -2,7 +2,17 @@
  * Shared test utilities for Replaceable Parts engine tests
  */
 
-import { engine } from '../engine/engine';
+import { 
+  engine,
+  createRNG,
+  calculateEnergy,
+  deepClone,
+  getItemWeight,
+  getMaxStack,
+  canPlaceAt,
+  getNextExpansionChunk,
+  calculateHighestUnlockedAge
+} from '../engine/engine';
 import { defaultRules } from '../engine/defaultRules';
 import { initialState } from '../engine/initialState';
 
@@ -238,4 +248,16 @@ export function getMaterial(materialId) {
 }
 
 // Re-export commonly used imports
-export { engine, defaultRules, initialState };
+export { 
+  engine, 
+  defaultRules, 
+  initialState, 
+  createRNG,
+  calculateEnergy,
+  deepClone,
+  getItemWeight,
+  getMaxStack,
+  canPlaceAt,
+  getNextExpansionChunk,
+  calculateHighestUnlockedAge
+};
