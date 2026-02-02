@@ -9,28 +9,27 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
-import SettingsIcon from '@mui/icons-material/Settings';
 import useGameStore from '../stores/gameStore';
 import { SUPPORTED_LANGUAGES } from '../i18n';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
-  const rules = useGameStore((state) => state.rules);
+  // const rules = useGameStore((state) => state.rules);
   const machineAnimationMode = useGameStore((state) => state.machineAnimationMode);
   const productionAnimationStyle = useGameStore((state) => state.productionAnimationStyle);
-  const disableResearch = useGameStore((state) => state.disableResearch);
-  const setExpansionType = useGameStore((state) => state.setExpansionType);
+  // const disableResearch = useGameStore((state) => state.disableResearch);
+  // const setExpansionType = useGameStore((state) => state.setExpansionType);
   const setMachineAnimationMode = useGameStore((state) => state.setMachineAnimationMode);
   const setProductionAnimationStyle = useGameStore((state) => state.setProductionAnimationStyle);
-  const setDisableResearch = useGameStore((state) => state.setDisableResearch);
+  // const setDisableResearch = useGameStore((state) => state.setDisableResearch);
 
   const handleLanguageChange = (event) => {
     i18n.changeLanguage(event.target.value);
   };
 
-  const handleExpansionChange = (event) => {
-    setExpansionType(event.target.value);
-  };
+  // const handleExpansionChange = (event) => {
+  //   setExpansionType(event.target.value);
+  // };
 
   const handleMachineAnimationModeChange = (event) => {
     setMachineAnimationMode(event.target.value);
@@ -40,9 +39,9 @@ export default function SettingsPage() {
     setProductionAnimationStyle(event.target.value);
   };
 
-  const handleDisableResearchChange = (event) => {
-    setDisableResearch(event.target.checked);
-  };
+  // const handleDisableResearchChange = (event) => {
+  //   setDisableResearch(event.target.checked);
+  // };
 
   return (
     <Box>
@@ -72,7 +71,7 @@ export default function SettingsPage() {
             </Select>
           </FormControl>
 
-          <FormControl fullWidth sx={{ mt: 3 }}>
+          {/* <FormControl fullWidth sx={{ mt: 3 }}>
             <InputLabel id="expansion-select-label">Expansion Logic</InputLabel>
             <Select
               labelId="expansion-select-label"
@@ -83,7 +82,7 @@ export default function SettingsPage() {
               <MenuItem value="spiral">Spiral (Chunks)</MenuItem>
               <MenuItem value="fractal">Fractal (Strips)</MenuItem>
             </Select>
-          </FormControl>
+          </FormControl> */}
 
           <FormControl fullWidth sx={{ mt: 3 }}>
             <InputLabel id="machine-anim-label">{t('settings.machineAnimation')}</InputLabel>
@@ -116,7 +115,7 @@ export default function SettingsPage() {
             </FormControl>
           )}
 
-          <FormControlLabel
+          {/* <FormControlLabel
             sx={{ mt: 3, display: 'flex' }}
             control={
               <Switch
@@ -125,14 +124,8 @@ export default function SettingsPage() {
               />
             }
             label={t('settings.disableResearch')}
-          />
+          /> */}
 
-          <Box sx={{ mt: 4, textAlign: 'center', py: 4 }}>
-            <SettingsIcon sx={{ fontSize: 48, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
-            <Typography variant="body1" color="text.secondary">
-              {t('settings.moreComingSoon')}
-            </Typography>
-          </Box>
         </CardContent>
       </Card>
     </Box>
