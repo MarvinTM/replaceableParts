@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { analyzeIssues } from '../utils/graphAnalysis';
-import { defaultRules } from './defaultRules';
-import { initialState } from './initialState';
+import { analyzeIssues } from '../../utils/graphAnalysis';
+import { defaultRules } from '../../engine/defaultRules';
+import { initialState } from '../../engine/initialState';
 
 describe('Game Rules Validation', () => {
   const issues = analyzeIssues(defaultRules, initialState);
