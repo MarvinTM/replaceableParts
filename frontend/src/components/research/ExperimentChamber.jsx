@@ -72,7 +72,7 @@ export default function ExperimentChamber({
           if (r?.inputs && Object.keys(r.inputs).includes(outputId)) {
             const rOutputId = Object.keys(r.outputs || {})[0];
             const rMaterial = rules.materials.find(m => m.id === rOutputId);
-            neededBy.push(rMaterial?.name || r.id);
+            neededBy.push(rMaterial?.id || r.id);
           }
         }
 

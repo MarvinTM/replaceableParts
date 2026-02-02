@@ -469,7 +469,7 @@ export default function MarketTab() {
                   key={item.id}
                   type="monotone"
                   dataKey={item.id}
-                  name={item.name}
+                  name={getMaterialName(item.id, item.name)}
                   stroke={AGE_COLORS[item.age]}
                   dot={false}
                   strokeWidth={2}
@@ -498,7 +498,7 @@ export default function MarketTab() {
                 marketIntelligence.hot.map(item => (
                   <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                     <MaterialIcon materialId={item.id} size={20} />
-                    <Typography variant="body2">{item.name}</Typography>
+                    <Typography variant="body2">{getMaterialName(item.id, item.name)}</Typography>
                     <Chip
                       label={`${(item.popularity * 100).toFixed(0)}%`}
                       size="small"
@@ -522,7 +522,7 @@ export default function MarketTab() {
                 marketIntelligence.cold.map(item => (
                   <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                     <MaterialIcon materialId={item.id} size={20} />
-                    <Typography variant="body2">{item.name}</Typography>
+                    <Typography variant="body2">{getMaterialName(item.id, item.name)}</Typography>
                     <Chip
                       label={`${(item.popularity * 100).toFixed(0)}%`}
                       size="small"
@@ -654,7 +654,7 @@ export default function MarketTab() {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <MaterialIcon materialId={item.id} size={32} />
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="body1" fontWeight="bold">{item.name}</Typography>
+                      <Typography variant="body1" fontWeight="bold">{getMaterialName(item.id, item.name)}</Typography>
                       <Typography variant="caption" color="text.secondary">{t('market.age')} {item.age}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -725,7 +725,7 @@ export default function MarketTab() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <MaterialIcon materialId={selectedItem.id} size={48} />
               <Box>
-                <Typography variant="body1" fontWeight="bold">{selectedItem.name}</Typography>
+                <Typography variant="body1" fontWeight="bold">{getMaterialName(selectedItem.id, selectedItem.name)}</Typography>
                 <Typography variant="caption" color="text.secondary">{t('market.age')} {selectedItem.age}</Typography>
               </Box>
             </Box>
@@ -822,7 +822,7 @@ export default function MarketTab() {
               revenueAnalytics.topSellers.map((seller, index) => (
                 <Box key={seller.itemId} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="body2">
-                    {index + 1}. {seller.name}
+                    {index + 1}. {getMaterialName(seller.itemId, seller.name)}
                   </Typography>
                   <Box sx={{ textAlign: 'right' }}>
                     <Typography variant="body2" fontWeight="bold">

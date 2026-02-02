@@ -313,7 +313,7 @@ export default function PrototypeBuildPopup({
               <MaterialIcon materialId={outputInfo.outputId} size={64} />
             )}
             <Typography variant="h6">
-              {outputInfo.material?.name || initialPrototype.recipeId}
+              {getMaterialName(outputInfo.outputId, outputInfo.material?.name || initialPrototype.recipeId)}
             </Typography>
             <Typography variant="body1" color="text.secondary" textAlign="center">
               {t('research.recipeUnlocked')}
@@ -378,7 +378,7 @@ export default function PrototypeBuildPopup({
         {/* Name and Age */}
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           <Typography variant="h5" gutterBottom>
-            {outputInfo.material?.name || initialPrototype.recipeId}
+            {getMaterialName(outputInfo.outputId, outputInfo.material?.name || initialPrototype.recipeId)}
           </Typography>
           <Chip
             label={`Age ${outputInfo.material?.age || '?'}`}
@@ -554,7 +554,7 @@ export default function PrototypeBuildPopup({
                     wordBreak: 'break-word',
                   }}
                 >
-                  {material?.name || slot.material}
+                  {getMaterialName(slot.material, material?.name)}
                 </Typography>
               </Box>
             );

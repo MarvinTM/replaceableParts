@@ -16,6 +16,7 @@ import TargetIcon from '@mui/icons-material/GpsFixed';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import MaterialIcon from '../common/MaterialIcon';
 import useGameStore from '../../stores/gameStore';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 export default function TargetedExperimentPopup({
   open,
@@ -134,7 +135,7 @@ export default function TargetedExperimentPopup({
                   primary={
                     <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography component="span" variant="body1" fontWeight="medium">
-                        {materialName}
+                        {getMaterialName(outputId, materialName)}
                       </Typography>
                       {materialAge && (
                         <Chip
@@ -151,11 +152,11 @@ export default function TargetedExperimentPopup({
                         <Typography component="span" variant="caption" color="text.secondary">
                           {t('research.neededFor')}
                         </Typography>
-                        {neededBy.slice(0, 3).map((name, idx) => (
+                        {neededBy.slice(0, 3).map((id, idx) => (
                           <Box component="span" key={idx} sx={{ display: 'inline-flex', alignItems: 'center' }}>
                             <ArrowForwardIcon sx={{ fontSize: 12, color: 'text.secondary', mr: 0.25 }} />
                             <Typography component="span" variant="caption" color="primary.light">
-                              {name}
+                              {getMaterialName(id)}
                             </Typography>
                           </Box>
                         ))}

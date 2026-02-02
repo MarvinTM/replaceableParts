@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
-import { getRecipeName } from '../../utils/translationHelpers';
+import { getRecipeName, getMaterialName } from '../../utils/translationHelpers';
 import Popover from '@mui/material/Popover';
 import Typography from '@mui/material/Typography';
 import List from '@mui/material/List';
@@ -28,7 +28,7 @@ function RecipeIODisplay({ recipe, materials, iconSize = 20 }) {
         >
           <MaterialIcon
             materialId={itemId}
-            materialName={material?.name}
+            materialName={getMaterialName(itemId, material?.name)}
             category={material?.category}
             size={iconSize}
             showTooltip

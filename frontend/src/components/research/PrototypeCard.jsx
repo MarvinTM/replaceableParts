@@ -9,6 +9,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import LoopIcon from '@mui/icons-material/Loop';
 import StarIcon from '@mui/icons-material/Star';
 import MaterialIcon from '../common/MaterialIcon';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }) {
   const { t } = useTranslation();
@@ -85,7 +86,7 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
       )}
 
       <Typography variant="subtitle2" noWrap sx={{ maxWidth: 150 }}>
-        {outputInfo?.material?.name || prototype.recipeId}
+        {getMaterialName(outputInfo?.outputId, outputInfo?.material?.name || prototype.recipeId)}
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
