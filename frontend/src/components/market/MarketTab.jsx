@@ -31,6 +31,7 @@ import {
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
 import { formatCredits } from '../../utils/currency';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 // Age-based colors for chart lines
 const AGE_COLORS = {

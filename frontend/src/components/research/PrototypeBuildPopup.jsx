@@ -17,6 +17,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import MaterialIcon from '../common/MaterialIcon';
 import useGameStore from '../../stores/gameStore';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 // Age colors for chips
 const AGE_COLORS = {
@@ -346,7 +347,7 @@ export default function PrototypeBuildPopup({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <BuildIcon color="primary" />
           <Typography variant="h6">
-            Build Prototype: {outputInfo.material?.name || initialPrototype.recipeId}
+            {t('research.buildPrototype')}: {getMaterialName(outputInfo.outputId, outputInfo.material?.name)}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} size="small">

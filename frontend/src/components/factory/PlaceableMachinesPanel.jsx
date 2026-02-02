@@ -10,6 +10,7 @@ import Divider from '@mui/material/Divider';
 import BoltIcon from '@mui/icons-material/Bolt';
 import BuildIcon from '@mui/icons-material/Build';
 import BuildPopup from './BuildPopup';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 export default function PlaceableMachinesPanel({
   inventory,
@@ -127,7 +128,7 @@ export default function PlaceableMachinesPanel({
                       <Box
                         component="img"
                         src={`/assets/factory/${machine.id}_idle.png`}
-                        alt={machine.name}
+                        alt={getMaterialName(machine.id, machine.name)}
                         sx={{
                           width: PREVIEW_SIZE,
                           height: PREVIEW_SIZE,
@@ -142,7 +143,7 @@ export default function PlaceableMachinesPanel({
                       />
                       <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" noWrap>
-                          {machine.name}
+                          {getMaterialName(machine.id, machine.name)}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <BoltIcon sx={{ fontSize: 14, color: 'warning.main' }} />
@@ -195,7 +196,7 @@ export default function PlaceableMachinesPanel({
                       <Box
                         component="img"
                         src={`/assets/factory/${machine.id}_idle.png`}
-                        alt={machine.name}
+                        alt={getMaterialName(machine.id, machine.name)}
                         sx={{
                           width: 24,
                           height: 24,
@@ -207,7 +208,7 @@ export default function PlaceableMachinesPanel({
                           e.target.style.display = 'none';
                         }}
                       />
-                      {machine.name}
+                      {getMaterialName(machine.id, machine.name)}
                     </Button>
                   );
                 })}

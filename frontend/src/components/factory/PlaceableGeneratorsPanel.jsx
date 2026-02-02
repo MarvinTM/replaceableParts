@@ -10,6 +10,7 @@ import Divider from '@mui/material/Divider';
 import BoltIcon from '@mui/icons-material/Bolt';
 import BuildIcon from '@mui/icons-material/Build';
 import BuildPopup from './BuildPopup';
+import { getMaterialName } from '../../utils/translationHelpers';
 
 export default function PlaceableGeneratorsPanel({
   inventory,
@@ -127,7 +128,7 @@ export default function PlaceableGeneratorsPanel({
                       <Box
                         component="img"
                         src={`/assets/factory/${generator.id}.png`}
-                        alt={generator.name}
+                        alt={getMaterialName(generator.id, generator.name)}
                         sx={{
                           width: PREVIEW_SIZE,
                           height: PREVIEW_SIZE,
@@ -142,7 +143,7 @@ export default function PlaceableGeneratorsPanel({
                       />
                       <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" noWrap>
-                          {generator.name}
+                          {getMaterialName(generator.id, generator.name)}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <BoltIcon sx={{ fontSize: 14, color: 'success.main' }} />
@@ -196,7 +197,7 @@ export default function PlaceableGeneratorsPanel({
                       <Box
                         component="img"
                         src={`/assets/factory/${generator.id}.png`}
-                        alt={generator.name}
+                        alt={getMaterialName(generator.id, generator.name)}
                         sx={{
                           width: 24,
                           height: 24,
@@ -208,7 +209,7 @@ export default function PlaceableGeneratorsPanel({
                           e.target.style.display = 'none';
                         }}
                       />
-                      {generator.name}
+                      {getMaterialName(generator.id, generator.name)}
                     </Button>
                   );
                 })}

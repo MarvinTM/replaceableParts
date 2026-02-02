@@ -106,7 +106,7 @@ export default function RecipeDropdown({
 
         {machine.recipeId && (
           <Chip
-            label={t('game.factory.currentRecipe', { recipe: machine.recipeId })}
+            label={t('game.factory.currentRecipe', { recipe: getRecipeName(machine.recipeId) })}
             color="primary"
             size="small"
             sx={{ mb: 1 }}

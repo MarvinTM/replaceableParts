@@ -13,6 +13,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import BuildIcon from '@mui/icons-material/Build';
 import MaterialIcon from '../common/MaterialIcon';
+import { getMaterialName, getSlotLabel } from '../../utils/translationHelpers';
 
 /**
  * BuildPopup Component
@@ -243,7 +244,7 @@ export default function BuildPopup({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <BuildIcon color="primary" />
           <Typography variant="h6">
-            {t('game.factory.buildTitle', 'Build {{name}}', { name: itemConfig.name })}
+            {t('game.factory.buildTitle', 'Build {{name}}', { name: getMaterialName(itemType, itemConfig.name) })}
           </Typography>
         </Box>
         <IconButton onClick={handleClose} size="small">
@@ -258,7 +259,7 @@ export default function BuildPopup({
             <Box
               component="img"
               src={`/assets/factory/${itemType}_idle.png`}
-              alt={itemConfig.name}
+              alt={getMaterialName(itemType, itemConfig.name)}
               sx={{
                 width: 96,
                 height: 96,
@@ -362,7 +363,7 @@ export default function BuildPopup({
                     borderColor: 'error.main',
                   } : {},
                 }}
-                title={filled > 0 ? t('game.factory.clickToRemove', 'Click to remove') : slot.label}
+                title={filled > 0 ? t('game.factory.clickToRemove', 'Click to remove') : getSlotLabel(slot.label)}
               >
                 <Box sx={{ opacity: isFull ? 1 : isPartial ? 0.7 : 0.3, position: 'relative' }}>
                   <MaterialIcon
@@ -418,7 +419,7 @@ export default function BuildPopup({
                     wordBreak: 'break-word',
                   }}
                 >
-                  {slot.label}
+                  {getSlotLabel(slot.label)}
                 </Typography>
               </Box>
             );
@@ -476,13 +477,13 @@ export default function BuildPopup({
               >
                 <MaterialIcon
                   materialId={material.id}
-                  materialName={material.name}
+                  materialName={getMaterialName(material.id, material.name)}
                   category={material.category}
                   size={40}
                   showTooltip
                 />
                 <Typography variant="caption" sx={{ fontWeight: 500, mt: 0.5, textAlign: 'center' }}>
-                  {material.name}
+                  {getMaterialName(material.id, material.name)}
                 </Typography>
                 <Typography
                   variant="caption"

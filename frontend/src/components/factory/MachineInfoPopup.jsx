@@ -10,7 +10,7 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import MaterialIcon from '../common/MaterialIcon';
-import { getRecipeName } from '../../utils/translationHelpers';
+import { getRecipeName, getMaterialName } from '../../utils/translationHelpers';
 
 export default function MachineInfoPopup({
   machine,
@@ -50,7 +50,7 @@ export default function MachineInfoPopup({
         >
           <MaterialIcon
             materialId={itemId}
-            materialName={material?.name}
+            materialName={getMaterialName(itemId, material?.name)}
             category={material?.category}
             size={iconSize}
             showTooltip
