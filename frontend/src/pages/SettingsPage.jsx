@@ -65,6 +65,8 @@ export default function SettingsPage() {
             >
               <MenuItem value="en">{t('language.en')}</MenuItem>
               <MenuItem value="es">{t('language.es')}</MenuItem>
+              <MenuItem value="fr">{t('language.fr')}</MenuItem>
+              <MenuItem value="de">{t('language.de')}</MenuItem>
             </Select>
           </FormControl>
 

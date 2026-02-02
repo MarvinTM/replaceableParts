@@ -191,6 +191,12 @@ export default function Layout({ children }) {
             <MenuItem onClick={() => changeLanguage('es')}>
               {t('language.es')}
             </MenuItem>
+            <MenuItem onClick={() => changeLanguage('fr')}>
+              {t('language.fr')}
+            </MenuItem>
+            <MenuItem onClick={() => changeLanguage('de')}>
+              {t('language.de')}
+            </MenuItem>
           </Menu>
 
           <IconButton onClick={handleMenu} sx={{ p: 0 }}>

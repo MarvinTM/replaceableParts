@@ -298,7 +298,9 @@
   "language": {
     "select": "Language",
     "en": "English",
-    "es": "Spanish"
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German"
   },
   "research": {
     "researchPoints": "Research Points",
@@ -833,7 +835,7 @@
     "stone_furnace": "Stone Furnace",
     "glassblowers_workshop": "Glassblower's Workshop",
     "potters_wheel_machine": "Potter's Wheel",
-    "foundry": "Ind. Foundry",
+    "foundry": "Industrial Foundry",
     "steel_forge": "Steel Forge",
     "heavy_assembly": "Heavy Assembly",
     "precision_assembler": "Precision Assembler",
@@ -844,7 +846,7 @@
     "windmill": "Windmill",
     "coal_power_plant": "Coal Power Plant",
     "diesel_gen": "Diesel Power Plant",
-    "nuclear_fission_reactor": "Nuclear Fission Reactor",
+    "nuclear_fission_reactor": "Nuclear Reactor",
     "solar_array": "Solar Array"
   },
   "slots": {

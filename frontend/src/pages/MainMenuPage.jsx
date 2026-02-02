@@ -264,6 +264,12 @@ export default function MainMenuPage() {
           <MenuItem onClick={() => changeLanguage('es')}>
             {t('language.es')}
           </MenuItem>
+          <MenuItem onClick={() => changeLanguage('fr')}>
+            {t('language.fr')}
+          </MenuItem>
+          <MenuItem onClick={() => changeLanguage('de')}>
+            {t('language.de')}
+          </MenuItem>
         </Menu>
         {isAdmin && (
           <IconButton

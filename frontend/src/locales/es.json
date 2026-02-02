@@ -308,7 +308,9 @@
   "language": {
     "select": "Idioma",
     "en": "Inglés",
-    "es": "Español"
+    "es": "Español",
+    "fr": "Francés",
+    "de": "Alemán"
   },
   "research": {
     "researchPoints": "Puntos de Investigación",

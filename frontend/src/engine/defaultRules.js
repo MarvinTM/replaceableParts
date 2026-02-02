@@ -426,7 +426,7 @@ export const defaultRules = {
     // Machines - Age 2
     { id: 'glassblowers_workshop', name: "Glassblower's Workshop", basePrice: 120, category: 'equipment', weight: 30, age: 2 },
     { id: 'potters_wheel_machine', name: "Potter's Wheel", basePrice: 80, category: 'equipment', weight: 25, age: 2 },
-    { id: 'foundry', name: 'Ind. Foundry', basePrice: 300, category: 'equipment', weight: 50, age: 2 },
+    { id: 'foundry', name: 'Industrial Foundry', basePrice: 300, category: 'equipment', weight: 50, age: 2 },
     // Machines - Age 3
     { id: 'steel_forge', name: 'Steel Forge', basePrice: 500, category: 'equipment', weight: 70, age: 3 },
     { id: 'heavy_assembly', name: 'Heavy Assembly', basePrice: 800, category: 'equipment', weight: 100, age: 3 },
