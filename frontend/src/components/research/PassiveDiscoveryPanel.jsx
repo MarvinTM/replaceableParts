@@ -85,13 +85,13 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
           p: 1,
           mt: 1,
           borderRadius: 1,
-          bgcolor: 'warning.dark',
+          bgcolor: 'secondary.light',
           border: '1px solid',
           borderColor: 'warning.main'
         }}>
           <RocketLaunchIcon sx={{ fontSize: 18, color: 'warning.main' }} />
           <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" color="warning.contrastText">
+            <Typography variant="caption" color="text.primary" fontWeight="bold">
               {t('research.prototypeBoost')}
             </Typography>
             <Typography variant="caption" display="block" color="text.secondary">

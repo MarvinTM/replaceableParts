@@ -571,7 +571,7 @@ export default function MarketTab() {
 
           {/* Age Obsolescence */}
           {obsolescenceStats.length > 0 && (
-            <Box sx={{ mt: 2, p: 1.5, bgcolor: 'warning.dark', borderRadius: 1, border: 1, borderColor: 'warning.main' }}>
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: 'secondary.light', borderRadius: 1, border: 1, borderColor: 'warning.main' }}>
               <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
                 {t('market.technologicalObsolescence')}
               </Typography>
@@ -744,7 +744,7 @@ export default function MarketTab() {
                   mt: 1,
                   p: 1,
                   borderRadius: 1,
-                  bgcolor: selectedItem.eventType === 'positive' ? 'success.dark' : 'error.dark',
+                  bgcolor: selectedItem.eventType === 'positive' ? 'success.dark' : 'rgba(198, 40, 40, 0.1)',
                   border: 1,
                   borderColor: selectedItem.eventType === 'positive' ? 'success.main' : 'error.main'
                 }}>

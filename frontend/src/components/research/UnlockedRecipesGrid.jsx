@@ -133,7 +133,7 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
       })}
 
       {/* Summary */}
-      <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: 'primary.dark' }}>
+      <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: 'info.dark' }}>
         <Typography variant="body2" fontWeight="bold" gutterBottom>
           {t('research.totalProgress')}
         </Typography>

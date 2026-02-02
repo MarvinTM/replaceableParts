@@ -148,13 +148,7 @@ export default function RecipeDropdown({
                 onClick={() => handleSelectRecipe(recipe.id)}
                 sx={{
                   borderRadius: 1,
-                  mb: 0.5,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.dark',
-                    '&:hover': {
-                      backgroundColor: 'primary.main'
-                    }
-                  }
+                  mb: 0.5
                 }}
               >
                 <ListItemText
