@@ -275,12 +275,19 @@ export function analyzeIssues(rules, initialState = null) {
     )
     .map(m => m.id);
 
-  // Find unproduceable (non-raw, non-extractable, not produced by any recipe)
+  // Get materials that can be built via machineRecipes or generatorRecipes
+  const buildableEquipment = new Set([
+    ...Object.keys(rules.machineRecipes || {}),
+    ...Object.keys(rules.generatorRecipes || {})
+  ]);
+
+  // Find unproduceable (non-raw, non-extractable, not produced by any recipe, not buildable equipment)
   const unproduceable = rules.materials
     .filter(m =>
       m.category !== 'raw' &&
       !extractableResources.has(m.id) &&
-      !producedByRecipe.has(m.id)
+      !producedByRecipe.has(m.id) &&
+      !buildableEquipment.has(m.id)
     )
     .map(m => m.id);
 

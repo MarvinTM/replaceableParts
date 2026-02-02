@@ -832,34 +832,6 @@ export const defaultRules = {
     { id: 'space_helmet', inputs: { helmet: 1, composite: 2, glass: 1 }, outputs: { space_helmet: 1 }, ticksToComplete: 15, age: 7 },
     { id: 'graphene_armor', inputs: { graphene_sheet: 8, composite: 4, nano_material: 2 }, outputs: { graphene_armor: 1 }, ticksToComplete: 40, age: 7 },
     { id: 'neural_implant', inputs: { neural_interface: 1, ai_core: 1, adv_battery: 1 }, outputs: { neural_implant: 1 }, ticksToComplete: 35, age: 7 },
-
-    // --- MACHINES & GENERATORS ---
-    // Age 1 machines
-    { id: 'carpenters_bench', inputs: { planks: 6, wooden_beam: 2, nails: 10 }, outputs: { carpenters_bench: 1 }, ticksToComplete: 3, age: 1 },
-    { id: 'blacksmiths_anvil', inputs: { iron_plate: 4, iron_rod: 4 }, outputs: { blacksmiths_anvil: 1 }, ticksToComplete: 5, age: 1 },
-    { id: 'masons_workshop', inputs: { stone: 8, wooden_beam: 2 }, outputs: { masons_workshop: 1 }, ticksToComplete: 3, age: 1 },
-    { id: 'stone_furnace', inputs: { stone: 8 }, outputs: { stone_furnace: 1 }, ticksToComplete: 2, age: 1 },
-    { id: 'thermal_generator', inputs: { wood: 10 }, outputs: { thermal_generator: 1 }, ticksToComplete: 5, age: 1 },
-    { id: 'windmill', inputs: { planks: 20, wooden_beam: 8, iron_rod: 4, nails: 20 }, outputs: { windmill: 1 }, ticksToComplete: 15, age: 2 },
-    // Age 2 machines
-    { id: 'glassblowers_workshop', inputs: { iron_plate: 4, bricks: 8, copper_tubing: 2 }, outputs: { glassblowers_workshop: 1 }, ticksToComplete: 6, age: 2 },
-    { id: 'potters_wheel_machine', inputs: { wooden_beam: 4, iron_rod: 2, stone: 4 }, outputs: { potters_wheel_machine: 1 }, ticksToComplete: 4, age: 2 },
-    { id: 'foundry', inputs: { bricks: 10, steel_beam: 4 }, outputs: { foundry: 1 }, ticksToComplete: 10, age: 3 },
-    // Age 3 machines
-    { id: 'steel_forge', inputs: { steel_plate: 10, bricks: 12, iron_chain: 4 }, outputs: { steel_forge: 1 }, ticksToComplete: 12, age: 3 },
-    { id: 'heavy_assembly', inputs: { steel_beam: 8, steel_plate: 8, gear: 6, crane: 1 }, outputs: { heavy_assembly: 1 }, ticksToComplete: 20, age: 3 },
-    { id: 'coal_power_plant', inputs: { steel_plate: 10, boiler: 1, piston: 2, pressure_gauge:3, pipe: 16 }, outputs: { coal_power_plant: 1 }, ticksToComplete: 20, age: 3 },
-    // Age 4 machines
-    { id: 'precision_assembler', inputs: { steel_plate: 10, gear: 10, electric_motor: 2, ball_bearing: 4 }, outputs: { precision_assembler: 1 }, ticksToComplete: 25, age: 4 },
-    
-    { id: 'chemical_plant', inputs: { steel_plate: 10, pipe: 10, glass: 5 }, outputs: { chemical_plant: 1 }, ticksToComplete: 25, age: 4 },
-    { id: 'research_laboratory', inputs: { steel_plate: 10, pipe: 8, glass: 6, vacuum_tube: 4, gear: 6, copper_wire: 8 }, outputs: { research_laboratory: 1 }, ticksToComplete: 30, age: 4 },
-    { id: 'diesel_gen', inputs: { engine_block: 2, generator: 1 }, outputs: { diesel_gen: 1 }, ticksToComplete: 25, age: 4 },
-    
-    { id: 'nuclear_fission_reactor', inputs: { concrete: 50, steel_plate: 20, steel_pipe: 20, industrial_pump: 15, computer: 10, steam_valve: 10, insulation:30, led_display:10, electric_coil:10, insulated_pipe:20 }, outputs: { nuclear_fission_reactor: 1 }, ticksToComplete: 60, age: 6 },
-    
-    { id: 'electronics_fab', inputs: { composite: 10, electric_motor: 5, heating_element: 10, resistor: 10 }, outputs: { electronics_fab: 1 }, ticksToComplete: 40, age: 7 },
-    { id: 'solar_array', inputs: { solar_panel_item: 16, aluminum_sheet: 4 }, outputs: { solar_array: 1 }, ticksToComplete: 50, age: 6 }
   ],
 
   // ============================================================================
@@ -961,9 +933,7 @@ export const defaultRules = {
         // Vehicles & Transport
         'wheelbarrow', 'cart', 'wagon',
         // Other
-        'coat_hanger', 'plow',
-        // Generators
-        'windmill'
+        'coat_hanger', 'plow'
       ]
     },
     {
@@ -998,8 +968,6 @@ export const defaultRules = {
       allowedRecipes: [
         // Stone construction
         'stone_wall', 'stone_pillar', 'well', 'bridge_section', 'gate',
-        // Self-build
-        'thermal_generator', 'stone_furnace','blacksmiths_anvil',
         // Copper/Brass Intermediates
         'copper_sheet', 'pipe', 'copper_tubing', 'copper_rod', 'brass_sheet',
         // Scientific Instruments
@@ -1172,8 +1140,6 @@ export const defaultRules = {
         'plastic_container', 'garden_hose', 'fuel_tank', 'oil_drum', 'flashlight',
         'road_segment', 'radio_transmitter', 'typewriter', 'camera',
         'leather_jacket', 'amplifier', 'chemistry_set', 'raincoat',
-        // Age 4 - Research Equipment
-        'research_laboratory',
 
         // Age 5 - Electrical Intermediates
         'aluminum_sheet', 'aluminum_rod', 'insulated_wire', 'electric_coil', 'electric_motor',
