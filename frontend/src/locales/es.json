@@ -478,7 +478,10 @@
     "healthy": "Saludable",
     "stable": "Estable",
     "saturated": "Saturado",
-    "crashed": "Colapsado"
+    "crashed": "Colapsado",
+    "externalEvent": "Evento de mercado externo ({{ticks}} ticks restantes)",
+    "externalEventPositive": "Alta Demanda",
+    "externalEventNegative": "Baja Demanda"
   },
   "materials": {
     "wood": "Madera",

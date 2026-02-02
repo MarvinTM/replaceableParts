@@ -1,0 +1,166 @@
+{
+  "releases": [
+    {
+      "version": "0.4.0",
+      "date": "2024-02-01",
+      "highlights": "Inviter au Jeu. Améliorations énormes des performances dans la construction d'Usine.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Ajout de la fonctionnalité Inviter au Jeu."
+        },
+        {
+          "type": "improvement",
+          "text": "Performances grandement améliorées lors du glissement de machines et générateurs dans l'usine"
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de l'assembleur de précision et de la fab électronique"
+        },
+        {
+          "type": "fix",
+          "text": "Résolution du problème des gisements non visibles sur la carte même s'il y a des recettes nécessitant ces matériaux."
+        }
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2024-02-01",
+      "highlights": "Rééquilibrage significatif des mécaniques.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Ajout du mécanisme de déploiement de production."
+        },
+        {
+          "type": "improvement",
+          "text": "Rééquilibrage significatif des mécaniques de jeu."
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de la fonderie et de l'usine chimique"
+        }
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2024-01-31",
+      "highlights": "Améliorations visuelles de la carte d'exploration. Refonte de la disposition de l'Usine. Infos d'audit utilisateur.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "La carte d'exploration est à nouveau isométrique et suit un modèle de génération différent et plus équilibré."
+        },
+        {
+          "type": "feature",
+          "text": "Changement de la disposition principale de l'onglet Usine"
+        },
+        {
+          "type": "feature",
+          "text": "Ajout des informations de session d'audit utilisateur"
+        },
+        {
+          "type": "improvement",
+          "text": "Débloquer des recettes recherchées donnera maintenant des points de recherche supplémentaires, et augmentera également la production globale de recherche"
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de la forge d'acier, usine d'assemblage lourd"
+        },
+        {
+          "type": "fix",
+          "text": "Amélioration de la sélection et du glissement des bâtiments, maintenant si deux bâtiments sont côte à côte, cela fonctionne beaucoup plus fiablement, et avec de bien meilleures performances."
+        }
+      ]
+    },
+    {
+      "version": "0.1.6",
+      "date": "2024-01-29",
+      "highlights": "Visualisation du chargement des ressources. Nouvelle disposition d'Usine. Nouveaux générateurs d'énergie",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Ajout d'une barre de progression de chargement sur la page d'accueil"
+        },
+        {
+          "type": "feature",
+          "text": "Changement de la disposition principale de l'onglet Usine"
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de la centrale diesel, du parc solaire et du réacteur nucléaire"
+        },
+        {
+          "type": "fix",
+          "text": "Désormais, les recettes nécessitant des matières premières pour le prototype peuvent être débloquées (le prototype recevra automatiquement les matières premières, si des gisements d'extraction existent pour celles-ci)."
+        }
+      ]
+    },
+    {
+      "version": "0.1.5",
+      "date": "2024-01-25",
+      "highlights": "Tutoriel et astuces. Nouveaux générateurs.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Ajout d'un tutoriel de jeu rapide, qui apparaît lorsque l'utilisateur crée une nouvelle partie"
+        },
+        {
+          "type": "feature",
+          "text": "Ajout d'un mécanisme d'astuces qui aide l'utilisateur dynamiquement pendant le jeu. Cela sera étendu dans les versions ultérieures"
+        },
+        {
+          "type": "feature",
+          "text": "Ajout d'un mécanisme de commentaires pour permettre aux utilisateurs d'envoyer des retours aux développeurs"
+        },
+        {
+          "type": "improvement",
+          "text": "L'authentification/première connexion a été améliorée. Maintenant, elle ne nécessite pas l'approbation de l'admin, et un e-mail de bienvenue est automatiquement envoyé à l'utilisateur."
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de la dynamique de marché externe. Amélioration de la gestion de l'historique des prix du marché."
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout du générateur thermique, du moulin à vent et de la centrale à charbon"
+        }
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2024-01-20",
+      "highlights": "Nouveau look&feel de l'IU. Améliorations de la recherche.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Nouveau look&feel de l'IU, avec des couleurs différentes. Ajout du logo du jeu."
+        },
+        {
+          "type": "feature",
+          "text": "Nouvelle mécanique de recherche : Expérience ciblée."
+        },
+        {
+          "type": "feature",
+          "text": "Mécanique de recherche : Ajustement de la façon dont les prototypes sont construits après le déblocage de la recette."
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout d'un badge pour afficher les recettes en attente de déblocage dans l'onglet Recherche."
+        },
+        {
+          "type": "improvement",
+          "text": "Refonte du sol autour de l'usine."
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout d'une exigence de carburant pour les générateurs, et ajustement des générateurs en général."
+        },
+        {
+          "type": "fix",
+          "text": "Les matériaux ne seront consommés qu'une fois le prototype construit."
+        }
+      ]
+    }
+  ]
+}

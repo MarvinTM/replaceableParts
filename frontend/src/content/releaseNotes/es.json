@@ -1,3 +1,166 @@
 {
-  "releases": []
+  "releases": [
+    {
+      "version": "0.4.0",
+      "date": "2024-02-01",
+      "highlights": "Invitar al Juego. Enormes mejoras de rendimiento en la construcción de la Fábrica.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Añadida la función Invitar al Juego."
+        },
+        {
+          "type": "improvement",
+          "text": "Rendimiento enormemente mejorado al arrastrar máquinas y generadores en la fábrica"
+        },
+        {
+          "type": "improvement",
+          "text": "Añadido el ensamblador de precisión y la fábrica de electrónica"
+        },
+        {
+          "type": "fix",
+          "text": "Resuelto el problema con los nodos que no eran visibles en el mapa incluso si había recetas que requerían esos materiales."
+        }
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2024-02-01",
+      "highlights": "Reequilibrio significativo de mecánicas.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Añadido mecanismo de despliegue de producción."
+        },
+        {
+          "type": "improvement",
+          "text": "Reequilibrio significativo de las mecánicas del juego."
+        },
+        {
+          "type": "improvement",
+          "text": "Añadida fundición y planta química"
+        }
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2024-01-31",
+      "highlights": "Mejoras visuales del mapa de exploración. Rediseño del diseño de la fábrica. Info de auditoría de usuario.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "El mapa de exploración es isométrico de nuevo, y sigue un patrón de generación diferente y más equilibrado."
+        },
+        {
+          "type": "feature",
+          "text": "Cambiado el diseño principal de la pestaña Fábrica"
+        },
+        {
+          "type": "feature",
+          "text": "Añadida información de sesión de auditoría de usuario"
+        },
+        {
+          "type": "improvement",
+          "text": "Desbloquear recetas investigadas ahora dará puntos de investigación adicionales, y también impulsará la producción general de investigación"
+        },
+        {
+          "type": "improvement",
+          "text": "Añadida forja de acero, planta de ensamblaje pesado"
+        },
+        {
+          "type": "fix",
+          "text": "Mejorada la selección y arrastre de edificios, ahora si dos edificios están uno al lado del otro funciona de manera mucho más fiable, y con mucho mayor rendimiento."
+        }
+      ]
+    },
+    {
+      "version": "0.1.6",
+      "date": "2024-01-29",
+      "highlights": "Visualización de carga de recursos. Nuevo diseño de Fábrica. Nuevos generadores de energía",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Añadida barra de progreso de carga a la página de inicio"
+        },
+        {
+          "type": "feature",
+          "text": "Cambiado el diseño principal de la pestaña Fábrica"
+        },
+        {
+          "type": "improvement",
+          "text": "Añadida la planta de energía diésel, el panel solar y el reactor nuclear"
+        },
+        {
+          "type": "fix",
+          "text": "Ahora las recetas que requieren materias primas para el prototipo se pueden desbloquear (el prototipo recibirá automáticamente las materias primas, si existen nodos de extracción para ello)."
+        }
+      ]
+    },
+    {
+      "version": "0.1.5",
+      "date": "2024-01-25",
+      "highlights": "Tutorial y consejos. Nuevos generadores.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Añadido tutorial rápido del juego, que aparece cuando el usuario crea una nueva partida"
+        },
+        {
+          "type": "feature",
+          "text": "Añadido un mecanismo de consejos que ayuda al usuario dinámicamente durante el juego. Esto se ampliará en versiones posteriores"
+        },
+        {
+          "type": "feature",
+          "text": "Añadido un mecanismo de comentarios para permitir a los usuarios enviar comentarios a los desarrolladores"
+        },
+        {
+          "type": "improvement",
+          "text": "La autenticación/primer inicio de sesión ha sido mejorada. Ahora no requiere aprobación del administrador, y se envía automáticamente un correo de bienvenida al usuario."
+        },
+        {
+          "type": "improvement",
+          "text": "Añadida dinámica de mercado externa. Mejorada la gestión del historial de precios del mercado."
+        },
+        {
+          "type": "improvement",
+          "text": "Añadido generador térmico, molino de viento y planta de energía de carbón"
+        }
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2024-01-20",
+      "highlights": "Nueva apariencia de la IU. Mejoras en la investigación.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Nueva apariencia de la IU, con diferentes colores. Añadido logo del Juego."
+        },
+        {
+          "type": "feature",
+          "text": "Nueva mecánica de investigación: Experimento dirigido."
+        },
+        {
+          "type": "feature",
+          "text": "Mecánica de investigación: Ajustada la forma en que se construyen los prototipos después de desbloquear la receta."
+        },
+        {
+          "type": "improvement",
+          "text": "Añadida insignia para mostrar recetas pendientes de desbloquear en la pestaña Investigación."
+        },
+        {
+          "type": "improvement",
+          "text": "Rediseñado el suelo alrededor de la fábrica."
+        },
+        {
+          "type": "improvement",
+          "text": "Añadido requisito de combustible a los generadores, y ajustados los generadores en general."
+        },
+        {
+          "type": "fix",
+          "text": "Los materiales solo se consumirán una vez que se construya el prototipo."
+        }
+      ]
+    }
+  ]
 }

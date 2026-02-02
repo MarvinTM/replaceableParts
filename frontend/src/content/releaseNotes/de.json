@@ -1,0 +1,166 @@
+{
+  "releases": [
+    {
+      "version": "0.4.0",
+      "date": "2024-02-01",
+      "highlights": "Zum Spiel einladen. Riesige Leistungsverbesserungen beim Fabrikbau.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Funktion 'Zum Spiel einladen' hinzugefügt."
+        },
+        {
+          "type": "improvement",
+          "text": "Leistung beim Ziehen von Maschinen und Generatoren in der Fabrik stark verbessert"
+        },
+        {
+          "type": "improvement",
+          "text": "Präzisionsmonteur und Elektronikfabrik hinzugefügt"
+        },
+        {
+          "type": "fix",
+          "text": "Problem gelöst, bei dem Vorkommen auf der Karte nicht sichtbar waren, auch wenn es Rezepte gab, die diese Materialien benötigten."
+        }
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2024-02-01",
+      "highlights": "Signifikante Mechanik-Rebalance.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Produktionsbereitstellungsmechanismus hinzugefügt."
+        },
+        {
+          "type": "improvement",
+          "text": "Signifikante Rebalance der Spielmechaniken."
+        },
+        {
+          "type": "improvement",
+          "text": "Gießerei und Chemiefabrik hinzugefügt"
+        }
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2024-01-31",
+      "highlights": "Visuelle Verbesserungen der Erkundungskarte. Neugestaltung des Fabriklayouts. Benutzer-Audit-Infos.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Die Erkundungskarte ist wieder isometrisch und folgt einem anderen, ausgewogeneren Generierungsmuster."
+        },
+        {
+          "type": "feature",
+          "text": "Hauptlayout des Fabrik-Tabs geändert"
+        },
+        {
+          "type": "feature",
+          "text": "Benutzer-Audit-Sitzungsinformationen hinzugefügt"
+        },
+        {
+          "type": "improvement",
+          "text": "Das Freischalten erforschter Rezepte gibt jetzt zusätzliche Forschungspunkte und steigert auch die gesamte Forschungsproduktion"
+        },
+        {
+          "type": "improvement",
+          "text": "Stahlschmiede, Schwerlastmontageanlage hinzugefügt"
+        },
+        {
+          "type": "fix",
+          "text": "Das Auswählen und Ziehen von Gebäuden wurde verbessert. Wenn zwei Gebäude nebeneinander liegen, funktioniert es jetzt viel zuverlässiger und mit viel besserer Leistung."
+        }
+      ]
+    },
+    {
+      "version": "0.1.6",
+      "date": "2024-01-29",
+      "highlights": "Visualisierung des Ressourcenladens. Neues Fabriklayout. Neue Stromgeneratoren",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Ladebalken zur Startseite hinzugefügt"
+        },
+        {
+          "type": "feature",
+          "text": "Hauptlayout des Fabrik-Tabs geändert"
+        },
+        {
+          "type": "improvement",
+          "text": "Dieselkraftwerk, Solaranlage und Kernreaktor hinzugefügt"
+        },
+        {
+          "type": "fix",
+          "text": "Jetzt können Rezepte, die Rohstoffe für den Prototyp benötigen, freigeschaltet werden (der Prototyp erhält automatisch die Rohstoffe, wenn dafür Extraktionsvorkommen vorhanden sind)."
+        }
+      ]
+    },
+    {
+      "version": "0.1.5",
+      "date": "2024-01-25",
+      "highlights": "Tutorial und Tipps. Neue Generatoren.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Schnellspiel-Tutorial hinzugefügt, das erscheint, wenn der Benutzer ein neues Spiel erstellt"
+        },
+        {
+          "type": "feature",
+          "text": "Tipp-Mechanismus hinzugefügt, der dem Benutzer dynamisch während des Spiels hilft. Dies wird in nachfolgenden Versionen erweitert"
+        },
+        {
+          "type": "feature",
+          "text": "Feedback-Mechanismus hinzugefügt, damit Benutzer Feedback an die Entwickler senden können"
+        },
+        {
+          "type": "improvement",
+          "text": "Authentifizierung/Erstanmeldung wurde verbessert. Jetzt ist keine Admin-Genehmigung mehr erforderlich, und eine Willkommens-E-Mail wird automatisch an den Benutzer gesendet."
+        },
+        {
+          "type": "improvement",
+          "text": "Externe Marktdynamik hinzugefügt. Verwaltung der Marktpreishistorie verbessert."
+        },
+        {
+          "type": "improvement",
+          "text": "Wärmekraftgenerator, Windmühle und Kohlekraftwerk hinzugefügt"
+        }
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2024-01-20",
+      "highlights": "Neues UI-Look&Feel. Forschungsverbesserungen.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Neues UI-Look&Feel mit anderen Farben. Spielelogo hinzugefügt."
+        },
+        {
+          "type": "feature",
+          "text": "Neue Forschungsmechanik: Gezieltes Experiment."
+        },
+        {
+          "type": "feature",
+          "text": "Forschungsmechanik: Die Art und Weise, wie Prototypen nach dem Freischalten des Rezepts gebaut werden, wurde angepasst."
+        },
+        {
+          "type": "improvement",
+          "text": "Badge hinzugefügt, um ausstehende Rezepte zum Freischalten im Forschungs-Tab anzuzeigen."
+        },
+        {
+          "type": "improvement",
+          "text": "Boden um die Fabrik neu gestaltet."
+        },
+        {
+          "type": "improvement",
+          "text": "Treibstoffanforderung für Generatoren hinzugefügt und Generatoren allgemein angepasst."
+        },
+        {
+          "type": "fix",
+          "text": "Materialien werden erst verbraucht, wenn der Prototyp gebaut ist."
+        }
+      ]
+    }
+  ]
+}
