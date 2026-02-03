@@ -102,8 +102,8 @@ export default function ResearchTab() {
   return (
     <Box sx={{ display: 'flex', height: '100%', gap: 2, p: 2 }}>
       {/* LEFT PANEL - Experiment Chamber & Donation */}
-      <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Paper sx={{ p: 2 }}>
+      <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Paper sx={{ p: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6">{t('research.researchPoints')}</Typography>
             <Typography variant="h4" color="primary.main" fontWeight="bold">
@@ -114,7 +114,7 @@ export default function ResearchTab() {
           <DonateSection />
         </Paper>
 
-        <Paper sx={{ p: 2, flex: 1 }}>
+        <Paper sx={{ p: 1.5, flex: 1 }}>
           <ExperimentChamber
             researchPoints={researchPoints}
             experimentCost={experimentCost}

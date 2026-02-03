@@ -8,6 +8,7 @@ import Chip from '@mui/material/Chip';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Divider from '@mui/material/Divider';
+import LinearProgress from '@mui/material/LinearProgress';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import AddIcon from '@mui/icons-material/Add';
@@ -64,22 +65,99 @@ export default function DonateSection() {
     }
   };
 
-  const creditRpGain = Math.floor((parseInt(creditAmount) || 0) / creditsToRPRatio);
+  const creditAmountValue = Math.max(0, parseInt(creditAmount) || 0);
+  const availableCredits = credits || 0;
+  const remainingCredits = availableCredits - creditAmountValue;
+  const spendingRatio = availableCredits > 0 ? Math.min(100, (creditAmountValue / availableCredits) * 100) : 0;
+  const isOverBudget = creditAmountValue > availableCredits;
+  const creditRpGain = Math.floor(creditAmountValue / creditsToRPRatio);
   const partRpGain = selectedItem ? selectedItem.rpPerUnit * itemQuantity : 0;
 
   return (
     <Box>
-      <Tabs value={tabValue} onChange={handleTabChange} variant="fullWidth" sx={{ mb: 2 }}>
-        <Tab icon={<AttachMoneyIcon />} label={t('research.donateCredits')} iconPosition="start" />
-        <Tab icon={<InventoryIcon />} label={t('research.donateParts')} iconPosition="start" />
+      <Tabs
+        value={tabValue}
+        onChange={handleTabChange}
+        variant="fullWidth"
+        sx={{ mb: 1.5, minHeight: 36, '& .MuiTabs-indicator': { height: 3 } }}
+      >
+        <Tab
+          icon={<AttachMoneyIcon sx={{ fontSize: 18 }} />}
+          label={t('research.donateCredits')}
+          iconPosition="start"
+          sx={{ minHeight: 36, py: 0.5, fontSize: '0.85rem' }}
+        />
+        <Tab
+          icon={<InventoryIcon sx={{ fontSize: 18 }} />}
+          label={t('research.donateParts')}
+          iconPosition="start"
+          sx={{ minHeight: 36, py: 0.5, fontSize: '0.85rem' }}
+        />
       </Tabs>
 
       {/* Credits Tab */}
       {tabValue === 0 && (
         <Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
             {t('research.convertCreditsDesc', { ratio: creditsToRPRatio })}
           </Typography>
+
+          <Box
+            sx={{
+              mb: 1.5,
+              p: 1.5,
+              borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: isOverBudget ? 'error.main' : 'divider',
+              bgcolor: 'action.hover'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('research.creditsAvailable')}
+              </Typography>
+              {availableCredits > 0 && (
+                <Chip
+                  label={`${Math.round(spendingRatio)}%`}
+                  size="small"
+                  variant="outlined"
+                  color={isOverBudget ? 'error' : 'default'}
+                />
+              )}
+            </Box>
+            <Typography variant="h5" fontWeight="bold">
+              {availableCredits.toLocaleString()}{CREDIT_SYMBOL}
+            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 1 }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  {t('research.creditsSpending')}
+                </Typography>
+                <Typography variant="body2" color={isOverBudget ? 'error.main' : 'text.primary'}>
+                  {creditAmountValue.toLocaleString()}{CREDIT_SYMBOL}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  {t('research.creditsRemaining')}
+                </Typography>
+                <Typography variant="body2" color={remainingCredits < 0 ? 'error.main' : 'text.primary'}>
+                  {remainingCredits.toLocaleString()}{CREDIT_SYMBOL}
+                </Typography>
+              </Box>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={spendingRatio}
+              color={isOverBudget ? 'error' : 'primary'}
+              sx={{ mt: 1, height: 6, borderRadius: 3 }}
+            />
+            {isOverBudget && (
+              <Typography variant="caption" color="error.main" sx={{ mt: 0.5, display: 'block' }}>
+                {t('research.insufficientCredits')}
+              </Typography>
+            )}
+          </Box>
 
           <TextField
             label={t('research.amount')}
@@ -89,11 +167,13 @@ export default function DonateSection() {
             value={creditAmount}
             onChange={(e) => setCreditAmount(e.target.value)}
             inputProps={{ min: creditsToRPRatio }}
-            sx={{ mb: 2 }}
+            sx={{ mb: 1.5 }}
           />
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="body2">{t('research.youHave')}: {credits?.toLocaleString() || 0}{CREDIT_SYMBOL}</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              {t('research.rpGained')}
+            </Typography>
             <Chip
               label={`+${creditRpGain} RP`}
               color={creditRpGain > 0 ? 'primary' : 'default'}
@@ -101,7 +181,7 @@ export default function DonateSection() {
             />
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
             {[100, 1000, 10000].map(preset => (
               <Button
                 key={preset}
@@ -118,10 +198,10 @@ export default function DonateSection() {
             variant="contained"
             fullWidth
             startIcon={<AddIcon />}
-            disabled={creditRpGain <= 0 || (parseInt(creditAmount) || 0) > credits}
+            disabled={creditRpGain <= 0 || creditAmountValue > availableCredits}
             onClick={handleDonateCredits}
           >
-            {t('research.donateCreditsButton', { amount: (parseInt(creditAmount) || 0).toLocaleString() })}
+            {t('research.donateCreditsButton', { amount: creditAmountValue.toLocaleString() })}
           </Button>
         </Box>
       )}

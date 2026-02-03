@@ -102,8 +102,8 @@ export default function ExperimentChamber({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <ScienceIcon sx={{ fontSize: 28, color: 'secondary.main' }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+        <ScienceIcon sx={{ fontSize: 24, color: 'secondary.main' }} />
         <Typography variant="h6">{t('research.experimentChamber')}</Typography>
       </Box>
 
@@ -113,30 +113,30 @@ export default function ExperimentChamber({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 2,
-        p: 3,
+        gap: 1.5,
+        p: 2,
         borderRadius: 2,
         bgcolor: 'action.hover',
         border: '2px dashed',
         borderColor: canRunRandomExperiment || canRunTargetedExperiment ? 'secondary.main' : 'divider'
       }}>
-        <AutoAwesomeIcon sx={{ fontSize: 64, color: canRunRandomExperiment || canRunTargetedExperiment ? 'secondary.main' : 'text.disabled' }} />
+        <AutoAwesomeIcon sx={{ fontSize: 52, color: canRunRandomExperiment || canRunTargetedExperiment ? 'secondary.main' : 'text.disabled' }} />
 
         <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="body1" gutterBottom>
+          <Typography variant="body2" gutterBottom>
             {t('research.runExperimentsDesc')}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary">
             {undiscoveredCount} {t('research.recipesRemaining')}
           </Typography>
         </Box>
 
-        <Divider sx={{ width: '100%', my: 1 }} />
+        <Divider sx={{ width: '100%', my: 0.5 }} />
 
         {/* Random Experiment Section */}
         <Box sx={{ width: '100%', textAlign: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-            <Typography variant="body2">{t('research.random')}:</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+            <Typography variant="caption">{t('research.random')}:</Typography>
             <Chip
               label={`${experimentCost} RP`}
               color={canRunRandomExperiment ? 'primary' : 'default'}
@@ -147,7 +147,7 @@ export default function ExperimentChamber({
           <Button
             variant="contained"
             color="secondary"
-            size="medium"
+            size="small"
             startIcon={<ScienceIcon />}
             disabled={!canRunRandomExperiment}
             onClick={handleRunRandomExperiment}
@@ -161,8 +161,8 @@ export default function ExperimentChamber({
 
         {/* Targeted Experiment Section */}
         <Box sx={{ width: '100%', textAlign: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-            <Typography variant="body2">{t('research.targeted')}:</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+            <Typography variant="caption">{t('research.targeted')}:</Typography>
             <Chip
               label={`${targetedCost} RP`}
               color={canRunTargetedExperiment ? 'warning' : 'default'}
@@ -179,7 +179,7 @@ export default function ExperimentChamber({
           <Button
             variant="outlined"
             color="warning"
-            size="medium"
+            size="small"
             startIcon={<TargetIcon />}
             disabled={!canRunTargetedExperiment}
             onClick={handleOpenTargetedPopup}
