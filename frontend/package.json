@@ -8,7 +8,9 @@
     "build": "vite build",
     "test": "vitest",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.8",
@@ -44,6 +46,7 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "jsdom": "^28.0.0",
     "vite": "^5.0.12",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.17",
+    "@playwright/test": "^1.41.2"
   }
 }
