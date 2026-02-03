@@ -2,9 +2,13 @@
   "releases": [
     {
       "version": "0.4.5",
-      "date": "2024-02-02",
-      "highlights": "Translations for French, German and Italian added.",
+      "date": "2024-02-03",
+      "highlights": "Translations for French, German and Italian added. New Market tab and Research tab adjustments.",
       "changes": [
+        {
+          "type": "feature",
+          "text": "New Market tab. Remade the layout, show more and more relevant information"
+        },
         {
           "type": "feature",
           "text": "Translations for French, German and Italian added."
@@ -12,6 +16,10 @@
         {
           "type": "improvement",
           "text": "Added automated unit tests, and end-to-end tests"
+        },
+        {
+          "type": "improvement",
+          "text": "Adjusted Research panel to more clearly show how much credits are being spent, and remain"
         }
       ]
     },

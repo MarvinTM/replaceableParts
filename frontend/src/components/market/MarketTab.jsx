@@ -6,10 +6,7 @@ import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
 import Tooltip from '@mui/material/Tooltip';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
@@ -33,23 +30,23 @@ import MaterialIcon from '../common/MaterialIcon';
 import { formatCredits } from '../../utils/currency';
 import { getMaterialName } from '../../utils/translationHelpers';
 
-// Age-based colors for chart lines
-const AGE_COLORS = {
-  1: '#8B4513', // Brown (wood age)
-  2: '#CD7F32', // Bronze
-  3: '#708090', // Slate gray (industrial)
-  4: '#FF8C00', // Dark orange (combustion)
-  5: '#4169E1', // Royal blue (electric)
-  6: '#9370DB', // Medium purple (digital)
-  7: '#00CED1'  // Dark turquoise (future)
-};
+const CHART_COLORS = [
+  '#2563EB', // Blue
+  '#F97316', // Orange
+  '#16A34A', // Green
+  '#E11D48', // Rose
+  '#8B5CF6', // Purple
+  '#0EA5E9', // Sky
+  '#F59E0B', // Amber
+  '#10B981'  // Teal
+];
 
 // Custom Legend with Material Icons
 function CustomLegend({ payload }) {
   if (!payload || payload.length === 0) return null;
 
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mt: 2 }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', mt: 1 }}>
       {payload.map((entry, index) => (
         <Box
           key={`legend-${index}`}
@@ -94,11 +91,19 @@ export default function MarketTab() {
   // Local state
   const [selectedItem, setSelectedItem] = useState(null);
   const [sellQuantity, setSellQuantity] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const [ageFilters, setAgeFilters] = useState({
     1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true
   });
-  const [sortBy, setSortBy] = useState('age'); // 'age' | 'price' | 'quantity' | 'popularity'
+  const [sortBy, setSortBy] = useState('quantity'); // 'age' | 'price' | 'quantity' | 'popularity'
   const [salesHistory, setSalesHistory] = useState([]); // Track sales for analytics
+  const [sessionStartCredits, setSessionStartCredits] = useState(null);
+
+  useEffect(() => {
+    if (engineState && sessionStartCredits === null) {
+      setSessionStartCredits(engineState.credits || 0);
+    }
+  }, [engineState, sessionStartCredits]);
 
   // Get discovered final goods based on discoveredRecipes
   const getDiscoveredFinalGoods = () => {
@@ -195,9 +200,10 @@ export default function MarketTab() {
     return 1.0 - debuff;
   };
 
-  // Get all final goods in inventory with details
-  const inventoryFinalGoods = useMemo(() => {
+  // Final goods list with filters
+  const filteredFinalGoods = useMemo(() => {
     const discovered = getDiscoveredFinalGoods();
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return discovered
       .map(material => {
@@ -213,16 +219,45 @@ export default function MarketTab() {
           eventExpiresAt: event?.expiresAt || null
         };
       })
-      .filter(item => item.quantity > 0 || true) // Show all discovered, even if qty=0
-      .filter(item => ageFilters[item.age]) // Apply age filters
-      .sort((a, b) => {
-        if (sortBy === 'age') return a.age - b.age;
-        if (sortBy === 'price') return b.currentPrice - a.currentPrice;
-        if (sortBy === 'quantity') return b.quantity - a.quantity;
-        if (sortBy === 'popularity') return b.popularity - a.popularity;
-        return 0;
+      .filter(item => ageFilters[item.age])
+      .filter(item => {
+        if (!normalizedQuery) return true;
+        const name = getMaterialName(item.id, item.name).toLowerCase();
+        return name.includes(normalizedQuery);
       });
-  }, [engineState.inventory, engineState.marketPopularity, engineState.marketEvents, engineState.tick, ageFilters, sortBy]);
+  }, [
+    engineState.inventory,
+    engineState.marketPopularity,
+    engineState.marketEvents,
+    engineState.discoveredRecipes,
+    engineState.tick,
+    ageFilters,
+    searchQuery,
+    rules
+  ]);
+
+  const inStockItems = useMemo(() => {
+    const items = filteredFinalGoods.filter(item => item.quantity > 0);
+    const sorted = [...items];
+
+    if (sortBy === 'age') sorted.sort((a, b) => a.age - b.age);
+    if (sortBy === 'price') sorted.sort((a, b) => b.currentPrice - a.currentPrice);
+    if (sortBy === 'quantity') sorted.sort((a, b) => b.quantity - a.quantity);
+    if (sortBy === 'popularity') sorted.sort((a, b) => b.popularity - a.popularity);
+
+    return sorted;
+  }, [filteredFinalGoods, sortBy]);
+
+  const outOfStockItems = useMemo(() => {
+    return filteredFinalGoods
+      .filter(item => item.quantity === 0)
+      .sort((a, b) => {
+        if (a.age !== b.age) return a.age - b.age;
+        const aName = getMaterialName(a.id, a.name);
+        const bName = getMaterialName(b.id, b.name);
+        return aName.localeCompare(bName);
+      });
+  }, [filteredFinalGoods]);
 
   // Market intelligence - hot and cold items
   const marketIntelligence = useMemo(() => {
@@ -233,18 +268,25 @@ export default function MarketTab() {
       currentPrice: getCurrentPrice(material.id)
     }));
 
-    const hot = allItems
+    const intelligenceLimit = 3;
+
+    const hotItems = allItems
       .filter(item => item.popularity >= 1.2)
-      .sort((a, b) => b.popularity - a.popularity)
-      .slice(0, 5);
-
-    const cold = allItems
+      .sort((a, b) => b.popularity - a.popularity);
+    const coldItems = allItems
       .filter(item => item.popularity <= 0.8)
-      .sort((a, b) => a.popularity - b.popularity)
-      .slice(0, 5);
+      .sort((a, b) => a.popularity - b.popularity);
 
-    return { hot, cold };
-  }, [engineState.marketPopularity, engineState.tick]);
+    const hot = hotItems.slice(0, intelligenceLimit);
+    const cold = coldItems.slice(0, intelligenceLimit);
+
+    return {
+      hot,
+      cold,
+      hotCount: hotItems.length,
+      coldCount: coldItems.length
+    };
+  }, [engineState.marketPopularity, engineState.discoveredRecipes, engineState.tick, rules]);
 
   // Diversification bonus calculation
   const diversificationStats = useMemo(() => {
@@ -283,7 +325,7 @@ export default function MarketTab() {
       nextThreshold,
       nextBonus: nextThreshold ? rules.market.diversificationBonuses[nextThreshold] : null
     };
-  }, [engineState.marketRecentSales, engineState.tick]);
+  }, [engineState.marketRecentSales, engineState.tick, rules]);
 
   // Obsolescence stats (technological advancement penalties)
   const obsolescenceStats = useMemo(() => {
@@ -323,32 +365,16 @@ export default function MarketTab() {
     }
 
     return stats;
-  }, [engineState.discoveredRecipes, engineState.tick]);
+  }, [engineState.discoveredRecipes, engineState.tick, rules]);
 
-  // Revenue analytics
-  const revenueAnalytics = useMemo(() => {
-    const totalRevenue = salesHistory.reduce((sum, sale) => sum + sale.totalPrice, 0);
-    const last100Ticks = salesHistory
-      .filter(sale => sale.tick >= engineState.tick - 100)
-      .reduce((sum, sale) => sum + sale.totalPrice, 0);
+  const sessionRevenue = useMemo(() => {
+    return salesHistory.reduce((sum, sale) => sum + sale.totalPrice, 0);
+  }, [salesHistory]);
 
-    // Top sellers
-    const salesByItem = {};
-    salesHistory.forEach(sale => {
-      if (!salesByItem[sale.itemId]) {
-        salesByItem[sale.itemId] = { revenue: 0, quantity: 0, name: sale.itemName };
-      }
-      salesByItem[sale.itemId].revenue += sale.totalPrice;
-      salesByItem[sale.itemId].quantity += sale.quantity;
-    });
-
-    const topSellers = Object.entries(salesByItem)
-      .map(([itemId, data]) => ({ itemId, ...data }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-
-    return { totalRevenue, last100Ticks, topSellers };
-  }, [salesHistory, engineState.tick]);
+  const totalCredits = engineState.credits || 0;
+  const sessionPercentIncrease = sessionStartCredits
+    ? Math.round((sessionRevenue / sessionStartCredits) * 100)
+    : 0;
 
   // Handle selling
   const handleSell = (itemId, quantity) => {
@@ -397,451 +423,547 @@ export default function MarketTab() {
     return { label: 'Crashed', color: 'error', icon: <TrendingDownIcon /> };
   };
 
+  const chartItems = useMemo(() => {
+    const discovered = getDiscoveredFinalGoods();
+    if (discovered.length === 0) return [];
+
+    const history = engineState.marketPriceHistory || [];
+    const hasHistory = history.length >= 2;
+
+    const items = discovered.map(material => {
+      const event = getMarketEvent(material.id);
+      const eventMagnitude = event ? Math.abs(event.modifier - 1) : 0;
+      const popularity = getPopularity(material.id);
+      const popularityDeviation = Math.abs(popularity - 1);
+      const quantity = getInventoryQuantity(material.id);
+      let trendMagnitude = 0;
+
+      if (hasHistory) {
+        const first = history[0][material.id];
+        const last = history[history.length - 1][material.id];
+        if (typeof first === 'number' && typeof last === 'number' && first > 0) {
+          trendMagnitude = Math.abs((last - first) / first);
+        }
+      }
+
+      return {
+        ...material,
+        quantity,
+        eventMagnitude,
+        popularityDeviation,
+        trendMagnitude
+      };
+    });
+
+    const selected = [];
+    const addUnique = (item) => {
+      if (item && !selected.find(existing => existing.id === item.id)) {
+        selected.push(item);
+      }
+    };
+
+    const byEvent = items
+      .filter(item => item.eventMagnitude > 0)
+      .sort((a, b) => b.eventMagnitude - a.eventMagnitude);
+    const byPopularity = items
+      .filter(item => item.popularityDeviation >= 0.2)
+      .sort((a, b) => b.popularityDeviation - a.popularityDeviation);
+    const byTrend = items
+      .filter(item => item.trendMagnitude > 0)
+      .sort((a, b) => b.trendMagnitude - a.trendMagnitude);
+    const byQuantity = items
+      .filter(item => item.quantity > 0)
+      .sort((a, b) => b.quantity - a.quantity);
+
+    byEvent.forEach(addUnique);
+    byPopularity.forEach(addUnique);
+    byTrend.forEach(addUnique);
+    byQuantity.forEach(addUnique);
+    items.forEach(addUnique);
+
+    return selected.slice(0, 5);
+  }, [
+    engineState.marketEvents,
+    engineState.marketPopularity,
+    engineState.marketPriceHistory,
+    engineState.inventory,
+    engineState.discoveredRecipes,
+    engineState.tick,
+    rules
+  ]);
+
+  const chartColors = useMemo(() => {
+    const colors = {};
+    chartItems.forEach((item, index) => {
+      colors[item.id] = CHART_COLORS[index % CHART_COLORS.length];
+    });
+    return colors;
+  }, [chartItems]);
+
   // Prepare chart data
   const chartData = useMemo(() => {
     return engineState.marketPriceHistory || [];
   }, [engineState.marketPriceHistory]);
 
   const discoveredFinalGoods = getDiscoveredFinalGoods();
+  const hasDiscoveredFinalGoods = discoveredFinalGoods.length > 0;
+  const hasFilteredItems = filteredFinalGoods.length > 0;
 
-  return (
-    <Box sx={{ display: 'flex', height: '100%', gap: 2, p: 2 }}>
-      {/* LEFT SIDEBAR - Filters */}
-      <Paper sx={{ width: 250, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography variant="h6">{t('market.filters')}</Typography>
-        <Divider />
-
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>{t('market.ageGroups')}</Typography>
-          {[1, 2, 3, 4, 5, 6, 7].map(age => (
-            <FormControlLabel
-              key={age}
-              control={
-                <Checkbox
-                  checked={ageFilters[age]}
-                  onChange={(e) => setAgeFilters(prev => ({ ...prev, [age]: e.target.checked }))}
-                  size="small"
-                />
-              }
-              label={`${t('market.age')} ${age}`}
-            />
-          ))}
-        </Box>
-
-        <Divider />
-
-        <Box>
-          <Typography variant="subtitle2" gutterBottom>{t('market.sortBy')}</Typography>
-          {['age', 'price', 'quantity', 'popularity'].map(sort => (
-            <Button
-              key={sort}
-              fullWidth
-              variant={sortBy === sort ? 'contained' : 'outlined'}
-              size="small"
-              onClick={() => setSortBy(sort)}
-              sx={{ mb: 0.5, justifyContent: 'flex-start' }}
-            >
-              {t(`market.${sort}`).charAt(0).toUpperCase() + t(`market.${sort}`).slice(1)}
-            </Button>
-          ))}
-        </Box>
-      </Paper>
-
-      {/* MAIN CONTENT - Charts and Items */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
-        {/* Price Trends Chart */}
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>{t('market.priceTrends')}</Typography>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="tick"
-                label={{ value: t('market.tick'), position: 'insideBottom', offset: -5 }}
-              />
-              <YAxis
-                label={{ value: t('market.price'), angle: -90, position: 'insideLeft' }}
-              />
-              <RechartsTooltip />
-              <Legend content={<CustomLegend />} />
-              {discoveredFinalGoods.map(item => (
-                <Line
-                  key={item.id}
-                  type="monotone"
-                  dataKey={item.id}
-                  name={getMaterialName(item.id, item.name)}
-                  stroke={AGE_COLORS[item.age]}
-                  dot={false}
-                  strokeWidth={2}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-          {discoveredFinalGoods.length === 0 && (
-            <Typography variant="body2" color="text.secondary" align="center">
-              {t('market.noFinalGoods')}
-            </Typography>
-          )}
-        </Paper>
-
-        {/* Market Intelligence */}
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>{t('market.marketIntelligence')}</Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            {/* Hot Items */}
-            <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <LocalFireDepartmentIcon color="error" />
-                <Typography variant="subtitle2">{t('market.hotItems')}</Typography>
-              </Box>
-              {marketIntelligence.hot.length > 0 ? (
-                marketIntelligence.hot.map(item => (
-                  <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <MaterialIcon materialId={item.id} size={20} />
-                    <Typography variant="body2">{getMaterialName(item.id, item.name)}</Typography>
-                    <Chip
-                      label={`${(item.popularity * 100).toFixed(0)}%`}
-                      size="small"
-                      color="success"
-                      icon={<TrendingUpIcon />}
-                    />
-                  </Box>
-                ))
-              ) : (
-                <Typography variant="body2" color="text.secondary">{t('market.noHotItems')}</Typography>
-              )}
-            </Box>
-
-            {/* Cold Items */}
-            <Box sx={{ flex: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <AcUnitIcon color="info" />
-                <Typography variant="subtitle2">{t('market.saturatedMarkets')}</Typography>
-              </Box>
-              {marketIntelligence.cold.length > 0 ? (
-                marketIntelligence.cold.map(item => (
-                  <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <MaterialIcon materialId={item.id} size={20} />
-                    <Typography variant="body2">{getMaterialName(item.id, item.name)}</Typography>
-                    <Chip
-                      label={`${(item.popularity * 100).toFixed(0)}%`}
-                      size="small"
-                      color="error"
-                      icon={<TrendingDownIcon />}
-                    />
-                  </Box>
-                ))
-              ) : (
-                <Typography variant="body2" color="text.secondary">{t('market.noSaturatedMarkets')}</Typography>
-              )}
-            </Box>
+  const renderItemCard = (item) => {
+    const status = getPopularityStatus(item.popularity);
+    return (
+      <Paper
+        key={item.id}
+        variant="outlined"
+        sx={{
+          p: 1.5,
+          cursor: 'pointer',
+          border: selectedItem?.id === item.id ? 2 : 1,
+          borderColor: selectedItem?.id === item.id ? 'primary.main' : 'divider',
+          '&:hover': { borderColor: 'primary.main' }
+        }}
+        onClick={() => {
+          setSelectedItem(item);
+          setSellQuantity(Math.min(1, item.quantity));
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <MaterialIcon materialId={item.id} size={32} />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body1" fontWeight="bold">{getMaterialName(item.id, item.name)}</Typography>
+            <Typography variant="caption" color="text.secondary">{t('market.age')} {item.age}</Typography>
           </Box>
-
-          {/* Diversification Bonus */}
-          <Box sx={{ mt: 2, p: 1.5, bgcolor: diversificationStats.bonusPercent > 0 ? 'success.dark' : 'action.hover', borderRadius: 1, border: 1, borderColor: diversificationStats.bonusPercent > 0 ? 'success.main' : 'divider' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="subtitle2" fontWeight="bold">
-                {t('market.diversificationBonus')}
-              </Typography>
-              {diversificationStats.bonusPercent > 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Chip label={t(`market.${status.label.toLowerCase()}`)} color={status.color} size="small" />
+            {item.obsolescence < 1.0 && (
+              <Chip
+                label={`-${Math.round((1 - item.obsolescence) * 100)}% ${t('market.obsolete')}`}
+                color="warning"
+                size="small"
+              />
+            )}
+            {item.eventModifier && (
+              <Tooltip title={t('market.externalEvent', { ticks: item.eventExpiresAt - engineState.tick })}>
                 <Chip
-                  label={`+${diversificationStats.bonusPercent}%`}
-                  color="success"
+                  icon={item.eventType === 'positive' ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                  label={`${item.eventType === 'positive' ? '+' : ''}${Math.round((item.eventModifier - 1) * 100)}%`}
+                  color={item.eventType === 'positive' ? 'success' : 'error'}
                   size="small"
                   sx={{ fontWeight: 'bold' }}
                 />
-              )}
-            </Box>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              {diversificationStats.uniqueItemsSold} {t(diversificationStats.uniqueItemsSold !== 1 ? 'market.uniqueItemsSoldPlural' : 'market.uniqueItemsSold')} {t('market.soldRecently')}
-            </Typography>
-            {diversificationStats.nextThreshold && (
-              <Typography variant="caption" color="text.secondary">
-                {t((diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold) !== 1 ? 'market.sellMoreTypesPlural' : 'market.sellMoreTypes', {
-                  count: diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold,
-                  bonus: Math.round((diversificationStats.nextBonus - 1) * 100)
-                })}
-              </Typography>
-            )}
-            {!diversificationStats.nextThreshold && diversificationStats.bonusPercent > 0 && (
-              <Typography variant="caption" color="success.light">
-                {t('market.maxDiversification')}
-              </Typography>
+              </Tooltip>
             )}
           </Box>
+        </Box>
 
-          {/* Age Obsolescence */}
-          {obsolescenceStats.length > 0 && (
-            <Box sx={{ mt: 2, p: 1.5, bgcolor: 'secondary.light', borderRadius: 1, border: 1, borderColor: 'warning.main' }}>
-              <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                {t('market.technologicalObsolescence')}
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 1.5 }}>
-                {t('market.obsolescenceDesc')}
-              </Typography>
-              {obsolescenceStats.map(stat => (
-                <Box key={stat.age} sx={{ mb: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography variant="body2" fontWeight="bold">
-                      {t('market.ageGoods', { age: stat.age })}
-                    </Typography>
-                    <Chip
-                      label={`-${stat.debuffPercent}%`}
-                      color="warning"
-                      size="small"
-                    />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {t('market.recipesDiscovered', {
-                      discovered: stat.discoveredNextAge,
-                      total: stat.totalNextAge,
-                      age: stat.nextAge,
-                      percent: stat.progressPercent
-                    })}
-                  </Typography>
-                </Box>
-              ))}
-              <Typography variant="caption" color="warning.light" sx={{ mt: 1, display: 'block' }}>
-                {t('market.obsolescenceWarning')}
-              </Typography>
-            </Box>
-          )}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="body2">{t('market.inStock')}: {item.quantity}</Typography>
+          <Typography variant="body2" fontWeight="bold" color="primary">
+            {formatCredits(item.currentPrice, false)}
+          </Typography>
+        </Box>
 
-          {/* Recommendations */}
-          <Box sx={{ mt: 2, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              <InfoOutlinedIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom', mr: 0.5 }} />
-              {t('market.recommendations')}
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            size="small"
+            fullWidth
+            startIcon={<SellIcon />}
+            disabled={item.quantity === 0}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSellAll(item.id);
+            }}
+          >
+            {t('market.sellAll')} ({formatCredits(item.currentPrice * item.quantity)})
+          </Button>
+        </Box>
+      </Paper>
+    );
+  };
+
+  return (
+    <Box sx={{ display: 'flex', height: '100%', gap: 2, p: 2 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, minHeight: 0, overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Paper sx={{ p: 2, minWidth: 220, flex: '1 1 220px' }}>
+            <Typography variant="subtitle2" color="text.secondary">
+              {t('market.sessionRevenue')}
             </Typography>
-            {marketIntelligence.cold.length > 3 ? (
-              <Typography variant="body2">
-                {t('market.marketsSaturated', { age: Math.max(...marketIntelligence.hot.map(i => i.age)) + 1 })}
+            <Typography variant="h5" color="success.main">
+              {formatCredits(sessionRevenue)}
+            </Typography>
+            <Divider sx={{ my: 1.5 }} />
+            <Typography variant="subtitle2" color="text.secondary">
+              {t('market.totalCredits')}
+            </Typography>
+            <Typography variant="h6">
+              {formatCredits(totalCredits)}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('market.sessionIncrease')}
               </Typography>
-            ) : marketIntelligence.hot.length > 0 ? (
-              <Typography variant="body2">
-                {t('market.focusOnDemand', { item: getMaterialName(marketIntelligence.hot[0].id, marketIntelligence.hot[0].name) })}
-              </Typography>
+              <Chip
+                label={`+${sessionPercentIncrease}%`}
+                size="small"
+                color={sessionRevenue > 0 ? 'success' : 'default'}
+                variant={sessionRevenue > 0 ? 'filled' : 'outlined'}
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              {t('market.sinceOpen')}
+            </Typography>
+          </Paper>
+
+          <Paper sx={{ p: 2, minWidth: 320, flex: '2 1 360px' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="h6">{t('market.priceTrends')}</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                {chartItems.length > 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    {t('market.showingTopItems', { count: chartItems.length })}
+                  </Typography>
+                )}
+                <Tooltip title={t('market.whyTheseItems')}>
+                  <InfoOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
+            </Box>
+            {chartItems.length > 0 && chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="tick" tickLine={false} />
+                  <YAxis
+                    tickFormatter={(value) => formatCredits(value, false)}
+                    width={60}
+                  />
+                  <RechartsTooltip formatter={(value) => formatCredits(value)} />
+                  <Legend content={<CustomLegend />} />
+                  {chartItems.map(item => (
+                    <Line
+                      key={item.id}
+                      type="monotone"
+                      dataKey={item.id}
+                      name={getMaterialName(item.id, item.name)}
+                      stroke={chartColors[item.id]}
+                      dot={false}
+                      strokeWidth={2}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
             ) : (
-              <Typography variant="body2">
-                {t('market.marketsStable')}
+              <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 6 }}>
+                {hasDiscoveredFinalGoods ? t('market.noPriceHistory') : t('market.noFinalGoods')}
+              </Typography>
+            )}
+          </Paper>
+
+          <Paper sx={{ p: 2, minWidth: 220, flex: '1 1 240px' }}>
+            <Typography variant="h6" gutterBottom>{t('market.marketIntelligence')}</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <LocalFireDepartmentIcon sx={{ fontSize: 18 }} color="error" />
+                  <Typography variant="caption" fontWeight="bold">{t('market.hotItems')}</Typography>
+                </Box>
+                {marketIntelligence.hot.length > 0 ? (
+                  marketIntelligence.hot.map(item => (
+                    <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                      <MaterialIcon materialId={item.id} size={18} />
+                      <Typography variant="caption" sx={{ flex: 1 }}>
+                        {getMaterialName(item.id, item.name)}
+                      </Typography>
+                      <Chip
+                        label={`${(item.popularity * 100).toFixed(0)}%`}
+                        size="small"
+                        color="success"
+                      />
+                    </Box>
+                  ))
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    {t('market.noHotItems')}
+                  </Typography>
+                )}
+              </Box>
+
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                  <AcUnitIcon sx={{ fontSize: 18 }} color="info" />
+                  <Typography variant="caption" fontWeight="bold">{t('market.saturatedMarkets')}</Typography>
+                </Box>
+                {marketIntelligence.cold.length > 0 ? (
+                  marketIntelligence.cold.map(item => (
+                    <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                      <MaterialIcon materialId={item.id} size={18} />
+                      <Typography variant="caption" sx={{ flex: 1 }}>
+                        {getMaterialName(item.id, item.name)}
+                      </Typography>
+                      <Chip
+                        label={`${(item.popularity * 100).toFixed(0)}%`}
+                        size="small"
+                        color="error"
+                      />
+                    </Box>
+                  ))
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    {t('market.noSaturatedMarkets')}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          </Paper>
+        </Box>
+
+        <Paper sx={{ p: 1.5 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center' }}>
+            <TextField
+              label={t('market.search')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="small"
+              sx={{ minWidth: 200 }}
+            />
+
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('market.ageGroups')}:
+              </Typography>
+              {[1, 2, 3, 4, 5, 6, 7].map(age => (
+                <Chip
+                  key={age}
+                  label={age}
+                  size="small"
+                  color={ageFilters[age] ? 'primary' : 'default'}
+                  variant={ageFilters[age] ? 'filled' : 'outlined'}
+                  onClick={() => setAgeFilters(prev => ({ ...prev, [age]: !prev[age] }))}
+                />
+              ))}
+            </Box>
+
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('market.sortBy')}:
+              </Typography>
+              {['age', 'price', 'quantity', 'popularity'].map(sort => (
+                <Chip
+                  key={sort}
+                  label={t(`market.${sort}`)}
+                  size="small"
+                  color={sortBy === sort ? 'primary' : 'default'}
+                  variant={sortBy === sort ? 'filled' : 'outlined'}
+                  onClick={() => setSortBy(sort)}
+                />
+              ))}
+            </Box>
+          </Box>
+        </Paper>
+
+        <Paper sx={{ p: 2, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <Typography variant="h6" gutterBottom>{t('market.inventoryFinalGoods')}</Typography>
+
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', pr: 0.5 }}>
+            {inStockItems.length > 0 && (
+              <Box sx={{ mb: outOfStockItems.length > 0 ? 2 : 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="subtitle2">{t('market.inStockItems')}</Typography>
+                  <Chip label={inStockItems.length} size="small" />
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 2 }}>
+                  {inStockItems.map(renderItemCard)}
+                </Box>
+              </Box>
+            )}
+
+            {outOfStockItems.length > 0 && (
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="subtitle2">{t('market.otherItems')}</Typography>
+                  <Chip label={outOfStockItems.length} size="small" variant="outlined" />
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 2 }}>
+                  {outOfStockItems.map(renderItemCard)}
+                </Box>
+              </Box>
+            )}
+
+            {!hasFilteredItems && (
+              <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 3 }}>
+                {hasDiscoveredFinalGoods ? t('market.noMatchingItems') : t('market.noFinalGoods')}
               </Typography>
             )}
           </Box>
         </Paper>
+      </Box>
 
-        {/* Item Grid */}
+      <Box sx={{ width: 340, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'auto' }}>
         <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>{t('market.inventoryFinalGoods')}</Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 2 }}>
-            {inventoryFinalGoods.map(item => {
-              const status = getPopularityStatus(item.popularity);
-              return (
-                <Paper
-                  key={item.id}
-                  variant="outlined"
-                  sx={{
-                    p: 1.5,
-                    cursor: 'pointer',
-                    border: selectedItem?.id === item.id ? 2 : 1,
-                    borderColor: selectedItem?.id === item.id ? 'primary.main' : 'divider',
-                    '&:hover': { borderColor: 'primary.main' }
-                  }}
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setSellQuantity(Math.min(1, item.quantity));
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <MaterialIcon materialId={item.id} size={32} />
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body1" fontWeight="bold">{getMaterialName(item.id, item.name)}</Typography>
-                      <Typography variant="caption" color="text.secondary">{t('market.age')} {item.age}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      <Chip label={t(`market.${status.label.toLowerCase()}`)} color={status.color} size="small" />
-                      {item.obsolescence < 1.0 && (
-                        <Chip
-                          label={`-${Math.round((1 - item.obsolescence) * 100)}% ${t('market.obsolete')}`}
-                          color="warning"
-                          size="small"
-                        />
-                      )}
-                      {item.eventModifier && (
-                        <Tooltip title={t('market.externalEvent', { ticks: item.eventExpiresAt - engineState.tick })}>
-                          <Chip
-                            icon={item.eventType === 'positive' ? <TrendingUpIcon /> : <TrendingDownIcon />}
-                            label={`${item.eventType === 'positive' ? '+' : ''}${Math.round((item.eventModifier - 1) * 100)}%`}
-                            color={item.eventType === 'positive' ? 'success' : 'error'}
-                            size="small"
-                            sx={{ fontWeight: 'bold' }}
-                          />
-                        </Tooltip>
-                      )}
-                    </Box>
-                  </Box>
+          {selectedItem ? (
+            <Box>
+              <Typography variant="h6" gutterBottom>{t('market.sellPanel')}</Typography>
+              <Divider sx={{ mb: 2 }} />
 
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="body2">{t('market.inStock')}: {item.quantity}</Typography>
-                    <Typography variant="body2" fontWeight="bold" color="primary">
-                      {formatCredits(item.currentPrice, false)}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <MaterialIcon materialId={selectedItem.id} size={48} />
+                <Box>
+                  <Typography variant="body1" fontWeight="bold">{getMaterialName(selectedItem.id, selectedItem.name)}</Typography>
+                  <Typography variant="caption" color="text.secondary">{t('market.age')} {selectedItem.age}</Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  {t('market.available')}: {selectedItem.quantity}
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  {t('market.pricePerUnit')}: {formatCredits(selectedItem.currentPrice, false)}
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  {t('market.marketStatus')}: {t(`market.${getPopularityStatus(selectedItem.popularity).label.toLowerCase()}`)}
+                </Typography>
+                {selectedItem.eventModifier && (
+                  <Box sx={{
+                    mt: 1,
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: selectedItem.eventType === 'positive' ? 'success.dark' : 'rgba(198, 40, 40, 0.1)',
+                    border: 1,
+                    borderColor: selectedItem.eventType === 'positive' ? 'success.main' : 'error.main'
+                  }}>
+                    <Typography variant="body2" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {selectedItem.eventType === 'positive' ? <TrendingUpIcon fontSize="small" /> : <TrendingDownIcon fontSize="small" />}
+                      {t(`market.externalEvent${selectedItem.eventType === 'positive' ? 'Positive' : 'Negative'}`)}
+                    </Typography>
+                    <Typography variant="caption">
+                      {selectedItem.eventType === 'positive' ? '+' : ''}{Math.round((selectedItem.eventModifier - 1) * 100)}% price modifier
+                      ({selectedItem.eventExpiresAt - engineState.tick} ticks remaining)
                     </Typography>
                   </Box>
+                )}
+              </Box>
 
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      fullWidth
-                      startIcon={<SellIcon />}
-                      disabled={item.quantity === 0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSellAll(item.id);
-                      }}
-                    >
-                      {t('market.sellAll')} ({formatCredits(item.currentPrice * item.quantity)})
-                    </Button>
-                  </Box>
-                </Paper>
-              );
-            })}
+              <TextField
+                label={t('market.quantity')}
+                type="number"
+                fullWidth
+                size="small"
+                value={sellQuantity}
+                onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedItem.quantity, parseInt(e.target.value) || 1)))}
+                inputProps={{ min: 1, max: selectedItem.quantity }}
+                sx={{ mb: 2 }}
+              />
+
+              <Typography variant="h6" gutterBottom>
+                {t('market.total')}: {formatCredits(selectedItem.currentPrice * sellQuantity)}
+              </Typography>
+
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                startIcon={<SellIcon />}
+                disabled={selectedItem.quantity === 0 || sellQuantity > selectedItem.quantity}
+                onClick={() => handleSell(selectedItem.id, sellQuantity)}
+              >
+                {t('market.sellFor', { quantity: sellQuantity, price: selectedItem.currentPrice * sellQuantity })}
+              </Button>
+            </Box>
+          ) : (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                {t('market.selectItem')}
+              </Typography>
+            </Box>
+          )}
+        </Paper>
+
+        <Paper sx={{ p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>{t('market.diversificationBonus')}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="body2">
+              {diversificationStats.uniqueItemsSold} {t(diversificationStats.uniqueItemsSold !== 1 ? 'market.uniqueItemsSoldPlural' : 'market.uniqueItemsSold')} {t('market.soldRecently')}
+            </Typography>
+            {diversificationStats.bonusPercent > 0 && (
+              <Chip
+                label={`+${diversificationStats.bonusPercent}%`}
+                color="success"
+                size="small"
+              />
+            )}
           </Box>
-          {inventoryFinalGoods.length === 0 && (
-            <Typography variant="body2" color="text.secondary" align="center">
-              {t('market.noInventory')}
+          {diversificationStats.nextThreshold && (
+            <Typography variant="caption" color="text.secondary">
+              {t((diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold) !== 1 ? 'market.sellMoreTypesPlural' : 'market.sellMoreTypes', {
+                count: diversificationStats.nextThreshold - diversificationStats.uniqueItemsSold,
+                bonus: Math.round((diversificationStats.nextBonus - 1) * 100)
+              })}
+            </Typography>
+          )}
+          {!diversificationStats.nextThreshold && diversificationStats.bonusPercent > 0 && (
+            <Typography variant="caption" color="success.main">
+              {t('market.maxDiversification')}
+            </Typography>
+          )}
+        </Paper>
+
+        {obsolescenceStats.length > 0 && (
+          <Paper sx={{ p: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>{t('market.technologicalObsolescence')}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              {t('market.obsolescenceDesc')}
+            </Typography>
+            {obsolescenceStats.map(stat => (
+              <Box key={stat.age} sx={{ mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    {t('market.ageGoods', { age: stat.age })}
+                  </Typography>
+                  <Chip
+                    label={`-${stat.debuffPercent}%`}
+                    color="warning"
+                    size="small"
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {t('market.recipesDiscovered', {
+                    discovered: stat.discoveredNextAge,
+                    total: stat.totalNextAge,
+                    age: stat.nextAge,
+                    percent: stat.progressPercent
+                  })}
+                </Typography>
+              </Box>
+            ))}
+            <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block' }}>
+              {t('market.obsolescenceWarning')}
+            </Typography>
+          </Paper>
+        )}
+
+        <Paper sx={{ p: 2 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            <InfoOutlinedIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom', mr: 0.5 }} />
+            {t('market.recommendations')}
+          </Typography>
+          {marketIntelligence.coldCount >= 2 ? (
+            <Typography variant="body2">
+              {t('market.marketsSaturated', { age: Math.max(...marketIntelligence.hot.map(i => i.age), 1) + 1 })}
+            </Typography>
+          ) : marketIntelligence.hot.length > 0 ? (
+            <Typography variant="body2">
+              {t('market.focusOnDemand', { item: getMaterialName(marketIntelligence.hot[0].id, marketIntelligence.hot[0].name) })}
+            </Typography>
+          ) : (
+            <Typography variant="body2">
+              {t('market.marketsStable')}
             </Typography>
           )}
         </Paper>
       </Box>
-
-      {/* RIGHT PANEL - Sell Interface & Analytics */}
-      <Paper sx={{ width: 350, p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {/* Sell Panel */}
-        {selectedItem ? (
-          <Box>
-            <Typography variant="h6" gutterBottom>{t('market.sellPanel')}</Typography>
-            <Divider sx={{ mb: 2 }} />
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <MaterialIcon materialId={selectedItem.id} size={48} />
-              <Box>
-                <Typography variant="body1" fontWeight="bold">{getMaterialName(selectedItem.id, selectedItem.name)}</Typography>
-                <Typography variant="caption" color="text.secondary">{t('market.age')} {selectedItem.age}</Typography>
-              </Box>
-            </Box>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" gutterBottom>
-                {t('market.available')}: {selectedItem.quantity}
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                {t('market.pricePerUnit')}: {formatCredits(selectedItem.currentPrice, false)}
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                {t('market.marketStatus')}: {t(`market.${getPopularityStatus(selectedItem.popularity).label.toLowerCase()}`)}
-              </Typography>
-              {selectedItem.eventModifier && (
-                <Box sx={{
-                  mt: 1,
-                  p: 1,
-                  borderRadius: 1,
-                  bgcolor: selectedItem.eventType === 'positive' ? 'success.dark' : 'rgba(198, 40, 40, 0.1)',
-                  border: 1,
-                  borderColor: selectedItem.eventType === 'positive' ? 'success.main' : 'error.main'
-                }}>
-                  <Typography variant="body2" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    {selectedItem.eventType === 'positive' ? <TrendingUpIcon fontSize="small" /> : <TrendingDownIcon fontSize="small" />}
-                    {t(`market.externalEvent${selectedItem.eventType === 'positive' ? 'Positive' : 'Negative'}`)}
-                  </Typography>
-                  <Typography variant="caption">
-                    {selectedItem.eventType === 'positive' ? '+' : ''}{Math.round((selectedItem.eventModifier - 1) * 100)}% price modifier
-                    ({selectedItem.eventExpiresAt - engineState.tick} ticks remaining)
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-
-            <TextField
-              label={t('market.quantity')}
-              type="number"
-              fullWidth
-              size="small"
-              value={sellQuantity}
-              onChange={(e) => setSellQuantity(Math.max(1, Math.min(selectedItem.quantity, parseInt(e.target.value) || 1)))}
-              inputProps={{ min: 1, max: selectedItem.quantity }}
-              sx={{ mb: 2 }}
-            />
-
-            <Typography variant="h6" gutterBottom>
-              {t('market.total')}: {formatCredits(selectedItem.currentPrice * sellQuantity)}
-            </Typography>
-
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              startIcon={<SellIcon />}
-              disabled={selectedItem.quantity === 0 || sellQuantity > selectedItem.quantity}
-              onClick={() => handleSell(selectedItem.id, sellQuantity)}
-            >
-              {t('market.sellFor', { quantity: sellQuantity, price: selectedItem.currentPrice * sellQuantity })}
-            </Button>
-          </Box>
-        ) : (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography variant="body2" color="text.secondary">
-              {t('market.selectItem')}
-            </Typography>
-          </Box>
-        )}
-
-        <Divider />
-
-        {/* Revenue Analytics */}
-        <Box>
-          <Typography variant="h6" gutterBottom>{t('market.revenueAnalytics')}</Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Box>
-              <Typography variant="body2" color="text.secondary">{t('market.totalRevenue')}</Typography>
-              <Typography variant="h5" color="success.main">
-                {formatCredits(revenueAnalytics.totalRevenue)}
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="body2" color="text.secondary">{t('market.last100Ticks')}</Typography>
-              <Typography variant="h6">
-                {formatCredits(revenueAnalytics.last100Ticks)}
-              </Typography>
-            </Box>
-
-            <Divider />
-
-            <Typography variant="subtitle2" gutterBottom>{t('market.topSellers')}</Typography>
-            {revenueAnalytics.topSellers.length > 0 ? (
-              revenueAnalytics.topSellers.map((seller, index) => (
-                <Box key={seller.itemId} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">
-                    {index + 1}. {getMaterialName(seller.itemId, seller.name)}
-                  </Typography>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="body2" fontWeight="bold">
-                      {formatCredits(seller.revenue)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {seller.quantity} {t('market.sold')}
-                    </Typography>
-                  </Box>
-                </Box>
-              ))
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                {t('market.noSales')}
-              </Typography>
-            )}
-          </Box>
-        </Box>
-      </Paper>
     </Box>
   );
 }
