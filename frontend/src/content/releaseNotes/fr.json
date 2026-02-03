@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.4.5",
+      "date": "2024-02-02",
+      "highlights": "Ajout des traductions en français, allemand et italien.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Ajout des traductions en français, allemand et italien."
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de tests unitaires automatisés et de tests end-to-end"
+        }
+      ]
+    },
+    {
       "version": "0.4.0",
       "date": "2024-02-01",
       "highlights": "Inviter au Jeu. Améliorations énormes des performances dans la construction d'Usine.",

@@ -1,22 +1,22 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// Static imports for content files (following i18n.js pattern)
-import releaseNotesEn from '../content/releaseNotes/en.json';
-import releaseNotesEs from '../content/releaseNotes/es.json';
-import newsEn from '../content/news/en.json';
-import newsEs from '../content/news/es.json';
+// Eager-load all JSON content files so Vite bundles them and we can map by code
+const releaseNotesFiles = import.meta.glob('../content/releaseNotes/*.json', { eager: true });
+const newsFiles = import.meta.glob('../content/news/*.json', { eager: true });
 
-const contentByLanguage = {
-  en: {
-    releaseNotes: releaseNotesEn,
-    news: newsEn,
-  },
-  es: {
-    releaseNotes: releaseNotesEs,
-    news: newsEs,
-  },
-};
+function buildContentMap(files) {
+  return Object.entries(files).reduce((acc, [path, mod]) => {
+    const match = path.match(/\/([a-z]{2})\.json$/i);
+    if (!match) return acc;
+    const code = match[1].toLowerCase();
+    acc[code] = mod.default ?? mod;
+    return acc;
+  }, {});
+}
+
+const releaseNotesByLang = buildContentMap(releaseNotesFiles);
+const newsByLang = buildContentMap(newsFiles);
 
 /**
  * Check if content is valid (exists and has items)
@@ -41,20 +41,19 @@ export function useContent() {
 
   const content = useMemo(() => {
     // Determine language (handle variants like 'es-ES' -> 'es')
-    const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
+    const lng = i18n.language || 'en';
+    const lang = (lng.split('-')[0] || 'en').toLowerCase();
 
-    // Get content for the language
-    const langContent = contentByLanguage[lang];
-    const enContent = contentByLanguage.en;
+    // Get content maps
+    const langRelease = releaseNotesByLang[lang];
+    const langNews = newsByLang[lang];
+    const enRelease = releaseNotesByLang.en;
+    const enNews = newsByLang.en;
 
     // For each content type, use the language version if valid, otherwise fallback to English
-    const releaseNotes = isValidContent(langContent?.releaseNotes, 'releaseNotes')
-      ? langContent.releaseNotes
-      : enContent.releaseNotes;
+    const releaseNotes = isValidContent(langRelease, 'releaseNotes') ? langRelease : enRelease;
 
-    const news = isValidContent(langContent?.news, 'news')
-      ? langContent.news
-      : enContent.news;
+    const news = isValidContent(langNews, 'news') ? langNews : enNews;
 
     return {
       releaseNotes,

@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.4.5",
+      "date": "2024-02-02",
+      "highlights": "Aggiunte le traduzioni in francese, tedesco e italiano.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Aggiunte le traduzioni in francese, tedesco e italiano."
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunti test unitari automatizzati e test end-to-end"
+        }
+      ]
+    },
+    {
       "version": "0.4.0",
       "date": "2024-02-01",
       "highlights": "Invita al Gioco. Enormi miglioramenti delle prestazioni nella costruzione della Fabbrica.",
