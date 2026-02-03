@@ -29,20 +29,23 @@ const mockSaves = [
   { id: 'save-1', name: 'Save 1', userId: 'user-123', data: {}, createdAt: new Date(), updatedAt: new Date() }
 ];
 
+// Shared Prisma mock for consistency across imports
+const mockPrisma = {
+  gameSave: {
+    findMany: jest.fn().mockResolvedValue(mockSaves),
+    findFirst: jest.fn().mockImplementation(({ where }) =>
+      Promise.resolve(mockSaves.find(s => s.id === where.id && s.userId === where.userId))
+    ),
+    count: jest.fn().mockResolvedValue(1),
+    create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'new-save', ...data })),
+    update: jest.fn().mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data })),
+    delete: jest.fn().mockResolvedValue({ id: 'deleted' })
+  }
+};
+
 // Mock Prisma
 jest.unstable_mockModule('../../src/db.js', () => ({
-  default: {
-    gameSave: {
-      findMany: jest.fn().mockResolvedValue(mockSaves),
-      findFirst: jest.fn().mockImplementation(({ where }) => {
-          return Promise.resolve(mockSaves.find(s => s.id === where.id && s.userId === where.userId));
-      }),
-      count: jest.fn().mockResolvedValue(1),
-      create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'new-save', ...data })),
-      update: jest.fn().mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data })),
-      delete: jest.fn().mockResolvedValue({ id: 'deleted' })
-    }
-  }
+  default: mockPrisma
 }));
 
 const { default: app } = await import('../../src/app.js');
@@ -64,5 +67,40 @@ describe('POST /api/game/saves', () => {
 
     expect(res.statusCode).toEqual(201);
     expect(res.body.save.name).toEqual('New Game');
+  });
+
+  it('should enforce save limit', async () => {
+    mockPrisma.gameSave.count.mockResolvedValueOnce(5);
+
+    const res = await request(app)
+      .post('/api/game/saves')
+      .send({ name: 'Overflow', data: {} });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('SAVE_LIMIT_REACHED');
+  });
+});
+
+describe('PUT /api/game/saves/:id', () => {
+  it('should return 404 when save is missing', async () => {
+    mockPrisma.gameSave.findFirst.mockResolvedValueOnce(null);
+
+    const res = await request(app)
+      .put('/api/game/saves/missing')
+      .send({ name: 'New Name' });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body.error).toBe('Save not found');
+  });
+});
+
+describe('DELETE /api/game/saves/:id', () => {
+  it('should return 404 when save is missing', async () => {
+    mockPrisma.gameSave.findFirst.mockResolvedValueOnce(null);
+
+    const res = await request(app).delete('/api/game/saves/missing');
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body.error).toBe('Save not found');
   });
 });

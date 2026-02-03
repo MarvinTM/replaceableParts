@@ -11,6 +11,23 @@ const mockAdmin = {
   role: 'ADMIN'
 };
 
+// Shared Prisma mock so app and tests reference the same instance
+const mockPrisma = {
+  user: {
+    findMany: jest.fn().mockResolvedValue([mockAdmin, { id: 'u2', role: 'USER' }]),
+    findUnique: jest.fn().mockResolvedValue({ id: 'u2', role: 'USER', isApproved: false }),
+    update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'u2', ...data })),
+    delete: jest.fn().mockResolvedValue({ id: 'u2' }),
+    count: jest.fn().mockResolvedValue(10)
+  },
+  session: {
+    count: jest.fn().mockResolvedValue(5),
+    aggregate: jest.fn().mockResolvedValue({ _avg: { durationSeconds: 100 } }),
+    groupBy: jest.fn().mockResolvedValue([]),
+    findMany: jest.fn().mockResolvedValue([])
+  }
+};
+
 // Mock Auth Middleware
 jest.unstable_mockModule('../../src/middleware/auth.js', () => ({
   authenticate: jest.fn().mockImplementation((req, res, next) => {
@@ -19,7 +36,7 @@ jest.unstable_mockModule('../../src/middleware/auth.js', () => ({
   }),
   requireAdmin: jest.fn().mockImplementation((req, res, next) => {
     if (mockAdmin.role !== 'ADMIN') {
-        return res.status(403).json({ error: 'Admin access required' });
+      return res.status(403).json({ error: 'Admin access required' });
     }
     next();
   }),
@@ -30,26 +47,17 @@ jest.unstable_mockModule('../../src/middleware/auth.js', () => ({
 
 // Mock Prisma
 jest.unstable_mockModule('../../src/db.js', () => ({
-  default: {
-    user: {
-      findMany: jest.fn().mockResolvedValue([mockAdmin, { id: 'u2', role: 'USER' }]),
-      findUnique: jest.fn().mockResolvedValue({ id: 'u2', role: 'USER', isApproved: false }),
-      update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'u2', ...data })),
-      delete: jest.fn().mockResolvedValue({ id: 'u2' }),
-      count: jest.fn().mockResolvedValue(10)
-    },
-    session: {
-      count: jest.fn().mockResolvedValue(5),
-      aggregate: jest.fn().mockResolvedValue({ _avg: { durationSeconds: 100 } }),
-      groupBy: jest.fn().mockResolvedValue([]),
-      findMany: jest.fn().mockResolvedValue([])
-    }
-  }
+  default: mockPrisma
 }));
 
 const { default: app } = await import('../../src/app.js');
 
 describe('Admin Routes', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAdmin.role = 'ADMIN';
+  });
+
   describe('GET /api/admin/users', () => {
     it('should return all users', async () => {
       const res = await request(app).get('/api/admin/users');
@@ -66,6 +74,17 @@ describe('Admin Routes', () => {
     });
   });
 
+  describe('Authorization', () => {
+    it('should reject non-admin users', async () => {
+      mockAdmin.role = 'USER';
+
+      const res = await request(app).get('/api/admin/users');
+      expect(res.statusCode).toBe(403);
+
+      mockAdmin.role = 'ADMIN'; // reset for other tests
+    });
+  });
+
   describe('PATCH /api/admin/users/:id/permissions', () => {
     it('should approve user', async () => {
       const res = await request(app)
@@ -74,6 +93,23 @@ describe('Admin Routes', () => {
         
       expect(res.statusCode).toEqual(200);
       expect(res.body.user.isApproved).toBe(true);
+    });
+  });
+
+  describe('GET /api/admin/sessions', () => {
+    it('should respect pagination parameters', async () => {
+      mockPrisma.session.findMany.mockResolvedValueOnce([]);
+      mockPrisma.session.count.mockResolvedValueOnce(40);
+
+      const res = await request(app).get('/api/admin/sessions?page=2&limit=10');
+
+      expect(res.statusCode).toBe(200);
+      expect(mockPrisma.session.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 10, take: 10 })
+      );
+      expect(res.body.pagination).toEqual(
+        expect.objectContaining({ page: 2, limit: 10, total: 40, totalPages: 4 })
+      );
     });
   });
 });

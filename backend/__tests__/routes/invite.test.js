@@ -40,6 +40,10 @@ jest.unstable_mockModule('../../src/db.js', () => ({
 
 const { default: app } = await import('../../src/app.js');
 
+beforeEach(() => {
+  mockSendInviteEmail.mockClear();
+});
+
 describe('POST /api/invite', () => {
   it('should send invite successfully', async () => {
     const res = await request(app)
@@ -59,5 +63,15 @@ describe('POST /api/invite', () => {
       .send({ email: 'invalid-email' });
 
     expect(res.statusCode).toEqual(400);
+    expect(mockSendInviteEmail).not.toHaveBeenCalled();
+  });
+
+  it('should require an email', async () => {
+    const res = await request(app)
+      .post('/api/invite')
+      .send({});
+
+    expect(res.statusCode).toEqual(400);
+    expect(mockSendInviteEmail).not.toHaveBeenCalled();
   });
 });
