@@ -2,9 +2,13 @@
   "releases": [
     {
       "version": "0.4.5",
-      "date": "2024-02-02",
-      "highlights": "Aggiunte le traduzioni in francese, tedesco e italiano.",
+      "date": "2024-02-03",
+      "highlights": "Aggiunte le traduzioni in francese, tedesco e italiano. Nuova scheda Mercato e modifiche alla Ricerca.",
       "changes": [
+        {
+          "type": "feature",
+          "text": "Nuova scheda Mercato. Layout rifatto per mostrare informazioni più rilevanti"
+        },
         {
           "type": "feature",
           "text": "Aggiunte le traduzioni in francese, tedesco e italiano."
@@ -12,6 +16,10 @@
         {
           "type": "improvement",
           "text": "Aggiunti test unitari automatizzati e test end-to-end"
+        },
+        {
+          "type": "improvement",
+          "text": "Pannello Ricerca modificato per mostrare più chiaramente quanti crediti vengono spesi e quanti ne restano."
         }
       ]
     },

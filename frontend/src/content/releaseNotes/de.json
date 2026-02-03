@@ -2,9 +2,13 @@
   "releases": [
     {
       "version": "0.4.5",
-      "date": "2024-02-02",
-      "highlights": "Übersetzungen für Französisch, Deutsch und Italienisch hinzugefügt.",
+      "date": "2024-02-03",
+      "highlights": "Übersetzungen für Französisch, Deutsch und Italienisch hinzugefügt. Neuer Markt-Tab und Anpassungen im Forschungs-Tab.",
       "changes": [
+        {
+          "type": "feature",
+          "text": "Neuer Markt-Tab. Layout überarbeitet, um relevantere Informationen zu zeigen"
+        },
         {
           "type": "feature",
           "text": "Übersetzungen für Französisch, Deutsch und Italienisch hinzugefügt."
@@ -12,6 +16,10 @@
         {
           "type": "improvement",
           "text": "Automatisierte Unit-Tests und End-to-End-Tests hinzugefügt"
+        },
+        {
+          "type": "improvement",
+          "text": "Forschungsbereich angepasst, damit klarer ist, wie viele Credits ausgegeben werden und wie viele übrig bleiben."
         }
       ]
     },

@@ -2,9 +2,13 @@
   "releases": [
     {
       "version": "0.4.5",
-      "date": "2024-02-02",
-      "highlights": "Añadidas traducciones a francés, alemán e italiano.",
+      "date": "2024-02-03",
+      "highlights": "Añadidas traducciones a francés, alemán e italiano. Nueva pestaña de Mercado y ajustes en Investigación.",
       "changes": [
+        {
+          "type": "feature",
+          "text": "Nueva pestaña de Mercado. Se rehizo el diseño para mostrar información más relevante"
+        },
         {
           "type": "feature",
           "text": "Añadidas traducciones a francés, alemán e italiano."
@@ -12,6 +16,10 @@
         {
           "type": "improvement",
           "text": "Añadidas pruebas unitarias automatizadas y pruebas end-to-end"
+        },
+        {
+          "type": "improvement",
+          "text": "Se ajustó el panel de Investigación para mostrar con mayor claridad cuánto crédito se está gastando y cuánto queda."
         }
       ]
     },

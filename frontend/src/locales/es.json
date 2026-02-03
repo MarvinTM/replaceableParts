@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "replaceableParts",
-    "tagline": "Juego de Simulación de Manufactura"
+    "tagline": "Juego de Simulación de Fabricación Industrial"
   },
   "landing": {
     "clickToContinue": "Haz clic en cualquier lugar o presiona una tecla para continuar",
@@ -116,7 +116,7 @@
   "main": {
     "title": "Panel Principal",
     "welcome": "¡Bienvenido, {{name}}!",
-    "subtitle": "Tu imperio manufacturero te espera",
+    "subtitle": "Tu imperio industrial te espera",
     "tabs": {
       "factory": "Fábrica",
       "exploration": "Exploración",

@@ -2,9 +2,13 @@
   "releases": [
     {
       "version": "0.4.5",
-      "date": "2024-02-02",
-      "highlights": "Ajout des traductions en français, allemand et italien.",
+      "date": "2024-02-03",
+      "highlights": "Ajout des traductions en français, allemand et italien. Nouvel onglet Marché et ajustements de la Recherche.",
       "changes": [
+        {
+          "type": "feature",
+          "text": "Nouvel onglet Marché. Refonte de la mise en page pour afficher des informations plus pertinentes"
+        },
         {
           "type": "feature",
           "text": "Ajout des traductions en français, allemand et italien."
@@ -12,6 +16,10 @@
         {
           "type": "improvement",
           "text": "Ajout de tests unitaires automatisés et de tests end-to-end"
+        },
+        {
+          "type": "improvement",
+          "text": "Ajustement du panneau Recherche pour montrer plus clairement combien de crédits sont dépensés et ce qu'il en reste."
         }
       ]
     },
