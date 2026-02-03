@@ -14,6 +14,11 @@
     "db:generate": "npm run db:generate --prefix backend",
     "db:studio": "npm run db:studio --prefix backend"
   },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "npm run lint --prefix frontend -- --fix"
+    ]
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
