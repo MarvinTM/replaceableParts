@@ -59,25 +59,19 @@ test.describe('Research unlock flow', () => {
 
       const beforeUnlocked = store.getState().engineState.unlockedRecipes.length;
 
-      let discoveryModalSeen = false;
-
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 15; i++) {
         const res = store.getState().runExperiment();
+        // Auto-complete prototypes to unlock immediately
         if (res?.state?.research?.awaitingPrototype?.length) {
-          // Fast-forward prototype completion
-          for (let t = 0; t < 50; t++) {
-            store.getState().simulate();
-          }
-        } else {
-          for (let t = 0; t < 20; t++) {
-            store.getState().simulate();
-          }
+          const proto = res.state.research.awaitingPrototype[0];
+          store.getState().fillPrototypeSlot(proto.recipeId, Object.keys(defaultRules.materials)[0], 1);
+          store.getState().unlockRecipe(proto.recipeId);
         }
-
-        // Check if any recipe unlocked; if so, break early
-        if (store.getState().engineState.unlockedRecipes.length > 0) {
-          break;
+        // Advance ticks to progress research queue
+        for (let t = 0; t < 30; t++) {
+          store.getState().simulate();
         }
+        if (store.getState().engineState.unlockedRecipes.length > 0) break;
       }
 
       const state = store.getState().engineState;

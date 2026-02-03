@@ -8,6 +8,10 @@
         {
           "type": "feature",
           "text": "Translations for French, German and Italian added."
+        },
+        {
+          "type": "improvement",
+          "text": "Added automated unit tests, and end-to-end tests"
         }
       ]
     },
