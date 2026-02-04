@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import useGameStore, { NORMAL_TICK_MS, FAST_TICK_MS } from '../../stores/gameStore';
@@ -12,6 +12,9 @@ const ROTATION_PER_TICK = 360 / GEAR_TEETH;
  * GearIcon - SVG gear that can be filled and rotated
  */
 function GearIcon({ size = 32, progress = 0, rotation = 0, fillColor, backgroundColor, accentColor }) {
+  const id = useId();
+  const clipId = `${id}-clip`;
+  const maskId = `${id}-mask`;
   const centerX = size / 2;
   const centerY = size / 2;
   const outerRadius = size * 0.45;
@@ -88,24 +91,24 @@ function GearIcon({ size = 32, progress = 0, rotation = 0, fillColor, background
     >
       <defs>
         {/* Clip path for the gear shape */}
-        <clipPath id="gearClip">
+        <clipPath id={clipId}>
           <path d={gearPath} />
           <circle cx={centerX} cy={centerY} r={innerRadius} />
         </clipPath>
 
         {/* Mask to create the donut shape (gear with hole) */}
-        <mask id="gearMask">
+        <mask id={maskId}>
           <path d={gearPath} fill="white" />
           <circle cx={centerX} cy={centerY} r={innerRadius} fill="black" />
         </mask>
       </defs>
 
       {/* Background gear shape */}
-      <path d={gearPath} fill={backgroundColor} mask="url(#gearMask)" />
+      <path d={gearPath} fill={backgroundColor} mask={`url(#${maskId})`} />
 
       {/* Progress fill - using a pie slice approach */}
       {progress > 0 && progress < 100 && (
-        <g mask="url(#gearMask)">
+        <g mask={`url(#${maskId})`}>
           <path
             d={describeArc(centerX, centerY, outerRadius + toothHeight, -90, -90 + progressAngle)}
             fill={fillColor}
@@ -113,7 +116,7 @@ function GearIcon({ size = 32, progress = 0, rotation = 0, fillColor, background
         </g>
       )}
       {progress >= 100 && (
-        <path d={gearPath} fill={fillColor} mask="url(#gearMask)" />
+        <path d={gearPath} fill={fillColor} mask={`url(#${maskId})`} />
       )}
 
       {/* Center hole accent */}
@@ -157,8 +160,8 @@ function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
 
 // Duration of the rotation animation in ms
 const ROTATION_DURATION_MS = 500;
-// Fill up the gear in this fraction of the tick duration (leaves time for rotation while full)
-const FILL_DURATION_FRACTION = 0.8;
+// Brief pause before filling starts (kept inside the tick duration)
+const PAUSE_DURATION_FRACTION = 0.15;
 
 /**
  * TickProgressIndicator - Shows simulation progress with a mechanical gear
@@ -169,13 +172,16 @@ export default function TickProgressIndicator() {
   const isRunning = useGameStore(state => state.isRunning);
   const currentSpeed = useGameStore(state => state.currentSpeed);
   const tick = useGameStore(state => state.engineState?.tick);
+  const initialGearIndex = (tick ?? 0) % 2;
 
   // Use a single state object to prevent race conditions between updates
-  const [animState, setAnimState] = useState({
-    progress: 0,
+  const [animState, setAnimState] = useState(() => ({
     rotation: 0,
-    phase: 'filling', // 'filling' | 'rotating'
-  });
+    phase: 'filling', // 'filling' | 'rotating' | 'pausing'
+    activeGearIndex: initialGearIndex, // 0 = left gear, 1 = right gear
+    leftProgress: initialGearIndex === 0 ? 0 : 100,
+    rightProgress: initialGearIndex === 0 ? 100 : 0,
+  }));
 
   const lastTickRef = useRef(tick);
   const animationRef = useRef(null);
@@ -194,6 +200,8 @@ export default function TickProgressIndicator() {
   // Detect tick completion - rotate gear while full, then reset after rotation
   useEffect(() => {
     if (tick !== lastTickRef.current && tick !== undefined) {
+      const prevTick = lastTickRef.current ?? 0;
+      const prevGearIndex = prevTick % 2;
       lastTickRef.current = tick;
 
       // Stop the fill animation immediately
@@ -210,20 +218,39 @@ export default function TickProgressIndicator() {
       // Set to rotating phase with full progress and start rotation
       phaseRef.current = 'rotating';
       setAnimState(prev => ({
-        progress: 100,
         rotation: prev.rotation + ROTATION_PER_TICK,
         phase: 'rotating',
+        activeGearIndex: prevGearIndex,
+        leftProgress: 100,
+        rightProgress: 100,
       }));
 
-      // After rotation animation completes, reset and start filling again
+      // After rotation animation completes, pause while still full, then reset and start filling
       rotationTimeoutRef.current = setTimeout(() => {
-        phaseRef.current = 'filling';
-        startTimeRef.current = Date.now();
+        const nextGearIndex = tick % 2;
+        const tickDuration = getTickDuration();
+        const pauseDuration = tickDuration * PAUSE_DURATION_FRACTION;
+        phaseRef.current = 'pausing';
+        startTimeRef.current = null;
         setAnimState(prev => ({
           ...prev,
-          progress: 0,
-          phase: 'filling',
+          phase: 'pausing',
+          activeGearIndex: nextGearIndex,
+          leftProgress: 100,
+          rightProgress: 100,
         }));
+
+        rotationTimeoutRef.current = setTimeout(() => {
+          phaseRef.current = 'filling';
+          startTimeRef.current = Date.now();
+          setAnimState(prev => ({
+            ...prev,
+            phase: 'filling',
+            activeGearIndex: nextGearIndex,
+            leftProgress: nextGearIndex === 0 ? 0 : 100,
+            rightProgress: nextGearIndex === 1 ? 0 : 100,
+          }));
+        }, pauseDuration);
       }, ROTATION_DURATION_MS);
     }
   }, [tick]);
@@ -232,8 +259,16 @@ export default function TickProgressIndicator() {
   useEffect(() => {
     // Don't animate if not running
     if (!isRunning) {
+      const currentGearIndex = (tick ?? 0) % 2;
       phaseRef.current = 'filling';
-      setAnimState(prev => ({ ...prev, progress: 0, phase: 'filling' }));
+      setAnimState(prev => ({
+        ...prev,
+        phase: 'filling',
+        activeGearIndex: currentGearIndex,
+        leftProgress: 0,
+        rightProgress: 0,
+      }));
+      startTimeRef.current = null;
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
@@ -241,8 +276,8 @@ export default function TickProgressIndicator() {
       return;
     }
 
-    // Don't start fill animation while rotating
-    if (animState.phase === 'rotating') {
+    // Don't start fill animation while rotating or pausing
+    if (animState.phase !== 'filling') {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
@@ -250,26 +285,35 @@ export default function TickProgressIndicator() {
       return;
     }
 
-    // Start fresh animation
+    const tickDuration = getTickDuration();
+    const pauseDuration = tickDuration * PAUSE_DURATION_FRACTION;
+    const fillDuration = Math.max(tickDuration - ROTATION_DURATION_MS - pauseDuration, 1);
+
+    // Start fresh animation (no pause unless we just rotated)
     if (startTimeRef.current === null) {
       startTimeRef.current = Date.now();
     }
 
-    const tickDuration = getTickDuration();
-    const fillDuration = tickDuration * FILL_DURATION_FRACTION;
-
     const animate = () => {
-      // Check ref to avoid animating during rotation
-      if (phaseRef.current === 'rotating') {
+      // Check ref to avoid animating during rotation or pause
+      if (phaseRef.current !== 'filling') {
         return;
       }
 
       const elapsed = Date.now() - startTimeRef.current;
+      if (elapsed < 0) {
+        animationRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
       const newProgress = Math.min((elapsed / fillDuration) * 100, 100);
       setAnimState(prev => {
         // Double-check we're still in filling phase
         if (prev.phase === 'rotating') return prev;
-        return { ...prev, progress: newProgress };
+        if (prev.activeGearIndex === 0) {
+          return { ...prev, leftProgress: newProgress };
+        }
+        return { ...prev, rightProgress: newProgress };
       });
 
       if (newProgress < 100 && isRunning && phaseRef.current === 'filling') {
@@ -285,7 +329,7 @@ export default function TickProgressIndicator() {
         animationRef.current = null;
       }
     };
-  }, [isRunning, animState.phase, currentSpeed]);
+  }, [isRunning, animState.phase, currentSpeed, tick]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -299,9 +343,14 @@ export default function TickProgressIndicator() {
     };
   }, []);
 
-  const { progress, rotation, phase } = animState;
-  // During rotation phase, always show full progress
-  const displayProgress = phase === 'rotating' ? 100 : progress;
+  const { rotation, phase, leftProgress, rightProgress } = animState;
+  const leftGearProgress = phase === 'rotating' ? 100 : leftProgress;
+  const rightGearProgress = phase === 'rotating' ? 100 : rightProgress;
+  const leftGearRotation = rotation;
+  const rightGearRotation = -rotation;
+  const gearSize = 28;
+  const gearOffsetX = Math.round(gearSize * 0.9) + 1;
+  const gearOffsetY = Math.round(gearSize * 0.15);
 
   // Colors based on speed
   const fillColor = currentSpeed === 'fast'
@@ -314,29 +363,65 @@ export default function TickProgressIndicator() {
 
   if (currentSpeed === 'paused') {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <GearIcon
-          size={28}
-          progress={0}
-          rotation={rotation}
-          fillColor={fillColor}
-          backgroundColor={backgroundColor}
-          accentColor={theme.palette.text.disabled}
-        />
+      <Box
+        sx={{
+          position: 'relative',
+          width: gearSize + gearOffsetX,
+          height: gearSize + gearOffsetY + 2,
+        }}
+      >
+        <Box sx={{ position: 'absolute', left: 0, top: -1 }}>
+          <GearIcon
+            size={gearSize}
+            progress={0}
+            rotation={leftGearRotation}
+            fillColor={fillColor}
+            backgroundColor={backgroundColor}
+            accentColor={theme.palette.text.disabled}
+          />
+        </Box>
+        <Box sx={{ position: 'absolute', left: gearOffsetX, top: gearOffsetY + 1 }}>
+          <GearIcon
+            size={gearSize}
+            progress={0}
+            rotation={rightGearRotation}
+            fillColor={fillColor}
+            backgroundColor={backgroundColor}
+            accentColor={theme.palette.text.disabled}
+          />
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <GearIcon
-        size={28}
-        progress={displayProgress}
-        rotation={rotation}
-        fillColor={fillColor}
-        backgroundColor={backgroundColor}
-        accentColor={accentColor}
-      />
+    <Box
+      sx={{
+        position: 'relative',
+        width: gearSize + gearOffsetX,
+        height: gearSize + gearOffsetY + 2,
+      }}
+    >
+      <Box sx={{ position: 'absolute', left: 0, top: -1 }}>
+        <GearIcon
+          size={gearSize}
+          progress={leftGearProgress}
+          rotation={leftGearRotation}
+          fillColor={fillColor}
+          backgroundColor={backgroundColor}
+          accentColor={accentColor}
+        />
+      </Box>
+      <Box sx={{ position: 'absolute', left: gearOffsetX, top: gearOffsetY + 1 }}>
+        <GearIcon
+          size={gearSize}
+          progress={rightGearProgress}
+          rotation={rightGearRotation}
+          fillColor={fillColor}
+          backgroundColor={backgroundColor}
+          accentColor={accentColor}
+        />
+      </Box>
     </Box>
   );
 }
