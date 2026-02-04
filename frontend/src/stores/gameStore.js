@@ -379,4 +379,8 @@ const useGameStore = create(
   )
 );
 
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  window.__GAME_STORE__ = useGameStore;
+}
+
 export default useGameStore;

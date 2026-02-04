@@ -37,8 +37,12 @@ test.describe('Factory basics', () => {
 
     // Seed state and run simulation steps in the app context
     const result = await page.evaluate(async () => {
-      const store = (await import('/src/stores/gameStore.js')).default;
+      const store = window.__GAME_STORE__ || (await import('/src/stores/gameStore.js')).default;
       const rules = (await import('/src/engine/defaultRules.js')).defaultRules;
+
+      if (!store.getState().engineState) {
+        store.getState().initNewGame();
+      }
 
       // Ensure we have fuel and ore and sufficient power
       store.setState((prev) => ({

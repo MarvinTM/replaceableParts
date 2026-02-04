@@ -39,7 +39,7 @@ async function startGuestGame(page, name = 'Persisted Game') {
 
 async function placeMachineAndSave(page) {
   return await page.evaluate(async () => {
-    const store = (await import('/src/stores/gameStore.js')).default;
+    const store = window.__GAME_STORE__ || (await import('/src/stores/gameStore.js')).default;
     const { defaultRules } = await import('/src/engine/defaultRules.js');
 
     // Make sure rules and state exist
@@ -69,15 +69,7 @@ async function placeMachineAndSave(page) {
 
     // Run a few ticks
     for (let i = 0; i < 10; i++) store.getState().simulate();
-
-    // Trigger guest save
-    const game = await import('/src/contexts/GameContext.jsx');
-    // get saveGuestGame from module (non-hook usage)
-    const { saveGuestGame } = game;
-    // Fallback: directly write guest save key
     const state = store.getState().engineState;
-    const save = { id: 'guest', name: store.getState().saveName || 'Guest Save', data: state, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    localStorage.setItem('replaceableParts-guestSave', JSON.stringify(save));
 
     return {
       tick: state.tick,
@@ -100,9 +92,50 @@ async function reloadAndLoad(page) {
   await page.waitForURL('**/game');
 }
 
+async function waitForLoadedState(page, expected) {
+  await expect.poll(async () => {
+    return await page.evaluate(async ({ expectedMachines, expectedIngots, expectedTick }) => {
+      const store = window.__GAME_STORE__ || (await import('/src/stores/gameStore.js')).default;
+      const state = store.getState().engineState;
+      const machines = state?.machines?.length || 0;
+      const ingots = state?.inventory?.iron_ingot || 0;
+      const tick = state?.tick || 0;
+      return machines >= expectedMachines && ingots >= expectedIngots && tick >= expectedTick;
+    }, {
+      expectedMachines: expected.machines,
+      expectedIngots: expected.ingots,
+      expectedTick: expected.tick,
+    });
+  }, { timeout: 15000 }).toBe(true);
+}
+
+async function waitForGuestSave(page, expected) {
+  await expect.poll(async () => {
+    return await page.evaluate(async ({ expectedMachines, expectedIngots, expectedTick }) => {
+      const savedRaw = localStorage.getItem('replaceableParts-guestSave');
+      if (!savedRaw) return false;
+      let saved;
+      try {
+        saved = JSON.parse(savedRaw);
+      } catch {
+        return false;
+      }
+      const data = saved?.data;
+      const machines = data?.machines?.length || 0;
+      const ingots = data?.inventory?.iron_ingot || 0;
+      const tick = data?.tick || 0;
+      return machines >= expectedMachines && ingots >= expectedIngots && tick >= expectedTick;
+    }, {
+      expectedMachines: expected.machines,
+      expectedIngots: expected.ingots,
+      expectedTick: expected.tick,
+    });
+  }, { timeout: 15000 }).toBe(true);
+}
+
 async function getStateSnapshot(page) {
   return await page.evaluate(async () => {
-    const store = (await import('/src/stores/gameStore.js')).default;
+    const store = window.__GAME_STORE__ || (await import('/src/stores/gameStore.js')).default;
     const state = store.getState().engineState;
     return {
       tick: state?.tick,
@@ -120,7 +153,10 @@ test.describe('Guest local save persistence', () => {
   test('persists placed machine and inventory across reload', async ({ page }) => {
     await startGuestGame(page);
     const before = await placeMachineAndSave(page);
+    await page.getByRole('button', { name: /save game/i }).click();
+    await waitForGuestSave(page, before);
     await reloadAndLoad(page);
+    await waitForLoadedState(page, before);
     const after = await getStateSnapshot(page);
 
     expect(after.machines).toBeGreaterThanOrEqual(before.machines);
