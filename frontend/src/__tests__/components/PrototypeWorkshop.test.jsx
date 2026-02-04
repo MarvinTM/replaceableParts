@@ -20,7 +20,8 @@ vi.mock('../../components/common/MaterialIcon', () => ({
 
 vi.mock('../../utils/translationHelpers', () => ({
   getRecipeName: (id) => `Recipe ${id}`,
-  getMaterialName: (id) => `Material ${id}`
+  getMaterialName: (id) => `Material ${id}`,
+  getMaterialDescription: (id, fallback) => fallback || `Description ${id}`
 }));
 
 // Mock store
