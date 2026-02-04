@@ -4,7 +4,7 @@ import { useTheme } from '@mui/material/styles';
 import useGameStore, { NORMAL_TICK_MS, FAST_TICK_MS } from '../../stores/gameStore';
 
 // Number of teeth on the gear
-const GEAR_TEETH = 8;
+const GEAR_TEETH = 24;
 // Degrees to rotate per tick (one tooth)
 const ROTATION_PER_TICK = 360 / GEAR_TEETH;
 
@@ -17,7 +17,9 @@ function GearIcon({ size = 32, progress = 0, rotation = 0, fillColor, background
   const outerRadius = size * 0.45;
   const innerRadius = size * 0.25;
   const toothHeight = size * 0.12;
-  const toothWidth = 0.5; // Fraction of tooth spacing
+  const rootRadius = outerRadius - toothHeight * 0.35;
+  const tipRadius = outerRadius + toothHeight;
+  const toothWidth = 0.7; // Fraction of tooth spacing at the base
 
   // Generate gear path
   const generateGearPath = () => {
@@ -25,36 +27,44 @@ function GearIcon({ size = 32, progress = 0, rotation = 0, fillColor, background
     const teethCount = GEAR_TEETH;
 
     for (let i = 0; i < teethCount; i++) {
-      const angle1 = (i / teethCount) * Math.PI * 2 - Math.PI / 2;
-      const angle2 = ((i + toothWidth * 0.3) / teethCount) * Math.PI * 2 - Math.PI / 2;
-      const angle3 = ((i + toothWidth * 0.7) / teethCount) * Math.PI * 2 - Math.PI / 2;
-      const angle4 = ((i + toothWidth) / teethCount) * Math.PI * 2 - Math.PI / 2;
-      const angle5 = ((i + 1) / teethCount) * Math.PI * 2 - Math.PI / 2;
+      const toothPitch = (Math.PI * 2) / teethCount;
+      const gapWidth = 1 - toothWidth;
 
-      // Base of tooth
+      const baseHalf = (toothWidth / 2) * toothPitch;
+      const gapHalf = (gapWidth / 2) * toothPitch;
+
+      const centerAngle = (i + 0.5) * toothPitch - Math.PI / 2;
+
+      const angle1 = centerAngle - (baseHalf + gapHalf); // valley left
+      const angle2 = centerAngle - baseHalf; // base left
+      const angle3 = centerAngle; // tip center
+      const angle4 = centerAngle + baseHalf; // base right
+      const angle5 = centerAngle + (baseHalf + gapHalf); // valley right
+
+      // Valley between teeth (root)
       points.push([
-        centerX + Math.cos(angle1) * outerRadius,
-        centerY + Math.sin(angle1) * outerRadius,
+        centerX + Math.cos(angle1) * rootRadius,
+        centerY + Math.sin(angle1) * rootRadius,
       ]);
-      // Outer edge of tooth (left)
+      // Base of tooth (left shoulder)
       points.push([
-        centerX + Math.cos(angle2) * (outerRadius + toothHeight),
-        centerY + Math.sin(angle2) * (outerRadius + toothHeight),
+        centerX + Math.cos(angle2) * outerRadius,
+        centerY + Math.sin(angle2) * outerRadius,
       ]);
-      // Outer edge of tooth (right)
+      // Tooth tip (triangle point)
       points.push([
-        centerX + Math.cos(angle3) * (outerRadius + toothHeight),
-        centerY + Math.sin(angle3) * (outerRadius + toothHeight),
+        centerX + Math.cos(angle3) * tipRadius,
+        centerY + Math.sin(angle3) * tipRadius,
       ]);
-      // Base of tooth (end)
+      // Base of tooth (right shoulder)
       points.push([
         centerX + Math.cos(angle4) * outerRadius,
         centerY + Math.sin(angle4) * outerRadius,
       ]);
-      // Valley between teeth
+      // Valley between teeth (root end)
       points.push([
-        centerX + Math.cos(angle5) * outerRadius,
-        centerY + Math.sin(angle5) * outerRadius,
+        centerX + Math.cos(angle5) * rootRadius,
+        centerY + Math.sin(angle5) * rootRadius,
       ]);
     }
 
