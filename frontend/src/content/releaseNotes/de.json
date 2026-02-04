@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.4.6",
+      "date": "2024-02-04",
+      "highlights": "Beschreibungen für Gegenstände hinzugefügt. E-Mail-Format angepasst. Neuer Tick-Fortschrittsindikator mit zwei Zahnrädern.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Beschreibungen für Gegenstände hinzugefügt"
+        },
+        {
+          "type": "improvement",
+          "text": "E-Mail-Format angepasst"
+        },
+        {
+          "type": "improvement",
+          "text": "Neuer Tick-Fortschrittsindikator mit zwei Zahnrädern"
+        }
+      ]
+    },
+    {
       "version": "0.4.5",
       "date": "2024-02-03",
       "highlights": "Übersetzungen für Französisch, Deutsch und Italienisch hinzugefügt. Neuer Markt-Tab und Anpassungen im Forschungs-Tab.",

@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.4.6",
+      "date": "2024-02-04",
+      "highlights": "Ajout de descriptions pour les objets. Format d’e-mail ajusté. Nouvel indicateur de progression du tick avec deux engrenages.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Ajout de descriptions pour les objets"
+        },
+        {
+          "type": "improvement",
+          "text": "Format d’e-mail ajusté"
+        },
+        {
+          "type": "improvement",
+          "text": "Nouvel indicateur de progression du tick avec deux engrenages"
+        }
+      ]
+    },
+    {
       "version": "0.4.5",
       "date": "2024-02-03",
       "highlights": "Ajout des traductions en français, allemand et italien. Nouvel onglet Marché et ajustements de la Recherche.",

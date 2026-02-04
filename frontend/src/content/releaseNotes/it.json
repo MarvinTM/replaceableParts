@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.4.6",
+      "date": "2024-02-04",
+      "highlights": "Aggiunte descrizioni per gli oggetti. Formato e-mail modificato. Nuovo indicatore di avanzamento del tick con due ingranaggi.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Aggiunte descrizioni per gli oggetti"
+        },
+        {
+          "type": "improvement",
+          "text": "Formato e-mail modificato"
+        },
+        {
+          "type": "improvement",
+          "text": "Nuovo indicatore di avanzamento del tick con due ingranaggi"
+        }
+      ]
+    },
+    {
       "version": "0.4.5",
       "date": "2024-02-03",
       "highlights": "Aggiunte le traduzioni in francese, tedesco e italiano. Nuova scheda Mercato e modifiche alla Ricerca.",
