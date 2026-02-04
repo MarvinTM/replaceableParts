@@ -8,6 +8,29 @@ const __dirname = path.dirname(__filename);
 // Path to backend assets (relative to backend/src/services/)
 const ASSETS_PATH = path.join(__dirname, '../../assets');
 
+const EMAIL_COLORS = {
+  headerBg: '#8B5A2B',      // Copper/bronze primary
+  contentBg: '#F4E4C9',     // Parchment cream
+  cardBg: '#FAF3E6',        // Warm cream
+  textPrimary: '#2D2520',   // Dark brown
+  textSecondary: '#5C4B3A', // Medium brown
+  border: '#D4C4A8',        // Light tan
+  ctaButton: '#8B5A2B',     // Copper/bronze
+  ctaText: '#FDF8F0'        // Light text
+};
+
+const getLogoAttachment = () => ({
+  filename: 'logo.png',
+  path: path.join(ASSETS_PATH, 'smallLogo.png'),
+  cid: 'logo@replaceableparts'
+});
+
+const getPreviewAttachment = () => ({
+  filename: 'preview.png',
+  path: path.join(ASSETS_PATH, 'invite_preview.png'),
+  cid: 'preview@replaceableparts'
+});
+
 // Create reusable transporter
 const createTransporter = () => {
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
@@ -55,7 +78,8 @@ export async function sendWelcomeEmail(user) {
     to: user.email,
     subject: `Welcome to ${appName}!`,
     html: generateWelcomeEmailHtml(user),
-    text: generateWelcomeEmailText(user)
+    text: generateWelcomeEmailText(user),
+    attachments: [getLogoAttachment(), getPreviewAttachment()]
   };
 
   try {
@@ -70,6 +94,7 @@ export async function sendWelcomeEmail(user) {
 function generateWelcomeEmailHtml(user) {
   const name = user.name || 'Player';
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const colors = EMAIL_COLORS;
 
   return `
 <!DOCTYPE html>
@@ -79,36 +104,49 @@ function generateWelcomeEmailHtml(user) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Welcome to replaceableParts</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to replaceableParts!</h1>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: ${colors.textPrimary}; max-width: 600px; margin: 0 auto; padding: 20px; background-color: ${colors.contentBg};">
+  <div style="background: ${colors.headerBg}; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <img src="cid:logo@replaceableparts" alt="replaceableParts" style="max-width: 200px; height: auto;" />
   </div>
 
-  <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-    <p style="font-size: 18px;">Hello <strong>${name}</strong>,</p>
+  <div style="background: ${colors.cardBg}; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid ${colors.border}; border-top: none;">
+    <h1 style="color: ${colors.textPrimary}; font-size: 24px; margin-top: 0; text-align: center;">
+      Welcome, ${name}!
+    </h1>
 
-    <p>Thank you for joining replaceableParts - the manufacturing simulation game where you build and manage your own production empire!</p>
-
-    <h2 style="color: #667eea; font-size: 18px;">Getting Started</h2>
-    <ul style="padding-left: 20px;">
-      <li>Build your factory and place machines on the production floor</li>
-      <li>Explore new territories to discover resources</li>
-      <li>Research new technologies to unlock advanced recipes</li>
-      <li>Trade goods in the market to grow your empire</li>
-    </ul>
-
-    <h2 style="color: #667eea; font-size: 18px;">We Value Your Feedback</h2>
-    <p>As you play, we'd love to hear your thoughts! Your feedback helps us make the game better for everyone. Feel free to share suggestions, report bugs, or let us know what features you'd like to see.</p>
-
-    <div style="text-align: center; margin-top: 30px;">
-      <a href="${frontendUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Start Playing</a>
+    <div style="text-align: center; margin: 20px 0;">
+      <img src="cid:preview@replaceableparts" alt="replaceableParts Game Preview" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid ${colors.border};" />
     </div>
 
-    <p style="margin-top: 30px; color: #666; font-size: 14px;">Happy manufacturing!</p>
-    <p style="color: #666; font-size: 14px;">The replaceableParts Team</p>
+    <p style="color: ${colors.textSecondary}; font-size: 16px; text-align: center;">
+      Thank you for joining replaceableParts — the manufacturing simulation game where you build and manage your own production empire.
+    </p>
+
+    <div style="background: #fff; border: 1px solid ${colors.border}; border-radius: 8px; padding: 16px; margin: 20px 0;">
+      <h2 style="color: ${colors.textPrimary}; font-size: 16px; margin: 0 0 10px;">Getting Started</h2>
+      <ul style="padding-left: 18px; margin: 0; color: ${colors.textSecondary};">
+        <li>Build your factory and place machines on the production floor</li>
+        <li>Explore new territories to discover resources</li>
+        <li>Research new technologies to unlock advanced recipes</li>
+        <li>Trade goods in the market to grow your empire</li>
+      </ul>
+    </div>
+
+    <p style="color: ${colors.textSecondary}; font-size: 14px; margin: 0 0 20px;">
+      As you play, we'd love to hear your thoughts. Your feedback helps us make the game better for everyone.
+    </p>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="${frontendUrl}" style="background: ${colors.ctaButton}; color: ${colors.ctaText}; padding: 14px 36px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; font-size: 16px;">Start Playing</a>
+    </div>
+
+    <p style="margin-top: 24px; color: ${colors.textSecondary}; font-size: 14px; text-align: center;">
+      Happy manufacturing!<br />
+      The replaceableParts Team
+    </p>
   </div>
 
-  <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+  <div style="text-align: center; padding: 20px; color: ${colors.textSecondary}; font-size: 12px;">
     <p>This email was sent because you signed up for replaceableParts.</p>
   </div>
 </body>
@@ -166,7 +204,8 @@ export async function sendFeedbackEmail(user, title, body) {
     replyTo: user.email,
     subject: `Feedback: ${title}`,
     html: generateFeedbackEmailHtml(user, title, body),
-    text: generateFeedbackEmailText(user, title, body)
+    text: generateFeedbackEmailText(user, title, body),
+    attachments: [getLogoAttachment()]
   };
 
   try {
@@ -182,6 +221,7 @@ export async function sendFeedbackEmail(user, title, body) {
 function generateFeedbackEmailHtml(user, title, body) {
   const name = user.name || 'Anonymous';
   const bodyHtml = body.replace(/\n/g, '<br>');
+  const colors = EMAIL_COLORS;
 
   return `
 <!DOCTYPE html>
@@ -191,22 +231,23 @@ function generateFeedbackEmailHtml(user, title, body) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Feedback</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">User Feedback</h1>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: ${colors.textPrimary}; max-width: 600px; margin: 0 auto; padding: 20px; background-color: ${colors.contentBg};">
+  <div style="background: ${colors.headerBg}; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+    <img src="cid:logo@replaceableparts" alt="replaceableParts" style="max-width: 200px; height: auto;" />
   </div>
 
-  <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-    <h2 style="color: #667eea; font-size: 20px; margin-top: 0;">${title}</h2>
+  <div style="background: ${colors.cardBg}; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid ${colors.border}; border-top: none;">
+    <h1 style="color: ${colors.textPrimary}; font-size: 22px; margin-top: 0; text-align: center;">User Feedback</h1>
+    <h2 style="color: ${colors.textSecondary}; font-size: 18px; margin: 10px 0 0;">${title}</h2>
 
-    <div style="background: white; padding: 20px; border-radius: 5px; border-left: 4px solid #667eea; margin: 20px 0;">
-      <p style="margin: 0; white-space: pre-wrap;">${bodyHtml}</p>
+    <div style="background: #fff; padding: 16px; border-radius: 8px; border-left: 4px solid ${colors.ctaButton}; margin: 20px 0; border-top: 1px solid ${colors.border}; border-right: 1px solid ${colors.border}; border-bottom: 1px solid ${colors.border};">
+      <p style="margin: 0; white-space: pre-wrap; color: ${colors.textPrimary};">${bodyHtml}</p>
     </div>
 
-    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-      <p style="margin: 5px 0; color: #666;"><strong>From:</strong> ${name}</p>
-      <p style="margin: 5px 0; color: #666;"><strong>Email:</strong> ${user.email}</p>
-      <p style="margin: 5px 0; color: #666; font-size: 12px;"><em>You can reply directly to this email to respond to the user.</em></p>
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid ${colors.border};">
+      <p style="margin: 5px 0; color: ${colors.textSecondary};"><strong>From:</strong> ${name}</p>
+      <p style="margin: 5px 0; color: ${colors.textSecondary};"><strong>Email:</strong> ${user.email}</p>
+      <p style="margin: 5px 0; color: ${colors.textSecondary}; font-size: 12px;"><em>You can reply directly to this email to respond to the user.</em></p>
     </div>
   </div>
 </body>
@@ -255,18 +296,7 @@ export async function sendInviteEmail(inviter, recipientEmail) {
     subject: `${inviter.name || 'A friend'} has invited you to play replaceableParts!`,
     html: generateInviteEmailHtml(inviter),
     text: generateInviteEmailText(inviter),
-    attachments: [
-      {
-        filename: 'logo.png',
-        path: path.join(ASSETS_PATH, 'smallLogo.png'),
-        cid: 'logo@replaceableparts'
-      },
-      {
-        filename: 'preview.png',
-        path: path.join(ASSETS_PATH, 'invite_preview.png'),
-        cid: 'preview@replaceableparts'
-      }
-    ]
+    attachments: [getLogoAttachment(), getPreviewAttachment()]
   };
 
   try {
@@ -283,17 +313,7 @@ function generateInviteEmailHtml(inviter) {
   const inviterName = inviter.name || 'A friend';
   const gameUrl = 'https://replaceable.parts/';
 
-  // Theme colors from theme.js
-  const colors = {
-    headerBg: '#8B5A2B',      // Copper/bronze primary
-    contentBg: '#F4E4C9',     // Parchment cream
-    cardBg: '#FAF3E6',        // Warm cream
-    textPrimary: '#2D2520',   // Dark brown
-    textSecondary: '#5C4B3A', // Medium brown
-    border: '#D4C4A8',        // Light tan
-    ctaButton: '#8B5A2B',     // Copper/bronze
-    ctaText: '#FDF8F0'        // Light text
-  };
+  const colors = EMAIL_COLORS;
 
   return `
 <!DOCTYPE html>
