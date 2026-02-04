@@ -13,7 +13,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import BuildIcon from '@mui/icons-material/Build';
 import MaterialIcon from '../common/MaterialIcon';
-import { getMaterialName, getSlotLabel } from '../../utils/translationHelpers';
+import { getMaterialDescription, getMaterialName, getSlotLabel } from '../../utils/translationHelpers';
 
 /**
  * BuildPopup Component
@@ -229,6 +229,8 @@ export default function BuildPopup({
 
   const SLOT_SIZE = 72;
   const MATERIAL_ICON_SIZE = 36;
+  const buildMaterial = rules.materials?.find(m => m.id === itemType);
+  const materialDescription = getMaterialDescription(itemType, buildMaterial?.description);
 
   return (
     <Dialog
@@ -296,6 +298,12 @@ export default function BuildPopup({
             </Box>
           )}
         </Box>
+
+        {materialDescription && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+            {materialDescription}
+          </Typography>
+        )}
 
         {/* Component Slots Section */}
         <Typography variant="subtitle2" gutterBottom>

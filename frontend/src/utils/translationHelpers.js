@@ -38,6 +38,24 @@ export function getRecipeName(recipeId, fallbackName = null) {
 }
 
 /**
+ * Get the translated description for a material
+ * @param {string} materialId - The material ID
+ * @param {string} fallbackDescription - The fallback description if no translation exists
+ * @returns {string} The translated description or fallback (empty string if none)
+ */
+export function getMaterialDescription(materialId, fallbackDescription = '') {
+  if (!materialId) return fallbackDescription || '';
+  const key = `materialDescriptions.${materialId}`;
+  const translated = i18n.t(key, { defaultValue: '' });
+
+  if (translated && translated !== key) {
+    return translated;
+  }
+
+  return fallbackDescription || '';
+}
+
+/**
  * Get the translated label for a build slot
  * @param {string} slotLabel - The slot label (e.g., 'Furnace Base', 'Work Surface')
  * @returns {string} The translated label or original

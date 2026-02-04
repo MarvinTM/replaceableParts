@@ -17,7 +17,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import MaterialIcon from '../common/MaterialIcon';
 import useGameStore from '../../stores/gameStore';
-import { getMaterialName } from '../../utils/translationHelpers';
+import { getMaterialDescription, getMaterialName } from '../../utils/translationHelpers';
 
 // Age colors for chips
 const AGE_COLORS = {
@@ -69,6 +69,11 @@ export default function PrototypeBuildPopup({
     const material = rules.materials.find(m => m.id === outputId);
     return { outputId, qty, material };
   }, [recipe, rules]);
+
+  const materialDescription = getMaterialDescription(
+    outputInfo?.outputId,
+    outputInfo?.material?.description
+  );
 
   // Calculate effective inventory (current inventory minus locally allocated)
   const effectiveInventory = useMemo(() => {
@@ -392,7 +397,7 @@ export default function PrototypeBuildPopup({
 
         {/* Description Placeholder */}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-          {outputInfo.material?.description || t('research.descriptionComingSoon', 'Description coming soon...')}
+          {materialDescription || t('research.descriptionComingSoon', 'Description coming soon...')}
         </Typography>
 
         <Divider sx={{ mb: 2 }} />
