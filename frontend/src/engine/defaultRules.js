@@ -920,7 +920,7 @@ export const defaultRules = {
       name: "Carpenter's Bench",
       sizeX: 1, sizeY: 2,
       energyConsumption: 1,
-      animation: { frames: 4, speed: 0.1 },
+      animation: { frames: 4, speed: 0.03 },
       disableAutoScale: true,
       spriteScale:1.25,
       allowedRecipes: [
@@ -1199,7 +1199,7 @@ export const defaultRules = {
       name: 'Thermal Generator',
       sizeX: 3, sizeY: 6,
       energyOutput: 5,
-      animation: { frames: 4, speed: 0.05, separateFrames: true },
+      animation: { frames: 4, speed: 0.02, separateFrames: true },
       disableAutoScale: true,
       fuelRequirement: { materialId: 'wood', consumptionRate: 1 }
     },
