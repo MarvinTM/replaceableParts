@@ -163,6 +163,19 @@ const ROTATION_DURATION_MS = 500;
 // Brief pause before filling starts (kept inside the tick duration)
 const PAUSE_DURATION_FRACTION = 0.15;
 
+const COLOR_CYCLE = [
+  { gearIndex: 1, colorIndex: 0 }, // tick 1: right gear, color 1
+  { gearIndex: 0, colorIndex: 0 }, // tick 2: left gear, color 1
+  { gearIndex: 0, colorIndex: 1 }, // tick 3: left gear, color 2
+  { gearIndex: 1, colorIndex: 1 }, // tick 4: right gear, color 2
+];
+
+function getCycleForTick(tickNumber) {
+  const safeTick = Math.max(1, tickNumber);
+  const index = (safeTick - 1) % COLOR_CYCLE.length;
+  return COLOR_CYCLE[index];
+}
+
 /**
  * TickProgressIndicator - Shows simulation progress with a mechanical gear
  * that fills up and rotates when a tick completes
@@ -172,16 +185,18 @@ export default function TickProgressIndicator() {
   const isRunning = useGameStore(state => state.isRunning);
   const currentSpeed = useGameStore(state => state.currentSpeed);
   const tick = useGameStore(state => state.engineState?.tick);
-  const initialGearIndex = (tick ?? 0) % 2;
+  const initialCycle = getCycleForTick((tick ?? 0) + 1);
 
   // Use a single state object to prevent race conditions between updates
   const [animState, setAnimState] = useState(() => ({
     rotation: 0,
     phase: 'filling', // 'filling' | 'rotating' | 'pausing'
-    activeGearIndex: initialGearIndex, // 0 = left gear, 1 = right gear
-    leftProgress: initialGearIndex === 0 ? 0 : 100,
-    rightProgress: initialGearIndex === 0 ? 100 : 0,
-    filledDuringRotation: false,
+    activeGearIndex: initialCycle.gearIndex, // 0 = left gear, 1 = right gear
+    activeColorIndex: initialCycle.colorIndex, // 0 = color1, 1 = color2
+    leftProgress: 0,
+    rightProgress: 0,
+    leftColorIndex: 1, // start with color2
+    rightColorIndex: 1, // start with color2
   }));
 
   const lastTickRef = useRef(tick);
@@ -190,7 +205,6 @@ export default function TickProgressIndicator() {
   const animationRef = useRef(null);
   const startTimeRef = useRef(null);
   const rotationTimeoutRef = useRef(null);
-  const hasCompletedRotationRef = useRef(false);
   // Use a ref to track phase for the animation loop (avoids stale closure)
   const phaseRef = useRef('filling');
 
@@ -205,10 +219,9 @@ export default function TickProgressIndicator() {
   useEffect(() => {
     if (tick !== lastTickRef.current && tick !== undefined) {
       const prevTick = lastTickRef.current ?? 0;
-      const prevGearIndex = prevTick % 2;
+      const prevCycle = getCycleForTick(prevTick + 1);
+      const nextCycle = getCycleForTick(tick + 1);
       lastTickRef.current = tick;
-      const isFirstRotation = !hasCompletedRotationRef.current;
-      hasCompletedRotationRef.current = true;
 
       const tickDuration = getTickDuration();
       lastTickTimeRef.current = Date.now();
@@ -230,29 +243,26 @@ export default function TickProgressIndicator() {
       setAnimState(prev => ({
         rotation: prev.rotation + ROTATION_PER_TICK,
         phase: 'rotating',
-        activeGearIndex: prevGearIndex,
-        leftProgress: isFirstRotation
-          ? (prevGearIndex === 0 ? 100 : prev.leftProgress)
-          : 100,
-        rightProgress: isFirstRotation
-          ? (prevGearIndex === 1 ? 100 : prev.rightProgress)
-          : 100,
-        filledDuringRotation: !isFirstRotation,
+        activeGearIndex: prevCycle.gearIndex,
+        activeColorIndex: prevCycle.colorIndex,
+        leftProgress: 0,
+        rightProgress: 0,
+        leftColorIndex: prevCycle.gearIndex === 0 ? prevCycle.colorIndex : prev.leftColorIndex,
+        rightColorIndex: prevCycle.gearIndex === 1 ? prevCycle.colorIndex : prev.rightColorIndex,
       }));
 
       // After rotation animation completes, pause while still full, then reset and start filling
       rotationTimeoutRef.current = setTimeout(() => {
-        const nextGearIndex = tick % 2;
         const pauseDuration = tickDuration * PAUSE_DURATION_FRACTION;
         phaseRef.current = 'pausing';
         startTimeRef.current = null;
         setAnimState(prev => ({
           ...prev,
           phase: 'pausing',
-          activeGearIndex: nextGearIndex,
-          leftProgress: isFirstRotation ? prev.leftProgress : 100,
-          rightProgress: isFirstRotation ? prev.rightProgress : 100,
-          filledDuringRotation: !isFirstRotation,
+          activeGearIndex: nextCycle.gearIndex,
+          activeColorIndex: nextCycle.colorIndex,
+          leftProgress: 0,
+          rightProgress: 0,
         }));
 
         rotationTimeoutRef.current = setTimeout(() => {
@@ -261,9 +271,10 @@ export default function TickProgressIndicator() {
           setAnimState(prev => ({
             ...prev,
             phase: 'filling',
-            activeGearIndex: nextGearIndex,
-            leftProgress: nextGearIndex === 0 ? 0 : 100,
-            rightProgress: nextGearIndex === 1 ? 0 : 100,
+            activeGearIndex: nextCycle.gearIndex,
+            activeColorIndex: nextCycle.colorIndex,
+            leftProgress: 0,
+            rightProgress: 0,
           }));
         }, pauseDuration);
       }, ROTATION_DURATION_MS);
@@ -274,14 +285,17 @@ export default function TickProgressIndicator() {
   useEffect(() => {
     // Don't animate if not running
     if (!isRunning) {
-      const currentGearIndex = (tick ?? 0) % 2;
+      const currentCycle = getCycleForTick((tick ?? 0) + 1);
       phaseRef.current = 'filling';
       setAnimState(prev => ({
         ...prev,
         phase: 'filling',
-        activeGearIndex: currentGearIndex,
+        activeGearIndex: currentCycle.gearIndex,
+        activeColorIndex: currentCycle.colorIndex,
         leftProgress: 0,
         rightProgress: 0,
+        leftColorIndex: 1,
+        rightColorIndex: 1,
       }));
       startTimeRef.current = null;
       nextTickTimeRef.current = null;
@@ -332,9 +346,9 @@ export default function TickProgressIndicator() {
         // Double-check we're still in filling phase
         if (prev.phase === 'rotating') return prev;
         if (prev.activeGearIndex === 0) {
-          return { ...prev, leftProgress: newProgress };
+          return { ...prev, leftProgress: newProgress, rightProgress: 0 };
         }
-        return { ...prev, rightProgress: newProgress };
+        return { ...prev, rightProgress: newProgress, leftProgress: 0 };
       });
 
       if (newProgress < 100 && isRunning && phaseRef.current === 'filling') {
@@ -364,9 +378,17 @@ export default function TickProgressIndicator() {
     };
   }, []);
 
-  const { rotation, phase, leftProgress, rightProgress, filledDuringRotation } = animState;
-  const leftGearProgress = phase === 'rotating' && filledDuringRotation ? 100 : leftProgress;
-  const rightGearProgress = phase === 'rotating' && filledDuringRotation ? 100 : rightProgress;
+  const {
+    rotation,
+    leftProgress,
+    rightProgress,
+    leftColorIndex,
+    rightColorIndex,
+    activeGearIndex,
+    activeColorIndex,
+  } = animState;
+  const leftGearProgress = leftProgress;
+  const rightGearProgress = rightProgress;
   const leftGearRotation = rotation;
   const rightGearRotation = -rotation;
   const gearSize = 28;
@@ -374,10 +396,16 @@ export default function TickProgressIndicator() {
   const gearOffsetY = Math.round(gearSize * 0.15);
 
   // Colors based on speed
-  const fillColor = currentSpeed === 'fast'
+  const color1 = currentSpeed === 'fast'
     ? theme.palette.warning.main
     : theme.palette.primary.main;
-  const backgroundColor = theme.palette.action.hover;
+  const color2 = theme.palette.secondary.light;
+  const gearColors = [color1, color2];
+  const leftBaseColor = gearColors[leftColorIndex] ?? color2;
+  const rightBaseColor = gearColors[rightColorIndex] ?? color2;
+  const activeFillColor = gearColors[activeColorIndex] ?? color1;
+  const leftFillColor = activeGearIndex === 0 ? activeFillColor : leftBaseColor;
+  const rightFillColor = activeGearIndex === 1 ? activeFillColor : rightBaseColor;
   const accentColor = currentSpeed === 'fast'
     ? theme.palette.warning.dark
     : theme.palette.primary.dark;
@@ -396,8 +424,8 @@ export default function TickProgressIndicator() {
             size={gearSize}
             progress={0}
             rotation={leftGearRotation}
-            fillColor={fillColor}
-            backgroundColor={backgroundColor}
+            fillColor={leftBaseColor}
+            backgroundColor={leftBaseColor}
             accentColor={theme.palette.text.disabled}
           />
         </Box>
@@ -406,8 +434,8 @@ export default function TickProgressIndicator() {
             size={gearSize}
             progress={0}
             rotation={rightGearRotation}
-            fillColor={fillColor}
-            backgroundColor={backgroundColor}
+            fillColor={rightBaseColor}
+            backgroundColor={rightBaseColor}
             accentColor={theme.palette.text.disabled}
           />
         </Box>
@@ -428,8 +456,8 @@ export default function TickProgressIndicator() {
           size={gearSize}
           progress={leftGearProgress}
           rotation={leftGearRotation}
-          fillColor={fillColor}
-          backgroundColor={backgroundColor}
+          fillColor={leftFillColor}
+          backgroundColor={leftBaseColor}
           accentColor={accentColor}
         />
       </Box>
@@ -438,8 +466,8 @@ export default function TickProgressIndicator() {
           size={gearSize}
           progress={rightGearProgress}
           rotation={rightGearRotation}
-          fillColor={fillColor}
-          backgroundColor={backgroundColor}
+          fillColor={rightFillColor}
+          backgroundColor={rightBaseColor}
           accentColor={accentColor}
         />
       </Box>
