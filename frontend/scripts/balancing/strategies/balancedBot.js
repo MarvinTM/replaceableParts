@@ -15,6 +15,11 @@ export class BalancedBot extends BaseStrategy {
     this.sellThreshold = params.sellThreshold ?? 3;  // Sell when we have > N of an item
     this.researchBudgetRatio = params.researchBudgetRatio ?? 0.2;  // Spend 20% on research
     this.minCreditsBuffer = params.minCreditsBuffer ?? 50;  // Keep some credits in reserve
+    this.buildCooldownTicks = params.buildCooldownTicks ?? 100;
+    this.maxMachines = params.maxMachines ?? null;  // null = no hard cap
+    this.maxUndeployedMachines = params.maxUndeployedMachines ?? 8;
+    this.maxUndeployedGenerators = params.maxUndeployedGenerators ?? 3;
+    this.maxPrototypeBacklog = params.maxPrototypeBacklog ?? 8;
 
     // State tracking
     this.lastResearchDonation = 0;
@@ -86,32 +91,35 @@ export class BalancedBot extends BaseStrategy {
     const actions = [];
 
     // Don't build too frequently
-    if (sim.currentTick - this.lastBuild < 100) {
+    if (sim.currentTick - this.lastBuild < this.buildCooldownTicks) {
       return actions;
     }
 
-    // Check if we need more machines (have materials but few machines)
-    const totalMachines = state.machines.length +
-      Object.values(state.builtMachines || {}).reduce((a, b) => a + b, 0);
+    const builtMachineCount = Object.values(state.builtMachines || {}).reduce((a, b) => a + b, 0);
+    const builtGeneratorCount = Object.values(state.builtGenerators || {}).reduce((a, b) => a + b, 0);
+    const totalMachines = state.machines.length + builtMachineCount;
 
     // Try to build generators first if we need power
     const potentialEnergyNeed = this.calculatePotentialEnergyNeed(state, rules);
-    if (state.energy.produced < potentialEnergyNeed + 5) {
-      const genAction = this.tryBuildGenerator(state, rules);
+    const needsMorePower = state.energy.produced < potentialEnergyNeed + 5;
+    if (needsMorePower && builtGeneratorCount < this.maxUndeployedGenerators) {
+      const genAction = this.tryBuildGenerator(sim);
       if (genAction) {
         actions.push(genAction);
-        this.lastBuild = sim.currentTick;
-        return actions;
       }
     }
 
-    // Build machines if we have capacity and materials
-    if (totalMachines < 20) {  // Cap at 20 machines
-      const machineAction = this.tryBuildMachine(state, rules);
+    // Build machines if under configured cap and not already overstocked in undeployed pool
+    const underMachineCap = this.maxMachines === null || totalMachines < this.maxMachines;
+    if (underMachineCap && builtMachineCount < this.maxUndeployedMachines) {
+      const machineAction = this.tryBuildMachine(sim);
       if (machineAction) {
         actions.push(machineAction);
-        this.lastBuild = sim.currentTick;
       }
+    }
+
+    if (actions.length > 0) {
+      this.lastBuild = sim.currentTick;
     }
 
     return actions;
@@ -132,57 +140,164 @@ export class BalancedBot extends BaseStrategy {
     return need;
   }
 
-  tryBuildGenerator(state, rules) {
-    // Find a generator we can build
+  tryBuildGenerator(sim) {
+    const { state, rules } = sim;
+    const candidates = [];
     for (const genConfig of rules.generators) {
       const recipe = rules.generatorRecipes?.[genConfig.id];
       if (!recipe?.slots) continue;
+      if (!this.canBuildFromSlots(state, recipe.slots)) continue;
+      if (!this.canSustainGenerator(state, rules, genConfig)) continue;
 
-      // Check if we have all materials
-      let canBuild = true;
-      for (const slot of recipe.slots) {
-        const have = state.inventory[slot.material] || 0;
-        if (have < slot.quantity) {
-          canBuild = false;
-          break;
-        }
-      }
+      const deployedCount = state.generators.filter(g => g.type === genConfig.id).length;
+      const builtCount = state.builtGenerators?.[genConfig.id] || 0;
+      const totalCount = deployedCount + builtCount;
+      const footprint = (genConfig.sizeX || 3) * (genConfig.sizeY || 3);
+      const noFuelBonus = genConfig.fuelRequirement ? 0 : 40;
+      const fuelSurplus = this.getFuelSurplusForGenerator(state, rules, genConfig);
 
-      if (canBuild) {
-        return {
-          type: 'BUILD_GENERATOR',
-          payload: { generatorType: genConfig.id }
-        };
-      }
+      const score =
+        (genConfig.energyOutput || 0) * 2 +
+        noFuelBonus +
+        Math.max(-20, Math.min(20, fuelSurplus * 5)) -
+        totalCount * 60 -
+        footprint * 0.3;
+
+      candidates.push({
+        score,
+        generatorType: genConfig.id,
+      });
     }
-    return null;
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    return {
+      type: 'BUILD_GENERATOR',
+      payload: { generatorType: candidates[0].generatorType }
+    };
   }
 
-  tryBuildMachine(state, rules) {
-    // Prioritize machines that can produce what we need
-    // For now, just build any machine we can afford
+  tryBuildMachine(sim) {
+    const { state, rules } = sim;
+    const unlockedSet = new Set(state.unlockedRecipes || []);
+    const recipeById = new Map(rules.recipes.map(recipe => [recipe.id, recipe]));
+    const materialById = new Map(rules.materials.map(material => [material.id, material]));
+    const prototypeNeeds = this.getPrototypeMaterialNeeds(state);
+    const candidates = [];
+
     for (const machineConfig of rules.machines) {
       const recipe = rules.machineRecipes?.[machineConfig.id];
       if (!recipe?.slots) continue;
+      if (!this.canBuildFromSlots(state, recipe.slots)) continue;
 
-      // Check if we have all materials
-      let canBuild = true;
-      for (const slot of recipe.slots) {
-        const have = state.inventory[slot.material] || 0;
-        if (have < slot.quantity) {
-          canBuild = false;
-          break;
+      const deployedCount = state.machines.filter(m => m.type === machineConfig.id).length;
+      const builtCount = state.builtMachines?.[machineConfig.id] || 0;
+      const totalCount = deployedCount + builtCount;
+      const allowedRecipes = machineConfig.allowedRecipes || [];
+      const unlockedAllowedRecipes = allowedRecipes.filter(recipeId => unlockedSet.has(recipeId));
+
+      let prototypeCoverage = 0;
+      let finalCoverage = 0;
+      for (const allowedRecipeId of unlockedAllowedRecipes) {
+        const allowedRecipe = recipeById.get(allowedRecipeId);
+        if (!allowedRecipe) continue;
+        const outputs = Object.keys(allowedRecipe.outputs || {});
+
+        for (const outputId of outputs) {
+          if (prototypeNeeds[outputId] > 0) {
+            prototypeCoverage++;
+            break;
+          }
+        }
+
+        for (const outputId of outputs) {
+          if (materialById.get(outputId)?.category === 'final') {
+            finalCoverage++;
+            break;
+          }
         }
       }
 
-      if (canBuild) {
-        return {
-          type: 'BUILD_MACHINE',
-          payload: { machineType: machineConfig.id }
-        };
+      const score =
+        prototypeCoverage * 500 +
+        finalCoverage * 50 +
+        unlockedAllowedRecipes.length * 3 -
+        totalCount * 80;
+
+      candidates.push({
+        score,
+        machineType: machineConfig.id,
+      });
+    }
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    return {
+      type: 'BUILD_MACHINE',
+      payload: { machineType: candidates[0].machineType }
+    };
+  }
+
+  canBuildFromSlots(state, slots) {
+    const required = {};
+    for (const slot of slots) {
+      const quantity = slot.quantity || 1;
+      required[slot.material] = (required[slot.material] || 0) + quantity;
+    }
+
+    for (const [materialId, needed] of Object.entries(required)) {
+      if ((state.inventory[materialId] || 0) < needed) {
+        return false;
       }
     }
-    return null;
+
+    return true;
+  }
+
+  getFuelSurplusForGenerator(state, rules, genConfig) {
+    if (!genConfig.fuelRequirement) return 0;
+
+    const fuelType = genConfig.fuelRequirement.materialId;
+    const fuelExtraction = state.extractionNodes
+      .filter(node => node.active && node.resourceType === fuelType)
+      .reduce((sum, node) => sum + node.rate, 0);
+
+    let currentFuelConsumption = 0;
+    for (const generator of state.generators) {
+      const existingGenConfig = rules.generators.find(g => g.id === generator.type);
+      if (existingGenConfig?.fuelRequirement?.materialId === fuelType) {
+        currentFuelConsumption += existingGenConfig.fuelRequirement.consumptionRate || 1;
+      }
+    }
+
+    return fuelExtraction - currentFuelConsumption;
+  }
+
+  canSustainGenerator(state, rules, genConfig) {
+    if (!genConfig.fuelRequirement) return true;
+    const fuelConsumption = genConfig.fuelRequirement.consumptionRate || 1;
+    return this.getFuelSurplusForGenerator(state, rules, genConfig) >= fuelConsumption;
+  }
+
+  getPrototypeMaterialNeeds(state) {
+    const needs = {};
+    for (const prototype of state.research?.awaitingPrototype || []) {
+      if (prototype.mode !== 'slots' || !prototype.slots) continue;
+      for (const slot of prototype.slots) {
+        if (slot.isRaw) continue;
+        const remaining = (slot.quantity || 0) - (slot.filled || 0);
+        if (remaining > 0) {
+          needs[slot.material] = (needs[slot.material] || 0) + remaining;
+        }
+      }
+    }
+    return needs;
   }
 
   decideDeployment(sim) {
@@ -259,10 +374,9 @@ export class BalancedBot extends BaseStrategy {
             }
           }
 
-          // Only deploy if we have enough fuel surplus (need 2x the new consumption for production)
+          // Only deploy if we can sustain current + new fuel demand
           const fuelSurplus = fuelExtraction - currentFuelConsumption;
-          if (fuelSurplus < fuelConsumption * 2) {
-            // Not enough fuel surplus - skip this generator to avoid starving production
+          if (fuelSurplus < fuelConsumption) {
             continue;
           }
         }
@@ -287,11 +401,21 @@ export class BalancedBot extends BaseStrategy {
 
     // Build recipe priority map
     const recipePriority = this.buildRecipePriority(rules);
+    const prototypeNeeds = this.getPrototypeMaterialNeeds(state);
 
     // Build map of what we're already producing
     const currentlyProducing = new Set(
       state.machines.filter(m => m.recipeId).map(m => m.recipeId)
     );
+
+    // If we have prototype backlogs, periodically force production toward missing prototype materials
+    if (sim.currentTick % 25 === 0) {
+      const prototypeAction = this.tryReassignForPrototype(sim, rules, currentlyProducing);
+      if (prototypeAction) {
+        actions.push(prototypeAction);
+        return actions;
+      }
+    }
 
     // Check if we should reassign any machine to make a final good
     // Do this frequently (every 50 ticks) to keep production flowing
@@ -366,6 +490,13 @@ export class BalancedBot extends BaseStrategy {
         const producesNew = outputIds.some(id => !currentOutputs.has(id));
         if (producesNew) {
           score += 30;
+        }
+
+        // Strong bonus for producing materials needed by active prototypes
+        for (const outputId of outputIds) {
+          if (prototypeNeeds[outputId] > 0) {
+            score += 250 + Math.min(120, prototypeNeeds[outputId] * 4);
+          }
         }
 
         return { recipeId, score };
@@ -541,8 +672,11 @@ export class BalancedBot extends BaseStrategy {
       }
     }
 
-    // Run experiment if we have enough RP
-    if (state.research.researchPoints >= experimentCost) {
+    const prototypeBacklog = state.research.awaitingPrototype?.length || 0;
+
+    // Run experiment if we have enough RP and prototype backlog is manageable
+    if (state.research.researchPoints >= experimentCost &&
+        prototypeBacklog < this.maxPrototypeBacklog) {
       actions.push({
         type: 'RUN_EXPERIMENT',
         payload: { age: currentAge }
@@ -584,11 +718,12 @@ export class BalancedBot extends BaseStrategy {
 
     const affordable = getAffordableOptions(sim);
 
-    // Expand floor if we can't place more machines
+    // Expand floor if we cannot place at least one undeployed structure using its real size
     const hasUndeployedMachines = Object.values(state.builtMachines || {}).some(c => c > 0);
     const hasUndeployedGenerators = Object.values(state.builtGenerators || {}).some(c => c > 0);
+    const needsSpace = this.hasUnplaceableUndeployedStructure(sim);
 
-    if ((hasUndeployedMachines || hasUndeployedGenerators) && !this.findPlacement(sim, 3, 3)) {
+    if ((hasUndeployedMachines || hasUndeployedGenerators) && needsSpace) {
       if (affordable.canExpandFloor && state.credits > affordable.floorCost + this.minCreditsBuffer) {
         actions.push({
           type: 'BUY_FLOOR_SPACE',
@@ -598,6 +733,107 @@ export class BalancedBot extends BaseStrategy {
     }
 
     return actions;
+  }
+
+  hasUnplaceableUndeployedStructure(sim) {
+    const { state, rules } = sim;
+    const structuresToPlace = [];
+
+    for (const [machineType, count] of Object.entries(state.builtMachines || {})) {
+      if (count <= 0) continue;
+      const machineConfig = rules.machines.find(machine => machine.id === machineType);
+      if (!machineConfig) continue;
+      for (let i = 0; i < count; i++) {
+        structuresToPlace.push({
+          sizeX: machineConfig.sizeX || 3,
+          sizeY: machineConfig.sizeY || 3,
+        });
+      }
+    }
+
+    for (const [generatorType, count] of Object.entries(state.builtGenerators || {})) {
+      if (count <= 0) continue;
+      const generatorConfig = rules.generators.find(generator => generator.id === generatorType);
+      if (!generatorConfig) continue;
+      for (let i = 0; i < count; i++) {
+        structuresToPlace.push({
+          sizeX: generatorConfig.sizeX || 3,
+          sizeY: generatorConfig.sizeY || 3,
+        });
+      }
+    }
+
+    if (structuresToPlace.length === 0) {
+      return false;
+    }
+
+    // Place larger structures first to avoid false positives from fragmentation.
+    structuresToPlace.sort((a, b) => (b.sizeX * b.sizeY) - (a.sizeX * a.sizeY));
+
+    const occupied = this.getOccupiedCellsForPlanning(state, rules);
+    for (const structure of structuresToPlace) {
+      const position = this.findPlacementWithOccupied(
+        state.floorSpace,
+        occupied,
+        structure.sizeX,
+        structure.sizeY
+      );
+      if (!position) {
+        return true;
+      }
+      this.markOccupiedCells(occupied, position.x, position.y, structure.sizeX, structure.sizeY);
+    }
+
+    return false;
+  }
+
+  getOccupiedCellsForPlanning(state, rules) {
+    const occupied = new Set();
+    for (const placement of state.floorSpace.placements || []) {
+      let sizeX = 3;
+      let sizeY = 3;
+      const machineConfig = rules.machines.find(machine => machine.id === placement.structureType);
+      if (machineConfig) {
+        sizeX = machineConfig.sizeX || 3;
+        sizeY = machineConfig.sizeY || 3;
+      } else {
+        const generatorConfig = rules.generators.find(generator => generator.id === placement.structureType);
+        if (generatorConfig) {
+          sizeX = generatorConfig.sizeX || 3;
+          sizeY = generatorConfig.sizeY || 3;
+        }
+      }
+
+      this.markOccupiedCells(occupied, placement.x, placement.y, sizeX, sizeY);
+    }
+    return occupied;
+  }
+
+  markOccupiedCells(occupied, x, y, sizeX, sizeY) {
+    for (let dx = 0; dx < sizeX; dx++) {
+      for (let dy = 0; dy < sizeY; dy++) {
+        occupied.add(`${x + dx},${y + dy}`);
+      }
+    }
+  }
+
+  findPlacementWithOccupied(floorSpace, occupied, width, height) {
+    for (let y = 0; y < floorSpace.height - height + 1; y++) {
+      for (let x = 0; x < floorSpace.width - width + 1; x++) {
+        let fits = true;
+        for (let dx = 0; dx < width && fits; dx++) {
+          for (let dy = 0; dy < height && fits; dy++) {
+            if (occupied.has(`${x + dx},${y + dy}`)) {
+              fits = false;
+            }
+          }
+        }
+        if (fits) {
+          return { x, y };
+        }
+      }
+    }
+    return null;
   }
 
   /**
@@ -803,6 +1039,47 @@ export class BalancedBot extends BaseStrategy {
               }
             }
           }
+        }
+      }
+    }
+
+    return null;
+  }
+
+  tryReassignForPrototype(sim, rules, currentlyProducing) {
+    const { state } = sim;
+    const prototypeNeeds = this.getPrototypeMaterialNeeds(state);
+    const neededMaterials = Object.entries(prototypeNeeds)
+      .sort((a, b) => b[1] - a[1]);
+
+    if (neededMaterials.length === 0) {
+      return null;
+    }
+
+    const unlockedSet = new Set(state.unlockedRecipes || []);
+    const candidateMachines = [...state.machines]
+      .filter(machine => machine.enabled && machine.status !== 'blocked')
+      .sort((a, b) => (a.recipeId ? 1 : 0) - (b.recipeId ? 1 : 0)); // Prefer idle machines
+
+    for (const [neededMaterial] of neededMaterials) {
+      const producerRecipes = rules.recipes
+        .filter(recipe =>
+          unlockedSet.has(recipe.id) &&
+          Object.prototype.hasOwnProperty.call(recipe.outputs || {}, neededMaterial)
+        )
+        .sort((a, b) => (a.ticksToComplete || 10) - (b.ticksToComplete || 10));
+
+      for (const producerRecipe of producerRecipes) {
+        if (!this.canProduceRecipe(producerRecipe, state, rules, currentlyProducing)) continue;
+
+        for (const machine of candidateMachines) {
+          if (machine.recipeId === producerRecipe.id) continue;
+          const machineConfig = rules.machines.find(m => m.id === machine.type);
+          if (!machineConfig?.allowedRecipes?.includes(producerRecipe.id)) continue;
+          return {
+            type: 'ASSIGN_RECIPE',
+            payload: { machineId: machine.id, recipeId: producerRecipe.id }
+          };
         }
       }
     }
