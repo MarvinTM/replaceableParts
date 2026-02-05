@@ -48,7 +48,102 @@ export function generateTextReport(summary, config = {}) {
   lines.push(`  Net: ${(summary.totalCreditsEarned - summary.totalCreditsSpent).toLocaleString()}`);
   lines.push(`  Avg Income Rate: ${summary.avgIncomeRate} credits/tick`);
   lines.push(`  Peak Income: ${summary.peakIncome.toLocaleString()} credits (window at tick ${summary.peakIncomeTick})`);
+  if (summary.peakCredits) {
+    lines.push(`  Peak Credits Held: ${summary.peakCredits.toLocaleString()} (at tick ${summary.peakCreditsTick})`);
+  }
   lines.push('');
+
+  // Spending Breakdown (NEW)
+  if (summary.spending) {
+    lines.push('-'.repeat(40));
+    lines.push('SPENDING BREAKDOWN');
+    lines.push('-'.repeat(40));
+    lines.push(`  Total Tracked Spending: ${summary.spending.total.toLocaleString()}`);
+    const categories = [
+      ['nodeUnlock', 'Node Unlocks'],
+      ['researchDonation', 'Research (credits)'],
+      ['floorExpansion', 'Floor Expansion'],
+      ['mapExploration', 'Map Exploration'],
+      ['inventoryUpgrade', 'Inventory Upgrades'],
+    ];
+    for (const [key, label] of categories) {
+      const amount = summary.spending.byCategory[key] || 0;
+      const pct = summary.spending.percentages[key] || 0;
+      if (amount > 0) {
+        lines.push(`  ${label}: ${amount.toLocaleString()} (${pct}%)`);
+      }
+    }
+    lines.push('');
+  }
+
+  // Expansion Metrics (NEW)
+  if (summary.expansion) {
+    lines.push('-'.repeat(40));
+    lines.push('EXPANSION');
+    lines.push('-'.repeat(40));
+    lines.push(`  Floor Expansions: ${summary.expansion.floorExpansions}`);
+    if (summary.expansion.avgFloorExpansionInterval) {
+      lines.push(`  Avg Floor Expansion Interval: ${summary.expansion.avgFloorExpansionInterval} ticks`);
+    }
+    lines.push(`  Map Expansions: ${summary.expansion.mapExpansions}`);
+    lines.push(`  Node Unlocks: ${summary.expansion.nodeUnlocks}`);
+    if (summary.expansion.avgNodeUnlockInterval) {
+      lines.push(`  Avg Node Unlock Interval: ${summary.expansion.avgNodeUnlockInterval} ticks`);
+    }
+
+    // Node unlocks by type
+    const nodesByType = summary.expansion.nodeUnlocksByType || {};
+    if (Object.keys(nodesByType).length > 0) {
+      lines.push('  Nodes by Resource Type:');
+      const sorted = Object.entries(nodesByType).sort((a, b) => b[1] - a[1]);
+      for (const [type, count] of sorted.slice(0, 8)) {
+        lines.push(`    ${type}: ${count}`);
+      }
+    }
+    lines.push('');
+  }
+
+  // Research Metrics (NEW)
+  if (summary.research) {
+    lines.push('-'.repeat(40));
+    lines.push('RESEARCH');
+    lines.push('-'.repeat(40));
+    lines.push(`  Total RP Earned: ${summary.research.totalRPEarned.toLocaleString()}`);
+    lines.push(`  RP Sources:`);
+    lines.push(`    From Credit Donation: ${summary.research.rpSources.creditDonation.toLocaleString()} (${summary.research.rpSourcePercentages.creditDonation}%)`);
+    lines.push(`    From Part Donation: ${summary.research.rpSources.partDonation.toLocaleString()} (${summary.research.rpSourcePercentages.partDonation}%)`);
+    lines.push(`    From Prototype Bonus: ${summary.research.rpSources.prototypeBonus.toLocaleString()} (${summary.research.rpSourcePercentages.prototypeBonus}%)`);
+    lines.push(`  Experiments Run: ${summary.research.experimentsRun}`);
+    lines.push(`  Prototypes Completed: ${summary.research.prototypesCompleted}`);
+    if (summary.research.avgPrototypeTime) {
+      lines.push(`  Avg Prototype Completion: ${summary.research.avgPrototypeTime} ticks`);
+    }
+    lines.push(`  Discovery Boost Active: ${summary.research.discoveryBoostRatio}% of time`);
+    if (summary.research.creditsPerRecipe > 0) {
+      lines.push(`  Credits Spent Per Recipe: ${summary.research.creditsPerRecipe.toLocaleString()}`);
+    }
+    lines.push('');
+  }
+
+  // Resources (NEW)
+  if (summary.resources && Object.keys(summary.resources.finalState || {}).length > 0) {
+    lines.push('-'.repeat(40));
+    lines.push('RESOURCES (Final State)');
+    lines.push('-'.repeat(40));
+    lines.push(`  Total Extraction Rate: ${summary.resources.totalExtractionRate}/tick`);
+
+    const sorted = Object.entries(summary.resources.finalState)
+      .filter(([_, data]) => data.unlocked > 0)
+      .sort((a, b) => b[1].extractionRate - a[1].extractionRate);
+
+    if (sorted.length > 0) {
+      lines.push('  By Resource (unlocked | available | rate):');
+      for (const [type, data] of sorted.slice(0, 10)) {
+        lines.push(`    ${type}: ${data.unlocked} | ${data.available} | ${data.extractionRate}/tick`);
+      }
+    }
+    lines.push('');
+  }
 
   // Pacing
   lines.push('-'.repeat(40));
@@ -58,6 +153,33 @@ export function generateTextReport(summary, config = {}) {
   lines.push(`  Decision Interval: ${summary.decisionInterval} ticks (avg)`);
   lines.push(`  Idle Ratio: ${summary.idleRatio}%`);
   lines.push('');
+
+  // Milestones (NEW)
+  if (summary.milestones) {
+    const m = summary.milestones;
+    const milestoneList = [
+      ['firstSale', 'First Sale'],
+      ['firstNodeUnlock', 'First Node Unlock'],
+      ['firstFloorExpansion', 'First Floor Expansion'],
+      ['firstExperiment', 'First Experiment'],
+      ['firstPrototypeComplete', 'First Prototype Complete'],
+      ['firstAge2Recipe', 'First Age 2+ Recipe'],
+      ['reached1000Credits', 'Reached 1,000 Credits'],
+      ['reached10000Credits', 'Reached 10,000 Credits'],
+    ];
+
+    const reachedMilestones = milestoneList.filter(([key]) => m[key] !== null);
+
+    if (reachedMilestones.length > 0) {
+      lines.push('-'.repeat(40));
+      lines.push('MILESTONES');
+      lines.push('-'.repeat(40));
+      for (const [key, label] of reachedMilestones) {
+        lines.push(`  ${label}: tick ${m[key].toLocaleString()}`);
+      }
+      lines.push('');
+    }
+  }
 
   // Bottlenecks
   if (Object.keys(summary.bottlenecks).length > 0) {
@@ -138,9 +260,15 @@ export function compareRuns(reportA, reportB) {
   const summaryA = reportA.summary;
   const summaryB = reportB.summary;
 
-  const compare = (key, label) => {
-    const a = summaryA[key] || 0;
-    const b = summaryB[key] || 0;
+  const compare = (key, label, nested = null) => {
+    let a, b;
+    if (nested) {
+      a = summaryA[nested]?.[key] || 0;
+      b = summaryB[nested]?.[key] || 0;
+    } else {
+      a = summaryA[key] || 0;
+      b = summaryB[key] || 0;
+    }
     const diff = b - a;
     const pctChange = a !== 0 ? Math.round((diff / a) * 1000) / 10 : (b !== 0 ? Infinity : 0);
 
@@ -165,10 +293,17 @@ export function compareRuns(reportA, reportB) {
       compare('idleRatio', 'Idle Ratio %'),
       compare('decisionInterval', 'Decision Interval'),
       compare('totalActions', 'Total Actions'),
+      compare('nodeUnlocks', 'Node Unlocks', 'expansion'),
+      compare('totalRPEarned', 'Total RP Earned', 'research'),
+      compare('prototypesCompleted', 'Prototypes Completed', 'research'),
     ],
     ageUnlockComparison: {
       before: summaryA.ageUnlockTicks,
       after: summaryB.ageUnlockTicks,
+    },
+    spendingComparison: {
+      before: summaryA.spending?.byCategory || {},
+      after: summaryB.spending?.byCategory || {},
     },
   };
 }
@@ -204,6 +339,22 @@ export function printComparison(comparison) {
       const bStr = before !== undefined ? before.toLocaleString() : 'N/A';
       const aStr = after !== undefined ? after.toLocaleString() : 'N/A';
       console.log(`  Age ${age}: ${bStr} → ${aStr}`);
+    }
+  }
+
+  // Spending comparison
+  const beforeSpending = comparison.spendingComparison.before;
+  const afterSpending = comparison.spendingComparison.after;
+  if (Object.keys(beforeSpending).length > 0 || Object.keys(afterSpending).length > 0) {
+    console.log('');
+    console.log('Spending by Category:');
+    const allKeys = new Set([...Object.keys(beforeSpending), ...Object.keys(afterSpending)]);
+    for (const key of allKeys) {
+      const before = beforeSpending[key] || 0;
+      const after = afterSpending[key] || 0;
+      if (before > 0 || after > 0) {
+        console.log(`  ${key}: ${before.toLocaleString()} → ${after.toLocaleString()}`);
+      }
     }
   }
 

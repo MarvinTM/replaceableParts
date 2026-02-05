@@ -240,6 +240,33 @@ export class BalancedBot extends BaseStrategy {
         const genConfig = rules.generators.find(g => g.id === genType);
         if (!genConfig) continue;
 
+        // Check if deploying this fuel-based generator would starve production
+        if (genConfig.fuelRequirement) {
+          const fuelType = genConfig.fuelRequirement.materialId;
+          const fuelConsumption = genConfig.fuelRequirement.consumptionRate || 1;
+
+          // Calculate current fuel extraction rate
+          const fuelExtraction = state.extractionNodes
+            .filter(n => n.active && n.resourceType === fuelType)
+            .reduce((sum, n) => sum + n.rate, 0);
+
+          // Calculate current fuel consumption by existing generators
+          let currentFuelConsumption = 0;
+          for (const gen of state.generators) {
+            const existingGenConfig = rules.generators.find(g => g.id === gen.type);
+            if (existingGenConfig?.fuelRequirement?.materialId === fuelType) {
+              currentFuelConsumption += existingGenConfig.fuelRequirement.consumptionRate || 1;
+            }
+          }
+
+          // Only deploy if we have enough fuel surplus (need 2x the new consumption for production)
+          const fuelSurplus = fuelExtraction - currentFuelConsumption;
+          if (fuelSurplus < fuelConsumption * 2) {
+            // Not enough fuel surplus - skip this generator to avoid starving production
+            continue;
+          }
+        }
+
         const pos = this.findPlacement(sim, genConfig.sizeX || 3, genConfig.sizeY || 3);
         if (pos) {
           actions.push({
@@ -590,6 +617,9 @@ export class BalancedBot extends BaseStrategy {
 
     // PRIORITY 1: Unlock available nodes
     const nodeUnlockBaseCost = rules.exploration.nodeUnlockCost || 15;
+    const globalScaleFactor = rules.exploration.globalNodeScaleFactor || 1.0;
+    const totalNodes = state.extractionNodes.length;
+    const globalMultiplier = Math.pow(globalScaleFactor, totalNodes);
 
     // Find unlockable nodes - only scan explored bounds to limit iterations
     const bounds = state.explorationMap.exploredBounds;
@@ -603,8 +633,9 @@ export class BalancedBot extends BaseStrategy {
 
         const resourceType = tile.extractionNode.resourceType;
         const existingCount = state.extractionNodes.filter(n => n.resourceType === resourceType).length;
-        const scaleFactor = rules.exploration.unlockScaleFactors?.[resourceType] || 1.2;
-        const cost = Math.floor(nodeUnlockBaseCost * Math.pow(scaleFactor, existingCount));
+        const resourceScaleFactor = rules.exploration.unlockScaleFactors?.[resourceType] || 1.2;
+        // Apply both per-resource and global scaling
+        const cost = Math.floor(nodeUnlockBaseCost * Math.pow(resourceScaleFactor, existingCount) * globalMultiplier);
 
         // Can we afford it?
         if (state.credits <= cost + this.minCreditsBuffer) continue;
