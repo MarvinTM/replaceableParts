@@ -191,6 +191,35 @@ export function generateTextReport(summary, config = {}) {
       }
     }
     lines.push('');
+
+    if (summary.market.switching) {
+      lines.push('-'.repeat(40));
+      lines.push('MARKET SWITCHING');
+      lines.push('-'.repeat(40));
+      lines.push(`  Switch Count: ${summary.market.switching.switchCount.toLocaleString()}`);
+      lines.push(`  Switch Rate: ${summary.market.switching.switchRatePct}%`);
+      lines.push(`  Switches / 100 Sell Actions: ${summary.market.switching.switchesPer100SellActions}`);
+      lines.push(`  Avg Sell Streak: ${summary.market.switching.avgSellStreak} actions`);
+      lines.push(`  Max Sell Streak: ${summary.market.switching.maxSellStreak} actions`);
+      lines.push(`  Top Item Share (Units): ${summary.market.switching.topItemUnitsSharePct}%`);
+      lines.push(`  Top Item Share (Revenue): ${summary.market.switching.topItemRevenueSharePct}%`);
+      lines.push(`  Sales Concentration (Units HHI): ${summary.market.switching.unitsHHI}`);
+      lines.push(`  Sales Concentration (Revenue HHI): ${summary.market.switching.revenueHHI}`);
+
+      if (summary.market.switching.dominantItemByRevenue) {
+        lines.push(`  Dominant Item (Revenue): ${summary.market.switching.dominantItemByRevenue.itemId} (${summary.market.switching.dominantItemByRevenue.revenue.toLocaleString()})`);
+      }
+
+      const rollingWindow = summary.market.switching.rollingWindow;
+      if (rollingWindow) {
+        lines.push(`  Rolling Window: ${rollingWindow.windowTicks} ticks`);
+        lines.push(`  Rolling Avg Unique Sold Items: ${rollingWindow.avgUniqueItems}`);
+        lines.push(`  Rolling Min Unique Sold Items: ${rollingWindow.minUniqueItems}`);
+        lines.push(`  Rolling Avg Concentration (HHI): ${rollingWindow.avgConcentrationHHI}`);
+        lines.push(`  Rolling Peak Concentration (HHI): ${rollingWindow.peakConcentrationHHI}`);
+      }
+      lines.push('');
+    }
   }
 
   // Pacing

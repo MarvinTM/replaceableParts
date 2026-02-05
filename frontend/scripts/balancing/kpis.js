@@ -17,6 +17,208 @@ function safeAvg(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function round(value, decimals = 2) {
+  if (!Number.isFinite(value)) return 0;
+  const factor = Math.pow(10, decimals);
+  return Math.round(value * factor) / factor;
+}
+
+function calculateHHI(values) {
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (total <= 0) return 0;
+
+  let hhi = 0;
+  for (const value of values) {
+    const share = value / total;
+    hhi += share * share;
+  }
+  return hhi;
+}
+
+function calculateRollingSellConcentration(sellSequence, windowTicks) {
+  if (!sellSequence.length) {
+    return {
+      sampleCount: 0,
+      avgUniqueItems: 0,
+      minUniqueItems: 0,
+      avgConcentrationHHI: 0,
+      peakConcentrationHHI: 0,
+    };
+  }
+
+  const rollingUnitsByItem = new Map();
+  let totalWindowUnits = 0;
+  let windowStartIndex = 0;
+
+  let sampleCount = 0;
+  let uniqueItemTotal = 0;
+  let hhiTotal = 0;
+  let minUniqueItems = Infinity;
+  let peakConcentrationHHI = 0;
+
+  for (let i = 0; i < sellSequence.length; i++) {
+    const sale = sellSequence[i];
+    rollingUnitsByItem.set(sale.itemId, (rollingUnitsByItem.get(sale.itemId) || 0) + sale.units);
+    totalWindowUnits += sale.units;
+
+    while (windowStartIndex <= i && sellSequence[windowStartIndex].tick < (sale.tick - windowTicks + 1)) {
+      const leftSale = sellSequence[windowStartIndex];
+      const updatedUnits = (rollingUnitsByItem.get(leftSale.itemId) || 0) - leftSale.units;
+      if (updatedUnits <= 0) {
+        rollingUnitsByItem.delete(leftSale.itemId);
+      } else {
+        rollingUnitsByItem.set(leftSale.itemId, updatedUnits);
+      }
+      totalWindowUnits = Math.max(0, totalWindowUnits - leftSale.units);
+      windowStartIndex++;
+    }
+
+    const uniqueItems = rollingUnitsByItem.size;
+    const concentrationHHI = totalWindowUnits > 0
+      ? calculateHHI(Array.from(rollingUnitsByItem.values()))
+      : 0;
+
+    sampleCount++;
+    uniqueItemTotal += uniqueItems;
+    hhiTotal += concentrationHHI;
+    minUniqueItems = Math.min(minUniqueItems, uniqueItems);
+    peakConcentrationHHI = Math.max(peakConcentrationHHI, concentrationHHI);
+  }
+
+  return {
+    sampleCount,
+    avgUniqueItems: sampleCount > 0 ? uniqueItemTotal / sampleCount : 0,
+    minUniqueItems: Number.isFinite(minUniqueItems) ? minUniqueItems : 0,
+    avgConcentrationHHI: sampleCount > 0 ? hhiTotal / sampleCount : 0,
+    peakConcentrationHHI,
+  };
+}
+
+function calculateSellSwitchingMetrics(marketSales, windowTicks) {
+  const sellSequence = marketSales.sellSequence || [];
+  if (sellSequence.length === 0) {
+    return {
+      totalTransitions: 0,
+      switchCount: 0,
+      switchRatePct: 0,
+      switchesPer100SellActions: 0,
+      avgSellStreak: 0,
+      maxSellStreak: 0,
+      avgStreakUnits: 0,
+      maxStreakUnits: 0,
+      topItemUnitsSharePct: 0,
+      topItemRevenueSharePct: 0,
+      unitsHHI: 0,
+      revenueHHI: 0,
+      dominantItemByUnits: null,
+      dominantItemByRevenue: null,
+      rollingWindow: {
+        windowTicks,
+        sampleCount: 0,
+        avgUniqueItems: 0,
+        minUniqueItems: 0,
+        avgConcentrationHHI: 0,
+        peakConcentrationHHI: 0,
+      },
+    };
+  }
+
+  let switchCount = 0;
+  const streaks = [];
+  let currentStreak = {
+    itemId: sellSequence[0].itemId,
+    length: 1,
+    units: sellSequence[0].units,
+  };
+
+  for (let i = 1; i < sellSequence.length; i++) {
+    const previous = sellSequence[i - 1];
+    const current = sellSequence[i];
+
+    if (current.itemId !== previous.itemId) {
+      switchCount++;
+      streaks.push(currentStreak);
+      currentStreak = {
+        itemId: current.itemId,
+        length: 1,
+        units: current.units,
+      };
+      continue;
+    }
+
+    currentStreak.length += 1;
+    currentStreak.units += current.units;
+  }
+  streaks.push(currentStreak);
+
+  const totalTransitions = Math.max(0, sellSequence.length - 1);
+  const switchRatePct = totalTransitions > 0
+    ? (switchCount / totalTransitions) * 100
+    : 0;
+  const switchesPer100SellActions = sellSequence.length > 0
+    ? (switchCount / sellSequence.length) * 100
+    : 0;
+
+  const avgSellStreak = safeAvg(streaks.map(streak => streak.length));
+  const maxSellStreak = streaks.reduce((max, streak) => Math.max(max, streak.length), 0);
+  const avgStreakUnits = safeAvg(streaks.map(streak => streak.units));
+  const maxStreakUnits = streaks.reduce((max, streak) => Math.max(max, streak.units), 0);
+
+  const byItemEntries = Object.entries(marketSales.byItem || {});
+  const totalUnits = byItemEntries.reduce((sum, [_, item]) => sum + (item.units || 0), 0);
+  const totalRevenue = byItemEntries.reduce((sum, [_, item]) => sum + (item.revenue || 0), 0);
+  const topUnitsEntry = byItemEntries.reduce((best, entry) => {
+    if (!best || (entry[1].units || 0) > (best[1].units || 0)) return entry;
+    return best;
+  }, null);
+  const topRevenueEntry = byItemEntries.reduce((best, entry) => {
+    if (!best || (entry[1].revenue || 0) > (best[1].revenue || 0)) return entry;
+    return best;
+  }, null);
+
+  const topItemUnitsSharePct = totalUnits > 0 && topUnitsEntry
+    ? ((topUnitsEntry[1].units || 0) / totalUnits) * 100
+    : 0;
+  const topItemRevenueSharePct = totalRevenue > 0 && topRevenueEntry
+    ? ((topRevenueEntry[1].revenue || 0) / totalRevenue) * 100
+    : 0;
+
+  const unitsHHI = calculateHHI(byItemEntries.map(([_, item]) => item.units || 0));
+  const revenueHHI = calculateHHI(byItemEntries.map(([_, item]) => item.revenue || 0));
+  const rollingWindow = calculateRollingSellConcentration(sellSequence, windowTicks);
+
+  return {
+    totalTransitions,
+    switchCount,
+    switchRatePct,
+    switchesPer100SellActions,
+    avgSellStreak,
+    maxSellStreak,
+    avgStreakUnits,
+    maxStreakUnits,
+    topItemUnitsSharePct,
+    topItemRevenueSharePct,
+    unitsHHI,
+    revenueHHI,
+    dominantItemByUnits: topUnitsEntry
+      ? {
+          itemId: topUnitsEntry[0],
+          units: topUnitsEntry[1].units || 0,
+        }
+      : null,
+    dominantItemByRevenue: topRevenueEntry
+      ? {
+          itemId: topRevenueEntry[0],
+          revenue: topRevenueEntry[1].revenue || 0,
+        }
+      : null,
+    rollingWindow: {
+      windowTicks,
+      ...rollingWindow,
+    },
+  };
+}
+
 function getDiscoveredFinalGoods(state, rules) {
   const discovered = new Set();
   const discoveredRecipes = new Set(state.discoveredRecipes || []);
@@ -135,6 +337,8 @@ export function createKPITracker() {
       salesInSaturatedMarkets: 0,
       damageAdded: 0,
       byItem: {}, // { itemId: { units, revenue, sellActions } }
+      sellSequence: [], // [{ tick, itemId, units, revenue }]
+      rollingWindowTicks: null,
     },
 
     // === NEW: Spending breakdown ===
@@ -193,6 +397,10 @@ export function createKPITracker() {
  */
 export function takeSnapshot(tracker, sim) {
   const { state, rules } = sim;
+  if (!tracker.marketSales.rollingWindowTicks) {
+    const marketWindow = rules.market?.diversificationWindow || 100;
+    tracker.marketSales.rollingWindowTicks = Math.max(100, marketWindow * 2);
+  }
 
   const snapshot = {
     tick: sim.currentTick,
@@ -333,6 +541,12 @@ export function recordAction(tracker, sim, action, context = null) {
       tracker.marketSales.byItem[itemId].units += soldQty;
       tracker.marketSales.byItem[itemId].revenue += revenue;
       tracker.marketSales.byItem[itemId].sellActions++;
+      tracker.marketSales.sellSequence.push({
+        tick,
+        itemId,
+        units: soldQty,
+        revenue,
+      });
 
       // Milestone: first sale
       if (tracker.milestones.firstSale === null) {
@@ -740,6 +954,10 @@ export function calculateSummary(tracker) {
   const salesInSaturatedMarketsPct = marketSales.totalSellActions > 0
     ? (marketSales.salesInSaturatedMarkets / marketSales.totalSellActions) * 100
     : 0;
+  const marketSwitching = calculateSellSwitchingMetrics(
+    marketSales,
+    marketSales.rollingWindowTicks || 200
+  );
   const topRevenueItems = Object.entries(marketSales.byItem)
     .sort((a, b) => b[1].revenue - a[1].revenue)
     .slice(0, 5)
@@ -882,6 +1100,30 @@ export function calculateSummary(tracker) {
         salesInSaturatedMarketsPct: Math.round(salesInSaturatedMarketsPct * 10) / 10,
         totalDamageAdded: marketSales.damageAdded,
         topRevenueItems,
+      },
+      switching: {
+        totalTransitions: marketSwitching.totalTransitions,
+        switchCount: marketSwitching.switchCount,
+        switchRatePct: round(marketSwitching.switchRatePct, 1),
+        switchesPer100SellActions: round(marketSwitching.switchesPer100SellActions, 1),
+        avgSellStreak: round(marketSwitching.avgSellStreak, 2),
+        maxSellStreak: marketSwitching.maxSellStreak,
+        avgStreakUnits: round(marketSwitching.avgStreakUnits, 2),
+        maxStreakUnits: marketSwitching.maxStreakUnits,
+        topItemUnitsSharePct: round(marketSwitching.topItemUnitsSharePct, 1),
+        topItemRevenueSharePct: round(marketSwitching.topItemRevenueSharePct, 1),
+        unitsHHI: round(marketSwitching.unitsHHI, 3),
+        revenueHHI: round(marketSwitching.revenueHHI, 3),
+        dominantItemByUnits: marketSwitching.dominantItemByUnits,
+        dominantItemByRevenue: marketSwitching.dominantItemByRevenue,
+        rollingWindow: {
+          windowTicks: marketSwitching.rollingWindow.windowTicks,
+          sampleCount: marketSwitching.rollingWindow.sampleCount,
+          avgUniqueItems: round(marketSwitching.rollingWindow.avgUniqueItems, 2),
+          minUniqueItems: marketSwitching.rollingWindow.minUniqueItems,
+          avgConcentrationHHI: round(marketSwitching.rollingWindow.avgConcentrationHHI, 3),
+          peakConcentrationHHI: round(marketSwitching.rollingWindow.peakConcentrationHHI, 3),
+        },
       },
     },
 

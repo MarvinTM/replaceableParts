@@ -55,6 +55,10 @@ node scripts/balancing/runBatchSimulation.js --seeds 1,2,3,4,5 --output ./script
 | `--output PATH` | Save JSON and TXT reports to PATH | None |
 | `--verbose` | Print per-run progress | Off |
 
+Profiles:
+- `default` / `chill_v1`: tuned for "rewarding + chill" evaluation on long runs (recommended for 20k-tick batches)
+- `legacy`: older broad target bands
+
 ## Output Explained
 
 ### Progression
@@ -75,6 +79,15 @@ node scripts/balancing/runBatchSimulation.js --seeds 1,2,3,4,5 --output ./script
 ### Production
 - **Unique Items Sold**: Diversity of goods produced
 - **Top 5 Items Sold**: Most produced final goods
+
+### Market Health & Switching
+- **Time With Saturation**: % of snapshots with at least one saturated market
+- **Sales In Saturated Markets**: % of sell actions executed below popularity 1.0
+- **Sell Switch Rate**: % of transitions where consecutive sell actions switch item
+- **Avg/Max Sell Streak**: How long the bot keeps selling the same item
+- **Top Item Revenue Share**: Dominance of one final good in sales revenue
+- **Rolling Avg Unique Sold Items**: Local sell diversity in a moving tick window
+- **Rolling Avg Concentration (HHI)**: Local concentration of sales mix (higher = less diverse)
 
 ### Final State
 - Machines, generators, floor area, extraction nodes at simulation end
@@ -97,15 +110,15 @@ node scripts/balancing/runBatchSimulation.js --seeds 1,2,3,4,5 --output ./script
 
 The `balancedBot` makes decisions like a reasonable player:
 
-1. **Sells final goods** when inventory exceeds threshold (5 items)
-2. **Deploys machines** when built and space available
+1. **Sells final goods** using market-aware candidate scoring (popularity, events, obsolescence, diversity) with per-tick action caps and anti-repeat cooldowns
+2. **Builds/deploys machines and generators** while accounting for energy sustainability and undeployed inventory caps
 3. **Assigns recipes** prioritizing:
    - Recipes that can actually be produced (inputs available)
    - "Foundational" recipes used by many other recipes
-   - Diversity (new outputs over duplicates)
-4. **Reassigns recipes** every 200 ticks to produce final goods when possible
-5. **Researches** by donating credits (30% of income)
-6. **Expands floor** when machines can't be placed
+   - Prototype requirements and production diversity
+4. **Reassigns recipes** periodically toward final-goods and prototype bottlenecks
+5. **Researches** with credit donation budgets and prototype backlog limits
+6. **Expands floor/map and unlocks nodes** when progression constraints appear
 
 The bot is not optimal - it's meant to simulate typical player behavior.
 

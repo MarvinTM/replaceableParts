@@ -20,12 +20,18 @@ export class BalancedBot extends BaseStrategy {
     this.maxUndeployedMachines = params.maxUndeployedMachines ?? 8;
     this.maxUndeployedGenerators = params.maxUndeployedGenerators ?? 3;
     this.maxPrototypeBacklog = params.maxPrototypeBacklog ?? 8;
+    this.maxSellActionsPerTick = params.maxSellActionsPerTick ?? 2;
+    this.sellBatchSize = params.sellBatchSize ?? 8;
+    this.minMarketPopularityToSell = params.minMarketPopularityToSell ?? 0.85;
+    this.emergencyMinPopularityToSell = params.emergencyMinPopularityToSell ?? 0.6;
+    this.minTicksBetweenSameItemSell = params.minTicksBetweenSameItemSell ?? 20;
 
     // State tracking
     this.lastResearchDonation = 0;
     this.lastExploration = 0;
     this.lastBuild = 0;
     this.machinesDeployed = 0;
+    this.lastSellTickByItem = {};
   }
 
   decide(sim) {
@@ -68,19 +74,147 @@ export class BalancedBot extends BaseStrategy {
     const actions = [];
 
     const finalGoods = getFinalGoodsInInventory(state, rules);
+    if (finalGoods.length === 0) {
+      return actions;
+    }
 
-    for (const item of finalGoods) {
-      if (item.quantity > this.sellThreshold) {
-        // Sell everything above threshold
-        const sellQty = item.quantity - this.sellThreshold;
-        actions.push({
-          type: 'SELL_GOODS',
-          payload: { itemId: item.id, quantity: sellQty }
-        });
+    const recentSales = state.marketRecentSales || [];
+    const recentWindowStart = state.tick - (rules.market?.diversificationWindow || 100);
+    const recentSalesWindow = recentSales.filter(sale => sale.tick > recentWindowStart);
+    const recentUnique = new Set(recentSalesWindow.map(sale => sale.itemId));
+    const recentCounts = {};
+    for (const sale of recentSalesWindow) {
+      recentCounts[sale.itemId] = (recentCounts[sale.itemId] || 0) + 1;
+    }
+
+    const totalInventoryItems = Object.values(state.inventory || {}).reduce((sum, qty) => sum + qty, 0);
+    const finalGoodsUnits = finalGoods.reduce((sum, item) => sum + item.quantity, 0);
+    const inventoryPressure =
+      totalInventoryItems > (state.inventorySpace * 0.85) ||
+      finalGoodsUnits > 120;
+
+    const localRecent = new Set(recentUnique);
+    const localRecentCounts = { ...recentCounts };
+    const selectedItems = new Set();
+
+    for (let actionIndex = 0; actionIndex < this.maxSellActionsPerTick; actionIndex++) {
+      const candidate = this.selectBestSellCandidate(
+        finalGoods,
+        state,
+        rules,
+        localRecent,
+        localRecentCounts,
+        selectedItems,
+        inventoryPressure
+      );
+
+      if (!candidate) {
+        break;
       }
+
+      actions.push({
+        type: 'SELL_GOODS',
+        payload: {
+          itemId: candidate.item.id,
+          quantity: candidate.quantity
+        }
+      });
+
+      this.lastSellTickByItem[candidate.item.id] = state.tick;
+      selectedItems.add(candidate.item.id);
+      localRecent.add(candidate.item.id);
+      localRecentCounts[candidate.item.id] = (localRecentCounts[candidate.item.id] || 0) + 1;
     }
 
     return actions;
+  }
+
+  selectBestSellCandidate(finalGoods, state, rules, localRecent, localRecentCounts, selectedItems, inventoryPressure) {
+    const candidates = [];
+
+    for (const item of finalGoods) {
+      const availableToSell = item.quantity - this.sellThreshold;
+      if (availableToSell <= 0) continue;
+      if (selectedItems.has(item.id)) continue;
+
+      const popularity = state.marketPopularity?.[item.id] ?? 1.0;
+      const lastSellTick = this.lastSellTickByItem[item.id] ?? -Infinity;
+      const sellCooldownActive = (state.tick - lastSellTick) < this.minTicksBetweenSameItemSell;
+      const minPopularity = inventoryPressure ? this.emergencyMinPopularityToSell : this.minMarketPopularityToSell;
+
+      if (!inventoryPressure && sellCooldownActive) continue;
+      if (popularity < minPopularity) continue;
+
+      const eventModifier = state.marketEvents?.[item.id]?.modifier || 1.0;
+      const obsolescence = this.estimateObsolescenceMultiplier(item.material.age, state, rules);
+      const diversificationBonus = this.getDiversificationBonus(localRecent.size, rules);
+      const expectedUnitPrice = item.material.basePrice * popularity * eventModifier * obsolescence * diversificationBonus;
+      const recencyPenalty = 1 + ((localRecentCounts[item.id] || 0) * 0.6);
+      const noveltyBonus = localRecent.has(item.id) ? 0 : (expectedUnitPrice * 0.15 + 8);
+      const ageBonus = (item.material.age || 1) * 2;
+      const score = (expectedUnitPrice / recencyPenalty) + noveltyBonus + ageBonus;
+      const quantity = Math.min(availableToSell, this.getSellBatchForPopularity(popularity, inventoryPressure));
+
+      if (quantity <= 0) continue;
+
+      candidates.push({
+        item,
+        quantity,
+        score
+      });
+    }
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    return candidates[0];
+  }
+
+  getSellBatchForPopularity(popularity, inventoryPressure) {
+    if (inventoryPressure && popularity >= this.emergencyMinPopularityToSell) {
+      return Math.max(this.sellBatchSize, 12);
+    }
+    if (popularity >= 1.4) return Math.max(this.sellBatchSize, 12);
+    if (popularity >= 1.0) return this.sellBatchSize;
+    if (popularity >= 0.8) return Math.max(3, Math.floor(this.sellBatchSize / 2));
+    return 2;
+  }
+
+  getDiversificationBonus(uniqueItemsSold, rules) {
+    const bonuses = rules.market?.diversificationBonuses || {};
+    const thresholds = Object.keys(bonuses).map(Number).sort((a, b) => b - a);
+    for (const threshold of thresholds) {
+      if (uniqueItemsSold >= threshold) {
+        return bonuses[threshold];
+      }
+    }
+    return 1.0;
+  }
+
+  estimateObsolescenceMultiplier(itemAge, state, rules) {
+    if (!rules.market?.obsolescenceEnabled) return 1.0;
+    if (!itemAge || itemAge >= 7) return 1.0;
+
+    const nextAge = itemAge + 1;
+    const nextAgeFinals = rules.recipes.filter(recipe => {
+      const outputs = Object.keys(recipe.outputs || {});
+      return outputs.some(outputId => {
+        const material = rules.materials.find(m => m.id === outputId);
+        return material?.category === 'final' && material.age === nextAge;
+      });
+    });
+
+    if (nextAgeFinals.length === 0) {
+      return 1.0;
+    }
+
+    const discovered = new Set(state.discoveredRecipes || []);
+    const discoveredCount = nextAgeFinals.filter(recipe => discovered.has(recipe.id)).length;
+    const progress = discoveredCount / nextAgeFinals.length;
+    const maxDebuff = rules.market?.obsolescenceMaxDebuff || 0;
+    return 1.0 - (progress * maxDebuff);
   }
 
   /**
