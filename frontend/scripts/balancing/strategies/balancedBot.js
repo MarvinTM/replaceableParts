@@ -25,6 +25,16 @@ export class BalancedBot extends BaseStrategy {
     this.minMarketPopularityToSell = params.minMarketPopularityToSell ?? 0.85;
     this.emergencyMinPopularityToSell = params.emergencyMinPopularityToSell ?? 0.6;
     this.minTicksBetweenSameItemSell = params.minTicksBetweenSameItemSell ?? 20;
+    this.cooldownUnderPressureFactor = params.cooldownUnderPressureFactor ?? 0.75;
+    this.cooldownOverridePenalty = params.cooldownOverridePenalty ?? 45;
+    this.sellAnalysisWindowTicks = params.sellAnalysisWindowTicks ?? 220;
+    this.maxRecentSalesSharePerItem = params.maxRecentSalesSharePerItem ?? 0.55;
+    this.hardMaxRecentSalesSharePerItem = params.hardMaxRecentSalesSharePerItem ?? 0.72;
+    this.maxConsecutiveSameItemSells = params.maxConsecutiveSameItemSells ?? 2;
+    this.sameItemStreakPenalty = params.sameItemStreakPenalty ?? 30;
+    this.switchPreferenceMinRelativeScore = params.switchPreferenceMinRelativeScore ?? 0.55;
+    this.dominancePenaltyWeight = params.dominancePenaltyWeight ?? 220;
+    this.diversityBoostWeight = params.diversityBoostWeight ?? 85;
 
     // State tracking
     this.lastResearchDonation = 0;
@@ -32,6 +42,8 @@ export class BalancedBot extends BaseStrategy {
     this.lastBuild = 0;
     this.machinesDeployed = 0;
     this.lastSellTickByItem = {};
+    this.lastSoldItemId = null;
+    this.consecutiveSameItemSells = 0;
   }
 
   decide(sim) {
@@ -79,9 +91,10 @@ export class BalancedBot extends BaseStrategy {
     }
 
     const recentSales = state.marketRecentSales || [];
-    const recentWindowStart = state.tick - (rules.market?.diversificationWindow || 100);
+    const baseWindow = rules.market?.diversificationWindow || 100;
+    const analysisWindow = Math.max(baseWindow, this.sellAnalysisWindowTicks);
+    const recentWindowStart = state.tick - analysisWindow;
     const recentSalesWindow = recentSales.filter(sale => sale.tick > recentWindowStart);
-    const recentUnique = new Set(recentSalesWindow.map(sale => sale.itemId));
     const recentCounts = {};
     for (const sale of recentSalesWindow) {
       recentCounts[sale.itemId] = (recentCounts[sale.itemId] || 0) + 1;
@@ -89,12 +102,20 @@ export class BalancedBot extends BaseStrategy {
 
     const totalInventoryItems = Object.values(state.inventory || {}).reduce((sum, qty) => sum + qty, 0);
     const finalGoodsUnits = finalGoods.reduce((sum, item) => sum + item.quantity, 0);
+    const inventoryFillRatio = state.inventorySpace > 0 ? totalInventoryItems / state.inventorySpace : 0;
+    const finalGoodsPressureRatio = finalGoodsUnits / 120;
+    const pressureScore = Math.max(inventoryFillRatio, finalGoodsPressureRatio);
     const inventoryPressure =
-      totalInventoryItems > (state.inventorySpace * 0.85) ||
+      inventoryFillRatio > 0.85 ||
       finalGoodsUnits > 120;
+    const emergencyPressure =
+      inventoryFillRatio > 0.95 ||
+      finalGoodsUnits > 180 ||
+      pressureScore > 1.15;
 
-    const localRecent = new Set(recentUnique);
+    const localRecent = new Set(Object.keys(recentCounts));
     const localRecentCounts = { ...recentCounts };
+    let localRecentTotal = recentSalesWindow.length;
     const selectedItems = new Set();
 
     for (let actionIndex = 0; actionIndex < this.maxSellActionsPerTick; actionIndex++) {
@@ -104,33 +125,68 @@ export class BalancedBot extends BaseStrategy {
         rules,
         localRecent,
         localRecentCounts,
+        localRecentTotal,
         selectedItems,
-        inventoryPressure
+        inventoryPressure,
+        emergencyPressure,
+        {
+          allowCooldownOverride: false,
+        }
       );
+      const fallbackCandidate = !candidate && emergencyPressure
+        ? this.selectBestSellCandidate(
+          finalGoods,
+          state,
+          rules,
+          localRecent,
+          localRecentCounts,
+          localRecentTotal,
+          selectedItems,
+          inventoryPressure,
+          emergencyPressure,
+          {
+            allowCooldownOverride: true,
+          }
+        )
+        : candidate;
 
-      if (!candidate) {
+      if (!fallbackCandidate) {
         break;
       }
 
       actions.push({
         type: 'SELL_GOODS',
         payload: {
-          itemId: candidate.item.id,
-          quantity: candidate.quantity
+          itemId: fallbackCandidate.item.id,
+          quantity: fallbackCandidate.quantity
         }
       });
 
-      this.lastSellTickByItem[candidate.item.id] = state.tick;
-      selectedItems.add(candidate.item.id);
-      localRecent.add(candidate.item.id);
-      localRecentCounts[candidate.item.id] = (localRecentCounts[candidate.item.id] || 0) + 1;
+      this.recordSellSelection(fallbackCandidate.item.id, state.tick);
+      selectedItems.add(fallbackCandidate.item.id);
+      localRecent.add(fallbackCandidate.item.id);
+      localRecentCounts[fallbackCandidate.item.id] = (localRecentCounts[fallbackCandidate.item.id] || 0) + 1;
+      localRecentTotal++;
     }
 
     return actions;
   }
 
-  selectBestSellCandidate(finalGoods, state, rules, localRecent, localRecentCounts, selectedItems, inventoryPressure) {
+  selectBestSellCandidate(
+    finalGoods,
+    state,
+    rules,
+    localRecent,
+    localRecentCounts,
+    localRecentTotal,
+    selectedItems,
+    inventoryPressure,
+    emergencyPressure,
+    options = {}
+  ) {
     const candidates = [];
+    const allowCooldownOverride = options.allowCooldownOverride === true;
+    const requiredCooldown = this.getRequiredSellCooldownTicks(inventoryPressure, emergencyPressure);
 
     for (const item of finalGoods) {
       const availableToSell = item.quantity - this.sellThreshold;
@@ -139,28 +195,47 @@ export class BalancedBot extends BaseStrategy {
 
       const popularity = state.marketPopularity?.[item.id] ?? 1.0;
       const lastSellTick = this.lastSellTickByItem[item.id] ?? -Infinity;
-      const sellCooldownActive = (state.tick - lastSellTick) < this.minTicksBetweenSameItemSell;
+      const sellCooldownActive = (state.tick - lastSellTick) < requiredCooldown;
       const minPopularity = inventoryPressure ? this.emergencyMinPopularityToSell : this.minMarketPopularityToSell;
 
-      if (!inventoryPressure && sellCooldownActive) continue;
+      if (sellCooldownActive && !allowCooldownOverride) continue;
       if (popularity < minPopularity) continue;
+
+      const nextItemSalesCount = (localRecentCounts[item.id] || 0) + 1;
+      const projectedRecentTotal = localRecentTotal + 1;
+      const projectedShare = projectedRecentTotal > 0 ? nextItemSalesCount / projectedRecentTotal : 0;
+      const projectedUnique = localRecent.has(item.id) ? localRecent.size : localRecent.size + 1;
 
       const eventModifier = state.marketEvents?.[item.id]?.modifier || 1.0;
       const obsolescence = this.estimateObsolescenceMultiplier(item.material.age, state, rules);
-      const diversificationBonus = this.getDiversificationBonus(localRecent.size, rules);
+      const diversificationBonus = this.getDiversificationBonus(projectedUnique, rules);
       const expectedUnitPrice = item.material.basePrice * popularity * eventModifier * obsolescence * diversificationBonus;
-      const recencyPenalty = 1 + ((localRecentCounts[item.id] || 0) * 0.6);
+      const recencyPenalty = 1 + ((localRecentCounts[item.id] || 0) * 0.8);
       const noveltyBonus = localRecent.has(item.id) ? 0 : (expectedUnitPrice * 0.15 + 8);
       const ageBonus = (item.material.age || 1) * 2;
-      const score = (expectedUnitPrice / recencyPenalty) + noveltyBonus + ageBonus;
-      const quantity = Math.min(availableToSell, this.getSellBatchForPopularity(popularity, inventoryPressure));
+      const dominancePenalty = this.getDominancePenalty(projectedShare);
+      const diversityBoost = this.getDiversityBoost(projectedShare, localRecent.size, finalGoods.length);
+      const streakPenalty = this.getStreakPenalty(item.id);
+      const cooldownPenalty = sellCooldownActive ? this.cooldownOverridePenalty : 0;
+      const score =
+        (expectedUnitPrice / recencyPenalty) +
+        noveltyBonus +
+        ageBonus +
+        diversityBoost -
+        dominancePenalty -
+        streakPenalty -
+        cooldownPenalty;
+
+      let quantity = Math.min(availableToSell, this.getSellBatchForPopularity(popularity, inventoryPressure));
+      quantity = this.adjustSellQuantityForRotation(quantity, item.id, projectedShare);
 
       if (quantity <= 0) continue;
 
       candidates.push({
         item,
         quantity,
-        score
+        score,
+        projectedShare,
       });
     }
 
@@ -169,7 +244,91 @@ export class BalancedBot extends BaseStrategy {
     }
 
     candidates.sort((a, b) => b.score - a.score);
-    return candidates[0];
+    return this.selectCandidateWithRotationGuard(candidates);
+  }
+
+  selectCandidateWithRotationGuard(candidates) {
+    const bestCandidate = candidates[0];
+    const alternatives = candidates.filter(candidate => candidate.item.id !== this.lastSoldItemId);
+    const hasAlternatives = alternatives.length > 0;
+    const bestAlternative = hasAlternatives ? alternatives[0] : null;
+
+    if (
+      this.lastSoldItemId &&
+      bestCandidate.item.id === this.lastSoldItemId &&
+      bestAlternative &&
+      bestAlternative.score >= bestCandidate.score * this.switchPreferenceMinRelativeScore
+    ) {
+      return bestAlternative;
+    }
+
+    if (
+      this.lastSoldItemId &&
+      this.consecutiveSameItemSells >= this.maxConsecutiveSameItemSells &&
+      hasAlternatives
+    ) {
+      return alternatives[0];
+    }
+
+    if (
+      candidates[0].projectedShare > this.hardMaxRecentSalesSharePerItem &&
+      hasAlternatives
+    ) {
+      return alternatives[0];
+    }
+
+    return bestCandidate;
+  }
+
+  recordSellSelection(itemId, tick) {
+    this.lastSellTickByItem[itemId] = tick;
+    if (this.lastSoldItemId === itemId) {
+      this.consecutiveSameItemSells++;
+      return;
+    }
+    this.lastSoldItemId = itemId;
+    this.consecutiveSameItemSells = 1;
+  }
+
+  getRequiredSellCooldownTicks(inventoryPressure, emergencyPressure) {
+    if (!inventoryPressure) return this.minTicksBetweenSameItemSell;
+
+    const pressureFactor = emergencyPressure
+      ? Math.max(0.55, this.cooldownUnderPressureFactor - 0.15)
+      : this.cooldownUnderPressureFactor;
+    return Math.max(1, Math.ceil(this.minTicksBetweenSameItemSell * pressureFactor));
+  }
+
+  getDominancePenalty(projectedShare) {
+    if (projectedShare <= this.maxRecentSalesSharePerItem) {
+      return 0;
+    }
+    return (projectedShare - this.maxRecentSalesSharePerItem) * this.dominancePenaltyWeight;
+  }
+
+  getDiversityBoost(projectedShare, recentUniqueCount, totalFinalGoods) {
+    const diversityTargetDenominator = Math.max(2, Math.min(totalFinalGoods, recentUniqueCount + 1));
+    const targetShare = 1 / diversityTargetDenominator;
+    if (projectedShare >= targetShare) return 0;
+    return (targetShare - projectedShare) * this.diversityBoostWeight;
+  }
+
+  getStreakPenalty(itemId) {
+    if (itemId !== this.lastSoldItemId) {
+      return 0;
+    }
+    return this.consecutiveSameItemSells * this.sameItemStreakPenalty;
+  }
+
+  adjustSellQuantityForRotation(quantity, itemId, projectedShare) {
+    let adjusted = quantity;
+    if (itemId === this.lastSoldItemId && this.consecutiveSameItemSells >= 2) {
+      adjusted = Math.max(1, Math.floor(adjusted * 0.5));
+    }
+    if (projectedShare > this.maxRecentSalesSharePerItem) {
+      adjusted = Math.max(1, Math.floor(adjusted * 0.6));
+    }
+    return adjusted;
   }
 
   getSellBatchForPopularity(popularity, inventoryPressure) {
@@ -1051,6 +1210,20 @@ export class BalancedBot extends BaseStrategy {
   tryReassignForFinal(sim, rules, recipePriority) {
     const { state } = sim;
     const materialCategory = new Map(rules.materials.map(m => [m.id, m.category]));
+    const materialById = new Map(rules.materials.map(m => [m.id, m]));
+    const recentWindow = Math.max(rules.market?.diversificationWindow || 100, this.sellAnalysisWindowTicks);
+    const recentWindowStart = state.tick - recentWindow;
+    const recentSalesWindow = (state.marketRecentSales || []).filter(sale => sale.tick > recentWindowStart);
+    const recentSalesCounts = {};
+    for (const sale of recentSalesWindow) {
+      recentSalesCounts[sale.itemId] = (recentSalesCounts[sale.itemId] || 0) + 1;
+    }
+    const recentSalesTotal = recentSalesWindow.length;
+    const machinesByRecipe = {};
+    for (const machine of state.machines) {
+      if (!machine.recipeId) continue;
+      machinesByRecipe[machine.recipeId] = (machinesByRecipe[machine.recipeId] || 0) + 1;
+    }
 
     // Get raw materials we're extracting
     const extractingRaw = new Set(
@@ -1070,20 +1243,59 @@ export class BalancedBot extends BaseStrategy {
       }
     }
 
-    // Find final good recipes and check what's blocking them
-    const finalRecipes = rules.recipes.filter(r => {
-      const outputIds = Object.keys(r.outputs);
-      return outputIds.some(id => materialCategory.get(id) === 'final');
-    });
+    // Score unlocked final recipes to avoid converging on a single dominant output.
+    const finalRecipeCandidates = rules.recipes
+      .filter(recipe => state.unlockedRecipes.includes(recipe.id))
+      .map(recipe => {
+        const finalOutputs = Object.keys(recipe.outputs || {})
+          .map(outputId => ({ outputId, material: materialById.get(outputId) }))
+          .filter(({ material }) => material?.category === 'final');
+        if (finalOutputs.length === 0) return null;
 
-    // Sort by simpler recipes first (fewer non-raw inputs)
-    finalRecipes.sort((a, b) => {
-      const aNonRaw = Object.keys(a.inputs).filter(id => materialCategory.get(id) !== 'raw').length;
-      const bNonRaw = Object.keys(b.inputs).filter(id => materialCategory.get(id) !== 'raw').length;
-      return aNonRaw - bNonRaw;
-    });
+        const nonRawInputCount = Object.keys(recipe.inputs || {})
+          .filter(inputId => materialCategory.get(inputId) !== 'raw')
+          .length;
+        const producingCount = machinesByRecipe[recipe.id] || 0;
 
-    for (const recipe of finalRecipes) {
+        let outputScore = -Infinity;
+        for (const output of finalOutputs) {
+          const popularity = state.marketPopularity?.[output.outputId] ?? 1.0;
+          const recentCount = recentSalesCounts[output.outputId] || 0;
+          const recentShare = recentSalesTotal > 0 ? recentCount / recentSalesTotal : 0;
+          const inventory = state.inventory?.[output.outputId] || 0;
+          const age = output.material?.age || 1;
+          const basePrice = output.material?.basePrice || 0;
+          const score =
+            popularity * 120 +
+            Math.log2(basePrice + 1) * 10 +
+            (recentCount === 0 ? 35 : 0) -
+            recentShare * 180 -
+            inventory * 2 +
+            age * 5;
+          outputScore = Math.max(outputScore, score);
+        }
+
+        const chainPriority = recipePriority?.[recipe.id] || 1;
+        const recipeScore =
+          outputScore +
+          chainPriority * 0.4 -
+          nonRawInputCount * 8 -
+          producingCount * 70;
+
+        return {
+          recipe,
+          recipeScore,
+          nonRawInputCount,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (b.recipeScore !== a.recipeScore) return b.recipeScore - a.recipeScore;
+        return a.nonRawInputCount - b.nonRawInputCount;
+      });
+
+    for (const candidate of finalRecipeCandidates) {
+      const recipe = candidate.recipe;
       if (!state.unlockedRecipes.includes(recipe.id)) continue;
 
       // Check what inputs we're missing
