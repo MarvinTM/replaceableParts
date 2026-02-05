@@ -413,28 +413,34 @@ function isChunkPurchased(chunks, x, y) {
 function getNextExpansionSpiral(state, rules) {
   const { width, height } = state.floorSpace;
   const chunks = state.floorSpace.chunks || [];
-  const { costPerCell, initialWidth } = rules.floorSpace;
+  const { costPerCell, initialWidth, expansionScaleFactor } = rules.floorSpace;
 
   // Calculate cycle based on number of chunks
   // Each expansion cycle (doubling dimensions) strictly requires 12 chunks
   // Base state is 1 chunk.
   const expansionsDone = Math.max(0, chunks.length - 1);
   const completedCycles = Math.floor(expansionsDone / 12);
-  
+
+  // Calculate cost with exponential scaling based on expansions done
+  // cost = baseCost * scaleFactor^expansionsDone
+  const scaleFactor = expansionScaleFactor || 1.0;
+  const costMultiplier = Math.pow(scaleFactor, expansionsDone);
+
   // Base size for current cycle
   // Cycle 0: initialWidth (e.g. 8)
   // Cycle 1: initialWidth * 2 (e.g. 16)
   const cycleBase = (initialWidth || 8) * Math.pow(2, completedCycles);
-  
+
   const N = cycleBase;
   const target = N * 2;
   const chunkSize = N / 2;
-  
+
   // Generate expansion sequence for this cycle
   // 1. Fill Right Wing (Quadrant B)
   for (let y = 0; y < N; y += chunkSize) {
     for (let x = N; x < target; x += chunkSize) {
       if (!isChunkPurchased(chunks, x, y)) {
+        const baseCost = chunkSize * chunkSize * costPerCell;
         return {
           x,
           y,
@@ -443,16 +449,17 @@ function getNextExpansionSpiral(state, rules) {
           newWidth: Math.max(width, x + chunkSize),
           newHeight: Math.max(height, y + chunkSize),
           cellsAdded: chunkSize * chunkSize,
-          cost: chunkSize * chunkSize * costPerCell
+          cost: Math.floor(baseCost * costMultiplier)
         };
       }
     }
   }
-  
+
   // 2. Fill Top Wing (Quadrants C+D)
   for (let y = N; y < target; y += chunkSize) {
     for (let x = 0; x < target; x += chunkSize) {
       if (!isChunkPurchased(chunks, x, y)) {
+        const baseCost = chunkSize * chunkSize * costPerCell;
         return {
           x,
           y,
@@ -461,18 +468,24 @@ function getNextExpansionSpiral(state, rules) {
           newWidth: Math.max(width, x + chunkSize),
           newHeight: Math.max(height, y + chunkSize),
           cellsAdded: chunkSize * chunkSize,
-          cost: chunkSize * chunkSize * costPerCell
+          cost: Math.floor(baseCost * costMultiplier)
         };
       }
     }
   }
-  
-  return null; 
+
+  return null;
 }
 
 function getNextExpansionFractal(state, rules) {
   const { width, height } = state.floorSpace;
-  const { initialWidth, initialChunkSize, costPerCell } = rules.floorSpace;
+  const chunks = state.floorSpace.chunks || [];
+  const { initialWidth, initialChunkSize, costPerCell, expansionScaleFactor } = rules.floorSpace;
+
+  // Calculate expansions done for scaling
+  const expansionsDone = Math.max(0, chunks.length - 1);
+  const scaleFactor = expansionScaleFactor || 1.0;
+  const costMultiplier = Math.pow(scaleFactor, expansionsDone);
 
   let chunkSize = initialChunkSize;
   let targetSquare = initialWidth * 2;
@@ -497,7 +510,7 @@ function getNextExpansionFractal(state, rules) {
   const stripHeight = !expandWidth ? chunkSize : height;
 
   const cellsAdded = stripWidth * stripHeight;
-  const cost = cellsAdded * costPerCell;
+  const baseCost = cellsAdded * costPerCell;
 
   return {
     x: stripX,
@@ -507,7 +520,7 @@ function getNextExpansionFractal(state, rules) {
     newWidth,
     newHeight,
     cellsAdded,
-    cost
+    cost: Math.floor(baseCost * costMultiplier)
   };
 }
 
@@ -2207,22 +2220,30 @@ function expandExploration(state, rules, payload) {
 }
 
 /**
- * Calculate the unlock cost for a resource node based on how many of that type are already unlocked
- * Cost scales exponentially: baseCost * scaleFactor^(count of same resource type)
+ * Calculate the unlock cost for a resource node with both per-resource and global scaling
+ * Cost = baseCost * resourceScaleFactor^(sameResourceCount) * globalScaleFactor^(totalNodes)
  * @param {string} resourceType - The type of resource
  * @param {Array} extractionNodes - Current extraction nodes array
  * @param {object} rules - Game rules
  * @returns {number} The unlock cost
  */
 export function getNodeUnlockCost(resourceType, extractionNodes, rules) {
-  // Count how many nodes of this resource type are already unlocked
-  const count = extractionNodes.filter(n => n.resourceType === resourceType).length;
+  // Count nodes of this resource type (for per-resource scaling)
+  const sameResourceCount = extractionNodes.filter(n => n.resourceType === resourceType).length;
+
+  // Count total nodes (for global scaling)
+  const totalNodes = extractionNodes.length;
 
   const baseCost = rules.exploration.nodeUnlockCost || 100;
   const scaleFactors = rules.exploration.unlockScaleFactors || {};
-  const scaleFactor = scaleFactors[resourceType] || 1.2;
+  const resourceScaleFactor = scaleFactors[resourceType] || 1.2;
+  const globalScaleFactor = rules.exploration.globalNodeScaleFactor || 1.0;
 
-  return Math.floor(baseCost * Math.pow(scaleFactor, count));
+  // Apply both scaling factors
+  const resourceScaling = Math.pow(resourceScaleFactor, sameResourceCount);
+  const globalScaling = Math.pow(globalScaleFactor, totalNodes);
+
+  return Math.floor(baseCost * resourceScaling * globalScaling);
 }
 
 function unlockExplorationNode(state, rules, payload) {

@@ -1425,7 +1425,8 @@ export const defaultRules = {
     initialWidth: 16,
     initialHeight: 16,
     initialChunkSize: 4,
-    costPerCell: 1
+    costPerCell: 3,                 // Base cost per cell (was 1)
+    expansionScaleFactor: 1.25,     // Each expansion costs 25% more than the last
   },
   inventorySpace: {
     baseCost: 50,
@@ -1440,9 +1441,10 @@ export const defaultRules = {
     initialExploredSize: 8,
     initialGeneratedSize: 64,
     maxGeneratedSize: 256,
-    baseCostPerCell: 2,             // Very cheap early exploration
-    nodeUnlockCost: 8,              // Very cheap node unlocking to encourage exploration
-    nodeSpawnChance: 0.20,          // Was 0.15 - more nodes spawn
+    baseCostPerCell: 2,
+    nodeUnlockCost: 15,             // Base cost for first node (was 8)
+    globalNodeScaleFactor: 1.015,   // Each node unlock increases ALL future costs by 1.5%
+    nodeSpawnChance: 0.20,
     terrainScale: 10,
     moistureScale: 8,
 
@@ -1509,19 +1511,19 @@ export const defaultRules = {
     },
 
     // Per-resource unlock cost scaling factors
-    // Cost = nodeUnlockCost * scaleFactor^(number of nodes already unlocked for this resource)
-    // Higher factor = costs grow faster (for less-needed resources)
+    // Cost = nodeUnlockCost * resourceScaleFactor^(sameResourceCount) * globalScaleFactor^(totalNodes)
+    // Higher factor = costs grow faster for that resource type
     unlockScaleFactors: {
-      iron_ore: 1.12,
-      copper_ore: 1.15,
-      coal: 1.18,
-      sand: 1.20,
-      oil: 1.25,
-      bauxite: 1.25,
-      wood: 1.35,
-      rare_earth_ore: 1.20,
-      clay: 1.40,
-      stone: 1.40
+      iron_ore: 1.18,               // Was 1.12 - most needed, still scales
+      copper_ore: 1.20,             // Was 1.15
+      coal: 1.22,                   // Was 1.18
+      sand: 1.25,                   // Was 1.20
+      oil: 1.30,                    // Was 1.25
+      bauxite: 1.30,                // Was 1.25
+      wood: 1.40,                   // Was 1.35 - steeper since it's fuel
+      rare_earth_ore: 1.25,         // Was 1.20
+      clay: 1.45,                   // Was 1.40
+      stone: 1.45                   // Was 1.40
     },
 
     // Guaranteed minimum nodes in initial explored area
