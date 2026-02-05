@@ -181,6 +181,7 @@ export default function TickProgressIndicator() {
     activeGearIndex: initialGearIndex, // 0 = left gear, 1 = right gear
     leftProgress: initialGearIndex === 0 ? 0 : 100,
     rightProgress: initialGearIndex === 0 ? 100 : 0,
+    filledDuringRotation: false,
   }));
 
   const lastTickRef = useRef(tick);
@@ -189,6 +190,7 @@ export default function TickProgressIndicator() {
   const animationRef = useRef(null);
   const startTimeRef = useRef(null);
   const rotationTimeoutRef = useRef(null);
+  const hasCompletedRotationRef = useRef(false);
   // Use a ref to track phase for the animation loop (avoids stale closure)
   const phaseRef = useRef('filling');
 
@@ -205,6 +207,8 @@ export default function TickProgressIndicator() {
       const prevTick = lastTickRef.current ?? 0;
       const prevGearIndex = prevTick % 2;
       lastTickRef.current = tick;
+      const isFirstRotation = !hasCompletedRotationRef.current;
+      hasCompletedRotationRef.current = true;
 
       const tickDuration = getTickDuration();
       lastTickTimeRef.current = Date.now();
@@ -227,8 +231,13 @@ export default function TickProgressIndicator() {
         rotation: prev.rotation + ROTATION_PER_TICK,
         phase: 'rotating',
         activeGearIndex: prevGearIndex,
-        leftProgress: 100,
-        rightProgress: 100,
+        leftProgress: isFirstRotation
+          ? (prevGearIndex === 0 ? 100 : prev.leftProgress)
+          : 100,
+        rightProgress: isFirstRotation
+          ? (prevGearIndex === 1 ? 100 : prev.rightProgress)
+          : 100,
+        filledDuringRotation: !isFirstRotation,
       }));
 
       // After rotation animation completes, pause while still full, then reset and start filling
@@ -241,8 +250,9 @@ export default function TickProgressIndicator() {
           ...prev,
           phase: 'pausing',
           activeGearIndex: nextGearIndex,
-          leftProgress: 100,
-          rightProgress: 100,
+          leftProgress: isFirstRotation ? prev.leftProgress : 100,
+          rightProgress: isFirstRotation ? prev.rightProgress : 100,
+          filledDuringRotation: !isFirstRotation,
         }));
 
         rotationTimeoutRef.current = setTimeout(() => {
@@ -354,9 +364,9 @@ export default function TickProgressIndicator() {
     };
   }, []);
 
-  const { rotation, phase, leftProgress, rightProgress } = animState;
-  const leftGearProgress = phase === 'rotating' ? 100 : leftProgress;
-  const rightGearProgress = phase === 'rotating' ? 100 : rightProgress;
+  const { rotation, phase, leftProgress, rightProgress, filledDuringRotation } = animState;
+  const leftGearProgress = phase === 'rotating' && filledDuringRotation ? 100 : leftProgress;
+  const rightGearProgress = phase === 'rotating' && filledDuringRotation ? 100 : rightProgress;
   const leftGearRotation = rotation;
   const rightGearRotation = -rotation;
   const gearSize = 28;
