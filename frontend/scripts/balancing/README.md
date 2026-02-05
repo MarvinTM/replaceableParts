@@ -23,6 +23,12 @@ node scripts/balancing/runSimulation.js --ticks 5000 --seed 12345 --verbose
 
 # Save results to files
 node scripts/balancing/runSimulation.js --ticks 10000 --output ./scripts/balancing/results/run1
+
+# Batch simulation with scorecard (multiple seeds)
+node scripts/balancing/runBatchSimulation.js --runs 8 --ticks 20000 --seed 1 --verbose
+
+# Batch simulation with explicit seeds + saved reports
+node scripts/balancing/runBatchSimulation.js --seeds 1,2,3,4,5 --output ./scripts/balancing/results/batch_v1
 ```
 
 ## CLI Options
@@ -36,6 +42,18 @@ node scripts/balancing/runSimulation.js --ticks 10000 --output ./scripts/balanci
 | `--starting-credits N` | Initial credits for the bot | 500 |
 | `--snapshot-interval N` | Take snapshots every N ticks | 100 |
 | `--help` | Show help message | - |
+
+### Batch Runner Options (`runBatchSimulation.js`)
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--ticks N` | Number of ticks per run | 20000 |
+| `--runs N` | Number of runs (used with `--seed`) | 8 |
+| `--seed N` | Starting seed when generating seed sequence | 1 |
+| `--seeds A,B,C` | Explicit comma-separated seeds (overrides `--runs/--seed`) | None |
+| `--profile NAME` | Scorecard target profile | `default` |
+| `--output PATH` | Save JSON and TXT reports to PATH | None |
+| `--verbose` | Print per-run progress | Off |
 
 ## Output Explained
 

@@ -60,7 +60,7 @@ export function generateTextReport(summary, config = {}) {
     lines.push('-'.repeat(40));
     lines.push(`  Total Tracked Spending: ${summary.spending.total.toLocaleString()}`);
     if (typeof summary.spending.coveragePct === 'number') {
-      lines.push(`  Coverage of Total Credit Outflow: ${summary.spending.coveragePct}%`);
+      lines.push(`  Coverage of Action Credit Outflow: ${summary.spending.coveragePct}%`);
     }
     if (summary.spending.untracked > 0) {
       lines.push(`  Untracked Spending: ${summary.spending.untracked.toLocaleString()}`);

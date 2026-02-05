@@ -124,6 +124,7 @@ export function createKPITracker() {
     goodsSold: {},  // { itemId: totalQuantity }
     totalCreditsEarned: 0,
     totalCreditsSpent: 0,
+    grossCreditsSpentByActions: 0,
     marketSales: {
       totalSellActions: 0,
       totalUnitsSold: 0,
@@ -295,6 +296,7 @@ export function recordAction(tracker, sim, action, context = null) {
     researchPointsDelta: rpDelta,
   });
   tracker.actionCountsByTick[tick] = (tracker.actionCountsByTick[tick] || 0) + 1;
+  tracker.grossCreditsSpentByActions += creditsSpent;
 
   let spendTracked = false;
 
@@ -644,9 +646,10 @@ export function calculateSummary(tracker) {
 
   // === NEW: Calculate spending analysis ===
   const totalSpent = Object.values(tracker.spendingByCategory).reduce((a, b) => a + b, 0);
-  const totalUntrackedSpend = Math.max(0, tracker.totalCreditsSpent - totalSpent);
-  const spendingCoverage = tracker.totalCreditsSpent > 0
-    ? Math.round((totalSpent / tracker.totalCreditsSpent) * 1000) / 10
+  const actionSpendBase = tracker.grossCreditsSpentByActions;
+  const totalUntrackedSpend = Math.max(0, actionSpendBase - totalSpent);
+  const spendingCoverage = actionSpendBase > 0
+    ? Math.round((totalSpent / actionSpendBase) * 1000) / 10
     : 100;
   const spendingPercentages = {};
   for (const [category, amount] of Object.entries(tracker.spendingByCategory)) {
