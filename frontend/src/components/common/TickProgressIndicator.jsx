@@ -184,6 +184,8 @@ export default function TickProgressIndicator() {
   }));
 
   const lastTickRef = useRef(tick);
+  const lastTickTimeRef = useRef(Date.now());
+  const nextTickTimeRef = useRef(null);
   const animationRef = useRef(null);
   const startTimeRef = useRef(null);
   const rotationTimeoutRef = useRef(null);
@@ -203,6 +205,10 @@ export default function TickProgressIndicator() {
       const prevTick = lastTickRef.current ?? 0;
       const prevGearIndex = prevTick % 2;
       lastTickRef.current = tick;
+
+      const tickDuration = getTickDuration();
+      lastTickTimeRef.current = Date.now();
+      nextTickTimeRef.current = lastTickTimeRef.current + tickDuration;
 
       // Stop the fill animation immediately
       if (animationRef.current) {
@@ -228,7 +234,6 @@ export default function TickProgressIndicator() {
       // After rotation animation completes, pause while still full, then reset and start filling
       rotationTimeoutRef.current = setTimeout(() => {
         const nextGearIndex = tick % 2;
-        const tickDuration = getTickDuration();
         const pauseDuration = tickDuration * PAUSE_DURATION_FRACTION;
         phaseRef.current = 'pausing';
         startTimeRef.current = null;
@@ -269,6 +274,7 @@ export default function TickProgressIndicator() {
         rightProgress: 0,
       }));
       startTimeRef.current = null;
+      nextTickTimeRef.current = null;
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
@@ -286,12 +292,13 @@ export default function TickProgressIndicator() {
     }
 
     const tickDuration = getTickDuration();
-    const pauseDuration = tickDuration * PAUSE_DURATION_FRACTION;
-    const fillDuration = Math.max(tickDuration - ROTATION_DURATION_MS - pauseDuration, 1);
 
     // Start fresh animation (no pause unless we just rotated)
     if (startTimeRef.current === null) {
       startTimeRef.current = Date.now();
+      if (!nextTickTimeRef.current) {
+        nextTickTimeRef.current = startTimeRef.current + tickDuration;
+      }
     }
 
     const animate = () => {
@@ -306,6 +313,10 @@ export default function TickProgressIndicator() {
         return;
       }
 
+      const fillEndTime = nextTickTimeRef.current ?? (startTimeRef.current + tickDuration);
+      const fillLeadMs = Math.min(250, tickDuration * 0.06);
+      const effectiveFillEndTime = fillEndTime - fillLeadMs;
+      const fillDuration = Math.max(effectiveFillEndTime - startTimeRef.current, 1);
       const newProgress = Math.min((elapsed / fillDuration) * 100, 100);
       setAnimState(prev => {
         // Double-check we're still in filling phase
