@@ -12,6 +12,89 @@
 
 import { getHighestUnlockedAge, calculateInventoryValue } from './simulator.js';
 
+function safeAvg(values) {
+  if (!values || values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function getDiscoveredFinalGoods(state, rules) {
+  const discovered = new Set();
+  const discoveredRecipes = new Set(state.discoveredRecipes || []);
+  const unlockedRecipes = new Set(state.unlockedRecipes || []);
+  const materialMap = new Map(rules.materials.map(material => [material.id, material]));
+
+  for (const recipe of rules.recipes) {
+    if (!discoveredRecipes.has(recipe.id) && !unlockedRecipes.has(recipe.id)) continue;
+    for (const outputId of Object.keys(recipe.outputs || {})) {
+      const material = materialMap.get(outputId);
+      if (material?.category === 'final') {
+        discovered.add(outputId);
+      }
+    }
+  }
+
+  return Array.from(discovered);
+}
+
+function getMarketSnapshot(state, rules) {
+  const finalGoods = getDiscoveredFinalGoods(state, rules);
+  const windowSize = rules.market?.diversificationWindow || 100;
+  const marketRecentSales = state.marketRecentSales || [];
+  const recentWindowStart = state.tick - windowSize;
+  const uniqueRecentSales = new Set(
+    marketRecentSales.filter(sale => sale.tick > recentWindowStart).map(sale => sale.itemId)
+  ).size;
+
+  if (finalGoods.length === 0) {
+    return {
+      discoveredFinalGoods: 0,
+      avgPopularity: 1.0,
+      minPopularity: 1.0,
+      saturatedMarkets: 0,
+      heavilySaturatedMarkets: 0,
+      activeEvents: 0,
+      totalDamage: 0,
+      avgDemandModifier: 1.0,
+      uniqueRecentSales,
+    };
+  }
+
+  let popularitySum = 0;
+  let minPopularity = Infinity;
+  let saturatedMarkets = 0;
+  let heavilySaturatedMarkets = 0;
+  let activeEvents = 0;
+  let totalDamage = 0;
+  let demandModifierSum = 0;
+
+  for (const itemId of finalGoods) {
+    const popularity = state.marketPopularity?.[itemId] ?? 1.0;
+    const damage = state.marketDamage?.[itemId] || 0;
+    const eventModifier = state.marketEvents?.[itemId]?.modifier || 1.0;
+
+    popularitySum += popularity;
+    minPopularity = Math.min(minPopularity, popularity);
+    demandModifierSum += popularity * eventModifier;
+    totalDamage += damage;
+
+    if (popularity < 1.0) saturatedMarkets++;
+    if (popularity <= 0.6) heavilySaturatedMarkets++;
+    if (state.marketEvents?.[itemId]) activeEvents++;
+  }
+
+  return {
+    discoveredFinalGoods: finalGoods.length,
+    avgPopularity: popularitySum / finalGoods.length,
+    minPopularity,
+    saturatedMarkets,
+    heavilySaturatedMarkets,
+    activeEvents,
+    totalDamage,
+    avgDemandModifier: demandModifierSum / finalGoods.length,
+    uniqueRecentSales,
+  };
+}
+
 /**
  * Create a new KPI tracker
  * @returns {Object} KPI tracker instance
@@ -22,6 +105,7 @@ export function createKPITracker() {
     snapshots: [],
     events: [],
     actions: [],
+    actionCountsByTick: {},
     idleTicks: 0,
     totalTicks: 0,
 
@@ -40,6 +124,17 @@ export function createKPITracker() {
     goodsSold: {},  // { itemId: totalQuantity }
     totalCreditsEarned: 0,
     totalCreditsSpent: 0,
+    marketSales: {
+      totalSellActions: 0,
+      totalUnitsSold: 0,
+      totalRevenue: 0,
+      weightedPopularityBefore: 0,
+      weightedPopularityAfter: 0,
+      weightedEventModifier: 0,
+      salesInSaturatedMarkets: 0,
+      damageAdded: 0,
+      byItem: {}, // { itemId: { units, revenue, sellActions } }
+    },
 
     // === NEW: Spending breakdown ===
     spendingByCategory: {
@@ -112,6 +207,7 @@ export function takeSnapshot(tracker, sim) {
     unlockedRecipes: state.unlockedRecipes.length,
     discoveredRecipes: state.discoveredRecipes.length,
     energy: { ...state.energy },
+    market: getMarketSnapshot(state, rules),
   };
 
   tracker.snapshots.push(snapshot);
@@ -121,11 +217,6 @@ export function takeSnapshot(tracker, sim) {
   if (state.credits > tracker.peakCredits) {
     tracker.peakCredits = state.credits;
     tracker.peakCreditsTick = sim.currentTick;
-  }
-
-  // Track discovery boost
-  if (state.research.prototypeBoost && state.research.prototypeBoost > 0) {
-    tracker.discoveryBoostTicks++;
   }
 
   // Take resource snapshot (every 500 ticks to reduce data)
@@ -169,27 +260,77 @@ function takeResourceSnapshot(tracker, sim) {
   });
 }
 
+function getAddedPrototypeRecipes(context) {
+  const before = context?.before?.awaitingPrototypeRecipeIds || [];
+  const after = context?.after?.awaitingPrototypeRecipeIds || [];
+  const beforeSet = new Set(before);
+  return after.filter(recipeId => !beforeSet.has(recipeId));
+}
+
+function getCompletedPrototypeRecipes(context) {
+  const before = context?.before?.awaitingPrototypeRecipeIds || [];
+  const after = context?.after?.awaitingPrototypeRecipeIds || [];
+  const afterSet = new Set(after);
+  return before.filter(recipeId => !afterSet.has(recipeId));
+}
+
 /**
  * Record an action taken by the bot
  * @param {Object} tracker - KPI tracker
  * @param {Object} sim - Simulation instance
  * @param {Object} action - Action that was executed
  */
-export function recordAction(tracker, sim, action) {
+export function recordAction(tracker, sim, action, context = null) {
   const { state, rules } = sim;
   const tick = sim.currentTick;
+  const creditsDelta = context?.deltas?.credits || 0;
+  const rpDelta = context?.deltas?.researchPoints || 0;
+  const creditsSpent = Math.max(0, -creditsDelta);
 
   tracker.actions.push({
     tick,
     type: action.type,
     payload: action.payload,
+    creditsDelta,
+    researchPointsDelta: rpDelta,
   });
+  tracker.actionCountsByTick[tick] = (tracker.actionCountsByTick[tick] || 0) + 1;
+
+  let spendTracked = false;
 
   // Track specific action types
   switch (action.type) {
     case 'SELL_GOODS': {
       const { itemId, quantity } = action.payload;
-      tracker.goodsSold[itemId] = (tracker.goodsSold[itemId] || 0) + quantity;
+      const quantityFromInventory = context?.before?.sell && context?.after?.sell
+        ? Math.max(0, context.before.sell.inventory - context.after.sell.inventory)
+        : null;
+      const soldQty = quantityFromInventory ?? quantity;
+      const revenue = Math.max(0, creditsDelta);
+      const popularityBefore = context?.before?.sell?.popularity ?? 1.0;
+      const popularityAfter = context?.after?.sell?.popularity ?? popularityBefore;
+      const eventModifier = context?.before?.sell?.eventModifier || 1.0;
+      const damageBefore = context?.before?.sell?.damage || 0;
+      const damageAfter = context?.after?.sell?.damage || damageBefore;
+
+      tracker.goodsSold[itemId] = (tracker.goodsSold[itemId] || 0) + soldQty;
+      tracker.marketSales.totalSellActions++;
+      tracker.marketSales.totalUnitsSold += soldQty;
+      tracker.marketSales.totalRevenue += revenue;
+      tracker.marketSales.weightedPopularityBefore += popularityBefore * soldQty;
+      tracker.marketSales.weightedPopularityAfter += popularityAfter * soldQty;
+      tracker.marketSales.weightedEventModifier += eventModifier * soldQty;
+      tracker.marketSales.damageAdded += Math.max(0, damageAfter - damageBefore);
+      if (popularityBefore < 1.0) {
+        tracker.marketSales.salesInSaturatedMarkets++;
+      }
+
+      if (!tracker.marketSales.byItem[itemId]) {
+        tracker.marketSales.byItem[itemId] = { units: 0, revenue: 0, sellActions: 0 };
+      }
+      tracker.marketSales.byItem[itemId].units += soldQty;
+      tracker.marketSales.byItem[itemId].revenue += revenue;
+      tracker.marketSales.byItem[itemId].sellActions++;
 
       // Milestone: first sale
       if (tracker.milestones.firstSale === null) {
@@ -199,15 +340,14 @@ export function recordAction(tracker, sim, action) {
     }
 
     case 'BUY_FLOOR_SPACE': {
-      const cost = rules.floorSpace.costPerCell *
-        (rules.floorSpace.chunkWidth || 4) *
-        (rules.floorSpace.chunkHeight || 4);
+      const cost = creditsSpent;
       tracker.spendingByCategory.floorExpansion += cost;
       tracker.floorExpansions.push({
         tick,
         newArea: state.floorSpace.width * state.floorSpace.height,
         cost
       });
+      spendTracked = true;
 
       // Milestone
       if (tracker.milestones.firstFloorExpansion === null) {
@@ -217,31 +357,24 @@ export function recordAction(tracker, sim, action) {
     }
 
     case 'EXPAND_EXPLORATION': {
-      const cost = rules.exploration.baseCostPerCell * 16; // Assume 4x4 chunk
+      const cost = creditsSpent;
       tracker.spendingByCategory.mapExploration += cost;
-      tracker.mapExpansions.push({ tick, cost });
+      tracker.mapExpansions.push({
+        tick,
+        cost,
+        areaAdded: context?.deltas?.exploredArea || 0,
+      });
+      spendTracked = true;
       break;
     }
 
     case 'UNLOCK_EXPLORATION_NODE': {
-      const { x, y } = action.payload;
-      const tile = state.explorationMap?.tiles[`${x},${y}`];
-      const resourceType = tile?.extractionNode?.resourceType || 'unknown';
-
-      // Estimate cost with both per-resource and global scaling
-      // Note: State has already been updated, so counts are current (post-unlock)
-      const sameResourceCount = state.extractionNodes.filter(n => n.resourceType === resourceType).length - 1;
-      const totalNodes = state.extractionNodes.length - 1;
-      const resourceScaleFactor = rules.exploration.unlockScaleFactors?.[resourceType] || 1.2;
-      const globalScaleFactor = rules.exploration.globalNodeScaleFactor || 1.0;
-      const cost = Math.floor(
-        rules.exploration.nodeUnlockCost *
-        Math.pow(resourceScaleFactor, Math.max(0, sameResourceCount)) *
-        Math.pow(globalScaleFactor, Math.max(0, totalNodes))
-      );
+      const cost = creditsSpent;
+      const resourceType = context?.nodeResourceType || 'unknown';
 
       tracker.spendingByCategory.nodeUnlock += cost;
       tracker.nodeUnlocks.push({ tick, resourceType, cost });
+      spendTracked = true;
 
       // Milestone
       if (tracker.milestones.firstNodeUnlock === null) {
@@ -251,45 +384,81 @@ export function recordAction(tracker, sim, action) {
     }
 
     case 'DONATE_CREDITS': {
-      const { amount } = action.payload;
-      tracker.spendingByCategory.researchDonation += amount;
-      const rpGained = Math.floor(amount / rules.research.creditsToRPRatio);
+      const cost = creditsSpent;
+      tracker.spendingByCategory.researchDonation += cost;
+      const rpGained = Math.max(0, rpDelta);
       tracker.rpSources.creditDonation += rpGained;
+      spendTracked = true;
       break;
     }
 
     case 'DONATE_PARTS': {
       const { itemId, quantity } = action.payload;
       const material = rules.materials.find(m => m.id === itemId);
-      if (material) {
-        const age = material.age || 1;
-        const multiplier = rules.research.ageMultipliers?.[age] || 1;
-        const rpGained = Math.floor(material.basePrice * multiplier * quantity);
-        tracker.rpSources.partDonation += rpGained;
-      }
+      const fallbackRPGained = material
+        ? Math.floor(material.basePrice * (rules.research.ageMultipliers?.[material.age || 1] || 1) * quantity)
+        : 0;
+      const rpGained = Math.max(0, rpDelta || fallbackRPGained);
+      tracker.rpSources.partDonation += rpGained;
       break;
     }
 
     case 'RUN_EXPERIMENT': {
       const { age } = action.payload;
-      const cost = rules.research.experimentCosts[age] || 100;
-      tracker.experiments.push({ tick, age, cost, recipeDiscovered: null });
+      const cost = Math.max(0, -rpDelta);
+      const recipeDiscovered = (context?.deltas?.discoveredRecipes || 0) > 0;
+      tracker.experiments.push({ tick, age, cost, recipeDiscovered });
 
       if (tracker.milestones.firstExperiment === null) {
         tracker.milestones.firstExperiment = tick;
+      }
+      for (const recipeId of getAddedPrototypeRecipes(context)) {
+        recordPrototypeStarted(tracker, sim, recipeId);
+      }
+      break;
+    }
+
+    case 'RUN_TARGETED_EXPERIMENT': {
+      const cost = Math.max(0, -rpDelta);
+      tracker.experiments.push({
+        tick,
+        age: getHighestUnlockedAge(state, rules),
+        cost,
+        recipeDiscovered: (context?.deltas?.discoveredRecipes || 0) > 0,
+      });
+
+      if (tracker.milestones.firstExperiment === null) {
+        tracker.milestones.firstExperiment = tick;
+      }
+      for (const recipeId of getAddedPrototypeRecipes(context)) {
+        recordPrototypeStarted(tracker, sim, recipeId);
+      }
+      break;
+    }
+
+    case 'FILL_PROTOTYPE_SLOT': {
+      const completedRecipes = getCompletedPrototypeRecipes(context);
+      const rpBonus = Math.max(0, rpDelta);
+      const bonusPerRecipe = completedRecipes.length > 0
+        ? Math.floor(rpBonus / completedRecipes.length)
+        : rpBonus;
+
+      for (const recipeId of completedRecipes) {
+        recordPrototypeCompleted(tracker, sim, recipeId, bonusPerRecipe);
       }
       break;
     }
 
     case 'BUY_INVENTORY_SPACE': {
-      const level = state.inventorySpace / (rules.inventorySpace?.upgradeAmount || 50);
-      const cost = Math.floor(
-        (rules.inventorySpace?.baseCost || 50) *
-        Math.pow(rules.inventorySpace?.costGrowth || 1.5, level)
-      );
+      const cost = creditsSpent;
       tracker.spendingByCategory.inventoryUpgrade += cost;
+      spendTracked = true;
       break;
     }
+  }
+
+  if (!spendTracked && creditsSpent > 0) {
+    tracker.spendingByCategory.other += creditsSpent;
   }
 }
 
@@ -328,6 +497,18 @@ export function recordPrototypeCompleted(tracker, sim, recipeId, rpBonus) {
  */
 export function recordIdleTick(tracker, sim) {
   tracker.idleTicks++;
+}
+
+/**
+ * Record per-tick KPI signals that should not depend on snapshot cadence
+ * @param {Object} tracker - KPI tracker
+ * @param {Object} sim - Simulation instance
+ */
+export function recordTick(tracker, sim) {
+  const prototypeBoost = sim.state.research?.prototypeBoost;
+  if (prototypeBoost?.ticksRemaining > 0) {
+    tracker.discoveryBoostTicks++;
+  }
 }
 
 /**
@@ -431,6 +612,10 @@ export function calculateSummary(tracker) {
   // Decision interval (average ticks between actions)
   const actionCount = tracker.actions.length;
   const decisionInterval = actionCount > 0 ? totalTicks / actionCount : totalTicks;
+  const actionCounts = Object.values(tracker.actionCountsByTick);
+  const actionTicks = actionCounts.length;
+  const avgActionsPerActionTick = actionTicks > 0 ? actionCount / actionTicks : 0;
+  const maxActionsInSingleTick = actionCounts.length > 0 ? Math.max(...actionCounts) : 0;
 
   // Idle ratio
   const idleRatio = totalTicks > 0 ? tracker.idleTicks / totalTicks : 0;
@@ -459,6 +644,10 @@ export function calculateSummary(tracker) {
 
   // === NEW: Calculate spending analysis ===
   const totalSpent = Object.values(tracker.spendingByCategory).reduce((a, b) => a + b, 0);
+  const totalUntrackedSpend = Math.max(0, tracker.totalCreditsSpent - totalSpent);
+  const spendingCoverage = tracker.totalCreditsSpent > 0
+    ? Math.round((totalSpent / tracker.totalCreditsSpent) * 1000) / 10
+    : 100;
   const spendingPercentages = {};
   for (const [category, amount] of Object.entries(tracker.spendingByCategory)) {
     spendingPercentages[category] = totalSpent > 0
@@ -475,6 +664,9 @@ export function calculateSummary(tracker) {
   const nodeUnlockCount = tracker.nodeUnlocks.length;
   const avgNodeUnlockInterval = nodeUnlockCount > 1
     ? (tracker.nodeUnlocks[nodeUnlockCount - 1].tick - tracker.nodeUnlocks[0].tick) / (nodeUnlockCount - 1)
+    : null;
+  const avgMapExpansionArea = tracker.mapExpansions.length > 0
+    ? safeAvg(tracker.mapExpansions.map(expansion => expansion.areaAdded || 0))
     : null;
 
   // Node unlocks by resource type
@@ -503,6 +695,57 @@ export function calculateSummary(tracker) {
   const discoveryBoostRatio = totalTicks > 0
     ? Math.round(tracker.discoveryBoostTicks / totalTicks * 1000) / 10
     : 0;
+
+  // === NEW: Market health and market sell analytics ===
+  const marketSnapshots = tracker.snapshots
+    .map(snapshot => snapshot.market)
+    .filter(Boolean);
+  const marketCurrent = lastSnapshot.market || {
+    discoveredFinalGoods: 0,
+    avgPopularity: 1.0,
+    minPopularity: 1.0,
+    saturatedMarkets: 0,
+    heavilySaturatedMarkets: 0,
+    activeEvents: 0,
+    totalDamage: 0,
+    avgDemandModifier: 1.0,
+    uniqueRecentSales: 0,
+  };
+  const avgMarketPopularity = safeAvg(marketSnapshots.map(s => s.avgPopularity));
+  const avgSaturatedMarkets = safeAvg(marketSnapshots.map(s => s.saturatedMarkets));
+  const peakSaturatedMarkets = marketSnapshots.length > 0
+    ? Math.max(...marketSnapshots.map(s => s.saturatedMarkets))
+    : 0;
+  const timeWithAnySaturation = marketSnapshots.length > 0
+    ? Math.round((marketSnapshots.filter(s => s.saturatedMarkets > 0).length / marketSnapshots.length) * 1000) / 10
+    : 0;
+  const avgUniqueRecentSales = safeAvg(marketSnapshots.map(s => s.uniqueRecentSales));
+
+  const marketSales = tracker.marketSales;
+  const avgSalePricePerUnit = marketSales.totalUnitsSold > 0
+    ? marketSales.totalRevenue / marketSales.totalUnitsSold
+    : 0;
+  const avgPopularityBeforeSale = marketSales.totalUnitsSold > 0
+    ? marketSales.weightedPopularityBefore / marketSales.totalUnitsSold
+    : 1.0;
+  const avgPopularityAfterSale = marketSales.totalUnitsSold > 0
+    ? marketSales.weightedPopularityAfter / marketSales.totalUnitsSold
+    : 1.0;
+  const avgEventModifierOnSales = marketSales.totalUnitsSold > 0
+    ? marketSales.weightedEventModifier / marketSales.totalUnitsSold
+    : 1.0;
+  const salesInSaturatedMarketsPct = marketSales.totalSellActions > 0
+    ? (marketSales.salesInSaturatedMarkets / marketSales.totalSellActions) * 100
+    : 0;
+  const topRevenueItems = Object.entries(marketSales.byItem)
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5)
+    .map(([itemId, data]) => ({
+      itemId,
+      revenue: data.revenue,
+      units: data.units,
+      avgPricePerUnit: data.units > 0 ? data.revenue / data.units : 0,
+    }));
 
   // === NEW: Resource analysis from last snapshot ===
   const lastResourceSnapshot = tracker.resourceSnapshots[tracker.resourceSnapshots.length - 1];
@@ -539,6 +782,11 @@ export function calculateSummary(tracker) {
     decisionInterval: Math.round(decisionInterval * 10) / 10,
     idleRatio: Math.round(idleRatio * 1000) / 10, // As percentage
     totalActions: actionCount,
+    actionDensity: {
+      actionTicks,
+      avgActionsPerActionTick: Math.round(avgActionsPerActionTick * 100) / 100,
+      maxActionsInSingleTick,
+    },
 
     // Progression
     ageUnlockTicks: tracker.ageUnlockTicks,
@@ -567,6 +815,8 @@ export function calculateSummary(tracker) {
       byCategory: tracker.spendingByCategory,
       percentages: spendingPercentages,
       total: totalSpent,
+      coveragePct: spendingCoverage,
+      untracked: totalUntrackedSpend,
     },
 
     // Expansion metrics
@@ -577,6 +827,7 @@ export function calculateSummary(tracker) {
       avgNodeUnlockInterval: avgNodeUnlockInterval ? Math.round(avgNodeUnlockInterval) : null,
       nodeUnlocksByType,
       mapExpansions: tracker.mapExpansions.length,
+      avgMapExpansionArea: avgMapExpansionArea ? Math.round(avgMapExpansionArea) : null,
     },
 
     // Research metrics
@@ -597,6 +848,40 @@ export function calculateSummary(tracker) {
       totalExtractionRate,
     },
 
+    // Market metrics
+    market: {
+      current: {
+        discoveredFinalGoods: marketCurrent?.discoveredFinalGoods || 0,
+        avgPopularity: Math.round((marketCurrent?.avgPopularity || 0) * 1000) / 1000,
+        minPopularity: Math.round((marketCurrent?.minPopularity || 0) * 1000) / 1000,
+        saturatedMarkets: marketCurrent?.saturatedMarkets || 0,
+        heavilySaturatedMarkets: marketCurrent?.heavilySaturatedMarkets || 0,
+        activeEvents: marketCurrent?.activeEvents || 0,
+        totalDamage: marketCurrent?.totalDamage || 0,
+        avgDemandModifier: Math.round((marketCurrent?.avgDemandModifier || 0) * 1000) / 1000,
+        uniqueRecentSales: marketCurrent?.uniqueRecentSales || 0,
+      },
+      trend: {
+        avgPopularity: Math.round(avgMarketPopularity * 1000) / 1000,
+        avgSaturatedMarkets: Math.round(avgSaturatedMarkets * 100) / 100,
+        peakSaturatedMarkets,
+        timeWithAnySaturation,
+        avgUniqueRecentSales: Math.round(avgUniqueRecentSales * 100) / 100,
+      },
+      sales: {
+        totalSellActions: marketSales.totalSellActions,
+        totalUnitsSold: marketSales.totalUnitsSold,
+        totalRevenue: marketSales.totalRevenue,
+        avgSalePricePerUnit: Math.round(avgSalePricePerUnit * 100) / 100,
+        avgPopularityBeforeSale: Math.round(avgPopularityBeforeSale * 1000) / 1000,
+        avgPopularityAfterSale: Math.round(avgPopularityAfterSale * 1000) / 1000,
+        avgEventModifierOnSales: Math.round(avgEventModifierOnSales * 1000) / 1000,
+        salesInSaturatedMarketsPct: Math.round(salesInSaturatedMarketsPct * 10) / 10,
+        totalDamageAdded: marketSales.damageAdded,
+        topRevenueItems,
+      },
+    },
+
     // Milestones
     milestones: tracker.milestones,
   };
@@ -612,8 +897,9 @@ export function createTracker() {
   return {
     data: tracker,
     takeSnapshot: (sim) => takeSnapshot(tracker, sim),
-    recordAction: (sim, action) => recordAction(tracker, sim, action),
+    recordAction: (sim, action, context) => recordAction(tracker, sim, action, context),
     recordIdleTick: (sim) => recordIdleTick(tracker, sim),
+    recordTick: (sim) => recordTick(tracker, sim),
     checkAgeProgression: (sim) => checkAgeProgression(tracker, sim),
     recordCreditChange: (sim, delta) => recordCreditChange(tracker, sim, delta),
     recordBottleneck: (reason) => recordBottleneck(tracker, reason),

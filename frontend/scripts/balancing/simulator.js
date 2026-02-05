@@ -68,6 +68,43 @@ export function simulateTick(sim) {
  * @returns {Object} Result
  */
 export function executeAction(sim, action) {
+  const exploredBounds = sim.state.explorationMap?.exploredBounds;
+  const exploredArea = exploredBounds
+    ? (exploredBounds.maxX - exploredBounds.minX + 1) * (exploredBounds.maxY - exploredBounds.minY + 1)
+    : 0;
+
+  const before = {
+    credits: sim.state.credits,
+    researchPoints: sim.state.research?.researchPoints || 0,
+    unlockedRecipes: sim.state.unlockedRecipes?.length || 0,
+    discoveredRecipes: sim.state.discoveredRecipes?.length || 0,
+    floorArea: (sim.state.floorSpace?.width || 0) * (sim.state.floorSpace?.height || 0),
+    extractionNodes: sim.state.extractionNodes?.length || 0,
+    awaitingPrototype: sim.state.research?.awaitingPrototype?.length || 0,
+    awaitingPrototypeRecipeIds: (sim.state.research?.awaitingPrototype || []).map(p => p.recipeId),
+    prototypeBoostBonus: sim.state.research?.prototypeBoost?.bonus || 0,
+    prototypeBoostTicksRemaining: sim.state.research?.prototypeBoost?.ticksRemaining || 0,
+    exploredArea,
+  };
+
+  if (action.type === 'SELL_GOODS') {
+    const itemId = action.payload?.itemId;
+    before.sell = {
+      itemId,
+      inventory: sim.state.inventory?.[itemId] || 0,
+      popularity: sim.state.marketPopularity?.[itemId] ?? null,
+      damage: sim.state.marketDamage?.[itemId] || 0,
+      eventModifier: sim.state.marketEvents?.[itemId]?.modifier || 1.0,
+    };
+  }
+
+  if (action.type === 'UNLOCK_EXPLORATION_NODE') {
+    const x = action.payload?.x;
+    const y = action.payload?.y;
+    const tile = sim.state.explorationMap?.tiles?.[`${x},${y}`];
+    before.nodeResourceType = tile?.extractionNode?.resourceType || null;
+  }
+
   const result = engine(sim.state, sim.rules, action);
 
   if (result.error) {
@@ -75,7 +112,55 @@ export function executeAction(sim, action) {
   }
 
   sim.state = result.state;
-  return { success: true };
+  const exploredBoundsAfter = sim.state.explorationMap?.exploredBounds;
+  const exploredAreaAfter = exploredBoundsAfter
+    ? (exploredBoundsAfter.maxX - exploredBoundsAfter.minX + 1) * (exploredBoundsAfter.maxY - exploredBoundsAfter.minY + 1)
+    : 0;
+
+  const after = {
+    credits: sim.state.credits,
+    researchPoints: sim.state.research?.researchPoints || 0,
+    unlockedRecipes: sim.state.unlockedRecipes?.length || 0,
+    discoveredRecipes: sim.state.discoveredRecipes?.length || 0,
+    floorArea: (sim.state.floorSpace?.width || 0) * (sim.state.floorSpace?.height || 0),
+    extractionNodes: sim.state.extractionNodes?.length || 0,
+    awaitingPrototype: sim.state.research?.awaitingPrototype?.length || 0,
+    awaitingPrototypeRecipeIds: (sim.state.research?.awaitingPrototype || []).map(p => p.recipeId),
+    prototypeBoostBonus: sim.state.research?.prototypeBoost?.bonus || 0,
+    prototypeBoostTicksRemaining: sim.state.research?.prototypeBoost?.ticksRemaining || 0,
+    exploredArea: exploredAreaAfter,
+  };
+
+  if (action.type === 'SELL_GOODS') {
+    const itemId = action.payload?.itemId;
+    after.sell = {
+      itemId,
+      inventory: sim.state.inventory?.[itemId] || 0,
+      popularity: sim.state.marketPopularity?.[itemId] ?? null,
+      damage: sim.state.marketDamage?.[itemId] || 0,
+      eventModifier: sim.state.marketEvents?.[itemId]?.modifier || 1.0,
+    };
+  }
+
+  return {
+    success: true,
+    context: {
+      before,
+      after,
+      deltas: {
+        credits: after.credits - before.credits,
+        researchPoints: after.researchPoints - before.researchPoints,
+        unlockedRecipes: after.unlockedRecipes - before.unlockedRecipes,
+        discoveredRecipes: after.discoveredRecipes - before.discoveredRecipes,
+        floorArea: after.floorArea - before.floorArea,
+        extractionNodes: after.extractionNodes - before.extractionNodes,
+        awaitingPrototype: after.awaitingPrototype - before.awaitingPrototype,
+        prototypeBoostBonus: after.prototypeBoostBonus - before.prototypeBoostBonus,
+        exploredArea: after.exploredArea - before.exploredArea,
+      },
+      nodeResourceType: before.nodeResourceType || null,
+    },
+  };
 }
 
 /**
@@ -101,7 +186,7 @@ export function runTicks(sim, ticks, strategy, kpiTracker) {
     for (const action of actions) {
       const result = executeAction(sim, action);
       if (result.success) {
-        kpiTracker.recordAction(sim, action);
+        kpiTracker.recordAction(sim, action, result.context);
       }
     }
 
@@ -116,6 +201,8 @@ export function runTicks(sim, ticks, strategy, kpiTracker) {
     if (tickResult.error) {
       return { error: tickResult.error, ticksCompleted: i - startTick };
     }
+
+    kpiTracker.recordTick(sim);
 
     // Check for age progression
     kpiTracker.checkAgeProgression(sim);

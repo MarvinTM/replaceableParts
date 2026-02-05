@@ -59,6 +59,12 @@ export function generateTextReport(summary, config = {}) {
     lines.push('SPENDING BREAKDOWN');
     lines.push('-'.repeat(40));
     lines.push(`  Total Tracked Spending: ${summary.spending.total.toLocaleString()}`);
+    if (typeof summary.spending.coveragePct === 'number') {
+      lines.push(`  Coverage of Total Credit Outflow: ${summary.spending.coveragePct}%`);
+    }
+    if (summary.spending.untracked > 0) {
+      lines.push(`  Untracked Spending: ${summary.spending.untracked.toLocaleString()}`);
+    }
     const categories = [
       ['nodeUnlock', 'Node Unlocks'],
       ['researchDonation', 'Research (credits)'],
@@ -89,6 +95,9 @@ export function generateTextReport(summary, config = {}) {
     lines.push(`  Node Unlocks: ${summary.expansion.nodeUnlocks}`);
     if (summary.expansion.avgNodeUnlockInterval) {
       lines.push(`  Avg Node Unlock Interval: ${summary.expansion.avgNodeUnlockInterval} ticks`);
+    }
+    if (summary.expansion.avgMapExpansionArea) {
+      lines.push(`  Avg Map Expansion Area: ${summary.expansion.avgMapExpansionArea} cells`);
     }
 
     // Node unlocks by type
@@ -145,6 +154,45 @@ export function generateTextReport(summary, config = {}) {
     lines.push('');
   }
 
+  // Market Metrics (NEW)
+  if (summary.market) {
+    lines.push('-'.repeat(40));
+    lines.push('MARKET HEALTH');
+    lines.push('-'.repeat(40));
+    lines.push(`  Discovered Final Goods: ${summary.market.current.discoveredFinalGoods}`);
+    lines.push(`  Current Avg Popularity: ${summary.market.current.avgPopularity}`);
+    lines.push(`  Current Min Popularity: ${summary.market.current.minPopularity}`);
+    lines.push(`  Saturated Markets (Current): ${summary.market.current.saturatedMarkets}`);
+    lines.push(`  Saturated Markets (Avg): ${summary.market.trend.avgSaturatedMarkets}`);
+    lines.push(`  Peak Saturated Markets: ${summary.market.trend.peakSaturatedMarkets}`);
+    lines.push(`  Time with Any Saturation: ${summary.market.trend.timeWithAnySaturation}%`);
+    lines.push(`  Avg Demand Modifier (Current): ${summary.market.current.avgDemandModifier}`);
+    lines.push(`  Active Market Events (Current): ${summary.market.current.activeEvents}`);
+    lines.push(`  Total Market Damage (Current): ${summary.market.current.totalDamage.toLocaleString()}`);
+    lines.push(`  Recent Sales Diversity (Current): ${summary.market.current.uniqueRecentSales}`);
+    lines.push('');
+
+    lines.push('-'.repeat(40));
+    lines.push('MARKET SALES');
+    lines.push('-'.repeat(40));
+    lines.push(`  Sell Actions: ${summary.market.sales.totalSellActions.toLocaleString()}`);
+    lines.push(`  Units Sold: ${summary.market.sales.totalUnitsSold.toLocaleString()}`);
+    lines.push(`  Revenue from Sales: ${summary.market.sales.totalRevenue.toLocaleString()}`);
+    lines.push(`  Avg Sale Price/Unit: ${summary.market.sales.avgSalePricePerUnit}`);
+    lines.push(`  Avg Popularity Before Sale: ${summary.market.sales.avgPopularityBeforeSale}`);
+    lines.push(`  Avg Popularity After Sale: ${summary.market.sales.avgPopularityAfterSale}`);
+    lines.push(`  Avg Event Modifier on Sales: ${summary.market.sales.avgEventModifierOnSales}`);
+    lines.push(`  Sales in Saturated Markets: ${summary.market.sales.salesInSaturatedMarketsPct}%`);
+    lines.push(`  Market Damage Added from Sales: ${summary.market.sales.totalDamageAdded.toLocaleString()}`);
+    if (summary.market.sales.topRevenueItems && summary.market.sales.topRevenueItems.length > 0) {
+      lines.push('  Top Revenue Items:');
+      for (const item of summary.market.sales.topRevenueItems) {
+        lines.push(`    ${item.itemId}: ${item.revenue.toLocaleString()} (${item.units.toLocaleString()} units @ ${Math.round(item.avgPricePerUnit * 100) / 100})`);
+      }
+    }
+    lines.push('');
+  }
+
   // Pacing
   lines.push('-'.repeat(40));
   lines.push('PACING');
@@ -152,6 +200,11 @@ export function generateTextReport(summary, config = {}) {
   lines.push(`  Total Actions: ${summary.totalActions.toLocaleString()}`);
   lines.push(`  Decision Interval: ${summary.decisionInterval} ticks (avg)`);
   lines.push(`  Idle Ratio: ${summary.idleRatio}%`);
+  if (summary.actionDensity) {
+    lines.push(`  Action Ticks: ${summary.actionDensity.actionTicks.toLocaleString()}`);
+    lines.push(`  Avg Actions per Action Tick: ${summary.actionDensity.avgActionsPerActionTick}`);
+    lines.push(`  Max Actions in a Single Tick: ${summary.actionDensity.maxActionsInSingleTick}`);
+  }
   lines.push('');
 
   // Milestones (NEW)
