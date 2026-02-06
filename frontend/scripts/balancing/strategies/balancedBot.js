@@ -47,6 +47,7 @@ export class BalancedBot extends BaseStrategy {
     this.maxExperimentsPerTickWhenStalled = params.maxExperimentsPerTickWhenStalled ?? 6;
     this.researchStallTicks = params.researchStallTicks ?? 2500;
     this.enableTargetedCatchUpResearch = params.enableTargetedCatchUpResearch ?? true;
+    this.targetedResearchCooldownTicks = params.targetedResearchCooldownTicks ?? 120;
     this.ageMilestoneTicks = params.ageMilestoneTicks ?? {
       2: 900,
       3: 2500,
@@ -63,9 +64,20 @@ export class BalancedBot extends BaseStrategy {
     this.nodeUnlockBufferMultiplierWhenBehind = params.nodeUnlockBufferMultiplierWhenBehind ?? 6;
     this.mapExpansionBufferMultiplier = params.mapExpansionBufferMultiplier ?? 3;
     this.disableMapExpansionWhenBehind = params.disableMapExpansionWhenBehind ?? true;
+    this.dependencyNeedDepth = params.dependencyNeedDepth ?? 3;
+    this.dependencyNeedDecay = params.dependencyNeedDecay ?? 0.65;
+    this.dependencyNeedWeight = params.dependencyNeedWeight ?? 0.7;
+    this.dependencyNeedsRefreshTicks = params.dependencyNeedsRefreshTicks ?? 20;
+    this.inventoryNeedSatisfactionFactor = params.inventoryNeedSatisfactionFactor ?? 0.8;
+    this.prototypeNeedInventoryTarget = params.prototypeNeedInventoryTarget ?? 80;
+    this.criticalRawNeedThreshold = params.criticalRawNeedThreshold ?? 8;
+    this.criticalResourceScoreWeight = params.criticalResourceScoreWeight ?? 280;
+    this.criticalResourceNewTypeBonus = params.criticalResourceNewTypeBonus ?? 1200;
+    this.forceExploreForCriticalResources = params.forceExploreForCriticalResources ?? true;
 
     // State tracking
     this.lastResearchDonation = 0;
+    this.lastTargetedExperimentTick = -Infinity;
     this.lastExploration = 0;
     this.lastBuild = 0;
     this.machinesDeployed = 0;
@@ -75,6 +87,9 @@ export class BalancedBot extends BaseStrategy {
     this.sellRotationPlan = null;
     this.lastObservedAge = 1;
     this.lastAgeAdvanceTick = 0;
+    this._rulesCache = null;
+    this._lastDependencyNeedsTick = -Infinity;
+    this._lastDependencyNeeds = null;
   }
 
   decide(sim) {
@@ -751,6 +766,222 @@ export class BalancedBot extends BaseStrategy {
     return maxAge;
   }
 
+  getRulesCache(rules) {
+    if (this._rulesCache?.rulesRef === rules) {
+      return this._rulesCache;
+    }
+
+    const materialById = new Map(rules.materials.map(material => [material.id, material]));
+    const recipeById = new Map(rules.recipes.map(recipe => [recipe.id, recipe]));
+    const recipesByOutput = new Map();
+    for (const recipe of rules.recipes) {
+      for (const outputId of Object.keys(recipe.outputs || {})) {
+        if (!recipesByOutput.has(outputId)) {
+          recipesByOutput.set(outputId, []);
+        }
+        recipesByOutput.get(outputId).push(recipe);
+      }
+    }
+
+    this._rulesCache = {
+      rulesRef: rules,
+      materialById,
+      recipeById,
+      recipesByOutput,
+    };
+    return this._rulesCache;
+  }
+
+  getProducedOutputsFromRecipeIds(recipeIds, rules) {
+    const cache = this.getRulesCache(rules);
+    const producedOutputs = new Set();
+    for (const recipeId of recipeIds || []) {
+      const recipe = cache.recipeById.get(recipeId);
+      if (!recipe) continue;
+      for (const outputId of Object.keys(recipe.outputs || {})) {
+        producedOutputs.add(outputId);
+      }
+    }
+    return producedOutputs;
+  }
+
+  getRecipeComplexity(recipe, materialById) {
+    const inputEntries = Object.entries(recipe.inputs || {});
+    const nonRawInputCount = inputEntries.filter(([inputId]) => {
+      return materialById.get(inputId)?.category !== 'raw';
+    }).length;
+    const totalInputQuantity = inputEntries.reduce((sum, [, qty]) => sum + qty, 0);
+
+    return {
+      nonRawInputCount,
+      totalInputQuantity,
+      ticksToComplete: recipe.ticksToComplete || 10,
+    };
+  }
+
+  pickBestRecipeForMaterial(materialId, state, rules, options = {}) {
+    const cache = this.getRulesCache(rules);
+    const materialById = cache.materialById;
+    const discoveredSet = options.discoveredSet || new Set(state.discoveredRecipes || []);
+    const unlockedSet = options.unlockedSet || new Set(state.unlockedRecipes || []);
+    const requireUnlocked = options.requireUnlocked === true;
+    const onlyUndiscovered = options.onlyUndiscovered === true;
+
+    const candidates = (cache.recipesByOutput.get(materialId) || [])
+      .filter(recipe => {
+        const isDiscovered = discoveredSet.has(recipe.id);
+        const isUnlocked = unlockedSet.has(recipe.id);
+
+        if (requireUnlocked && !isUnlocked) return false;
+        if (onlyUndiscovered && (isDiscovered || isUnlocked)) return false;
+        return true;
+      })
+      .map(recipe => {
+        const complexity = this.getRecipeComplexity(recipe, materialById);
+        const outputAge = this.getRecipeOutputMaxAge(recipe, materialById);
+        const isDiscovered = discoveredSet.has(recipe.id);
+        const isUnlocked = unlockedSet.has(recipe.id);
+        const score =
+          (isUnlocked ? 500 : 0) +
+          (isDiscovered ? 120 : 0) -
+          complexity.nonRawInputCount * 35 -
+          complexity.totalInputQuantity * 4 -
+          complexity.ticksToComplete * 1.5 -
+          outputAge * 3;
+
+        return {
+          recipe,
+          score,
+          outputAge,
+          complexity,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    return candidates.length > 0 ? candidates[0].recipe : null;
+  }
+
+  getMaterialShortageScore(state, materialId, neededAmount, producedOutputs = null) {
+    if (!Number.isFinite(neededAmount) || neededAmount <= 0) return 0;
+    const inventory = state.inventory?.[materialId] || 0;
+    const baseShortage = Math.max(0, neededAmount - inventory * this.inventoryNeedSatisfactionFactor);
+    if (baseShortage <= 0) return 0;
+
+    // Discount shortage when another machine is already producing this output.
+    if (producedOutputs?.has(materialId)) {
+      return baseShortage * 0.7;
+    }
+
+    return baseShortage;
+  }
+
+  getDependencyExpandedNeeds(state, rules, baseNeeds, options = {}) {
+    const expandedNeeds = { ...(baseNeeds || {}) };
+    if (!rules) return expandedNeeds;
+
+    const cache = this.getRulesCache(rules);
+    const materialById = cache.materialById;
+    const discoveredSet = new Set(state.discoveredRecipes || []);
+    const unlockedSet = new Set(state.unlockedRecipes || []);
+    const maxDepth = options.dependencyDepth ?? this.dependencyNeedDepth;
+    const decay = options.dependencyDecay ?? this.dependencyNeedDecay;
+    const weight = options.dependencyWeight ?? this.dependencyNeedWeight;
+
+    const addNeed = (materialId, amount) => {
+      if (!Number.isFinite(amount) || amount <= 0) return;
+      expandedNeeds[materialId] = (expandedNeeds[materialId] || 0) + amount;
+    };
+
+    const expandMaterial = (materialId, amount, depth, visited) => {
+      if (depth >= maxDepth || amount < 1) return;
+      const material = materialById.get(materialId);
+      if (!material || material.category === 'raw') return;
+
+      const visitKey = `${materialId}:${depth}`;
+      if (visited.has(visitKey)) return;
+      visited.add(visitKey);
+
+      const recipe = this.pickBestRecipeForMaterial(materialId, state, rules, {
+        requireUnlocked: false,
+        onlyUndiscovered: false,
+        discoveredSet,
+        unlockedSet,
+      });
+      if (!recipe) return;
+
+      for (const [inputId, qty] of Object.entries(recipe.inputs || {})) {
+        const propagated = amount * qty * decay;
+        if (propagated < 0.5) continue;
+        addNeed(inputId, propagated * weight);
+        expandMaterial(inputId, propagated, depth + 1, visited);
+      }
+    };
+
+    for (const [materialId, amount] of Object.entries(baseNeeds || {})) {
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+      expandMaterial(materialId, amount, 0, new Set());
+    }
+
+    return expandedNeeds;
+  }
+
+  getCriticalRawResourceNeeds(state, rules, ageInfo = null) {
+    const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
+    const basePrototypeNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+      currentAge,
+      prioritizeNextAge: true,
+      ageStalled: ageInfo?.ageStalled,
+      preferNearComplete: true,
+      includeDependencies: false,
+    });
+    const expandedNeeds = this.getDependencyExpandedNeeds(state, rules, basePrototypeNeeds, {});
+    const cache = this.getRulesCache(rules);
+    const materialById = cache.materialById;
+    const discoveredSet = new Set(state.discoveredRecipes || []);
+    const unlockedSet = new Set(state.unlockedRecipes || []);
+    const rawNeeds = {};
+
+    const sortedNeeds = Object.entries(expandedNeeds)
+      .filter(([, amount]) => amount > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 18);
+
+    const accumulateRawNeeds = (materialId, amount, depth, visited) => {
+      if (depth > this.dependencyNeedDepth + 1 || amount < 1) return;
+      const material = materialById.get(materialId);
+      if (!material) return;
+
+      if (material.category === 'raw') {
+        rawNeeds[materialId] = (rawNeeds[materialId] || 0) + amount;
+        return;
+      }
+
+      const visitKey = `${materialId}:${depth}`;
+      if (visited.has(visitKey)) return;
+      visited.add(visitKey);
+
+      const recipe = this.pickBestRecipeForMaterial(materialId, state, rules, {
+        requireUnlocked: false,
+        onlyUndiscovered: false,
+        discoveredSet,
+        unlockedSet,
+      });
+      if (!recipe) return;
+
+      for (const [inputId, qty] of Object.entries(recipe.inputs || {})) {
+        const propagated = amount * qty * this.dependencyNeedDecay;
+        if (propagated < 0.5) continue;
+        accumulateRawNeeds(inputId, propagated, depth + 1, visited);
+      }
+    };
+
+    for (const [materialId, amount] of sortedNeeds) {
+      accumulateRawNeeds(materialId, amount, 0, new Set());
+    }
+
+    return rawNeeds;
+  }
+
   getPrototypeMaterialNeeds(state, rules = null, options = {}) {
     const needs = {};
     const recipeById = rules ? new Map(rules.recipes.map(recipe => [recipe.id, recipe])) : null;
@@ -795,6 +1026,11 @@ export class BalancedBot extends BaseStrategy {
         }
       }
     }
+
+    if (rules && options.includeDependencies) {
+      return this.getDependencyExpandedNeeds(state, rules, needs, options);
+    }
+
     return needs;
   }
 
@@ -900,21 +1136,53 @@ export class BalancedBot extends BaseStrategy {
     // Build recipe priority map
     const recipePriority = this.buildRecipePriority(rules);
     const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
-    const prototypeNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+    const directPrototypeNeeds = this.getPrototypeMaterialNeeds(state, rules, {
       currentAge,
       prioritizeNextAge: true,
       ageStalled: ageInfo?.ageStalled,
       preferNearComplete: true,
+      includeDependencies: false,
     });
+    if (
+      !this._lastDependencyNeeds ||
+      sim.currentTick - this._lastDependencyNeedsTick >= this.dependencyNeedsRefreshTicks
+    ) {
+      this._lastDependencyNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+        currentAge,
+        prioritizeNextAge: true,
+        ageStalled: ageInfo?.ageStalled,
+        preferNearComplete: true,
+        includeDependencies: true,
+        dependencyDepth: this.dependencyNeedDepth,
+        dependencyDecay: this.dependencyNeedDecay,
+        dependencyWeight: this.dependencyNeedWeight,
+      });
+      this._lastDependencyNeedsTick = sim.currentTick;
+    }
+    const prototypeNeeds = this._lastDependencyNeeds;
 
     // Build map of what we're already producing
     const currentlyProducing = new Set(
       state.machines.filter(m => m.recipeId).map(m => m.recipeId)
     );
+    const producedOutputs = this.getProducedOutputsFromRecipeIds(currentlyProducing, rules);
 
-    // If we have prototype backlogs, periodically force production toward missing prototype materials
-    if (sim.currentTick % 25 === 0) {
-      const prototypeAction = this.tryReassignForPrototype(sim, rules, currentlyProducing, ageInfo);
+    // Periodically force production toward prototype blockers when progression is behind.
+    const prototypeBacklog = state.research?.awaitingPrototype?.length || 0;
+    const shouldForcePrototypeProduction =
+      !!ageInfo?.behindTarget ||
+      !!ageInfo?.ageStalled ||
+      prototypeBacklog > this.maxPrototypeBacklog * 5;
+    const prototypeReassignInterval = ageInfo?.behindTarget ? 25 : 60;
+    if (shouldForcePrototypeProduction && sim.currentTick % prototypeReassignInterval === 0) {
+      const prototypeAction = this.tryReassignForPrototype(
+        sim,
+        rules,
+        currentlyProducing,
+        ageInfo,
+        prototypeNeeds,
+        directPrototypeNeeds
+      );
       if (prototypeAction) {
         actions.push(prototypeAction);
         return actions;
@@ -998,8 +1266,19 @@ export class BalancedBot extends BaseStrategy {
 
         // Strong bonus for producing materials needed by active prototypes
         for (const outputId of outputIds) {
-          if (prototypeNeeds[outputId] > 0) {
-            score += 250 + Math.min(120, prototypeNeeds[outputId] * 4);
+          const directNeed = directPrototypeNeeds[outputId] || 0;
+          const chainedNeed = prototypeNeeds[outputId] || 0;
+          if (directNeed > 0) {
+            const shortage = this.getMaterialShortageScore(state, outputId, directNeed, producedOutputs);
+            score += 170 + Math.min(120, shortage * 3);
+          } else if (chainedNeed > 0) {
+            const shortage = this.getMaterialShortageScore(state, outputId, chainedNeed, producedOutputs);
+            score += 70 + Math.min(90, shortage * 2.5);
+          }
+
+          const inventoryQty = state.inventory?.[outputId] || 0;
+          if (inventoryQty > this.prototypeNeedInventoryTarget) {
+            score -= Math.min(180, (inventoryQty - this.prototypeNeedInventoryTarget) * 1.5);
           }
         }
 
@@ -1148,6 +1427,84 @@ export class BalancedBot extends BaseStrategy {
     return priority;
   }
 
+  findDependencyTargetedRecipe(state, rules, currentAge, ageInfo = null) {
+    const cache = this.getRulesCache(rules);
+    const materialById = cache.materialById;
+    const discoveredSet = new Set(state.discoveredRecipes || []);
+    const unlockedSet = new Set(state.unlockedRecipes || []);
+
+    const directNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+      currentAge,
+      prioritizeNextAge: true,
+      ageStalled: ageInfo?.ageStalled,
+      preferNearComplete: true,
+      includeDependencies: false,
+    });
+    const allNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+      currentAge,
+      prioritizeNextAge: true,
+      ageStalled: ageInfo?.ageStalled,
+      preferNearComplete: true,
+      includeDependencies: true,
+      dependencyDepth: this.dependencyNeedDepth,
+      dependencyDecay: this.dependencyNeedDecay,
+      dependencyWeight: this.dependencyNeedWeight,
+    });
+    const producedOutputs = this.getProducedOutputsFromRecipeIds(
+      state.machines.filter(machine => machine.recipeId).map(machine => machine.recipeId),
+      rules
+    );
+
+    const needsByShortage = Object.entries(allNeeds)
+      .map(([materialId, amount]) => {
+        const shortage = this.getMaterialShortageScore(state, materialId, amount, producedOutputs);
+        return {
+          materialId,
+          amount,
+          shortage,
+          directNeed: directNeeds[materialId] || 0,
+        };
+      })
+      .filter(entry => entry.shortage > 0.5)
+      .sort((a, b) => {
+        if (b.directNeed !== a.directNeed) return b.directNeed - a.directNeed;
+        return b.shortage - a.shortage;
+      })
+      .slice(0, 20);
+
+    let bestCandidate = null;
+    let bestScore = -Infinity;
+
+    for (const need of needsByShortage) {
+      const candidates = cache.recipesByOutput.get(need.materialId) || [];
+      for (const recipe of candidates) {
+        if (discoveredSet.has(recipe.id) || unlockedSet.has(recipe.id)) continue;
+
+        const complexity = this.getRecipeComplexity(recipe, materialById);
+        const outputAge = this.getRecipeOutputMaxAge(recipe, materialById);
+        const frontierDistance = Math.abs((currentAge + 1) - outputAge);
+        const directNeedBonus = need.directNeed > 0 ? 260 : 110;
+        const behindTargetBonus =
+          ageInfo?.behindTarget && outputAge >= currentAge + 1 ? 120 : 0;
+        const score =
+          directNeedBonus +
+          Math.min(260, need.shortage * 7) +
+          behindTargetBonus -
+          frontierDistance * 32 -
+          complexity.nonRawInputCount * 25 -
+          complexity.totalInputQuantity * 4 -
+          complexity.ticksToComplete;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestCandidate = recipe.id;
+        }
+      }
+    }
+
+    return bestCandidate;
+  }
+
   findTargetedCatchUpRecipe(state, rules, currentAge) {
     const discovered = new Set(state.discoveredRecipes || []);
     const unlocked = new Set(state.unlockedRecipes || []);
@@ -1252,16 +1609,34 @@ export class BalancedBot extends BaseStrategy {
 
     let researchPointsAvailable = state.research.researchPoints || 0;
 
-    // If age progression is stalling, prioritize a targeted next-age discovery.
-    if (ageStalled && this.enableTargetedCatchUpResearch) {
-      const targetedRecipeId = this.findTargetedCatchUpRecipe(state, rules, currentAge);
+    // Prioritize dependency-first targeted research when progression/backlog pressure is high.
+    if (this.enableTargetedCatchUpResearch) {
       const targetedCost = experimentCost * (rules.research.targetedExperimentMultiplier || 10);
-      if (targetedRecipeId && researchPointsAvailable >= targetedCost) {
+      const shouldEvaluateTargeted =
+        researchPointsAvailable >= targetedCost &&
+        sim.currentTick - this.lastTargetedExperimentTick >= this.targetedResearchCooldownTicks &&
+        (
+          ageStalled ||
+          ageInfo?.behindTarget ||
+          prototypeBacklog > this.maxPrototypeBacklog
+        );
+      const targetedRecipeId = shouldEvaluateTargeted
+        ? (
+          this.findDependencyTargetedRecipe(state, rules, currentAge, ageInfo) ||
+          (ageStalled ? this.findTargetedCatchUpRecipe(state, rules, currentAge) : null)
+        )
+        : null;
+      const shouldRunTargeted =
+        !!targetedRecipeId &&
+        shouldEvaluateTargeted;
+
+      if (shouldRunTargeted) {
         actions.push({
           type: 'RUN_TARGETED_EXPERIMENT',
           payload: { recipeId: targetedRecipeId }
         });
         researchPointsAvailable -= targetedCost;
+        this.lastTargetedExperimentTick = sim.currentTick;
       }
     }
 
@@ -1446,6 +1821,19 @@ export class BalancedBot extends BaseStrategy {
       return actions;
     }
 
+    const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
+    const criticalRawNeeds = this.getCriticalRawResourceNeeds(state, rules, ageInfo);
+    const existingResourceCounts = {};
+    for (const node of state.extractionNodes || []) {
+      existingResourceCounts[node.resourceType] = (existingResourceCounts[node.resourceType] || 0) + 1;
+    }
+    const missingCriticalResources = Object.entries(criticalRawNeeds)
+      .filter(([resourceType, amount]) =>
+        amount >= this.criticalRawNeedThreshold &&
+        (existingResourceCounts[resourceType] || 0) === 0
+      )
+      .map(([resourceType]) => resourceType);
+
     // PRIORITY 1: Unlock available nodes
     const nodeUnlockBaseCost = rules.exploration.nodeUnlockCost || 15;
     const globalScaleFactor = rules.exploration.globalNodeScaleFactor || 1.0;
@@ -1475,8 +1863,22 @@ export class BalancedBot extends BaseStrategy {
         const requiredBuffer = this.minCreditsBuffer * bufferMultiplier;
         if (state.credits <= cost + requiredBuffer) continue;
 
-        // Score: prioritize fewer existing nodes (diversify), lower cost
-        const score = -existingCount * 1000 - cost;
+        const criticalNeed = criticalRawNeeds[resourceType] || 0;
+        const needPressure = criticalNeed / (existingCount + 1);
+        const resourceAge = rules.exploration.resourceAges?.[resourceType] || 1;
+        const ageRelevanceBonus = resourceAge <= currentAge + 1 ? 90 : 0;
+        const missingTypeBonus =
+          criticalNeed >= this.criticalRawNeedThreshold && existingCount === 0
+            ? this.criticalResourceNewTypeBonus
+            : 0;
+
+        // Score: prioritize critical shortages first, then diversify/cost.
+        const score =
+          needPressure * this.criticalResourceScoreWeight +
+          ageRelevanceBonus +
+          missingTypeBonus -
+          existingCount * 120 -
+          cost * 0.35;
         if (score > bestScore) {
           bestScore = score;
           bestNode = { x, y, cost };
@@ -1501,12 +1903,18 @@ export class BalancedBot extends BaseStrategy {
       return actions;
     }
 
-    if (ageInfo?.behindTarget && this.disableMapExpansionWhenBehind) {
+    const shouldForceExpansionForCritical =
+      this.forceExploreForCriticalResources && missingCriticalResources.length > 0;
+
+    if (ageInfo?.behindTarget && this.disableMapExpansionWhenBehind && !shouldForceExpansionForCritical) {
       return actions;
     }
 
     const explorationCost = rules.exploration.baseCostPerCell * 16;
-    if (state.credits > explorationCost + this.minCreditsBuffer * this.mapExpansionBufferMultiplier) {
+    const expansionBufferMultiplier = shouldForceExpansionForCritical
+      ? Math.min(this.mapExpansionBufferMultiplier, 1.5)
+      : this.mapExpansionBufferMultiplier;
+    if (state.credits > explorationCost + this.minCreditsBuffer * expansionBufferMultiplier) {
       actions.push({
         type: 'EXPAND_EXPLORATION',
         payload: {}
@@ -1705,34 +2113,83 @@ export class BalancedBot extends BaseStrategy {
     return null;
   }
 
-  tryReassignForPrototype(sim, rules, currentlyProducing, ageInfo = null) {
+  tryReassignForPrototype(
+    sim,
+    rules,
+    currentlyProducing,
+    ageInfo = null,
+    precomputedNeeds = null,
+    precomputedDirectNeeds = null
+  ) {
     const { state } = sim;
     const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
-    const prototypeNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+    const directPrototypeNeeds = precomputedDirectNeeds || this.getPrototypeMaterialNeeds(state, rules, {
       currentAge,
       prioritizeNextAge: true,
       ageStalled: ageInfo?.ageStalled,
       preferNearComplete: true,
+      includeDependencies: false,
     });
+    const prototypeNeeds = precomputedNeeds || this.getPrototypeMaterialNeeds(state, rules, {
+      currentAge,
+      prioritizeNextAge: true,
+      ageStalled: ageInfo?.ageStalled,
+      preferNearComplete: true,
+      includeDependencies: true,
+      dependencyDepth: this.dependencyNeedDepth,
+      dependencyDecay: this.dependencyNeedDecay,
+      dependencyWeight: this.dependencyNeedWeight,
+    });
+    const producedOutputs = this.getProducedOutputsFromRecipeIds(currentlyProducing, rules);
     const neededMaterials = Object.entries(prototypeNeeds)
-      .sort((a, b) => b[1] - a[1]);
+      .map(([materialId, amount]) => {
+        return {
+          materialId,
+          amount,
+          directNeed: directPrototypeNeeds[materialId] || 0,
+          shortage: this.getMaterialShortageScore(state, materialId, amount, producedOutputs),
+        };
+      })
+      .filter(entry => entry.shortage > 0.5)
+      .sort((a, b) => {
+        if (b.directNeed !== a.directNeed) return b.directNeed - a.directNeed;
+        return b.shortage - a.shortage;
+      });
+    const prioritizedMaterials = neededMaterials.some(entry => entry.directNeed > 0)
+      ? neededMaterials.filter(entry => entry.directNeed > 0)
+      : neededMaterials.slice(0, 12);
 
-    if (neededMaterials.length === 0) {
+    if (prioritizedMaterials.length === 0) {
       return null;
     }
 
     const unlockedSet = new Set(state.unlockedRecipes || []);
+    const cache = this.getRulesCache(rules);
+    const materialById = cache.materialById;
     const candidateMachines = [...state.machines]
       .filter(machine => machine.enabled && machine.status !== 'blocked')
       .sort((a, b) => (a.recipeId ? 1 : 0) - (b.recipeId ? 1 : 0)); // Prefer idle machines
 
-    for (const [neededMaterial] of neededMaterials) {
+    for (const needed of prioritizedMaterials) {
       const producerRecipes = rules.recipes
         .filter(recipe =>
           unlockedSet.has(recipe.id) &&
-          Object.prototype.hasOwnProperty.call(recipe.outputs || {}, neededMaterial)
+          Object.prototype.hasOwnProperty.call(recipe.outputs || {}, needed.materialId)
         )
-        .sort((a, b) => (a.ticksToComplete || 10) - (b.ticksToComplete || 10));
+        .map(recipe => {
+          const complexity = this.getRecipeComplexity(recipe, materialById);
+          const outputQty = recipe.outputs?.[needed.materialId] || 1;
+          const coverage = needed.shortage / Math.max(1, outputQty);
+          const score =
+            (needed.directNeed > 0 ? 220 : 90) +
+            Math.min(180, coverage * 20) -
+            complexity.nonRawInputCount * 18 -
+            complexity.totalInputQuantity * 2 -
+            complexity.ticksToComplete;
+          return { recipe, score };
+        })
+        .sort((a, b) => b.score - a.score)
+        .map(entry => entry.recipe);
 
       for (const producerRecipe of producerRecipes) {
         if (!this.canProduceRecipe(producerRecipe, state, rules, currentlyProducing)) continue;
