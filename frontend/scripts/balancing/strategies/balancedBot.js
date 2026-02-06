@@ -43,6 +43,20 @@ export class BalancedBot extends BaseStrategy {
     this.sellRotationForceSelection = params.sellRotationForceSelection ?? true;
     this.researchDonationCooldownTicks = params.researchDonationCooldownTicks ?? 500;
     this.maxRPReserveForDonationInExperiments = params.maxRPReserveForDonationInExperiments ?? 18;
+    this.researchDonationRatioWhenAhead = params.researchDonationRatioWhenAhead ?? null;
+    this.researchDonationRatioWhenBehind = params.researchDonationRatioWhenBehind ?? null;
+    this.maxResearchDonationRatio = params.maxResearchDonationRatio ?? null;
+    this.researchDonationCatchupWeight = params.researchDonationCatchupWeight ?? 0;
+    this.maxResearchDonationRatioBeforeEconomicBase = params.maxResearchDonationRatioBeforeEconomicBase ?? 0.2;
+    this.minExtractionNodesForAggressiveResearch = params.minExtractionNodesForAggressiveResearch ?? 20;
+    this.minMachineCountForAggressiveResearch = params.minMachineCountForAggressiveResearch ?? 10;
+    this.maxDonationShareOfLiquidCredits = params.maxDonationShareOfLiquidCredits ?? 0.65;
+    this.maxPrototypeBacklogForDonationWhenBehind = params.maxPrototypeBacklogForDonationWhenBehind
+      ?? this.maxPrototypeBacklogForDonation;
+    this.enforceResearchReserveOnExploration = params.enforceResearchReserveOnExploration ?? true;
+    this.researchReserveWeight = params.researchReserveWeight ?? 0;
+    this.researchReserveWeightWhenBehind = params.researchReserveWeightWhenBehind ?? 0;
+    this.maxResearchReserveShare = params.maxResearchReserveShare ?? 0.35;
     this.maxExperimentsPerTick = params.maxExperimentsPerTick ?? 3;
     this.maxExperimentsPerTickWhenStalled = params.maxExperimentsPerTickWhenStalled ?? 6;
     this.researchStallTicks = params.researchStallTicks ?? 2500;
@@ -1576,38 +1590,119 @@ export class BalancedBot extends BaseStrategy {
       .map(entry => entry.prototype);
   }
 
+  clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  getResearchFundingStatus(state, rules, currentAge) {
+    const creditsToRPRatio = rules.research?.creditsToRPRatio || 10;
+    const experimentCost = rules.research?.experimentCosts?.[currentAge] || 100;
+    const rpTarget = Math.max(0, experimentCost * this.maxRPReserveForDonationInExperiments);
+    const currentRP = Math.max(0, state.research?.researchPoints || 0);
+    const rpDeficit = Math.max(0, rpTarget - currentRP);
+    const deficitRatio = rpTarget > 0 ? this.clamp01(rpDeficit / rpTarget) : 0;
+    const creditsNeededForRPDeficit = rpDeficit * creditsToRPRatio;
+
+    return {
+      creditsToRPRatio,
+      experimentCost,
+      rpTarget,
+      currentRP,
+      rpDeficit,
+      deficitRatio,
+      creditsNeededForRPDeficit,
+    };
+  }
+
+  getDynamicResearchDonationRatio(ageInfo, fundingStatus) {
+    const economicBaseReady = fundingStatus?.economicBaseReady ?? true;
+    const baseAhead = this.researchDonationRatioWhenAhead ?? this.researchBudgetRatio;
+    const baseBehind = this.researchDonationRatioWhenBehind ?? baseAhead;
+    const baseRatio = ageInfo?.behindTarget ? baseBehind : baseAhead;
+    const catchUpBoost = this.researchDonationCatchupWeight * (fundingStatus?.deficitRatio || 0);
+    const configuredCap = this.maxResearchDonationRatio ?? Math.max(baseAhead, baseBehind);
+    const effectiveCap = economicBaseReady
+      ? configuredCap
+      : Math.min(configuredCap, this.maxResearchDonationRatioBeforeEconomicBase);
+    return Math.max(0, Math.min(effectiveCap, baseRatio + catchUpBoost));
+  }
+
+  getResearchReserveCredits(state, ageInfo, fundingStatus) {
+    if (!this.enforceResearchReserveOnExploration) return 0;
+    const reserveWeight = ageInfo?.behindTarget
+      ? this.researchReserveWeightWhenBehind
+      : this.researchReserveWeight;
+    if (!(reserveWeight > 0)) return 0;
+
+    const weightedReserve = (fundingStatus?.creditsNeededForRPDeficit || 0) * reserveWeight;
+    const reserveCap = Math.max(0, state.credits * this.maxResearchReserveShare);
+    return Math.max(0, Math.min(weightedReserve, reserveCap));
+  }
+
+  hasEconomicBaseForAggressiveResearch(state) {
+    const nodes = state.extractionNodes?.length || 0;
+    const machines = state.machines?.length || 0;
+    return (
+      nodes >= this.minExtractionNodesForAggressiveResearch &&
+      machines >= this.minMachineCountForAggressiveResearch
+    );
+  }
+
   decideResearch(sim, ageInfo = null) {
     const { state, rules } = sim;
     const actions = [];
 
     const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
     const ageStalled = ageInfo?.ageStalled || false;
-    const researchBudget = state.credits * this.researchBudgetRatio;
-    const creditsToRPRatio = rules.research.creditsToRPRatio;
-    const experimentCost = rules.research.experimentCosts[currentAge] || 100;
+    const fundingStatus = this.getResearchFundingStatus(state, rules, currentAge);
+    fundingStatus.economicBaseReady = this.hasEconomicBaseForAggressiveResearch(state);
+    const creditsToRPRatio = fundingStatus.creditsToRPRatio;
+    const experimentCost = fundingStatus.experimentCost;
     const prototypeBacklog = state.research.awaitingPrototype?.length || 0;
-    const donationRPThreshold = experimentCost * this.maxRPReserveForDonationInExperiments;
+    const donationRPThreshold = fundingStatus.rpTarget;
+    const donationRatio = this.getDynamicResearchDonationRatio(ageInfo, fundingStatus);
+    const donationCooldown = ageInfo?.behindTarget
+      ? Math.max(120, Math.floor(this.researchDonationCooldownTicks * 0.4))
+      : this.researchDonationCooldownTicks;
+    const donationBacklogLimit = ageInfo?.behindTarget
+      ? this.maxPrototypeBacklogForDonationWhenBehind
+      : this.maxPrototypeBacklogForDonation;
+    const shouldDonateForCatchUp =
+      ageInfo?.behindTarget ||
+      ageStalled ||
+      fundingStatus.deficitRatio >= 0.35;
+    let researchPointsAvailable = state.research.researchPoints || 0;
 
-    // Donate credits only when RP stock is low enough to justify more funding.
-    if (state.credits > this.minCreditsBuffer + researchBudget) {
+    // Donate credits when RP reserves are lagging or the bot is behind progression targets.
+    if (state.credits > this.minCreditsBuffer) {
+      const researchReserve = this.getResearchReserveCredits(state, ageInfo, fundingStatus);
+      const maxAvailableForDonation = Math.floor(state.credits - this.minCreditsBuffer - researchReserve);
+      const maxDonationByLiquidity = Math.floor(maxAvailableForDonation * this.maxDonationShareOfLiquidCredits);
+      const donationBudget = Math.floor(state.credits * donationRatio);
+      const catchUpScale = ageInfo?.behindTarget
+        ? (fundingStatus.economicBaseReady ? 0.8 : 0.25)
+        : 0.4;
+      const catchUpBudget = Math.ceil(
+        fundingStatus.creditsNeededForRPDeficit * catchUpScale
+      );
       const donationAmount = Math.min(
-        Math.floor(researchBudget),
-        Math.floor((state.credits - this.minCreditsBuffer) / 2)
+        maxAvailableForDonation,
+        maxDonationByLiquidity,
+        Math.max(donationBudget, catchUpBudget)
       );
 
       if (donationAmount >= creditsToRPRatio * 10 &&
-          sim.currentTick - this.lastResearchDonation > this.researchDonationCooldownTicks &&
-          state.research.researchPoints < donationRPThreshold &&
-          prototypeBacklog <= this.maxPrototypeBacklogForDonation) {
+          sim.currentTick - this.lastResearchDonation > donationCooldown &&
+          (state.research.researchPoints < donationRPThreshold || shouldDonateForCatchUp) &&
+          prototypeBacklog <= donationBacklogLimit) {
         actions.push({
           type: 'DONATE_CREDITS',
           payload: { amount: donationAmount }
         });
         this.lastResearchDonation = sim.currentTick;
+        researchPointsAvailable += Math.floor(donationAmount / creditsToRPRatio);
       }
     }
-
-    let researchPointsAvailable = state.research.researchPoints || 0;
 
     // Prioritize dependency-first targeted research when progression/backlog pressure is high.
     if (this.enableTargetedCatchUpResearch) {
@@ -1822,6 +1917,8 @@ export class BalancedBot extends BaseStrategy {
     }
 
     const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
+    const researchFundingStatus = this.getResearchFundingStatus(state, rules, currentAge);
+    const researchReserveCredits = this.getResearchReserveCredits(state, ageInfo, researchFundingStatus);
     const criticalRawNeeds = this.getCriticalRawResourceNeeds(state, rules, ageInfo);
     const existingResourceCounts = {};
     for (const node of state.extractionNodes || []) {
@@ -1861,7 +1958,7 @@ export class BalancedBot extends BaseStrategy {
           ? this.nodeUnlockBufferMultiplierWhenBehind
           : this.nodeUnlockBufferMultiplier;
         const requiredBuffer = this.minCreditsBuffer * bufferMultiplier;
-        if (state.credits <= cost + requiredBuffer) continue;
+        if (state.credits <= cost + requiredBuffer + researchReserveCredits) continue;
 
         const criticalNeed = criticalRawNeeds[resourceType] || 0;
         const needPressure = criticalNeed / (existingCount + 1);
@@ -1914,7 +2011,7 @@ export class BalancedBot extends BaseStrategy {
     const expansionBufferMultiplier = shouldForceExpansionForCritical
       ? Math.min(this.mapExpansionBufferMultiplier, 1.5)
       : this.mapExpansionBufferMultiplier;
-    if (state.credits > explorationCost + this.minCreditsBuffer * expansionBufferMultiplier) {
+    if (state.credits > explorationCost + this.minCreditsBuffer * expansionBufferMultiplier + researchReserveCredits) {
       actions.push({
         type: 'EXPAND_EXPLORATION',
         payload: {}
