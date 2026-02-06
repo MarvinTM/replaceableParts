@@ -888,7 +888,18 @@ export const defaultRules = {
     ageWeighting: { floor: 0.30, ceiling: 0.85 },
     experimentCosts: { 1: 15, 2: 35, 3: 75, 4: 150, 5: 350, 6: 700, 7: 1400 }, // Cheap early, scales up
     targetedExperimentMultiplier: 5, // Was 10 - now 5x for targeted (cheaper)
-    prototypeMultiplier: 3          // Was 5 - now 3x recipe quantity (easier prototypes)
+    prototypeMultiplier: {
+      // Age-scaled prototype requirements (applied per input with ceil).
+      // Easier in early ages, with a gentler late-age ramp to avoid stalling progression.
+      1: 2.0,
+      2: 2.0,
+      3: 2.1,
+      4: 2.2,
+      5: 2.3,
+      6: 2.4,
+      7: 2.4,
+      default: 2.3,
+    }
   },
 
   // ============================================================================

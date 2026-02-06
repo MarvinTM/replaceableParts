@@ -190,7 +190,8 @@ function selectRecipeByAgeWeighting(undiscovered, state, rules, rng) {
  * Create a prototype entry for a discovered recipe
  */
 function createPrototypeEntry(recipe, rules) {
-  const multiplier = rules.research.prototypeMultiplier;
+  const multiplier = getPrototypeMultiplierForRecipe(recipe, rules);
+  const scalePrototypeQuantity = (qty) => Math.max(1, Math.ceil(qty * multiplier));
 
   // Determine if any input is a raw material (flow mode) or all are intermediate/final (slots mode)
   let hasNonRawInput = false;
@@ -213,7 +214,7 @@ function createPrototypeEntry(recipe, rules) {
       mode: 'flow',
       prototypeProgress,
       requiredAmounts: Object.fromEntries(
-        Object.entries(recipe.inputs).map(([id, qty]) => [id, qty * multiplier])
+        Object.entries(recipe.inputs).map(([id, qty]) => [id, scalePrototypeQuantity(qty)])
       )
     };
   } else {
@@ -224,7 +225,7 @@ function createPrototypeEntry(recipe, rules) {
       const isRaw = material && material.category === 'raw';
       return {
         material: materialId,
-        quantity: quantity * multiplier,
+        quantity: scalePrototypeQuantity(quantity),
         filled: 0,
         isRaw
       };
@@ -235,6 +236,33 @@ function createPrototypeEntry(recipe, rules) {
       slots
     };
   }
+}
+
+function getPrototypeMultiplierForRecipe(recipe, rules) {
+  const configured = rules?.research?.prototypeMultiplier;
+  if (typeof configured === 'number') {
+    return configured;
+  }
+
+  if (configured && typeof configured === 'object') {
+    const outputAges = Object.keys(recipe.outputs || {})
+      .map(outputId => {
+        const material = rules.materials.find(m => m.id === outputId);
+        return material?.age || recipe.age || 1;
+      });
+    const recipeAge = outputAges.length > 0 ? Math.max(...outputAges) : (recipe.age || 1);
+    const ageValue = configured[recipeAge];
+    if (typeof ageValue === 'number' && Number.isFinite(ageValue) && ageValue > 0) {
+      return ageValue;
+    }
+
+    const fallbackValue = configured.default;
+    if (typeof fallbackValue === 'number' && Number.isFinite(fallbackValue) && fallbackValue > 0) {
+      return fallbackValue;
+    }
+  }
+
+  return 3;
 }
 
 /**
