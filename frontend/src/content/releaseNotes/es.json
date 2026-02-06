@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.5.0",
+      "date": "2024-02-06",
+      "highlights": "Reequilibrio significativo de las mecánicas del juego. Nuevo diseño del panel solar.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Se reequilibraron de forma significativa varias mecánicas del juego, incluyendo la expansión de la fábrica y del mapa, el desbloqueo de nodos y la investigación"
+        },
+        {
+          "type": "improvement",
+          "text": "Se añadieron mejoras muy significativas al bot de balance utilizado para equilibrar el juego"
+        },
+        {
+          "type": "improvement",
+          "text": "Nuevo diseño del panel solar"
+        }
+      ]
+    },
+    {
       "version": "0.4.6",
       "date": "2024-02-04",
       "highlights": "Se añadieron descripciones para los objetos. Se ajustó el formato de correo electrónico. Nuevo indicador de progreso del tick con dos engranajes.",

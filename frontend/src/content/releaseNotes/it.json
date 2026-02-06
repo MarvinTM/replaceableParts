@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.5.0",
+      "date": "2024-02-06",
+      "highlights": "Ribilanciamento significativo delle meccaniche di gioco. Nuovo design dell'impianto solare.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Ribilanciate in modo significativo diverse meccaniche di gioco, incluse l'espansione della fabbrica e della mappa, lo sblocco dei nodi e la ricerca"
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunti miglioramenti molto significativi al bot di bilanciamento usato per bilanciare il gioco"
+        },
+        {
+          "type": "improvement",
+          "text": "Nuovo design dell'impianto solare"
+        }
+      ]
+    },
+    {
       "version": "0.4.6",
       "date": "2024-02-04",
       "highlights": "Aggiunte descrizioni per gli oggetti. Formato e-mail modificato. Nuovo indicatore di avanzamento del tick con due ingranaggi.",

@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.5.0",
+      "date": "2024-02-06",
+      "highlights": "Rééquilibrage significatif des mécaniques de jeu. Nouveau design du parc solaire.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Rééquilibrage significatif de plusieurs mécaniques du jeu, y compris l'expansion de l'usine et de la carte, le déverrouillage des gisements et la recherche"
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout d'améliorations très significatives au bot d'équilibrage utilisé pour équilibrer le jeu"
+        },
+        {
+          "type": "improvement",
+          "text": "Nouveau design du parc solaire"
+        }
+      ]
+    },
+    {
       "version": "0.4.6",
       "date": "2024-02-04",
       "highlights": "Ajout de descriptions pour les objets. Format d’e-mail ajusté. Nouvel indicateur de progression du tick avec deux engrenages.",

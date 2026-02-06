@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.5.0",
+      "date": "2024-02-06",
+      "highlights": "Significant game mechanics rebalance. New Solar Array design.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Significantly rebalanced several mechanics of the game, including factory and map expansion, node unlocks, and research"
+        },
+        {
+          "type": "improvement",
+          "text": "Added very significant improvements to the balancing bot used to balance the game"
+        },
+        {
+          "type": "improvement",
+          "text": "New Solar Array design"
+        }
+      ]
+    },
+    {
       "version": "0.4.6",
       "date": "2024-02-04",
       "highlights": "Added descriptions for items. Adjusted email format. New tick progress indicator with two gears.",

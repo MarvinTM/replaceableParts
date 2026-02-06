@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.5.0",
+      "date": "2024-02-06",
+      "highlights": "Signifikante Neuausrichtung der Spielmechaniken. Neues Design der Solaranlage.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Mehrere Spielmechaniken wurden deutlich neu ausbalanciert, darunter Fabrik- und Kartenerweiterung, Knotenfreischaltungen und Forschung"
+        },
+        {
+          "type": "improvement",
+          "text": "Dem Ausgleichs-Bot, der für die Spielbalance verwendet wird, wurden sehr bedeutende Verbesserungen hinzugefügt"
+        },
+        {
+          "type": "improvement",
+          "text": "Neues Design der Solaranlage"
+        }
+      ]
+    },
+    {
       "version": "0.4.6",
       "date": "2024-02-04",
       "highlights": "Beschreibungen für Gegenstände hinzugefügt. E-Mail-Format angepasst. Neuer Tick-Fortschrittsindikator mit zwei Zahnrädern.",
