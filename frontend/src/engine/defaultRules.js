@@ -886,8 +886,9 @@ export const defaultRules = {
     ageMultipliers: { 1: 1.0, 2: 1.5, 3: 2.0, 4: 3.0, 5: 5.0, 6: 8.0, 7: 12.0 },
     passiveDiscoveryChance: 0.005,  // 1/200 per tick
     ageWeighting: { floor: 0.30, ceiling: 0.85 },
-    experimentCosts: { 1: 15, 2: 35, 3: 75, 4: 150, 5: 350, 6: 700, 7: 1400 }, // Cheap early, scales up
-    targetedExperimentMultiplier: 5, // Was 10 - now 5x for targeted (cheaper)
+    // Keep early pacing similar, ease advanced-age research costs.
+    experimentCosts: { 1: 15, 2: 35, 3: 75, 4: 140, 5: 280, 6: 520, 7: 980 },
+    targetedExperimentMultiplier: 4, // Cheaper targeted catch-up for late-age pushes
     prototypeMultiplier: {
       // Age-scaled prototype requirements (applied per input with ceil).
       // Easier in early ages, with a gentler late-age ramp to avoid stalling progression.
