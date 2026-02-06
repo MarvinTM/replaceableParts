@@ -76,6 +76,14 @@ export class BalancedBot extends BaseStrategy {
     this.explorationExpansionCooldownWhenBehind = params.explorationExpansionCooldownWhenBehind ?? 1200;
     this.nodeUnlockBufferMultiplier = params.nodeUnlockBufferMultiplier ?? 1;
     this.nodeUnlockBufferMultiplierWhenBehind = params.nodeUnlockBufferMultiplierWhenBehind ?? 6;
+    this.nodeUnlockDemandCoverageTarget = params.nodeUnlockDemandCoverageTarget ?? 1.2;
+    this.nodeUnlockFlatBufferRate = params.nodeUnlockFlatBufferRate ?? 0.4;
+    this.minRawDemandRateToUnlockNode = params.minRawDemandRateToUnlockNode ?? 0.5;
+    this.minRawDemandDeficitToUnlockNode = params.minRawDemandDeficitToUnlockNode ?? 0.75;
+    this.maxDemandlessBootstrapNodesPerResource = params.maxDemandlessBootstrapNodesPerResource ?? 1;
+    this.nodeUnlockDemandDeficitScoreWeight = params.nodeUnlockDemandDeficitScoreWeight ?? 240;
+    this.nodeUnlockUtilizationScoreWeight = params.nodeUnlockUtilizationScoreWeight ?? 110;
+    this.criticalRawNeedsRefreshTicks = params.criticalRawNeedsRefreshTicks ?? 120;
     this.mapExpansionBufferMultiplier = params.mapExpansionBufferMultiplier ?? 3;
     this.disableMapExpansionWhenBehind = params.disableMapExpansionWhenBehind ?? true;
     this.dependencyNeedDepth = params.dependencyNeedDepth ?? 3;
@@ -104,6 +112,10 @@ export class BalancedBot extends BaseStrategy {
     this._rulesCache = null;
     this._lastDependencyNeedsTick = -Infinity;
     this._lastDependencyNeeds = null;
+    this._unlockableNodesCache = null;
+    this._lastCriticalRawNeedsTick = -Infinity;
+    this._lastCriticalRawNeedsKey = null;
+    this._lastCriticalRawNeeds = null;
   }
 
   decide(sim) {
@@ -787,6 +799,7 @@ export class BalancedBot extends BaseStrategy {
 
     const materialById = new Map(rules.materials.map(material => [material.id, material]));
     const recipeById = new Map(rules.recipes.map(recipe => [recipe.id, recipe]));
+    const generatorById = new Map(rules.generators.map(generator => [generator.id, generator]));
     const recipesByOutput = new Map();
     for (const recipe of rules.recipes) {
       for (const outputId of Object.keys(recipe.outputs || {})) {
@@ -801,6 +814,7 @@ export class BalancedBot extends BaseStrategy {
       rulesRef: rules,
       materialById,
       recipeById,
+      generatorById,
       recipesByOutput,
     };
     return this._rulesCache;
@@ -1898,6 +1912,106 @@ export class BalancedBot extends BaseStrategy {
     return null;
   }
 
+  getRawSupplyRates(state) {
+    const supplyByType = {};
+    for (const node of state.extractionNodes || []) {
+      if (!node.active) continue;
+      supplyByType[node.resourceType] = (supplyByType[node.resourceType] || 0) + (node.rate || 0);
+    }
+    return supplyByType;
+  }
+
+  getRawDemandRates(state, rules, options = {}) {
+    const includeBlockedMachines = options.includeBlockedMachines ?? true;
+    const cache = this.getRulesCache(rules);
+    const demandByType = {};
+
+    for (const machine of state.machines || []) {
+      if (!machine.enabled || !machine.recipeId) continue;
+      if (!includeBlockedMachines && machine.status === 'blocked') continue;
+
+      const recipe = cache.recipeById.get(machine.recipeId);
+      if (!recipe) continue;
+      const cycleTicks = Math.max(1, recipe.ticksToComplete || 10);
+      for (const [inputId, qty] of Object.entries(recipe.inputs || {})) {
+        const material = cache.materialById.get(inputId);
+        if (!material || material.category !== 'raw') continue;
+        demandByType[inputId] = (demandByType[inputId] || 0) + (qty / cycleTicks);
+      }
+    }
+
+    for (const generator of state.generators || []) {
+      const generatorConfig = cache.generatorById.get(generator.type);
+      const fuelRequirement = generatorConfig?.fuelRequirement;
+      if (!fuelRequirement) continue;
+      const material = cache.materialById.get(fuelRequirement.materialId);
+      if (!material || material.category !== 'raw') continue;
+      demandByType[fuelRequirement.materialId] =
+        (demandByType[fuelRequirement.materialId] || 0) + (fuelRequirement.consumptionRate || 0);
+    }
+
+    return demandByType;
+  }
+
+  getUnlockableNodesByResource(state) {
+    const map = state.explorationMap;
+    if (!map?.tiles || !map?.exploredBounds) {
+      return new Map();
+    }
+
+    const bounds = map.exploredBounds;
+    const cacheKey = [
+      bounds.minX, bounds.maxX, bounds.minY, bounds.maxY,
+      state.extractionNodes?.length || 0,
+    ].join('|');
+
+    if (this._unlockableNodesCache?.key === cacheKey) {
+      return this._unlockableNodesCache.byResource;
+    }
+
+    const byResource = new Map();
+    for (let y = bounds.minY; y <= bounds.maxY; y++) {
+      for (let x = bounds.minX; x <= bounds.maxX; x++) {
+        const tile = map.tiles[`${x},${y}`];
+        if (!tile?.explored || !tile.extractionNode || tile.extractionNode.unlocked) continue;
+        const resourceType = tile.extractionNode.resourceType;
+        if (!byResource.has(resourceType)) {
+          byResource.set(resourceType, []);
+        }
+        byResource.get(resourceType).push({ x, y });
+      }
+    }
+
+    this._unlockableNodesCache = { key: cacheKey, byResource };
+    return byResource;
+  }
+
+  getCriticalRawNeedsCached(sim, ageInfo, currentAge) {
+    const { state, rules, currentTick } = sim;
+    const cacheKey = [
+      currentAge,
+      state.unlockedRecipes?.length || 0,
+      state.discoveredRecipes?.length || 0,
+      state.research?.awaitingPrototype?.length || 0,
+      ageInfo?.behindTarget ? 1 : 0,
+      ageInfo?.ageStalled ? 1 : 0,
+    ].join('|');
+
+    if (
+      this._lastCriticalRawNeeds &&
+      this._lastCriticalRawNeedsKey === cacheKey &&
+      currentTick - this._lastCriticalRawNeedsTick < this.criticalRawNeedsRefreshTicks
+    ) {
+      return this._lastCriticalRawNeeds;
+    }
+
+    const needs = this.getCriticalRawResourceNeeds(state, rules, ageInfo);
+    this._lastCriticalRawNeeds = needs;
+    this._lastCriticalRawNeedsKey = cacheKey;
+    this._lastCriticalRawNeedsTick = currentTick;
+    return needs;
+  }
+
   /**
    * Explore the map and unlock extraction nodes
    * This is a key progression mechanic - unlocking nodes increases production throughput
@@ -1919,7 +2033,10 @@ export class BalancedBot extends BaseStrategy {
     const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
     const researchFundingStatus = this.getResearchFundingStatus(state, rules, currentAge);
     const researchReserveCredits = this.getResearchReserveCredits(state, ageInfo, researchFundingStatus);
-    const criticalRawNeeds = this.getCriticalRawResourceNeeds(state, rules, ageInfo);
+    const criticalRawNeeds = this.getCriticalRawNeedsCached(sim, ageInfo, currentAge);
+    const rawSupplyRates = this.getRawSupplyRates(state);
+    const rawDemandRates = this.getRawDemandRates(state, rules, { includeBlockedMachines: true });
+    const unlockableNodesByResource = this.getUnlockableNodesByResource(state);
     const existingResourceCounts = {};
     for (const node of state.extractionNodes || []) {
       existingResourceCounts[node.resourceType] = (existingResourceCounts[node.resourceType] || 0) + 1;
@@ -1930,37 +2047,76 @@ export class BalancedBot extends BaseStrategy {
         (existingResourceCounts[resourceType] || 0) === 0
       )
       .map(([resourceType]) => resourceType);
+    const candidateResourceTypes = new Set(missingCriticalResources);
+    const demandEvaluatedResources = new Set([
+      ...Object.keys(rawDemandRates),
+      ...Object.keys(criticalRawNeeds),
+    ]);
+    for (const resourceType of demandEvaluatedResources) {
+      const existingCount = existingResourceCounts[resourceType] || 0;
+      const criticalNeed = criticalRawNeeds[resourceType] || 0;
+      const currentSupplyRate = rawSupplyRates[resourceType] || 0;
+      const currentDemandRate = rawDemandRates[resourceType] || 0;
+      const desiredSupplyRate =
+        currentDemandRate > 0
+          ? currentDemandRate * this.nodeUnlockDemandCoverageTarget + this.nodeUnlockFlatBufferRate
+          : 0;
+      const supplyDeficit = desiredSupplyRate - currentSupplyRate;
+      const demandless = currentDemandRate < this.minRawDemandRateToUnlockNode;
+      const allowDemandlessBootstrap =
+        demandless &&
+        criticalNeed >= this.criticalRawNeedThreshold &&
+        existingCount < this.maxDemandlessBootstrapNodesPerResource;
+      const needsMoreCapacity = supplyDeficit >= this.minRawDemandDeficitToUnlockNode;
+
+      if (needsMoreCapacity || allowDemandlessBootstrap) {
+        candidateResourceTypes.add(resourceType);
+      }
+    }
 
     // PRIORITY 1: Unlock available nodes
     const nodeUnlockBaseCost = rules.exploration.nodeUnlockCost || 15;
     const globalScaleFactor = rules.exploration.globalNodeScaleFactor || 1.0;
     const totalNodes = state.extractionNodes.length;
     const globalMultiplier = Math.pow(globalScaleFactor, totalNodes);
+    const bufferMultiplier = ageInfo?.behindTarget
+      ? this.nodeUnlockBufferMultiplierWhenBehind
+      : this.nodeUnlockBufferMultiplier;
+    const requiredBuffer = this.minCreditsBuffer * bufferMultiplier;
 
-    // Find unlockable nodes - only scan explored bounds to limit iterations
-    const bounds = state.explorationMap.exploredBounds;
     let bestNode = null;
     let bestScore = -Infinity;
 
-    for (let y = bounds.minY; y <= bounds.maxY; y++) {
-      for (let x = bounds.minX; x <= bounds.maxX; x++) {
-        const tile = state.explorationMap.tiles[`${x},${y}`];
-        if (!tile?.explored || !tile.extractionNode || tile.extractionNode.unlocked) continue;
+    if (candidateResourceTypes.size > 0) {
+      for (const resourceType of candidateResourceTypes) {
+        const nodes = unlockableNodesByResource.get(resourceType) || [];
+        for (const node of nodes) {
 
-        const resourceType = tile.extractionNode.resourceType;
-        const existingCount = state.extractionNodes.filter(n => n.resourceType === resourceType).length;
+        const existingCount = existingResourceCounts[resourceType] || 0;
         const resourceScaleFactor = rules.exploration.unlockScaleFactors?.[resourceType] || 1.2;
-        // Apply both per-resource and global scaling
         const cost = Math.floor(nodeUnlockBaseCost * Math.pow(resourceScaleFactor, existingCount) * globalMultiplier);
-
-        // Can we afford it?
-        const bufferMultiplier = ageInfo?.behindTarget
-          ? this.nodeUnlockBufferMultiplierWhenBehind
-          : this.nodeUnlockBufferMultiplier;
-        const requiredBuffer = this.minCreditsBuffer * bufferMultiplier;
         if (state.credits <= cost + requiredBuffer + researchReserveCredits) continue;
 
         const criticalNeed = criticalRawNeeds[resourceType] || 0;
+        const currentSupplyRate = rawSupplyRates[resourceType] || 0;
+        const currentDemandRate = rawDemandRates[resourceType] || 0;
+        const desiredSupplyRate =
+          currentDemandRate > 0
+            ? currentDemandRate * this.nodeUnlockDemandCoverageTarget + this.nodeUnlockFlatBufferRate
+            : 0;
+        const supplyDeficit = desiredSupplyRate - currentSupplyRate;
+        const utilization = currentSupplyRate > 0
+          ? currentDemandRate / currentSupplyRate
+          : (currentDemandRate > 0 ? 1 : 0);
+        const demandless = currentDemandRate < this.minRawDemandRateToUnlockNode;
+        const allowDemandlessBootstrap =
+          demandless &&
+          criticalNeed >= this.criticalRawNeedThreshold &&
+          existingCount < this.maxDemandlessBootstrapNodesPerResource;
+        const needsMoreCapacity = supplyDeficit >= this.minRawDemandDeficitToUnlockNode;
+        if (!needsMoreCapacity && !allowDemandlessBootstrap) continue;
+        if (demandless && !allowDemandlessBootstrap) continue;
+
         const needPressure = criticalNeed / (existingCount + 1);
         const resourceAge = rules.exploration.resourceAges?.[resourceType] || 1;
         const ageRelevanceBonus = resourceAge <= currentAge + 1 ? 90 : 0;
@@ -1968,9 +2124,11 @@ export class BalancedBot extends BaseStrategy {
           criticalNeed >= this.criticalRawNeedThreshold && existingCount === 0
             ? this.criticalResourceNewTypeBonus
             : 0;
-
-        // Score: prioritize critical shortages first, then diversify/cost.
+        const demandDeficitScore = Math.max(0, supplyDeficit) * this.nodeUnlockDemandDeficitScoreWeight;
+        const utilizationScore = Math.max(0, utilization - 0.75) * this.nodeUnlockUtilizationScoreWeight;
         const score =
+          demandDeficitScore +
+          utilizationScore +
           needPressure * this.criticalResourceScoreWeight +
           ageRelevanceBonus +
           missingTypeBonus -
@@ -1978,8 +2136,12 @@ export class BalancedBot extends BaseStrategy {
           cost * 0.35;
         if (score > bestScore) {
           bestScore = score;
-          bestNode = { x, y, cost };
+          bestNode = { x: node.x, y: node.y, cost };
+          if (score > 1600) {
+            break;
+          }
         }
+      }
       }
     }
 
