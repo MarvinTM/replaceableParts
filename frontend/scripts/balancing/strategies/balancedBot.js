@@ -20,6 +20,7 @@ export class BalancedBot extends BaseStrategy {
     this.maxUndeployedMachines = params.maxUndeployedMachines ?? 8;
     this.maxUndeployedGenerators = params.maxUndeployedGenerators ?? 3;
     this.maxPrototypeBacklog = params.maxPrototypeBacklog ?? 8;
+    this.maxPrototypeBacklogForDonation = params.maxPrototypeBacklogForDonation ?? 40;
     this.maxSellActionsPerTick = params.maxSellActionsPerTick ?? 2;
     this.sellBatchSize = params.sellBatchSize ?? 8;
     this.minMarketPopularityToSell = params.minMarketPopularityToSell ?? 0.85;
@@ -35,6 +36,17 @@ export class BalancedBot extends BaseStrategy {
     this.switchPreferenceMinRelativeScore = params.switchPreferenceMinRelativeScore ?? 0.55;
     this.dominancePenaltyWeight = params.dominancePenaltyWeight ?? 220;
     this.diversityBoostWeight = params.diversityBoostWeight ?? 85;
+    this.enableSellRotationPlanner = params.enableSellRotationPlanner ?? true;
+    this.sellRotationPlanSize = params.sellRotationPlanSize ?? 4;
+    this.sellRotationRefreshTicks = params.sellRotationRefreshTicks ?? 40;
+    this.sellRotationMinRelativeScore = params.sellRotationMinRelativeScore ?? 0.3;
+    this.sellRotationForceSelection = params.sellRotationForceSelection ?? true;
+    this.researchDonationCooldownTicks = params.researchDonationCooldownTicks ?? 500;
+    this.maxRPReserveForDonationInExperiments = params.maxRPReserveForDonationInExperiments ?? 18;
+    this.maxExperimentsPerTick = params.maxExperimentsPerTick ?? 3;
+    this.maxExperimentsPerTickWhenStalled = params.maxExperimentsPerTickWhenStalled ?? 6;
+    this.researchStallTicks = params.researchStallTicks ?? 2500;
+    this.enableTargetedCatchUpResearch = params.enableTargetedCatchUpResearch ?? true;
 
     // State tracking
     this.lastResearchDonation = 0;
@@ -44,11 +56,14 @@ export class BalancedBot extends BaseStrategy {
     this.lastSellTickByItem = {};
     this.lastSoldItemId = null;
     this.consecutiveSameItemSells = 0;
+    this.sellRotationPlan = null;
+    this.lastObservedAge = 1;
+    this.lastAgeAdvanceTick = 0;
   }
 
   decide(sim) {
     const actions = [];
-    const { state, rules } = sim;
+    const ageInfo = this.updateAgeTracking(sim);
 
     // Priority 1: Sell final goods above threshold (get income flowing)
     const sellActions = this.decideSelling(sim);
@@ -63,11 +78,11 @@ export class BalancedBot extends BaseStrategy {
     actions.push(...deployActions);
 
     // Priority 4: Assign recipes to idle machines
-    const recipeActions = this.decideRecipeAssignment(sim);
+    const recipeActions = this.decideRecipeAssignment(sim, ageInfo);
     actions.push(...recipeActions);
 
     // Priority 5: Research (donate credits, run experiments)
-    const researchActions = this.decideResearch(sim);
+    const researchActions = this.decideResearch(sim, ageInfo);
     actions.push(...researchActions);
 
     // Priority 6: Expand floor/map if needed
@@ -79,6 +94,21 @@ export class BalancedBot extends BaseStrategy {
     actions.push(...explorationActions);
 
     return actions;
+  }
+
+  updateAgeTracking(sim) {
+    const currentAge = getHighestUnlockedAge(sim.state, sim.rules);
+    if (currentAge > this.lastObservedAge) {
+      this.lastObservedAge = currentAge;
+      this.lastAgeAdvanceTick = sim.currentTick;
+    }
+
+    const ticksSinceAgeAdvance = sim.currentTick - this.lastAgeAdvanceTick;
+    return {
+      currentAge,
+      ticksSinceAgeAdvance,
+      ageStalled: ticksSinceAgeAdvance >= this.researchStallTicks,
+    };
   }
 
   decideSelling(sim) {
@@ -117,6 +147,7 @@ export class BalancedBot extends BaseStrategy {
     const localRecentCounts = { ...recentCounts };
     let localRecentTotal = recentSalesWindow.length;
     const selectedItems = new Set();
+    this.refreshSellRotationPlan(sim, finalGoods, localRecentCounts, localRecentTotal);
 
     for (let actionIndex = 0; actionIndex < this.maxSellActionsPerTick; actionIndex++) {
       const candidate = this.selectBestSellCandidate(
@@ -131,6 +162,7 @@ export class BalancedBot extends BaseStrategy {
         emergencyPressure,
         {
           allowCooldownOverride: false,
+          useRotationPlanner: true,
         }
       );
       const fallbackCandidate = !candidate && emergencyPressure
@@ -146,6 +178,7 @@ export class BalancedBot extends BaseStrategy {
           emergencyPressure,
           {
             allowCooldownOverride: true,
+            useRotationPlanner: true,
           }
         )
         : candidate;
@@ -163,6 +196,7 @@ export class BalancedBot extends BaseStrategy {
       });
 
       this.recordSellSelection(fallbackCandidate.item.id, state.tick);
+      this.advanceSellRotationPlanAfterSelection(fallbackCandidate.item.id);
       selectedItems.add(fallbackCandidate.item.id);
       localRecent.add(fallbackCandidate.item.id);
       localRecentCounts[fallbackCandidate.item.id] = (localRecentCounts[fallbackCandidate.item.id] || 0) + 1;
@@ -244,7 +278,99 @@ export class BalancedBot extends BaseStrategy {
     }
 
     candidates.sort((a, b) => b.score - a.score);
+    if (options.useRotationPlanner) {
+      const plannedCandidate = this.selectPlannedSellCandidate(candidates);
+      if (plannedCandidate) {
+        return plannedCandidate;
+      }
+    }
     return this.selectCandidateWithRotationGuard(candidates);
+  }
+
+  refreshSellRotationPlan(sim, finalGoods, recentCounts, recentTotal) {
+    if (!this.enableSellRotationPlanner) {
+      this.sellRotationPlan = null;
+      return;
+    }
+
+    const shouldRefresh = !this.sellRotationPlan ||
+      (sim.currentTick - this.sellRotationPlan.generatedTick) >= this.sellRotationRefreshTicks;
+    if (!shouldRefresh) {
+      return;
+    }
+
+    const { state, rules } = sim;
+    const scoredItems = finalGoods
+      .filter(item => item.quantity > this.sellThreshold)
+      .map(item => {
+        const popularity = state.marketPopularity?.[item.id] ?? 1.0;
+        const eventModifier = state.marketEvents?.[item.id]?.modifier || 1.0;
+        const obsolescence = this.estimateObsolescenceMultiplier(item.material.age, state, rules);
+        const expectedUnitPrice = item.material.basePrice * popularity * eventModifier * obsolescence;
+        const recentShare = recentTotal > 0 ? (recentCounts[item.id] || 0) / recentTotal : 0;
+        const noveltyBoost = recentCounts[item.id] ? 0 : 25;
+        const inventoryBoost = Math.min(40, Math.max(0, item.quantity - this.sellThreshold) * 1.2);
+        const score =
+          expectedUnitPrice * (1 - recentShare * 0.7) +
+          noveltyBoost +
+          inventoryBoost +
+          (item.material.age || 1) * 2;
+
+        return {
+          itemId: item.id,
+          score,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    const planSize = Math.max(2, Math.min(this.sellRotationPlanSize, scoredItems.length));
+    const itemIds = scoredItems.slice(0, planSize).map(entry => entry.itemId);
+
+    if (itemIds.length < 2) {
+      this.sellRotationPlan = null;
+      return;
+    }
+
+    this.sellRotationPlan = {
+      itemIds,
+      index: 0,
+      generatedTick: sim.currentTick,
+    };
+  }
+
+  selectPlannedSellCandidate(candidates) {
+    if (!this.sellRotationPlan || !Array.isArray(this.sellRotationPlan.itemIds) || this.sellRotationPlan.itemIds.length < 2) {
+      return null;
+    }
+
+    const bestCandidate = candidates[0];
+    const planLength = this.sellRotationPlan.itemIds.length;
+    const startIndex = this.sellRotationPlan.index % planLength;
+
+    for (let offset = 0; offset < planLength; offset++) {
+      const planIndex = (startIndex + offset) % planLength;
+      const targetItemId = this.sellRotationPlan.itemIds[planIndex];
+      const candidate = candidates.find(entry => entry.item.id === targetItemId);
+      if (!candidate) continue;
+
+      if (this.sellRotationForceSelection || candidate.score >= bestCandidate.score * this.sellRotationMinRelativeScore) {
+        this.sellRotationPlan.index = (planIndex + 1) % planLength;
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  advanceSellRotationPlanAfterSelection(itemId) {
+    if (!this.sellRotationPlan || !Array.isArray(this.sellRotationPlan.itemIds)) {
+      return;
+    }
+
+    const selectedIndex = this.sellRotationPlan.itemIds.indexOf(itemId);
+    if (selectedIndex >= 0) {
+      this.sellRotationPlan.index = (selectedIndex + 1) % this.sellRotationPlan.itemIds.length;
+    }
   }
 
   selectCandidateWithRotationGuard(candidates) {
@@ -578,15 +704,59 @@ export class BalancedBot extends BaseStrategy {
     return this.getFuelSurplusForGenerator(state, rules, genConfig) >= fuelConsumption;
   }
 
-  getPrototypeMaterialNeeds(state) {
+  getRecipeOutputMaxAge(recipe, materialById) {
+    if (!recipe) return 1;
+    let maxAge = 1;
+    for (const outputId of Object.keys(recipe.outputs || {})) {
+      const age = materialById.get(outputId)?.age || 1;
+      if (age > maxAge) {
+        maxAge = age;
+      }
+    }
+    return maxAge;
+  }
+
+  getPrototypeMaterialNeeds(state, rules = null, options = {}) {
     const needs = {};
+    const recipeById = rules ? new Map(rules.recipes.map(recipe => [recipe.id, recipe])) : null;
+    const materialById = rules ? new Map(rules.materials.map(material => [material.id, material])) : null;
+    const currentAge = rules
+      ? (options.currentAge ?? getHighestUnlockedAge(state, rules))
+      : 1;
+    const prioritizeNextAge = options.prioritizeNextAge ?? false;
+    const ageStalled = options.ageStalled ?? false;
+    const preferNearComplete = options.preferNearComplete ?? false;
+
     for (const prototype of state.research?.awaitingPrototype || []) {
       if (prototype.mode !== 'slots' || !prototype.slots) continue;
+
+      let priorityMultiplier = 1;
+      if (rules && recipeById && materialById) {
+        const recipe = recipeById.get(prototype.recipeId);
+        const outputAge = this.getRecipeOutputMaxAge(recipe, materialById);
+        if (prioritizeNextAge && outputAge >= currentAge + 1) {
+          priorityMultiplier += ageStalled ? 3 : 1.5;
+        }
+
+        if (preferNearComplete) {
+          let totalRequired = 0;
+          let totalFilled = 0;
+          for (const slot of prototype.slots) {
+            if (slot.isRaw) continue;
+            totalRequired += slot.quantity || 0;
+            totalFilled += slot.filled || 0;
+          }
+          const completionRatio = totalRequired > 0 ? totalFilled / totalRequired : 0;
+          priorityMultiplier += completionRatio * 0.75;
+        }
+      }
+
       for (const slot of prototype.slots) {
         if (slot.isRaw) continue;
         const remaining = (slot.quantity || 0) - (slot.filled || 0);
         if (remaining > 0) {
-          needs[slot.material] = (needs[slot.material] || 0) + remaining;
+          const weightedRemaining = Math.max(1, Math.round(remaining * priorityMultiplier));
+          needs[slot.material] = (needs[slot.material] || 0) + weightedRemaining;
         }
       }
     }
@@ -688,13 +858,19 @@ export class BalancedBot extends BaseStrategy {
     return actions;
   }
 
-  decideRecipeAssignment(sim) {
+  decideRecipeAssignment(sim, ageInfo = null) {
     const { state, rules } = sim;
     const actions = [];
 
     // Build recipe priority map
     const recipePriority = this.buildRecipePriority(rules);
-    const prototypeNeeds = this.getPrototypeMaterialNeeds(state);
+    const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
+    const prototypeNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+      currentAge,
+      prioritizeNextAge: true,
+      ageStalled: ageInfo?.ageStalled,
+      preferNearComplete: true,
+    });
 
     // Build map of what we're already producing
     const currentlyProducing = new Set(
@@ -703,7 +879,7 @@ export class BalancedBot extends BaseStrategy {
 
     // If we have prototype backlogs, periodically force production toward missing prototype materials
     if (sim.currentTick % 25 === 0) {
-      const prototypeAction = this.tryReassignForPrototype(sim, rules, currentlyProducing);
+      const prototypeAction = this.tryReassignForPrototype(sim, rules, currentlyProducing, ageInfo);
       if (prototypeAction) {
         actions.push(prototypeAction);
         return actions;
@@ -937,18 +1113,90 @@ export class BalancedBot extends BaseStrategy {
     return priority;
   }
 
-  decideResearch(sim) {
+  findTargetedCatchUpRecipe(state, rules, currentAge) {
+    const discovered = new Set(state.discoveredRecipes || []);
+    const unlocked = new Set(state.unlockedRecipes || []);
+    const materialById = new Map(rules.materials.map(material => [material.id, material]));
+
+    const candidates = rules.recipes
+      .filter(recipe => !discovered.has(recipe.id) && !unlocked.has(recipe.id))
+      .map(recipe => {
+        const outputAge = this.getRecipeOutputMaxAge(recipe, materialById);
+        if (outputAge < currentAge + 1) return null;
+
+        const nonRawInputCount = Object.keys(recipe.inputs || {}).filter(inputId => {
+          const category = materialById.get(inputId)?.category;
+          return category && category !== 'raw';
+        }).length;
+        const totalInputQuantity = Object.values(recipe.inputs || {}).reduce((sum, qty) => sum + qty, 0);
+
+        return {
+          recipe,
+          outputAge,
+          nonRawInputCount,
+          totalInputQuantity,
+          ticksToComplete: recipe.ticksToComplete || 10,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (a.outputAge !== b.outputAge) return a.outputAge - b.outputAge;
+        if (a.nonRawInputCount !== b.nonRawInputCount) return a.nonRawInputCount - b.nonRawInputCount;
+        if (a.totalInputQuantity !== b.totalInputQuantity) return a.totalInputQuantity - b.totalInputQuantity;
+        return a.ticksToComplete - b.ticksToComplete;
+      });
+
+    return candidates.length > 0 ? candidates[0].recipe.id : null;
+  }
+
+  getPrioritizedPrototypesForFilling(state, rules, currentAge, ageStalled) {
+    const awaiting = state.research?.awaitingPrototype || [];
+    if (awaiting.length === 0) return [];
+
+    const recipeById = new Map(rules.recipes.map(recipe => [recipe.id, recipe]));
+    const materialById = new Map(rules.materials.map(material => [material.id, material]));
+
+    return [...awaiting]
+      .filter(prototype => prototype.mode === 'slots' && prototype.slots)
+      .map(prototype => {
+        const recipe = recipeById.get(prototype.recipeId);
+        const outputAge = this.getRecipeOutputMaxAge(recipe, materialById);
+
+        let totalRequired = 0;
+        let totalFilled = 0;
+        for (const slot of prototype.slots) {
+          if (slot.isRaw) continue;
+          totalRequired += slot.quantity || 0;
+          totalFilled += slot.filled || 0;
+        }
+        const completionRatio = totalRequired > 0 ? totalFilled / totalRequired : 0;
+        const remaining = Math.max(0, totalRequired - totalFilled);
+        const nextAgePriority = outputAge >= currentAge + 1 ? (ageStalled ? 1200 : 800) : 0;
+        const score =
+          nextAgePriority +
+          completionRatio * 300 +
+          outputAge * 25 -
+          remaining * 5;
+
+        return { prototype, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map(entry => entry.prototype);
+  }
+
+  decideResearch(sim, ageInfo = null) {
     const { state, rules } = sim;
     const actions = [];
 
-    const currentAge = getHighestUnlockedAge(state, rules);
-
-    // Don't overspend on research
+    const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
+    const ageStalled = ageInfo?.ageStalled || false;
     const researchBudget = state.credits * this.researchBudgetRatio;
     const creditsToRPRatio = rules.research.creditsToRPRatio;
     const experimentCost = rules.research.experimentCosts[currentAge] || 100;
+    const prototypeBacklog = state.research.awaitingPrototype?.length || 0;
+    const donationRPThreshold = experimentCost * this.maxRPReserveForDonationInExperiments;
 
-    // Donate credits to get RP if we can afford it and haven't recently
+    // Donate credits only when RP stock is low enough to justify more funding.
     if (state.credits > this.minCreditsBuffer + researchBudget) {
       const donationAmount = Math.min(
         Math.floor(researchBudget),
@@ -956,7 +1204,9 @@ export class BalancedBot extends BaseStrategy {
       );
 
       if (donationAmount >= creditsToRPRatio * 10 &&
-          sim.currentTick - this.lastResearchDonation > 500) {
+          sim.currentTick - this.lastResearchDonation > this.researchDonationCooldownTicks &&
+          state.research.researchPoints < donationRPThreshold &&
+          prototypeBacklog <= this.maxPrototypeBacklogForDonation) {
         actions.push({
           type: 'DONATE_CREDITS',
           payload: { amount: donationAmount }
@@ -965,38 +1215,52 @@ export class BalancedBot extends BaseStrategy {
       }
     }
 
-    const prototypeBacklog = state.research.awaitingPrototype?.length || 0;
+    let researchPointsAvailable = state.research.researchPoints || 0;
 
-    // Run experiment if we have enough RP and prototype backlog is manageable
-    if (state.research.researchPoints >= experimentCost &&
-        prototypeBacklog < this.maxPrototypeBacklog) {
+    // If age progression is stalling, prioritize a targeted next-age discovery.
+    if (ageStalled && this.enableTargetedCatchUpResearch) {
+      const targetedRecipeId = this.findTargetedCatchUpRecipe(state, rules, currentAge);
+      const targetedCost = experimentCost * (rules.research.targetedExperimentMultiplier || 10);
+      if (targetedRecipeId && researchPointsAvailable >= targetedCost) {
+        actions.push({
+          type: 'RUN_TARGETED_EXPERIMENT',
+          payload: { recipeId: targetedRecipeId }
+        });
+        researchPointsAvailable -= targetedCost;
+      }
+    }
+
+    // Experiments are the primary RP sink; run them whenever affordable.
+    const experimentBudget = ageStalled ? this.maxExperimentsPerTickWhenStalled : this.maxExperimentsPerTick;
+    const experimentsToRun = Math.min(
+      experimentBudget,
+      Math.floor(researchPointsAvailable / experimentCost)
+    );
+
+    for (let i = 0; i < experimentsToRun; i++) {
       actions.push({
         type: 'RUN_EXPERIMENT',
         payload: { age: currentAge }
       });
     }
 
-    // Fill prototype slots if we have awaiting prototypes
-    if (state.research.awaitingPrototype && state.research.awaitingPrototype.length > 0) {
-      for (const proto of state.research.awaitingPrototype) {
-        if (proto.slots) {
-          // Slots mode
-          for (let i = 0; i < proto.slots.length; i++) {
-            const slot = proto.slots[i];
-            if (slot.filled < slot.quantity) {
-              const available = state.inventory[slot.material] || 0;
-              if (available > 0) {
-                const fillAmount = Math.min(available, slot.quantity - slot.filled);
-                actions.push({
-                  type: 'FILL_PROTOTYPE_SLOT',
-                  payload: {
-                    recipeId: proto.recipeId,
-                    materialId: slot.material,
-                    quantity: fillAmount
-                  }
-                });
+    // Fill prototype slots with next-age / near-complete prototypes first.
+    const prioritizedPrototypes = this.getPrioritizedPrototypesForFilling(state, rules, currentAge, ageStalled);
+    for (const proto of prioritizedPrototypes) {
+      for (let i = 0; i < proto.slots.length; i++) {
+        const slot = proto.slots[i];
+        if (slot.filled < slot.quantity) {
+          const available = state.inventory[slot.material] || 0;
+          if (available > 0) {
+            const fillAmount = Math.min(available, slot.quantity - slot.filled);
+            actions.push({
+              type: 'FILL_PROTOTYPE_SLOT',
+              payload: {
+                recipeId: proto.recipeId,
+                materialId: slot.material,
+                quantity: fillAmount
               }
-            }
+            });
           }
         }
       }
@@ -1392,9 +1656,15 @@ export class BalancedBot extends BaseStrategy {
     return null;
   }
 
-  tryReassignForPrototype(sim, rules, currentlyProducing) {
+  tryReassignForPrototype(sim, rules, currentlyProducing, ageInfo = null) {
     const { state } = sim;
-    const prototypeNeeds = this.getPrototypeMaterialNeeds(state);
+    const currentAge = ageInfo?.currentAge ?? getHighestUnlockedAge(state, rules);
+    const prototypeNeeds = this.getPrototypeMaterialNeeds(state, rules, {
+      currentAge,
+      prioritizeNextAge: true,
+      ageStalled: ageInfo?.ageStalled,
+      preferNearComplete: true,
+    });
     const neededMaterials = Object.entries(prototypeNeeds)
       .sort((a, b) => b[1] - a[1]);
 
