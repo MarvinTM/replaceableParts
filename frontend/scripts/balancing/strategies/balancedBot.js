@@ -53,6 +53,13 @@ export class BalancedBot extends BaseStrategy {
     this.maxDonationShareOfLiquidCredits = params.maxDonationShareOfLiquidCredits ?? 0.65;
     this.maxPrototypeBacklogForDonationWhenBehind = params.maxPrototypeBacklogForDonationWhenBehind
       ?? this.maxPrototypeBacklogForDonation;
+    this.researchSpendShareWindowTicks = params.researchSpendShareWindowTicks ?? 2000;
+    this.minResearchSpendShareWhenBehind = params.minResearchSpendShareWhenBehind ?? 0.15;
+    this.minNonResearchSpendForShareGuardrail = params.minNonResearchSpendForShareGuardrail ?? 1500;
+    this.donationFloorTicksWhenBehind = params.donationFloorTicksWhenBehind ?? 450;
+    this.minDonationCreditsWhenBehind = params.minDonationCreditsWhenBehind ?? 400;
+    this.minDonationFloorShareOfCredits = params.minDonationFloorShareOfCredits ?? 0.04;
+    this.maxDonationFloorShareOfCredits = params.maxDonationFloorShareOfCredits ?? 0.25;
     this.enforceResearchReserveOnExploration = params.enforceResearchReserveOnExploration ?? true;
     this.researchReserveWeight = params.researchReserveWeight ?? 0;
     this.researchReserveWeightWhenBehind = params.researchReserveWeightWhenBehind ?? 0;
@@ -116,11 +123,14 @@ export class BalancedBot extends BaseStrategy {
     this._lastCriticalRawNeedsTick = -Infinity;
     this._lastCriticalRawNeedsKey = null;
     this._lastCriticalRawNeeds = null;
+    this.researchDonationSpendHistory = [];
+    this.nonResearchSpendHistory = [];
   }
 
   decide(sim) {
     const actions = [];
     const ageInfo = this.updateAgeTracking(sim);
+    this.pruneRollingSpendHistory(sim.currentTick);
 
     // Priority 1: Sell final goods above threshold (get income flowing)
     const sellActions = this.decideSelling(sim);
@@ -151,6 +161,40 @@ export class BalancedBot extends BaseStrategy {
     actions.push(...explorationActions);
 
     return actions;
+  }
+
+  pruneRollingSpendHistory(currentTick) {
+    const cutoffTick = currentTick - this.researchSpendShareWindowTicks;
+    this.researchDonationSpendHistory = this.researchDonationSpendHistory
+      .filter(entry => entry.tick >= cutoffTick);
+    this.nonResearchSpendHistory = this.nonResearchSpendHistory
+      .filter(entry => entry.tick >= cutoffTick);
+  }
+
+  recordResearchDonationSpend(tick, amount) {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    this.researchDonationSpendHistory.push({ tick, amount });
+  }
+
+  recordNonResearchSpend(tick, amount) {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    this.nonResearchSpendHistory.push({ tick, amount });
+  }
+
+  getRollingResearchSpendShare(currentTick) {
+    this.pruneRollingSpendHistory(currentTick);
+    const researchSpent = this.researchDonationSpendHistory
+      .reduce((sum, entry) => sum + entry.amount, 0);
+    const nonResearchSpent = this.nonResearchSpendHistory
+      .reduce((sum, entry) => sum + entry.amount, 0);
+    const totalTracked = researchSpent + nonResearchSpent;
+
+    return {
+      researchSpent,
+      nonResearchSpent,
+      totalTracked,
+      share: totalTracked > 0 ? researchSpent / totalTracked : 1,
+    };
   }
 
   updateAgeTracking(sim) {
@@ -1685,6 +1729,15 @@ export class BalancedBot extends BaseStrategy {
       ageInfo?.behindTarget ||
       ageStalled ||
       fundingStatus.deficitRatio >= 0.35;
+    const rollingSpend = this.getRollingResearchSpendShare(sim.currentTick);
+    const shareGuardrailActive =
+      ageInfo?.behindTarget &&
+      rollingSpend.nonResearchSpent >= this.minNonResearchSpendForShareGuardrail &&
+      rollingSpend.share < this.minResearchSpendShareWhenBehind;
+    const donationCadenceFloorActive =
+      ageInfo?.behindTarget &&
+      sim.currentTick - this.lastResearchDonation >= this.donationFloorTicksWhenBehind;
+    const shouldEnforceDonationFloor = shareGuardrailActive || donationCadenceFloorActive;
     let researchPointsAvailable = state.research.researchPoints || 0;
 
     // Donate credits when RP reserves are lagging or the bot is behind progression targets.
@@ -1699,20 +1752,32 @@ export class BalancedBot extends BaseStrategy {
       const catchUpBudget = Math.ceil(
         fundingStatus.creditsNeededForRPDeficit * catchUpScale
       );
+      const floorByShare = Math.floor(state.credits * this.minDonationFloorShareOfCredits);
+      const floorByCap = Math.floor(state.credits * this.maxDonationFloorShareOfCredits);
+      const donationFloorAmount = shouldEnforceDonationFloor
+        ? Math.min(
+          floorByCap,
+          Math.max(this.minDonationCreditsWhenBehind, floorByShare)
+        )
+        : 0;
       const donationAmount = Math.min(
         maxAvailableForDonation,
         maxDonationByLiquidity,
-        Math.max(donationBudget, catchUpBudget)
+        Math.max(donationBudget, catchUpBudget, donationFloorAmount)
       );
+      const passesBacklogLimit =
+        prototypeBacklog <= donationBacklogLimit ||
+        shouldEnforceDonationFloor;
 
       if (donationAmount >= creditsToRPRatio * 10 &&
           sim.currentTick - this.lastResearchDonation > donationCooldown &&
           (state.research.researchPoints < donationRPThreshold || shouldDonateForCatchUp) &&
-          prototypeBacklog <= donationBacklogLimit) {
+          passesBacklogLimit) {
         actions.push({
           type: 'DONATE_CREDITS',
           payload: { amount: donationAmount }
         });
+        this.recordResearchDonationSpend(sim.currentTick, donationAmount);
         this.lastResearchDonation = sim.currentTick;
         researchPointsAvailable += Math.floor(donationAmount / creditsToRPRatio);
       }
@@ -2150,6 +2215,7 @@ export class BalancedBot extends BaseStrategy {
         type: 'UNLOCK_EXPLORATION_NODE',
         payload: { x: bestNode.x, y: bestNode.y }
       });
+      this.recordNonResearchSpend(sim.currentTick, bestNode.cost);
       this.lastExploration = sim.currentTick;
       return actions;
     }
@@ -2162,10 +2228,18 @@ export class BalancedBot extends BaseStrategy {
       return actions;
     }
 
+    const hasDemandDrivenExpansionNeed = [...candidateResourceTypes]
+      .some(resourceType => (unlockableNodesByResource.get(resourceType) || []).length === 0);
     const shouldForceExpansionForCritical =
-      this.forceExploreForCriticalResources && missingCriticalResources.length > 0;
+      this.forceExploreForCriticalResources &&
+      missingCriticalResources.some(resourceType => (unlockableNodesByResource.get(resourceType) || []).length === 0);
 
-    if (ageInfo?.behindTarget && this.disableMapExpansionWhenBehind && !shouldForceExpansionForCritical) {
+    // Do not spend on map expansion unless we need additional nodes for demand/critical gaps.
+    if (!hasDemandDrivenExpansionNeed && !shouldForceExpansionForCritical) {
+      return actions;
+    }
+
+    if (ageInfo?.behindTarget && this.disableMapExpansionWhenBehind && !hasDemandDrivenExpansionNeed && !shouldForceExpansionForCritical) {
       return actions;
     }
 
@@ -2178,6 +2252,7 @@ export class BalancedBot extends BaseStrategy {
         type: 'EXPAND_EXPLORATION',
         payload: {}
       });
+      this.recordNonResearchSpend(sim.currentTick, explorationCost);
       this.lastExploration = sim.currentTick;
     }
 
