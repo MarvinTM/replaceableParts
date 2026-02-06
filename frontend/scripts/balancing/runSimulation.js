@@ -15,6 +15,7 @@
 import { createSimulation, runTicks } from './simulator.js';
 import { createTracker } from './kpis.js';
 import { createBalancedBot } from './strategies/balancedBot.js';
+import { getBotProfileParams, getBotProfiles, resolveBotProfile } from './strategies/botProfiles.js';
 import { generateTextReport, generateJSONReport, saveReport } from './reporter.js';
 
 // Parse command line arguments
@@ -27,6 +28,7 @@ function parseArgs() {
     verbose: false,
     startingCredits: 500,
     snapshotInterval: 100,
+    botProfile: 'default',
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -51,6 +53,9 @@ function parseArgs() {
       case '--snapshot-interval':
         options.snapshotInterval = parseInt(args[++i], 10);
         break;
+      case '--bot-profile':
+        options.botProfile = args[++i];
+        break;
       case '--help':
         console.log(`
 Balance Simulation Runner
@@ -64,7 +69,10 @@ Options:
   --verbose              Show progress during simulation
   --starting-credits N   Starting credits (default: 500)
   --snapshot-interval N  Take snapshots every N ticks (default: 100)
+  --bot-profile NAME     Balanced bot profile (default: default)
   --help                 Show this help message
+
+Available bot profiles: ${getBotProfiles().join(', ')}
 
 Examples:
   node runSimulation.js --ticks 5000 --seed 12345
@@ -85,6 +93,12 @@ Examples:
 
 async function main() {
   const options = parseArgs();
+  const resolvedProfile = resolveBotProfile(options.botProfile);
+  if (!resolvedProfile) {
+    console.error(`Unknown --bot-profile "${options.botProfile}". Available: ${getBotProfiles().join(', ')}`);
+    process.exit(1);
+  }
+  const botParams = getBotProfileParams(resolvedProfile);
 
   console.log('='.repeat(60));
   console.log('BALANCE SIMULATION');
@@ -92,6 +106,7 @@ async function main() {
   console.log(`Seed: ${options.seed}`);
   console.log(`Ticks: ${options.ticks}`);
   console.log(`Starting Credits: ${options.startingCredits}`);
+  console.log(`Bot Profile: ${resolvedProfile}`);
   console.log('');
 
   // Create simulation
@@ -105,7 +120,7 @@ async function main() {
   const tracker = createTracker();
 
   // Create bot strategy
-  const bot = createBalancedBot();
+  const bot = createBalancedBot(botParams);
 
   // Track initial state
   tracker.data.ageUnlockTicks[1] = 0;
@@ -150,7 +165,7 @@ async function main() {
   const summary = tracker.getSummary();
   const textReport = generateTextReport(summary, {
     seed: options.seed,
-    strategy: 'balanced',
+    strategy: `balanced:${resolvedProfile}`,
   });
 
   console.log(textReport);
@@ -163,9 +178,10 @@ async function main() {
       tracker.getEvents(),
       {
         seed: options.seed,
-        strategy: 'balanced',
+        strategy: `balanced:${resolvedProfile}`,
         maxTicks: options.ticks,
         snapshotInterval: options.snapshotInterval,
+        botProfile: resolvedProfile,
       }
     );
     saveReport(jsonReport, options.output);

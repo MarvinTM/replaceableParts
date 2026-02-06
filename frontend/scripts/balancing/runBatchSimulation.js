@@ -9,6 +9,7 @@ import { writeFileSync } from 'fs';
 import { createSimulation, runTicks } from './simulator.js';
 import { createTracker } from './kpis.js';
 import { createBalancedBot } from './strategies/balancedBot.js';
+import { getBotProfileParams, getBotProfiles, resolveBotProfile } from './strategies/botProfiles.js';
 import { computeMetricStats, evaluateScorecard, getTargetProfiles } from './scorecard.js';
 
 function parseInteger(value, fallback) {
@@ -28,6 +29,7 @@ function parseArgs() {
     startingCredits: 500,
     snapshotInterval: 100,
     profile: 'default',
+    botProfile: 'default',
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -63,6 +65,9 @@ function parseArgs() {
       case '--profile':
         options.profile = args[++i];
         break;
+      case '--bot-profile':
+        options.botProfile = args[++i];
+        break;
       case '--help':
         printHelp();
         process.exit(0);
@@ -92,11 +97,13 @@ Options:
   --starting-credits N   Starting credits per run (default: 500)
   --snapshot-interval N  Snapshot interval (default: 100)
   --profile NAME         Scorecard profile (default: default)
+  --bot-profile NAME     Balanced bot profile (default: default)
   --output PATH          Save report to PATH.json and PATH.txt
   --verbose              Print per-run progress
   --help                 Show this help
 
 Available profiles: ${getTargetProfiles().join(', ')}
+Available bot profiles: ${getBotProfiles().join(', ')}
 
 Examples:
   node runBatchSimulation.js --runs 12 --ticks 20000 --seed 100
@@ -204,7 +211,10 @@ function generateBatchTextReport(report) {
   lines.push('BATCH BALANCE SIMULATION');
   lines.push('='.repeat(80));
   lines.push('');
-  lines.push(`Runs: ${aggregate.runCount} | Ticks/Run: ${config.ticks} | Profile: ${config.profile}`);
+  lines.push(
+    `Runs: ${aggregate.runCount} | Ticks/Run: ${config.ticks} | ` +
+    `Profile: ${config.profile} | Bot: ${config.botProfile || 'default'}`
+  );
   lines.push(`Seeds: ${seeds.join(', ')}`);
   lines.push(`Elapsed: total ${aggregate.elapsed.totalMs}ms | avg ${aggregate.elapsed.avgMs}ms | p50 ${aggregate.elapsed.p50Ms}ms | p90 ${aggregate.elapsed.p90Ms}ms`);
   lines.push('');
@@ -267,6 +277,12 @@ function saveBatchReport(report, outputPath) {
 
 async function main() {
   const options = parseArgs();
+  const resolvedBotProfile = resolveBotProfile(options.botProfile);
+  if (!resolvedBotProfile) {
+    console.error(`Unknown --bot-profile "${options.botProfile}". Available: ${getBotProfiles().join(', ')}`);
+    process.exit(1);
+  }
+  const botParams = getBotProfileParams(resolvedBotProfile);
   const seeds = resolveSeeds(options);
   const runResults = [];
   const startAll = Date.now();
@@ -277,6 +293,7 @@ async function main() {
   console.log(`Runs: ${seeds.length}`);
   console.log(`Ticks per run: ${options.ticks}`);
   console.log(`Profile: ${options.profile}`);
+  console.log(`Bot Profile: ${resolvedBotProfile}`);
   console.log(`Seeds: ${seeds.join(', ')}`);
   console.log('');
 
@@ -292,7 +309,7 @@ async function main() {
     });
     const tracker = createTracker();
     tracker.data.ageUnlockTicks[1] = 0;
-    const bot = createBalancedBot();
+    const bot = createBalancedBot(botParams);
 
     const result = runTicks(sim, options.ticks, bot, tracker);
     if (result.error) {
@@ -330,7 +347,8 @@ async function main() {
       startingCredits: options.startingCredits,
       snapshotInterval: options.snapshotInterval,
       profile: options.profile,
-      strategy: 'balanced',
+      strategy: `balanced:${resolvedBotProfile}`,
+      botProfile: resolvedBotProfile,
     },
     seeds,
     runs: runResults,

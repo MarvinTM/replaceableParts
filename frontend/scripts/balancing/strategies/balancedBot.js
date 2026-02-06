@@ -47,6 +47,22 @@ export class BalancedBot extends BaseStrategy {
     this.maxExperimentsPerTickWhenStalled = params.maxExperimentsPerTickWhenStalled ?? 6;
     this.researchStallTicks = params.researchStallTicks ?? 2500;
     this.enableTargetedCatchUpResearch = params.enableTargetedCatchUpResearch ?? true;
+    this.ageMilestoneTicks = params.ageMilestoneTicks ?? {
+      2: 900,
+      3: 2500,
+      4: 4500,
+      5: 7000,
+      6: 9000,
+      7: 11000,
+    };
+    this.explorationCheckCooldownTicks = params.explorationCheckCooldownTicks ?? 50;
+    this.explorationCheckCooldownWhenBehind = params.explorationCheckCooldownWhenBehind ?? 150;
+    this.explorationExpansionCooldownTicks = params.explorationExpansionCooldownTicks ?? 200;
+    this.explorationExpansionCooldownWhenBehind = params.explorationExpansionCooldownWhenBehind ?? 1200;
+    this.nodeUnlockBufferMultiplier = params.nodeUnlockBufferMultiplier ?? 1;
+    this.nodeUnlockBufferMultiplierWhenBehind = params.nodeUnlockBufferMultiplierWhenBehind ?? 6;
+    this.mapExpansionBufferMultiplier = params.mapExpansionBufferMultiplier ?? 3;
+    this.disableMapExpansionWhenBehind = params.disableMapExpansionWhenBehind ?? true;
 
     // State tracking
     this.lastResearchDonation = 0;
@@ -90,7 +106,7 @@ export class BalancedBot extends BaseStrategy {
     actions.push(...expansionActions);
 
     // Priority 7: Explore and unlock extraction nodes
-    const explorationActions = this.decideExploration(sim);
+    const explorationActions = this.decideExploration(sim, ageInfo);
     actions.push(...explorationActions);
 
     return actions;
@@ -103,12 +119,31 @@ export class BalancedBot extends BaseStrategy {
       this.lastAgeAdvanceTick = sim.currentTick;
     }
 
+    const targetAge = this.getTargetAgeForTick(sim.currentTick);
     const ticksSinceAgeAdvance = sim.currentTick - this.lastAgeAdvanceTick;
     return {
       currentAge,
+      targetAge,
+      behindTarget: currentAge < targetAge,
       ticksSinceAgeAdvance,
       ageStalled: ticksSinceAgeAdvance >= this.researchStallTicks,
     };
+  }
+
+  getTargetAgeForTick(tick) {
+    let targetAge = 1;
+    const milestones = Object.entries(this.ageMilestoneTicks || {})
+      .map(([age, targetTick]) => ({ age: Number(age), targetTick: Number(targetTick) }))
+      .filter(entry => Number.isFinite(entry.age) && Number.isFinite(entry.targetTick))
+      .sort((a, b) => a.targetTick - b.targetTick);
+
+    for (const milestone of milestones) {
+      if (tick >= milestone.targetTick) {
+        targetAge = Math.max(targetAge, milestone.age);
+      }
+    }
+
+    return targetAge;
   }
 
   decideSelling(sim) {
@@ -1397,14 +1432,17 @@ export class BalancedBot extends BaseStrategy {
    * Explore the map and unlock extraction nodes
    * This is a key progression mechanic - unlocking nodes increases production throughput
    */
-  decideExploration(sim) {
+  decideExploration(sim, ageInfo = null) {
     const { state, rules } = sim;
     const actions = [];
 
     if (!state.explorationMap) return actions;
 
     // Only check for nodes periodically to avoid expensive map scans
-    if (sim.currentTick - this.lastExploration < 50) {
+    const checkCooldown = ageInfo?.behindTarget
+      ? this.explorationCheckCooldownWhenBehind
+      : this.explorationCheckCooldownTicks;
+    if (sim.currentTick - this.lastExploration < checkCooldown) {
       return actions;
     }
 
@@ -1431,7 +1469,11 @@ export class BalancedBot extends BaseStrategy {
         const cost = Math.floor(nodeUnlockBaseCost * Math.pow(resourceScaleFactor, existingCount) * globalMultiplier);
 
         // Can we afford it?
-        if (state.credits <= cost + this.minCreditsBuffer) continue;
+        const bufferMultiplier = ageInfo?.behindTarget
+          ? this.nodeUnlockBufferMultiplierWhenBehind
+          : this.nodeUnlockBufferMultiplier;
+        const requiredBuffer = this.minCreditsBuffer * bufferMultiplier;
+        if (state.credits <= cost + requiredBuffer) continue;
 
         // Score: prioritize fewer existing nodes (diversify), lower cost
         const score = -existingCount * 1000 - cost;
@@ -1452,12 +1494,19 @@ export class BalancedBot extends BaseStrategy {
     }
 
     // PRIORITY 2: Expand exploration (less frequent)
-    if (sim.currentTick - this.lastExploration < 200) {
+    const expansionCooldown = ageInfo?.behindTarget
+      ? this.explorationExpansionCooldownWhenBehind
+      : this.explorationExpansionCooldownTicks;
+    if (sim.currentTick - this.lastExploration < expansionCooldown) {
+      return actions;
+    }
+
+    if (ageInfo?.behindTarget && this.disableMapExpansionWhenBehind) {
       return actions;
     }
 
     const explorationCost = rules.exploration.baseCostPerCell * 16;
-    if (state.credits > explorationCost + this.minCreditsBuffer * 3) {
+    if (state.credits > explorationCost + this.minCreditsBuffer * this.mapExpansionBufferMultiplier) {
       actions.push({
         type: 'EXPAND_EXPLORATION',
         payload: {}

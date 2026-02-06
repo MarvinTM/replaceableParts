@@ -41,6 +41,7 @@ node scripts/balancing/runBatchSimulation.js --seeds 1,2,3,4,5 --output ./script
 | `--verbose` | Show progress during simulation | Off |
 | `--starting-credits N` | Initial credits for the bot | 500 |
 | `--snapshot-interval N` | Take snapshots every N ticks | 100 |
+| `--bot-profile NAME` | Balanced bot behavior profile | `default` |
 | `--help` | Show help message | - |
 
 ### Batch Runner Options (`runBatchSimulation.js`)
@@ -52,12 +53,30 @@ node scripts/balancing/runBatchSimulation.js --seeds 1,2,3,4,5 --output ./script
 | `--seed N` | Starting seed when generating seed sequence | 1 |
 | `--seeds A,B,C` | Explicit comma-separated seeds (overrides `--runs/--seed`) | None |
 | `--profile NAME` | Scorecard target profile | `default` |
+| `--bot-profile NAME` | Balanced bot behavior profile | `default` |
 | `--output PATH` | Save JSON and TXT reports to PATH | None |
 | `--verbose` | Print per-run progress | Off |
 
 Profiles:
 - `default` / `chill_v1`: tuned for "rewarding + chill" evaluation on long runs (recommended for 20k-tick batches)
 - `legacy`: older broad target bands
+
+Bot profiles:
+- `default` / `s0_default`: reference strategy behavior
+- `s1_research_push`: stronger research donation and experiment throughput
+- `s2_research_hard_push`: aggressive research with stricter exploration spending when behind age targets
+- `s3_hybrid_progression`: mixed production growth + research with moderate exploration gating
+- `s4_cashflow_rotation`: stronger cashflow/expansion posture with lighter research spending
+
+Example matrix run:
+```bash
+for p in s0_default s1_research_push s2_research_hard_push s3_hybrid_progression s4_cashflow_rotation; do
+  node scripts/balancing/runBatchSimulation.js \
+    --runs 8 --ticks 20000 --seed 1 \
+    --profile chill_v1 --bot-profile "$p" \
+    --output "./scripts/balancing/results/matrix_8x20k_${p}"
+done
+```
 
 ## Output Explained
 
