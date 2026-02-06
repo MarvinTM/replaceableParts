@@ -1250,8 +1250,9 @@ export const defaultRules = {
       id: 'solar_array',
       itemId: 'solar_array',
       name: 'Solar Array',
-      sizeX: 12, sizeY: 12,
+      sizeX: 13, sizeY: 13,
       disableAutoScale: true,
+      offsetX: 0, offsetY: 25,
       energyOutput: 100,
       animation: { frames: 3, speed: 0.005, separateFrames: true }
     },
