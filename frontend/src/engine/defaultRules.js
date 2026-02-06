@@ -887,7 +887,7 @@ export const defaultRules = {
     passiveDiscoveryChance: 0.005,  // 1/200 per tick
     ageWeighting: { floor: 0.30, ceiling: 0.85 },
     // Keep early pacing similar, ease advanced-age research costs.
-    experimentCosts: { 1: 15, 2: 35, 3: 75, 4: 140, 5: 280, 6: 520, 7: 980 },
+    experimentCosts: { 1: 15, 2: 35, 3: 75, 4: 140, 5: 280, 6: 460, 7: 900 },
     targetedExperimentMultiplier: 4, // Cheaper targeted catch-up for late-age pushes
     prototypeMultiplier: {
       // Age-scaled prototype requirements (applied per input with ceil).
