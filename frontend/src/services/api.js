@@ -94,8 +94,8 @@ export const api = {
     return request('/game/saves');
   },
 
-  async getSave(id) {
-    return request(`/game/saves/${id}`);
+  async getSave(id, options = {}) {
+    return request(`/game/saves/${id}`, options);
   },
 
   async createSave(data) {
@@ -105,10 +105,11 @@ export const api = {
     });
   },
 
-  async updateSave(id, data) {
+  async updateSave(id, data, options = {}) {
     return request(`/game/saves/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      ...options
     });
   },
 

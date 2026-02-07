@@ -7,6 +7,16 @@ const router = Router();
 // All game routes require authentication and approval
 router.use(authenticate, requireApproval);
 
+function extractTick(gameState) {
+  if (!gameState || typeof gameState !== 'object') return null;
+  const rawTick = gameState.tick;
+  return typeof rawTick === 'number' && Number.isFinite(rawTick) ? rawTick : null;
+}
+
+function logSaveDiagnostics(event, payload) {
+  console.log(`[GameSaveDiag] ${event}`, payload);
+}
+
 // Get all saves for current user
 router.get('/saves', async (req, res, next) => {
   try {
@@ -40,6 +50,17 @@ router.get('/saves/:id', async (req, res, next) => {
     if (!save) {
       return res.status(404).json({ error: 'Save not found' });
     }
+
+    logSaveDiagnostics('load_served', {
+      userId: req.user.id,
+      saveId: save.id,
+      tick: extractTick(save.data),
+      updatedAt: save.updatedAt,
+      clientTabId: req.headers['x-client-tab-id'] || null,
+      clientRoute: req.headers['x-client-route'] || null,
+      loadReason: req.headers['x-load-reason'] || null,
+      loadRequestId: req.headers['x-load-request-id'] || null
+    });
 
     res.json({ save });
   } catch (error) {
@@ -99,13 +120,52 @@ router.put('/saves/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Save not found' });
     }
 
+    const incomingTick = extractTick(data);
+    const existingTick = extractTick(existingSave.data);
+    const diagnostics = {
+      userId: req.user.id,
+      saveId: req.params.id,
+      existingTick,
+      incomingTick,
+      existingUpdatedAt: existingSave.updatedAt,
+      clientTabId: req.headers['x-client-tab-id'] || null,
+      clientRoute: req.headers['x-client-route'] || null,
+      saveReason: req.headers['x-save-reason'] || null,
+      saveRequestId: req.headers['x-save-request-id'] || null,
+      clientMeta: req.body?.meta || null
+    };
+
+    if (data !== undefined) {
+      logSaveDiagnostics('save_update_attempt', diagnostics);
+    }
+
     const updateData = {};
     if (name !== undefined) updateData.name = name;
-    if (data !== undefined) updateData.data = data;
+    if (data !== undefined) {
+      // Guard against stale writes: never allow a lower tick to overwrite a higher tick.
+      // This protects against refresh/HMR races, delayed requests, and multi-tab collisions.
+      if (incomingTick !== null && existingTick !== null && incomingTick < existingTick) {
+        logSaveDiagnostics('save_update_rejected_stale', diagnostics);
+        return res.status(409).json({
+          error: 'STALE_SAVE_REJECTED',
+          code: 'STALE_SAVE_REJECTED',
+          message: 'Incoming save state is older than the current saved state',
+          attemptedTick: incomingTick,
+          currentTick: existingTick
+        });
+      }
+      updateData.data = data;
+    }
 
     const save = await prisma.gameSave.update({
       where: { id: req.params.id },
       data: updateData
+    });
+
+    logSaveDiagnostics('save_update_applied', {
+      ...diagnostics,
+      resultingUpdatedAt: save.updatedAt,
+      resultingTick: data !== undefined ? incomingTick : existingTick
     });
 
     res.json({ save });

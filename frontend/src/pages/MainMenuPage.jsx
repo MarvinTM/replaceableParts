@@ -76,7 +76,7 @@ export default function MainMenuPage() {
     if (!latestSave) return;
     setLoading(true);
     try {
-      await loadGame(latestSave.id);
+      await loadGame(latestSave.id, { reason: 'continue_button' });
       navigate('/game');
     } catch (error) {
       console.error('Failed to continue game:', error);
@@ -142,7 +142,7 @@ export default function MainMenuPage() {
     setSaveDialogOpen(false);
     setLoading(true);
     try {
-      await loadGame(save.id);
+      await loadGame(save.id, { reason: 'load_selector' });
       navigate('/game');
     } catch (error) {
       console.error('Failed to load game:', error);

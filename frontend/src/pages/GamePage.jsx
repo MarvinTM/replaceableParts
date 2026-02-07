@@ -1009,7 +1009,7 @@ export default function GamePage() {
     setIsSaving(true);
     setSaveSuccess(false);
     try {
-      await saveGame();
+      await saveGame({ reason: 'manual_save_button' });
       setSaveSuccess(true);
       // Reset success indicator after 2 seconds
       setTimeout(() => setSaveSuccess(false), 2000);
@@ -1023,7 +1023,7 @@ export default function GamePage() {
   // Tab change handler - must be before conditional returns
   const handleTabChange = useCallback((event, newValue) => {
     // Save game when switching tabs (fire and forget)
-    saveGame().catch(console.error);
+    saveGame({ reason: 'tab_change' }).catch(console.error);
     setTabValue(newValue);
   }, [saveGame]);
 

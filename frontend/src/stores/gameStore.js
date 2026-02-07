@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { engine } from '../engine/engine.js';
 import { createInitialState } from '../engine/initialState.js';
 import { defaultRules } from '../engine/defaultRules.js';
@@ -369,6 +369,9 @@ const useGameStore = create(
     }),
       {
         name: 'replaceableParts-lastSave',
+        // Keep active save selection tab-scoped to avoid cross-tab slot pollution.
+        // localStorage is shared by all tabs and can cause one tab to restore another tab's save slot.
+        storage: createJSONStorage(() => sessionStorage),
         partialize: (state) => ({
           saveId: state.saveId,
           saveName: state.saveName

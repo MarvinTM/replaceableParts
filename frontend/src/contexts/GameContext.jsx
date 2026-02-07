@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 import useGameStore from '../stores/gameStore';
@@ -8,8 +9,19 @@ const GameContext = createContext(null);
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 const GUEST_SAVE_KEY = 'replaceableParts-guestSave';
+const CLIENT_TAB_ID_KEY = 'replaceableParts-clientTabId';
 const MAX_CLOUD_SAVES = 5;
 const SESSION_HEARTBEAT_INTERVAL = 60000; // 1 minute
+
+function getOrCreateClientTabId() {
+  if (typeof window === 'undefined') return 'server';
+  let tabId = sessionStorage.getItem(CLIENT_TAB_ID_KEY);
+  if (!tabId) {
+    tabId = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem(CLIENT_TAB_ID_KEY, tabId);
+  }
+  return tabId;
+}
 
 /**
  * Validate that a game state is a real played game, not an initial/empty state.
@@ -36,6 +48,7 @@ function isValidGameStateForSave(state) {
 
 export function GameProvider({ children }) {
   const { isAuthenticated, isGuest, wasGuestBeforeLogin, clearWasGuestFlag } = useAuth();
+  const location = useLocation();
 
   const [saves, setSaves] = useState([]);
   const [isLoadingSaves, setIsLoadingSaves] = useState(false);
@@ -45,6 +58,13 @@ export function GameProvider({ children }) {
   // Ref to track when saves should be blocked (during restore operations)
   // This prevents race conditions during HMR/refresh where stale saves could overwrite good data
   const saveLockRef = useRef(false);
+
+  // Tracks async load ordering so stale load responses cannot overwrite newer user actions.
+  const loadRequestSeqRef = useRef(0);
+  const activeLoadRequestRef = useRef(0);
+  const saveRequestSeqRef = useRef(0);
+  const hasAttemptedRestore = useRef(false);
+  const clientTabIdRef = useRef(getOrCreateClientTabId());
 
   // Store the last known good state hash to detect if state has meaningfully changed
   const lastSavedStateRef = useRef(null);
@@ -267,11 +287,20 @@ export function GameProvider({ children }) {
       return guestSave;
     }
 
+    // Prefer the currently active slot for this tab/session.
+    // This avoids "Continue" jumping to another slot that was updated elsewhere.
+    if (isAuthenticated && saveId && saveId !== 'guest') {
+      const activeSave = saves.find((save) => save.id === saveId);
+      if (activeSave) {
+        return activeSave;
+      }
+    }
+
     if (saves.length === 0) return null;
     return saves.reduce((latest, save) =>
       new Date(save.updatedAt) > new Date(latest.updatedAt) ? save : latest
     );
-  }, [saves, isGuest, isAuthenticated, loadGuestGame]);
+  }, [saves, isGuest, isAuthenticated, saveId, loadGuestGame]);
 
   // ============ Migration ============
 
@@ -370,7 +399,24 @@ export function GameProvider({ children }) {
     }
   }, [initNewGame, isAuthenticated, isGuest, setSaveInfo, clearGame, loadSaves, saveGuestGame, startSessionTracking]);
 
-  const loadGame = useCallback(async (saveIdToLoad) => {
+  const loadGame = useCallback(async (saveIdToLoad, options = {}) => {
+    const { reason = 'unknown' } = options;
+
+    // Any explicit load attempt should disable background auto-restore retries.
+    hasAttemptedRestore.current = true;
+
+    const requestId = ++loadRequestSeqRef.current;
+    activeLoadRequestRef.current = requestId;
+    const tabId = clientTabIdRef.current;
+
+    console.log('[LoadDiag] Load request started', {
+      requestId,
+      reason,
+      saveId: saveIdToLoad,
+      tabId,
+      route: location.pathname
+    });
+
     try {
       if (saveIdToLoad === 'guest' || (isGuest && !isAuthenticated)) {
         // Load guest save from localStorage
@@ -378,13 +424,45 @@ export function GameProvider({ children }) {
         if (!guestSave) {
           throw new Error('No guest save found');
         }
+        if (activeLoadRequestRef.current !== requestId) {
+          console.log('[LoadDiag] Ignoring stale guest load response', {
+            requestId,
+            reason,
+            saveId: saveIdToLoad,
+            tabId
+          });
+          return null;
+        }
         loadGameState(guestSave.id, guestSave.name, guestSave.data);
         // Explicitly set save info to ensure persist middleware captures it
         setSaveInfo(guestSave.id, guestSave.name);
+        console.log('[LoadDiag] Guest load applied', {
+          requestId,
+          reason,
+          saveId: guestSave.id,
+          tick: guestSave.data?.tick,
+          tabId
+        });
         return guestSave;
       } else {
         // Load from backend
-        const { save } = await api.getSave(saveIdToLoad);
+        const { save } = await api.getSave(saveIdToLoad, {
+          headers: {
+            'X-Client-Tab-Id': tabId,
+            'X-Client-Route': location.pathname,
+            'X-Load-Reason': reason,
+            'X-Load-Request-Id': String(requestId)
+          }
+        });
+        if (activeLoadRequestRef.current !== requestId) {
+          console.log('[LoadDiag] Ignoring stale backend load response', {
+            requestId,
+            reason,
+            saveId: saveIdToLoad,
+            tabId
+          });
+          return null;
+        }
         loadGameState(save.id, save.name, save.data);
         // Explicitly set save info to ensure persist middleware captures it
         // This ensures auto-saves go to the correct slot after page refresh
@@ -393,24 +471,38 @@ export function GameProvider({ children }) {
         // Start session tracking for authenticated users
         startSessionTracking('load', save.id);
 
+        console.log('[LoadDiag] Backend load applied', {
+          requestId,
+          reason,
+          saveId: save.id,
+          tick: save.data?.tick,
+          updatedAt: save.updatedAt,
+          tabId
+        });
         return save;
       }
     } catch (error) {
-      console.error('Failed to load game:', error);
+      console.error('[LoadDiag] Failed to load game', {
+        requestId,
+        reason,
+        saveId: saveIdToLoad,
+        tabId,
+        error
+      });
       throw error;
     }
-  }, [isGuest, isAuthenticated, loadGuestGame, loadGameState, setSaveInfo, startSessionTracking]);
+  }, [isGuest, isAuthenticated, loadGuestGame, loadGameState, setSaveInfo, startSessionTracking, location.pathname]);
 
   const continueLatestGame = useCallback(async () => {
     const latest = getLatestSave();
     if (latest) {
-      return loadGame(latest.id);
+      return loadGame(latest.id, { reason: 'continue_latest' });
     }
     return null;
   }, [getLatestSave, loadGame]);
 
   const saveGame = useCallback(async (options = {}) => {
-    const { bypassLock = false, bypassValidation = false } = options;
+    const { bypassLock = false, bypassValidation = false, reason = 'unknown' } = options;
 
     if (!engineState) return null;
 
@@ -437,19 +529,58 @@ export function GameProvider({ children }) {
       return guestSave;
     } else if (isAuthenticated && saveId && saveId !== 'guest') {
       // Authenticated: save to backend
+      const requestId = ++saveRequestSeqRef.current;
+      const tabId = clientTabIdRef.current;
+      const diagnostics = {
+        requestId,
+        reason,
+        saveId,
+        tick: currentState?.tick,
+        route: location.pathname,
+        tabId,
+        visibility: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+        timestamp: new Date().toISOString()
+      };
+      console.log('[SaveDiag] Save request started', diagnostics);
       try {
-        const { save } = await api.updateSave(saveId, { data: currentState });
+        const { save } = await api.updateSave(saveId, {
+          data: currentState,
+          meta: diagnostics
+        }, {
+          headers: {
+            'X-Client-Tab-Id': tabId,
+            'X-Client-Route': location.pathname,
+            'X-Save-Reason': reason,
+            'X-Save-Request-Id': String(requestId)
+          }
+        });
         setSaveInfo(save.id, save.name);
-        console.log('[SaveGame] Backend save successful, tick:', currentState?.tick);
+        console.log('[SaveDiag] Backend save successful', {
+          ...diagnostics,
+          serverUpdatedAt: save.updatedAt
+        });
         return save;
       } catch (error) {
-        console.error('[SaveGame] Failed to save game:', error);
+        if (error?.code === 'STALE_SAVE_REJECTED') {
+          console.warn('[SaveDiag] Backend rejected stale save payload; local state is older than server state', {
+            ...diagnostics,
+            status: error?.status,
+            code: error?.code
+          });
+          return null;
+        }
+        console.error('[SaveDiag] Failed to save game', {
+          ...diagnostics,
+          status: error?.status,
+          code: error?.code,
+          error
+        });
         throw error;
       }
     }
 
     return null;
-  }, [engineState, getStateForSave, isGuest, isAuthenticated, saveId, saveName, saveGuestGame, setSaveInfo]);
+  }, [engineState, getStateForSave, isGuest, isAuthenticated, saveId, saveName, saveGuestGame, setSaveInfo, location.pathname]);
 
   const exitToMenu = useCallback(async () => {
     // End session tracking before exiting
@@ -458,7 +589,7 @@ export function GameProvider({ children }) {
     // Auto-save before exiting if we have a game
     if (engineState) {
       try {
-        await saveGame();
+        await saveGame({ reason: 'exit_to_menu' });
       } catch (error) {
         console.error('Failed to auto-save on exit:', error);
       }
@@ -489,9 +620,12 @@ export function GameProvider({ children }) {
 
   // ============ Auto-restore ============
 
-  const hasAttemptedRestore = useRef(false);
   useEffect(() => {
     const autoRestore = async () => {
+      // Auto-restore is only needed when entering the game route.
+      // Avoid restoring in background on menu/settings, which can touch a stale slot.
+      if (location.pathname !== '/game') return;
+
       // Skip if already restoring or already have engine state
       if (engineState || isAutoRestoring || hasAttemptedRestore.current) return;
 
@@ -526,7 +660,7 @@ export function GameProvider({ children }) {
         saveLockRef.current = true; // Block saves during restore
         try {
           console.log(`[AutoRestore] Restoring from backend: ${saveName} (ID: ${saveId})`);
-          await loadGame(saveId);
+          await loadGame(saveId, { reason: 'auto_restore' });
         } catch (error) {
           console.error('[AutoRestore] Failed to auto-restore game:', error);
           clearGame();
@@ -542,24 +676,26 @@ export function GameProvider({ children }) {
     };
 
     autoRestore();
-  }, [saveId, engineState, isAutoRestoring, saveName, loadGame, clearGame, isGuest, isAuthenticated, loadGuestGame, loadGameState]);
+  }, [location.pathname, saveId, engineState, isAutoRestoring, saveName, loadGame, clearGame, isGuest, isAuthenticated, loadGuestGame, loadGameState]);
 
   // ============ Auto-save ============
 
   // Auto-save every 30 seconds for authenticated users
   useEffect(() => {
-    if (!isInGame || !isAuthenticated || saveId === 'guest') return;
+    // Only auto-save from the active gameplay route.
+    // Background tabs (e.g. debug/admin/settings) should never keep writing game state.
+    if (location.pathname !== '/game' || !isInGame || !isAuthenticated || saveId === 'guest') return;
 
     const autoSaveInterval = setInterval(() => {
       // The saveGame function already checks saveLockRef internally
-      saveGame().catch(err => {
+      saveGame({ reason: 'autosave_interval' }).catch(err => {
         // Only log actual errors, not blocked saves
         if (err) console.error('[AutoSave] Error:', err);
       });
     }, 30000);
 
     return () => clearInterval(autoSaveInterval);
-  }, [isInGame, isAuthenticated, saveId, saveGame]);
+  }, [location.pathname, isInGame, isAuthenticated, saveId, saveGame]);
 
   // Auto-save for guests when engine state changes (debounced)
   // Use a stable ref for the timeout ID to handle HMR better
@@ -625,6 +761,16 @@ export function GameProvider({ children }) {
     const saveOnUnload = () => {
       const currentSaveId = useGameStore.getState().saveId;
       const currentEngineState = useGameStore.getState().engineState;
+      const currentSaveName = useGameStore.getState().saveName;
+      const tabId = clientTabIdRef.current;
+      const route = window.location?.pathname || location.pathname;
+
+      // Only save on unload from the gameplay route.
+      // This avoids stale background contexts writing outdated states.
+      if (route !== '/game') {
+        console.log('[SaveOnUnload] Skipped: not on /game route', { route, tabId });
+        return;
+      }
 
       if (!currentEngineState) {
         console.log('[SaveOnUnload] Skipped: no engine state');
@@ -667,15 +813,25 @@ export function GameProvider({ children }) {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const saveData = JSON.stringify({ data: currentEngineState });
       const saveUrl = `${API_URL}/game/saves/${currentSaveId}`;
+      const unloadDiagnostics = {
+        reason: 'page_unload',
+        saveId: currentSaveId,
+        saveName: currentSaveName,
+        tick: currentEngineState?.tick,
+        route,
+        tabId,
+        visibility: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+        timestamp: new Date().toISOString()
+      };
+      console.log('[SaveDiag] Unload save request started', unloadDiagnostics);
 
       // Use sendBeacon for more reliable unload saves
       // sendBeacon doesn't support custom headers, so we include token in body
       // and the backend should accept it from there as a fallback
       if (navigator.sendBeacon) {
         const blob = new Blob(
-          [JSON.stringify({ data: currentEngineState, _token: token })],
+          [JSON.stringify({ data: currentEngineState, _token: token, meta: unloadDiagnostics })],
           { type: 'application/json' }
         );
         const sent = navigator.sendBeacon(saveUrl, blob);
@@ -687,9 +843,12 @@ export function GameProvider({ children }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-Client-Tab-Id': tabId,
+          'X-Client-Route': route,
+          'X-Save-Reason': 'page_unload'
         },
-        body: saveData,
+        body: JSON.stringify({ data: currentEngineState, meta: unloadDiagnostics }),
         keepalive: true
       }).catch(() => {
         // Ignore errors on unload
@@ -715,7 +874,7 @@ export function GameProvider({ children }) {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isGuest, isAuthenticated, sendSessionBeacon]);
+  }, [isGuest, isAuthenticated, sendSessionBeacon, location.pathname]);
 
   // Cleanup session tracking on unmount
   useEffect(() => {

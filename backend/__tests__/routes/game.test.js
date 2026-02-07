@@ -26,7 +26,7 @@ jest.unstable_mockModule('../../src/middleware/auth.js', () => ({
 }));
 
 const mockSaves = [
-  { id: 'save-1', name: 'Save 1', userId: 'user-123', data: {}, createdAt: new Date(), updatedAt: new Date() }
+  { id: 'save-1', name: 'Save 1', userId: 'user-123', data: { tick: 100 }, createdAt: new Date(), updatedAt: new Date() }
 ];
 
 // Shared Prisma mock for consistency across imports
@@ -82,6 +82,28 @@ describe('POST /api/game/saves', () => {
 });
 
 describe('PUT /api/game/saves/:id', () => {
+  it('should reject stale save updates that would reduce tick', async () => {
+    const res = await request(app)
+      .put('/api/game/saves/save-1')
+      .send({ data: { tick: 48 } });
+
+    expect(res.statusCode).toBe(409);
+    expect(res.body.code).toBe('STALE_SAVE_REJECTED');
+    expect(res.body.attemptedTick).toBe(48);
+    expect(res.body.currentTick).toBe(100);
+    expect(mockPrisma.gameSave.update).not.toHaveBeenCalled();
+  });
+
+  it('should allow save updates when tick is newer', async () => {
+    const res = await request(app)
+      .put('/api/game/saves/save-1')
+      .send({ data: { tick: 150 } });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.save.id).toBe('save-1');
+    expect(mockPrisma.gameSave.update).toHaveBeenCalled();
+  });
+
   it('should return 404 when save is missing', async () => {
     mockPrisma.gameSave.findFirst.mockResolvedValueOnce(null);
 

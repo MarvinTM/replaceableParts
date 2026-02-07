@@ -66,7 +66,7 @@ export default function Layout({ children }) {
     // Save game if navigating away from game page
     if (isOnGamePage && isInGame) {
       try {
-        await saveGame();
+        await saveGame({ reason: 'navigate_away' });
       } catch (error) {
         console.error('Failed to save before navigation:', error);
       }
