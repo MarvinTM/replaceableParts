@@ -1549,3 +1549,58 @@ export const defaultRules = {
     }
   }
 };
+
+function getStructureAge(structure, materialById) {
+  const materialId = structure.itemId || structure.id;
+  return materialById.get(materialId)?.age || 1;
+}
+
+function aggregateBuildSlotInputs(buildRecipe) {
+  const inputs = {};
+  for (const slot of buildRecipe?.slots || []) {
+    if (!slot?.material) continue;
+    const quantity = slot.quantity || 1;
+    inputs[slot.material] = (inputs[slot.material] || 0) + quantity;
+  }
+  return inputs;
+}
+
+function createStructureBlueprintRecipes(rules) {
+  const generated = [];
+  const existingRecipeIds = new Set((rules.recipes || []).map(recipe => recipe.id));
+  const materialById = new Map((rules.materials || []).map(material => [material.id, material]));
+
+  const appendBlueprints = (structures, buildRecipes) => {
+    for (const structure of structures || []) {
+      if (structure?.disabled) continue;
+      if (existingRecipeIds.has(structure.id)) continue;
+
+      const buildRecipe = buildRecipes?.[structure.id];
+      if (!buildRecipe?.slots?.length) continue;
+
+      const inputs = aggregateBuildSlotInputs(buildRecipe);
+      const outputId = structure.itemId || structure.id;
+      if (!materialById.has(outputId) || Object.keys(inputs).length === 0) continue;
+
+      const age = getStructureAge(structure, materialById);
+      generated.push({
+        id: structure.id,
+        inputs,
+        outputs: { [outputId]: 1 },
+        ticksToComplete: Math.max(4, age + 3),
+        age,
+      });
+      existingRecipeIds.add(structure.id);
+    }
+  };
+
+  appendBlueprints(rules.machines, rules.machineRecipes);
+  appendBlueprints(rules.generators, rules.generatorRecipes);
+
+  return generated;
+}
+
+const structureBlueprintRecipes = createStructureBlueprintRecipes(defaultRules);
+if (structureBlueprintRecipes.length > 0) {
+  defaultRules.recipes.push(...structureBlueprintRecipes);
+}

@@ -144,6 +144,7 @@ export default function DebugGraphPage() {
     issues.missingMaterials.length +
     issues.unproduceable.length +
     issues.recipesMissingMachine.length +
+    (issues.missingStructureBlueprints?.length || 0) +
     (issues.intermediateNotUsedInAge?.length || 0) +
     (issues.recipesWithZeroQuantity?.length || 0) +
     (issues.recipeAgeIssues?.length || 0) +
@@ -175,6 +176,14 @@ export default function DebugGraphPage() {
       log += `Recipes Missing Machine (${issues.recipesMissingMachine.length}):\n`;
       issues.recipesMissingMachine.forEach(recipeId => {
         log += `  - ${recipeId} (Recipe has no machine)\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.missingStructureBlueprints && issues.missingStructureBlueprints.length > 0) {
+      log += `Missing Structure Blueprints (${issues.missingStructureBlueprints.length}):\n`;
+      issues.missingStructureBlueprints.forEach(issue => {
+        log += `  - ${issue.structureName} [${issue.structureType}] (${issue.structureId})\n`;
       });
       log += '\n';
     }
