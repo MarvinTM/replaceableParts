@@ -56,6 +56,7 @@ import TutorialOverlay from '../components/tutorial/TutorialOverlay';
 import TipSnackbar from '../components/tips/TipSnackbar';
 import { formatCredits } from '../utils/currency';
 import { calculateRawMaterialBalance } from '../utils/rawMaterialBalance';
+import { calculateRequestedEnergyConsumption } from '../utils/energyDemand';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -148,6 +149,14 @@ function FactoryTab() {
       category: mat?.category || 'raw',
     };
   });
+  const requestedEnergyConsumption = calculateRequestedEnergyConsumption({
+    machines,
+    machineConfigs: rules.machines,
+  });
+  const hudEnergy = {
+    ...engineState.energy,
+    consumed: Math.max(Number(engineState.energy?.consumed) || 0, requestedEnergyConsumption),
+  };
 
   // Calculate next expansion info
   const expansion = getNextExpansionChunk(engineState, rules);
@@ -470,7 +479,7 @@ function FactoryTab() {
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* Canvas container */}
         <Box sx={{ flex: 1, position: 'relative', minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <FloatingHUD credits={credits} energy={engineState.energy} rawMaterialBalance={rawMaterialBalance} />
+          <FloatingHUD credits={credits} energy={hudEnergy} rawMaterialBalance={rawMaterialBalance} />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1, py: 0.5 }}>
             <Typography variant="caption" color="text.secondary">
               {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })}
@@ -666,6 +675,14 @@ function ExplorationTab() {
   if (!engineState?.explorationMap) return null;
 
   const { explorationMap, credits } = engineState;
+  const requestedEnergyConsumption = calculateRequestedEnergyConsumption({
+    machines: engineState.machines,
+    machineConfigs: rules.machines,
+  });
+  const hudEnergy = {
+    ...engineState.energy,
+    consumed: Math.max(Number(engineState.energy?.consumed) || 0, requestedEnergyConsumption),
+  };
   const { exploredBounds, tiles } = explorationMap;
 
   // Count stats
@@ -855,7 +872,7 @@ function ExplorationTab() {
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Canvas container */}
         <Box sx={{ flex: 1, position: 'relative', minWidth: 0 }}>
-          <FloatingHUD credits={credits} energy={engineState.energy} />
+          <FloatingHUD credits={credits} energy={hudEnergy} />
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1, py: 0.5 }}>
               <Typography variant="caption" color="text.secondary">
