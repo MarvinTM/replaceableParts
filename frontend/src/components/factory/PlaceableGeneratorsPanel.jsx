@@ -67,9 +67,9 @@ export default function PlaceableGeneratorsPanel({
     setSelectedGeneratorType(null);
   };
 
-  const handleBuild = (generatorType) => {
+  const handleBuild = (generatorType, quantity = 1) => {
     if (onBuildGenerator) {
-      onBuildGenerator(generatorType);
+      onBuildGenerator(generatorType, quantity);
     }
   };
 

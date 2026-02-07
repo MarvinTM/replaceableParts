@@ -12,6 +12,8 @@ import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import CloseIcon from '@mui/icons-material/Close';
 import BuildIcon from '@mui/icons-material/Build';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 import MaterialIcon from '../common/MaterialIcon';
 import { getMaterialDescription, getMaterialName, getSlotLabel } from '../../utils/translationHelpers';
 
@@ -48,27 +50,93 @@ export default function BuildPopup({
   // Track if preview image failed to load
   const [imageError, setImageError] = useState(false);
 
+  // Number of machines/generators to build in one action
+  const [buildQuantity, setBuildQuantity] = useState(1);
+
+  const perUnitMaterialNeeds = useMemo(() => {
+    if (!buildRecipe?.slots) return {};
+
+    const needs = {};
+    for (const slot of buildRecipe.slots) {
+      const qty = slot.quantity || 1;
+      needs[slot.material] = (needs[slot.material] || 0) + qty;
+    }
+    return needs;
+  }, [buildRecipe]);
+
+  const maxBuildQuantity = useMemo(() => {
+    if (cheatMode) return 99;
+
+    const materialIds = Object.keys(perUnitMaterialNeeds);
+    if (materialIds.length === 0) return 1;
+
+    const maxFromInventory = materialIds.reduce((min, materialId) => {
+      const perUnit = perUnitMaterialNeeds[materialId] || 0;
+      if (perUnit <= 0) return min;
+      const available = inventory[materialId] || 0;
+      const possible = Math.floor(available / perUnit);
+      return Math.min(min, possible);
+    }, Number.POSITIVE_INFINITY);
+
+    if (!Number.isFinite(maxFromInventory)) return 1;
+    return Math.max(1, maxFromInventory);
+  }, [cheatMode, perUnitMaterialNeeds, inventory]);
+
+  // Keep quantity in range if inventory changes while popup is open.
+  useEffect(() => {
+    if (buildQuantity > maxBuildQuantity) {
+      setBuildQuantity(maxBuildQuantity);
+    }
+  }, [buildQuantity, maxBuildQuantity]);
+
+  const getSlotRequiredQuantity = (slot) => {
+    const baseRequired = slot.quantity || 1;
+    return baseRequired * buildQuantity;
+  };
+
   // Auto-fill all slots when cheat mode is enabled
   useEffect(() => {
     if (open && cheatMode && buildRecipe?.slots) {
       const autoFilledSlots = {};
       buildRecipe.slots.forEach((slot, index) => {
-        const required = slot.quantity || 1;
+        const required = getSlotRequiredQuantity(slot);
         autoFilledSlots[index] = required;
       });
       setSlotFills(autoFilledSlots);
     }
-  }, [open, cheatMode, buildRecipe]);
+  }, [open, cheatMode, buildRecipe, buildQuantity]);
+
+  // If required quantity decreases, clamp filled values so UI stays consistent.
+  useEffect(() => {
+    if (!buildRecipe?.slots) return;
+
+    setSlotFills((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      for (const [slotIndex, filledQty] of Object.entries(prev)) {
+        const slot = buildRecipe.slots[parseInt(slotIndex, 10)];
+        if (!slot) continue;
+
+        const required = getSlotRequiredQuantity(slot);
+        if (filledQty > required) {
+          next[slotIndex] = required;
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [buildRecipe, buildQuantity]);
 
   // Calculate materials needed and available
   const materialInfo = useMemo(() => {
     if (!buildRecipe?.slots) return { needed: {}, available: {}, canBuild: false };
 
-    // Count how many of each material is needed (considering quantity per slot)
+    // Count how many of each material is needed for selected build quantity.
     const needed = {};
-    for (const slot of buildRecipe.slots) {
-      const qty = slot.quantity || 1;
-      needed[slot.material] = (needed[slot.material] || 0) + qty;
+    for (const [materialId, perUnit] of Object.entries(perUnitMaterialNeeds)) {
+      needed[materialId] = perUnit * buildQuantity;
     }
 
     // Get available amounts from inventory
@@ -87,14 +155,14 @@ export default function BuildPopup({
     }
 
     return { needed, available, canBuild };
-  }, [buildRecipe, inventory]);
+  }, [buildRecipe, inventory, perUnitMaterialNeeds, buildQuantity]);
 
   // Count filled units per material type
   const filledCounts = useMemo(() => {
     if (!buildRecipe?.slots) return {};
     const counts = {};
     for (const [slotIndex, filledQty] of Object.entries(slotFills)) {
-      const slot = buildRecipe.slots[parseInt(slotIndex)];
+      const slot = buildRecipe.slots[parseInt(slotIndex, 10)];
       if (slot && filledQty > 0) {
         counts[slot.material] = (counts[slot.material] || 0) + filledQty;
       }
@@ -106,11 +174,11 @@ export default function BuildPopup({
   const allSlotsFilled = useMemo(() => {
     if (!buildRecipe?.slots) return false;
     return buildRecipe.slots.every((slot, index) => {
-      const required = slot.quantity || 1;
+      const required = getSlotRequiredQuantity(slot);
       const filled = slotFills[index] || 0;
       return filled >= required;
     });
-  }, [slotFills, buildRecipe]);
+  }, [slotFills, buildRecipe, buildQuantity]);
 
   // Get unique materials for the inventory section
   const uniqueMaterials = useMemo(() => {
@@ -150,7 +218,7 @@ export default function BuildPopup({
   // Handle drag over a slot
   const handleSlotDragOver = (e, slotIndex, slot) => {
     e.preventDefault();
-    const required = slot.quantity || 1;
+    const required = getSlotRequiredQuantity(slot);
     const filled = slotFills[slotIndex] || 0;
     const draggedMaterial = e.dataTransfer.types.includes('text/plain');
     if (draggedMaterial && filled < required) {
@@ -170,7 +238,7 @@ export default function BuildPopup({
     setDragOverSlot(null);
 
     const droppedMaterial = e.dataTransfer.getData('text/plain');
-    const required = slot.quantity || 1;
+    const required = getSlotRequiredQuantity(slot);
     const currentFilled = slotFills[slotIndex] || 0;
 
     // Check if the dropped material matches the expected material
@@ -212,7 +280,7 @@ export default function BuildPopup({
   // Handle build button click
   const handleBuild = () => {
     if ((allSlotsFilled || cheatMode) && onBuild) {
-      onBuild(itemType);
+      onBuild(itemType, buildQuantity);
       handleClose();
     }
   };
@@ -222,6 +290,7 @@ export default function BuildPopup({
     setSlotFills({});
     setDragOverSlot(null);
     setImageError(false);
+    setBuildQuantity(1);
     onClose();
   };
 
@@ -313,6 +382,33 @@ export default function BuildPopup({
           {t('game.factory.dragMaterialsHint', 'Drag materials from below to fill each slot')}
         </Typography>
 
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+          <Typography variant="subtitle2">
+            {t('game.factory.quantity', 'Quantity')}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={() => setBuildQuantity((prev) => Math.max(1, prev - 1))}
+              disabled={buildQuantity <= 1}
+              aria-label={t('game.factory.decreaseQuantity', 'Decrease quantity')}
+            >
+              <RemoveIcon fontSize="small" />
+            </IconButton>
+            <Typography variant="body2" sx={{ minWidth: 48, textAlign: 'center', fontWeight: 600 }}>
+              {buildQuantity}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => setBuildQuantity((prev) => Math.min(maxBuildQuantity, prev + 1))}
+              disabled={!cheatMode && buildQuantity >= maxBuildQuantity}
+              aria-label={t('game.factory.increaseQuantity', 'Increase quantity')}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+
         <Box
           sx={{
             display: 'flex',
@@ -327,7 +423,7 @@ export default function BuildPopup({
           }}
         >
           {buildRecipe.slots.map((slot, index) => {
-            const required = slot.quantity || 1;
+            const required = getSlotRequiredQuantity(slot);
             const filled = slotFills[index] || 0;
             const isFull = filled >= required;
             const isPartial = filled > 0 && filled < required;
@@ -455,7 +551,7 @@ export default function BuildPopup({
         >
           {uniqueMaterials.map((material) => {
             const hasEnough = material.available >= material.needed;
-            const progress = (material.filled / material.needed) * 100;
+            const progress = material.needed > 0 ? (material.filled / material.needed) * 100 : 100;
 
             return (
               <Box
@@ -545,7 +641,9 @@ export default function BuildPopup({
           disabled={!allSlotsFilled && !cheatMode}
           startIcon={<BuildIcon />}
         >
-          {t('game.factory.build', 'Build')}
+          {buildQuantity > 1
+            ? t('game.factory.buildMultiple', 'Build x{{count}}', { count: buildQuantity })
+            : t('game.factory.build', 'Build')}
         </Button>
       </DialogActions>
     </Dialog>

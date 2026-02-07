@@ -307,11 +307,11 @@ function FactoryTab() {
     setBuildPopupItemType(null);
   };
 
-  const handleBuild = (itemType) => {
+  const handleBuild = (itemType, quantity = 1) => {
     if (buildPopupType === 'machine') {
-      buildMachineAction(itemType, cheatMode);
+      buildMachineAction(itemType, cheatMode, quantity);
     } else if (buildPopupType === 'generator') {
-      buildGeneratorAction(itemType, cheatMode);
+      buildGeneratorAction(itemType, cheatMode, quantity);
     }
   };
 

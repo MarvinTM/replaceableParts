@@ -2043,7 +2043,12 @@ function fillPrototypeSlot(state, rules, payload) {
  */
 function buildMachine(state, rules, payload) {
   const newState = deepClone(state);
-  const { machineType, cheat = false } = payload;
+  const { machineType, cheat = false, quantity = 1 } = payload;
+  const buildQuantity = Math.floor(Number(quantity));
+
+  if (!Number.isFinite(buildQuantity) || buildQuantity < 1) {
+    return { state: newState, error: 'Build quantity must be at least 1' };
+  }
 
   // Validate machine type exists
   const machineConfig = rules.machines.find(m => m.id === machineType);
@@ -2063,7 +2068,7 @@ function buildMachine(state, rules, payload) {
     const requiredMaterials = {};
     for (const slot of buildRecipe.slots) {
       const materialId = slot.material;
-      const qty = slot.quantity || 1;
+      const qty = (slot.quantity || 1) * buildQuantity;
       requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
     }
 
@@ -2092,7 +2097,7 @@ function buildMachine(state, rules, payload) {
   }
 
   // Add machine to built pool
-  newState.builtMachines[machineType] = (newState.builtMachines[machineType] || 0) + 1;
+  newState.builtMachines[machineType] = (newState.builtMachines[machineType] || 0) + buildQuantity;
 
   return { state: newState, error: null };
 }
@@ -2103,7 +2108,12 @@ function buildMachine(state, rules, payload) {
  */
 function buildGenerator(state, rules, payload) {
   const newState = deepClone(state);
-  const { generatorType, cheat = false } = payload;
+  const { generatorType, cheat = false, quantity = 1 } = payload;
+  const buildQuantity = Math.floor(Number(quantity));
+
+  if (!Number.isFinite(buildQuantity) || buildQuantity < 1) {
+    return { state: newState, error: 'Build quantity must be at least 1' };
+  }
 
   // Validate generator type exists
   const genConfig = rules.generators.find(g => g.id === generatorType);
@@ -2123,7 +2133,7 @@ function buildGenerator(state, rules, payload) {
     const requiredMaterials = {};
     for (const slot of buildRecipe.slots) {
       const materialId = slot.material;
-      const qty = slot.quantity || 1;
+      const qty = (slot.quantity || 1) * buildQuantity;
       requiredMaterials[materialId] = (requiredMaterials[materialId] || 0) + qty;
     }
 
@@ -2152,7 +2162,7 @@ function buildGenerator(state, rules, payload) {
   }
 
   // Add generator to built pool
-  newState.builtGenerators[generatorType] = (newState.builtGenerators[generatorType] || 0) + 1;
+  newState.builtGenerators[generatorType] = (newState.builtGenerators[generatorType] || 0) + buildQuantity;
 
   return { state: newState, error: null };
 }

@@ -67,9 +67,9 @@ export default function PlaceableMachinesPanel({
     setSelectedMachineType(null);
   };
 
-  const handleBuild = (machineType) => {
+  const handleBuild = (machineType, quantity = 1) => {
     if (onBuildMachine) {
-      onBuildMachine(machineType);
+      onBuildMachine(machineType, quantity);
     }
   };
 

@@ -1,9 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { api } from '../../services/api';
 
+function createLocalStorageMock() {
+  const store = {};
+  return {
+    getItem: vi.fn((key) => (key in store ? store[key] : null)),
+    setItem: vi.fn((key, value) => {
+      store[key] = String(value);
+    }),
+    removeItem: vi.fn((key) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(store).forEach((key) => delete store[key]);
+    })
+  };
+}
+
 describe('api request headers', () => {
   beforeEach(() => {
-    localStorage.clear();
+    vi.stubGlobal('localStorage', createLocalStorageMock());
     localStorage.setItem('token', 'test-token');
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -13,6 +29,7 @@ describe('api request headers', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('keeps Authorization when custom headers are provided', async () => {

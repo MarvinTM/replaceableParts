@@ -18,6 +18,10 @@
           "text": "It is now possible to target the research of required machines"
         },
         {
+          "type": "improvement",
+          "text": "Now it is possible to build more than one machine or generator at the same time"
+        },
+        {
           "type": "fix",
           "text": "Machines are now researchable again"
         }

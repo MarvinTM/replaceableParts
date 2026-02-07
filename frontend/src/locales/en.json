@@ -187,7 +187,11 @@
       "inInventory": "in inv.",
       "notEnoughMaterials": "Not enough materials in inventory to build this",
       "clickToRemove": "Click to remove",
-      "build": "Build"
+      "quantity": "Quantity",
+      "decreaseQuantity": "Decrease quantity",
+      "increaseQuantity": "Increase quantity",
+      "build": "Build",
+      "buildMultiple": "Build x{{count}}"
     },
     "exploration": {
       "title": "Exploration Map",

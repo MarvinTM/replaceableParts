@@ -179,7 +179,11 @@
       "inInventory": "im Inv.",
       "notEnoughMaterials": "Nicht genug Materialien im Inventar, um dies zu bauen",
       "clickToRemove": "Klicken zum Entfernen",
-      "build": "Bauen"
+      "quantity": "Menge",
+      "decreaseQuantity": "Menge verringern",
+      "increaseQuantity": "Menge erhöhen",
+      "build": "Bauen",
+      "buildMultiple": "{{count}}x Bauen"
     },
     "exploration": {
       "title": "Erkundungskarte",
