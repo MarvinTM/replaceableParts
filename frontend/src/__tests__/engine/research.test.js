@@ -101,6 +101,26 @@ describe('Research: RUN_EXPERIMENT', () => {
 
     expect(result.error).toBeDefined();
   });
+
+  it('should be able to discover generator blueprint recipes (windmill)', () => {
+    const allRecipeIdsExceptWindmill = defaultRules.recipes
+      .map(recipe => recipe.id)
+      .filter(id => id !== 'windmill');
+
+    const state = createTestState({
+      research: { researchPoints: 1000, awaitingPrototype: [] },
+      discoveredRecipes: allRecipeIdsExceptWindmill,
+      unlockedRecipes: allRecipeIdsExceptWindmill
+    });
+
+    const result = engine(state, defaultRules, {
+      type: 'RUN_EXPERIMENT'
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.state.discoveredRecipes).toContain('windmill');
+    expect(result.state.research.awaitingPrototype.some(p => p.recipeId === 'windmill')).toBe(true);
+  });
 });
 
 describe('Research: RUN_TARGETED_EXPERIMENT', () => {
