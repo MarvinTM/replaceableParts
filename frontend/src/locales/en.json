@@ -20,6 +20,7 @@
     "continue": "Continue",
     "newGame": "New Game",
     "loadGame": "Load Game",
+    "importSave": "Import Save",
     "settings": "Settings",
     "sendFeedback": "Send Feedback",
     "signIn": "Sign In",
@@ -74,7 +75,15 @@
     "defaultGameName": "My Game",
     "createGame": "Create Game",
     "overwriteAndCreate": "Overwrite & Create",
-    "overwriteWarning": "This will overwrite the existing save in this slot."
+    "overwriteWarning": "This will overwrite the existing save in this slot.",
+    "export": "Export",
+    "importTitle": "Import Save File",
+    "importDescription": "Choose a save export file from your computer, then pick a slot to write it to.",
+    "dropFileHere": "Drop save file here",
+    "importAcceptedFormats": "Accepted: .json, .rpsave",
+    "chooseFile": "Choose File",
+    "importInvalidFile": "Invalid save file. Please select a valid export file.",
+    "importFileTooLarge": "The selected file is too large."
   },
   "login": {
     "title": "Welcome to replaceableParts",

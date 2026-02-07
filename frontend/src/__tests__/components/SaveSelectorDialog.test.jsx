@@ -39,7 +39,8 @@ describe('SaveSelectorDialog', () => {
     open: true,
     onClose: vi.fn(),
     onSelect: vi.fn(),
-    saves: mockSaves
+    saves: mockSaves,
+    onExport: undefined
   };
 
   it('should render save slots', () => {
@@ -78,5 +79,17 @@ describe('SaveSelectorDialog', () => {
     
     // Wait for async delete
     expect(mockDeleteSave).toHaveBeenCalledWith('save2'); // save2 is sorted first due to date
+  });
+
+  it('should call onExport when export button is clicked', async () => {
+    const user = userEvent.setup();
+    const onExport = vi.fn();
+    render(<SaveSelectorDialog {...defaultProps} onExport={onExport} />);
+
+    const exportButtons = screen.getAllByRole('button').filter(b => b.querySelector('svg[data-testid="DownloadIcon"]'));
+    await user.click(exportButtons[0]);
+
+    // save2 is rendered first because of updatedAt sorting
+    expect(onExport).toHaveBeenCalledWith(mockSaves[1]);
   });
 });

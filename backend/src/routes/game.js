@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticate, requireApproval } from '../middleware/auth.js';
+import { authenticate, requireApproval, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
+const EXPORT_FORMAT = 'replaceableParts-save';
+const EXPORT_VERSION = 1;
+const MAX_SAVE_NAME_LENGTH = 50;
 
 // All game routes require authentication and approval
 router.use(authenticate, requireApproval);
@@ -15,6 +18,57 @@ function extractTick(gameState) {
 
 function logSaveDiagnostics(event, payload) {
   console.log(`[GameSaveDiag] ${event}`, payload);
+}
+
+function normalizeSaveName(name, fallback = 'Imported Save') {
+  if (typeof name !== 'string') return fallback;
+  const trimmed = name.trim();
+  if (!trimmed) return fallback;
+  return trimmed.slice(0, MAX_SAVE_NAME_LENGTH);
+}
+
+function toSafeSlug(value) {
+  return String(value || 'save')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'save';
+}
+
+function normalizeImportedPayload(rawPayload) {
+  if (!rawPayload || typeof rawPayload !== 'object' || Array.isArray(rawPayload)) {
+    throw new Error('Invalid import payload');
+  }
+
+  if (rawPayload.format && rawPayload.format !== EXPORT_FORMAT) {
+    throw new Error('Unsupported save file format');
+  }
+
+  if (rawPayload.version !== undefined && !Number.isInteger(rawPayload.version)) {
+    throw new Error('Invalid save file version');
+  }
+
+  let name;
+  let data;
+
+  if (rawPayload.save && typeof rawPayload.save === 'object' && !Array.isArray(rawPayload.save)) {
+    name = rawPayload.save.name ?? rawPayload.name;
+    data = rawPayload.save.data;
+  } else if (rawPayload.state !== undefined) {
+    // Backward compatibility with old local export shape.
+    name = rawPayload.name;
+    data = rawPayload.state;
+  } else if (rawPayload.data !== undefined) {
+    // Backward compatibility with direct save object shape.
+    name = rawPayload.name;
+    data = rawPayload.data;
+  }
+
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Invalid save file data');
+  }
+
+  return { name, data };
 }
 
 // Get all saves for current user
@@ -68,6 +122,44 @@ router.get('/saves/:id', async (req, res, next) => {
   }
 });
 
+// Export specific save (admin only)
+router.get('/saves/:id/export', requireAdmin, async (req, res, next) => {
+  try {
+    const save = await prisma.gameSave.findFirst({
+      where: {
+        id: req.params.id,
+        userId: req.user.id
+      }
+    });
+
+    if (!save) {
+      return res.status(404).json({ error: 'Save not found' });
+    }
+
+    const payload = {
+      format: EXPORT_FORMAT,
+      version: EXPORT_VERSION,
+      exportedAt: new Date().toISOString(),
+      save: {
+        id: save.id,
+        name: save.name,
+        createdAt: save.createdAt,
+        updatedAt: save.updatedAt,
+        data: save.data
+      },
+      meta: {
+        source: 'replaceableParts',
+        exportedByUserId: req.user.id
+      }
+    };
+
+    const fileName = `${toSafeSlug(save.name)}-${save.id}.rpsave.json`;
+    res.json({ fileName, payload });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Maximum number of saves per user
 const MAX_SAVES_PER_USER = 5;
 
@@ -98,6 +190,76 @@ router.post('/saves', async (req, res, next) => {
     });
 
     res.status(201).json({ save });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Import save payload into a new or existing slot (admin only)
+router.post('/saves/import', requireAdmin, async (req, res, next) => {
+  try {
+    const { targetSaveId, name, payload } = req.body || {};
+
+    if (!payload) {
+      return res.status(400).json({ error: 'Missing import payload' });
+    }
+
+    let imported;
+    try {
+      imported = normalizeImportedPayload(payload);
+    } catch (parseError) {
+      return res.status(400).json({
+        error: 'INVALID_SAVE_FILE',
+        message: parseError.message
+      });
+    }
+
+    const saveName = normalizeSaveName(name ?? imported.name);
+
+    if (targetSaveId) {
+      const existingSave = await prisma.gameSave.findFirst({
+        where: {
+          id: targetSaveId,
+          userId: req.user.id
+        }
+      });
+
+      if (!existingSave) {
+        return res.status(404).json({ error: 'Save not found' });
+      }
+
+      const save = await prisma.gameSave.update({
+        where: { id: targetSaveId },
+        data: {
+          name: saveName,
+          data: imported.data
+        }
+      });
+
+      return res.json({ save, mode: 'overwrite' });
+    }
+
+    const currentSaveCount = await prisma.gameSave.count({
+      where: { userId: req.user.id }
+    });
+
+    if (currentSaveCount >= MAX_SAVES_PER_USER) {
+      return res.status(400).json({
+        error: 'SAVE_LIMIT_REACHED',
+        message: `Maximum save limit of ${MAX_SAVES_PER_USER} reached`,
+        maxSaves: MAX_SAVES_PER_USER
+      });
+    }
+
+    const save = await prisma.gameSave.create({
+      data: {
+        userId: req.user.id,
+        name: saveName,
+        data: imported.data
+      }
+    });
+
+    res.status(201).json({ save, mode: 'create' });
   } catch (error) {
     next(error);
   }

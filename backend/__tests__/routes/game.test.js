@@ -21,6 +21,9 @@ jest.unstable_mockModule('../../src/middleware/auth.js', () => ({
     next();
   }),
   requireAdmin: jest.fn().mockImplementation((req, res, next) => {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
     next();
   })
 }));
@@ -49,6 +52,11 @@ jest.unstable_mockModule('../../src/db.js', () => ({
 }));
 
 const { default: app } = await import('../../src/app.js');
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUser.role = 'USER';
+});
 
 describe('GET /api/game/saves', () => {
   it('should return all saves for current user', async () => {
@@ -124,5 +132,106 @@ describe('DELETE /api/game/saves/:id', () => {
 
     expect(res.statusCode).toBe(404);
     expect(res.body.error).toBe('Save not found');
+  });
+});
+
+describe('GET /api/game/saves/:id/export', () => {
+  it('should reject non-admin users', async () => {
+    const res = await request(app).get('/api/game/saves/save-1/export');
+    expect(res.statusCode).toBe(403);
+    expect(res.body.error).toBe('Admin access required');
+  });
+
+  it('should export save payload for admin users', async () => {
+    mockUser.role = 'ADMIN';
+
+    const res = await request(app).get('/api/game/saves/save-1/export');
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.fileName).toMatch(/save-1/);
+    expect(res.body.payload.format).toBe('replaceableParts-save');
+    expect(res.body.payload.save.id).toBe('save-1');
+  });
+});
+
+describe('POST /api/game/saves/import', () => {
+  it('should reject non-admin users', async () => {
+    const res = await request(app)
+      .post('/api/game/saves/import')
+      .send({
+        payload: { state: { tick: 12 }, name: 'Legacy Import' }
+      });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.error).toBe('Admin access required');
+  });
+
+  it('should import into existing save when targetSaveId is provided', async () => {
+    mockUser.role = 'ADMIN';
+
+    const res = await request(app)
+      .post('/api/game/saves/import')
+      .send({
+        targetSaveId: 'save-1',
+        name: 'Imported Save',
+        payload: {
+          format: 'replaceableParts-save',
+          version: 1,
+          save: {
+            name: 'Exported Name',
+            data: { tick: 222 }
+          }
+        }
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.mode).toBe('overwrite');
+    expect(mockPrisma.gameSave.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'save-1' },
+        data: expect.objectContaining({
+          name: 'Imported Save',
+          data: { tick: 222 }
+        })
+      })
+    );
+  });
+
+  it('should create a new save from legacy import payload', async () => {
+    mockUser.role = 'ADMIN';
+
+    const res = await request(app)
+      .post('/api/game/saves/import')
+      .send({
+        payload: {
+          name: 'Old Export',
+          state: { tick: 500 }
+        }
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.mode).toBe('create');
+    expect(mockPrisma.gameSave.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-123',
+          name: 'Old Export',
+          data: { tick: 500 }
+        })
+      })
+    );
+  });
+
+  it('should reject invalid import payloads', async () => {
+    mockUser.role = 'ADMIN';
+
+    const res = await request(app)
+      .post('/api/game/saves/import')
+      .send({
+        payload: { bad: true }
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('INVALID_SAVE_FILE');
   });
 });

@@ -14,10 +14,11 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DownloadIcon from '@mui/icons-material/Download';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { useGame } from '../contexts/GameContext';
 
-export default function SaveSelectorDialog({ open, onClose, onSelect, saves }) {
+export default function SaveSelectorDialog({ open, onClose, onSelect, saves, onExport }) {
   const { t } = useTranslation();
   const { deleteSave } = useGame();
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -84,6 +85,18 @@ export default function SaveSelectorDialog({ open, onClose, onSelect, saves }) {
                   />
                 </ListItemButton>
                 <ListItemSecondaryAction>
+                  {onExport && (
+                    <IconButton
+                      edge="end"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExport(save);
+                      }}
+                      title={t('saves.export')}
+                    >
+                      <DownloadIcon />
+                    </IconButton>
+                  )}
                   <IconButton
                     edge="end"
                     onClick={(e) => handleDelete(e, save)}

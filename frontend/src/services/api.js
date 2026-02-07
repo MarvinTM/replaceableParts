@@ -10,14 +10,18 @@ class ApiError extends Error {
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('token');
+  const headers = { ...(options.headers || {}) };
+
+  if (!headers['Content-Type'] && !headers['content-type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (token && !headers.Authorization && !headers.authorization) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers
-    },
-    ...options
+    ...options,
+    headers
   };
 
   const response = await fetch(`${API_URL}${endpoint}`, config);
@@ -116,6 +120,17 @@ export const api = {
   async deleteSave(id) {
     return request(`/game/saves/${id}`, {
       method: 'DELETE'
+    });
+  },
+
+  async exportSave(id) {
+    return request(`/game/saves/${id}/export`);
+  },
+
+  async importSave(data) {
+    return request('/game/saves/import', {
+      method: 'POST',
+      body: JSON.stringify(data)
     });
   },
 

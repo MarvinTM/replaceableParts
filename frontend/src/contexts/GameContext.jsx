@@ -618,6 +618,34 @@ export function GameProvider({ children }) {
     }
   }, [saveId, loadSaves, clearGame, clearGuestSave]);
 
+  const exportSavePayload = useCallback(async (saveIdToExport) => {
+    if (!isAuthenticated) {
+      throw new Error('Must be authenticated to export saves');
+    }
+    return api.exportSave(saveIdToExport);
+  }, [isAuthenticated]);
+
+  const importSaveIntoSlot = useCallback(async ({ targetSaveId = null, name, payload }) => {
+    if (!isAuthenticated) {
+      throw new Error('Must be authenticated to import saves');
+    }
+
+    const response = await api.importSave({
+      targetSaveId,
+      name,
+      payload
+    });
+
+    await loadSaves();
+
+    // Keep the active save metadata in sync if we overwrote the active slot.
+    if (response?.save?.id && saveId === response.save.id) {
+      setSaveInfo(response.save.id, response.save.name);
+    }
+
+    return response?.save || null;
+  }, [isAuthenticated, loadSaves, saveId, setSaveInfo]);
+
   // ============ Auto-restore ============
 
   useEffect(() => {
@@ -901,6 +929,8 @@ export function GameProvider({ children }) {
     saveGame,
     exitToMenu,
     deleteSave,
+    exportSavePayload,
+    importSaveIntoSlot,
     hasGuestSave,
     migrateGuestSaveToCloud,
   };

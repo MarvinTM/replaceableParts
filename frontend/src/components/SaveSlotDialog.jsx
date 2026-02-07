@@ -18,7 +18,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const TOTAL_SLOTS = 5;
 
-export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves }) {
+export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves, defaultName = '' }) {
   const { t } = useTranslation();
   const [confirmSlot, setConfirmSlot] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -63,7 +63,7 @@ export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves }) {
       setSelectedSlot(slot.index);
       setIsOverwrite(false);
       setExistingSaveId(null);
-      setGameName('');
+      setGameName(defaultName);
     } else {
       // Occupied slot - need confirmation first
       if (confirmSlot === slot.index) {
@@ -71,7 +71,7 @@ export default function SaveSlotDialog({ open, onClose, onSelectSlot, saves }) {
         setSelectedSlot(slot.index);
         setIsOverwrite(true);
         setExistingSaveId(slot.save.id);
-        setGameName('');
+        setGameName(defaultName);
         setConfirmSlot(null);
       } else {
         // First click - show confirmation state

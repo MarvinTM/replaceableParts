@@ -22,6 +22,7 @@ import TextField from '@mui/material/TextField';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -34,6 +35,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGame } from '../contexts/GameContext';
 import SaveSelectorDialog from '../components/SaveSelectorDialog';
 import SaveSlotDialog from '../components/SaveSlotDialog';
+import SaveImportDialog from '../components/SaveImportDialog';
 import FeedbackDialog from '../components/FeedbackDialog';
 import InviteFriendDialog from '../components/InviteFriendDialog';
 import NewsPanel from '../components/mainMenu/NewsPanel';
@@ -52,14 +54,20 @@ export default function MainMenuPage() {
     loadGame,
     hasGuestSave,
     isMigrating,
+    exportSavePayload,
+    importSaveIntoSlot
   } = useGame();
 
   const [loading, setLoading] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [slotDialogOpen, setSlotDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [guestNameDialogOpen, setGuestNameDialogOpen] = useState(false);
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [slotDialogMode, setSlotDialogMode] = useState('new');
+  const [pendingImportPayload, setPendingImportPayload] = useState(null);
+  const [pendingImportSuggestedName, setPendingImportSuggestedName] = useState('');
   const [guestGameName, setGuestGameName] = useState('');
   const [isGuestOverwrite, setIsGuestOverwrite] = useState(false);
 
@@ -88,6 +96,7 @@ export default function MainMenuPage() {
   const handleNewGame = async () => {
     if (isAuthenticated) {
       // Authenticated users: show slot selection dialog
+      setSlotDialogMode('new');
       setSlotDialogOpen(true);
     } else if (isGuest) {
       // Guest users: show naming dialog
@@ -125,17 +134,47 @@ export default function MainMenuPage() {
     setSlotDialogOpen(false);
     setLoading(true);
     try {
-      await startNewGame(name, existingSaveId);
-      navigate('/game');
+      if (slotDialogMode === 'import') {
+        if (!pendingImportPayload) {
+          throw new Error('No import payload selected');
+        }
+        await importSaveIntoSlot({
+          targetSaveId: existingSaveId || null,
+          name,
+          payload: pendingImportPayload
+        });
+        setPendingImportPayload(null);
+        setPendingImportSuggestedName('');
+      } else {
+        await startNewGame(name, existingSaveId);
+        navigate('/game');
+      }
     } catch (error) {
-      console.error('Failed to start new game:', error);
+      if (slotDialogMode === 'import') {
+        console.error('Failed to import save:', error);
+      } else {
+        console.error('Failed to start new game:', error);
+      }
     } finally {
       setLoading(false);
+      setSlotDialogMode('new');
     }
   };
 
   const handleLoadGame = () => {
     setSaveDialogOpen(true);
+  };
+
+  const handleImportGame = () => {
+    setImportDialogOpen(true);
+  };
+
+  const handleImportReady = ({ payload, suggestedName }) => {
+    setImportDialogOpen(false);
+    setPendingImportPayload(payload);
+    setPendingImportSuggestedName(suggestedName || '');
+    setSlotDialogMode('import');
+    setSlotDialogOpen(true);
   };
 
   const handleSelectSave = async (save) => {
@@ -153,6 +192,30 @@ export default function MainMenuPage() {
 
   const handleSettings = () => {
     navigate('/settings');
+  };
+
+  const downloadPayload = (fileName, payload) => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName || 'save-export.rpsave.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportSave = async (save) => {
+    setLoading(true);
+    try {
+      const response = await exportSavePayload(save.id);
+      downloadPayload(response.fileName, response.payload);
+    } catch (error) {
+      console.error('Failed to export save:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFeedback = () => {
@@ -188,6 +251,15 @@ export default function MainMenuPage() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleSlotDialogClose = () => {
+    setSlotDialogOpen(false);
+    if (slotDialogMode === 'import') {
+      setPendingImportPayload(null);
+      setPendingImportSuggestedName('');
+    }
+    setSlotDialogMode('new');
   };
 
   if (isLoadingSaves || isMigrating) {
@@ -422,6 +494,19 @@ export default function MainMenuPage() {
                   </Button>
                 )}
 
+                {isAdmin && (
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    startIcon={<UploadFileIcon />}
+                    onClick={handleImportGame}
+                    disabled={loading}
+                    fullWidth
+                  >
+                    {t('menu.importSave')}
+                  </Button>
+                )}
+
                 <Divider sx={{ my: 1 }} />
 
                 <Button
@@ -491,14 +576,23 @@ export default function MainMenuPage() {
         onClose={() => setSaveDialogOpen(false)}
         onSelect={handleSelectSave}
         saves={saves}
+        onExport={isAdmin ? handleExportSave : undefined}
       />
 
       {/* Save slot dialog (for New Game - authenticated) */}
       <SaveSlotDialog
         open={slotDialogOpen}
-        onClose={() => setSlotDialogOpen(false)}
+        onClose={handleSlotDialogClose}
         onSelectSlot={handleSelectSlot}
         saves={saves}
+        defaultName={slotDialogMode === 'import' ? pendingImportSuggestedName : ''}
+      />
+
+      {/* Save import dialog (admin only) */}
+      <SaveImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onImportReady={handleImportReady}
       />
 
       {/* Guest game naming dialog */}
