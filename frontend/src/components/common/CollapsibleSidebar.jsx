@@ -13,7 +13,13 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 
 const SIDEBAR_WIDTH = 300;
 
-export default function CollapsibleSidebar({ sections, defaultExpanded = null, expanded = null, onExpandedChange = null }) {
+export default function CollapsibleSidebar({
+  sections,
+  defaultExpanded = null,
+  expanded = null,
+  onExpandedChange = null,
+  staticSections = false
+}) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [internalExpandedSection, setInternalExpandedSection] = useState(defaultExpanded || (sections[0]?.id ?? null));
 
@@ -86,63 +92,104 @@ export default function CollapsibleSidebar({ sections, defaultExpanded = null, e
             backgroundColor: 'background.paper',
           }}
         >
-          {sections.map((section) => (
-            <Accordion
-              key={section.id}
-              expanded={expandedSection === section.id}
-              onChange={handleAccordionChange(section.id)}
-              disableGutters
-              elevation={0}
-              sx={{
-                '&:before': { display: 'none' },
-                '&.Mui-expanded': { margin: 0 },
-              }}
-            >
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                sx={{
-                  minHeight: 48,
-                  '&.Mui-expanded': { minHeight: 48 },
-                  '& .MuiAccordionSummary-content': {
-                    margin: '8px 0',
-                    '&.Mui-expanded': { margin: '8px 0' },
-                  },
-                  borderBottom: '1px solid',
-                  borderColor: 'divider',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {section.icon}
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    {section.title}
-                  </Typography>
-                  {section.badge !== undefined && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        backgroundColor: 'action.selected',
-                        px: 1,
-                        py: 0.25,
-                        borderRadius: 1,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {section.badge}
+          {staticSections ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {sections.map((section) => (
+                <Box key={section.id} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 1.5,
+                      py: 1,
+                      backgroundColor: 'action.hover',
+                    }}
+                  >
+                    {section.icon}
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      {section.title}
                     </Typography>
-                  )}
+                    {section.badge !== undefined && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          backgroundColor: 'action.selected',
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: 1,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {section.badge}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ p: 1.25 }}>
+                    {section.content}
+                  </Box>
                 </Box>
-              </AccordionSummary>
-              <AccordionDetails
+              ))}
+            </Box>
+          ) : (
+            sections.map((section) => (
+              <Accordion
+                key={section.id}
+                expanded={expandedSection === section.id}
+                onChange={handleAccordionChange(section.id)}
+                disableGutters
+                elevation={0}
                 sx={{
-                  p: 1,
-                  maxHeight: 'calc(100vh - 400px)',
-                  overflow: 'auto',
+                  '&:before': { display: 'none' },
+                  '&.Mui-expanded': { margin: 0 },
                 }}
               >
-                {section.content}
-              </AccordionDetails>
-            </Accordion>
-          ))}
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  sx={{
+                    minHeight: 48,
+                    '&.Mui-expanded': { minHeight: 48 },
+                    '& .MuiAccordionSummary-content': {
+                      margin: '8px 0',
+                      '&.Mui-expanded': { margin: '8px 0' },
+                    },
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {section.icon}
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      {section.title}
+                    </Typography>
+                    {section.badge !== undefined && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          backgroundColor: 'action.selected',
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: 1,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {section.badge}
+                      </Typography>
+                    )}
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails
+                  sx={{
+                    p: 1,
+                    maxHeight: 'calc(100vh - 400px)',
+                    overflow: 'auto',
+                  }}
+                >
+                  {section.content}
+                </AccordionDetails>
+              </Accordion>
+            ))
+          )}
         </Paper>
       )}
     </Box>

@@ -20,6 +20,11 @@ describe('Game Rules Validation', () => {
     expect(issues.recipesMissingMachine, `Recipes missing machines: ${issues.recipesMissingMachine.join(', ')}`).toEqual([]);
   });
 
+  it('should have no missing machine/generator blueprint recipes', () => {
+    const formatted = issues.missingStructureBlueprints.map(i => `${i.structureType}:${i.structureId}`);
+    expect(issues.missingStructureBlueprints, `Missing structure blueprints: ${formatted.join(', ')}`).toEqual([]);
+  });
+
   it('should have no outputs without machines', () => {
     expect(issues.noMachineOutputs, `Outputs with no machine: ${issues.noMachineOutputs.join(', ')}`).toEqual([]);
   });

@@ -196,6 +196,9 @@
       "position": "Posizione",
       "resource": "Risorsa",
       "rate": "Tasso",
+      "perTick": "/ tick",
+      "income": "Entrate Materie Prime",
+      "noIncome": "Nessun giacimento sbloccato",
       "unlock": "Sblocca Giacimento",
       "active": "Attivo",
       "clickToSelect": "Clicca su una casella per i dettagli"

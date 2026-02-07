@@ -196,6 +196,9 @@
       "position": "Position",
       "resource": "Ressource",
       "rate": "Taux",
+      "perTick": "/ tick",
+      "income": "Revenu en Matières Premières",
+      "noIncome": "Aucun gisement débloqué",
       "unlock": "Débloquer le Gisement",
       "active": "Actif",
       "clickToSelect": "Cliquez sur une tuile pour voir les détails"

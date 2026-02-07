@@ -29,6 +29,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
 import Divider from '@mui/material/Divider';
 import { getMaterialName } from '../utils/translationHelpers';
+import { calculateRawMaterialIncome } from '../utils/explorationIncome';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import { useGame } from '../contexts/GameContext';
@@ -585,14 +586,13 @@ function FactoryTab() {
 }
 
 function ExplorationTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const engineState = useGameStore((state) => state.engineState);
   const rules = useGameStore((state) => state.rules);
   const expandExploration = useGameStore((state) => state.expandExploration);
   const unlockExplorationNode = useGameStore((state) => state.unlockExplorationNode);
 
   const [selectedTile, setSelectedTile] = useState(null);
-  const [expandedSection, setExpandedSection] = useState('stats');
 
   // Compute which resources are used by discovered or unlocked recipes (same logic as ExplorationCanvas)
   const usedResources = useMemo(() => {
@@ -628,6 +628,24 @@ function ExplorationTab() {
     return resources;
   }, [rules?.recipes, engineState?.unlockedRecipes, engineState?.discoveredRecipes]);
 
+  const materialsById = useMemo(
+    () => new Map((rules?.materials || []).map(material => [material.id, material])),
+    [rules?.materials]
+  );
+
+  const rawMaterialIncome = useMemo(() => {
+    const baseIncome = calculateRawMaterialIncome(engineState?.extractionNodes, rules?.materials);
+
+    return baseIncome
+      .map(({ materialId, rate }) => ({
+        materialId,
+        rate,
+        materialName: getMaterialName(materialId, materialsById.get(materialId)?.name),
+        category: materialsById.get(materialId)?.category || 'raw',
+      }))
+      .sort((a, b) => a.materialName.localeCompare(b.materialName));
+  }, [engineState?.extractionNodes, rules?.materials, materialsById, i18n.language]);
+
   if (!engineState?.explorationMap) return null;
 
   const { explorationMap, credits } = engineState;
@@ -656,7 +674,6 @@ function ExplorationTab() {
 
   const handleTileClick = (tile) => {
     setSelectedTile(tile);
-    setExpandedSection('selectedTile'); // Auto-expand the selected tile section
   };
 
   const handleExpand = () => {
@@ -698,6 +715,40 @@ function ExplorationTab() {
       )
     },
     {
+      id: 'income',
+      title: t('game.exploration.income'),
+      icon: <BoltIcon sx={{ color: 'success.main', fontSize: 20 }} />,
+      content: rawMaterialIncome.length > 0 ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {rawMaterialIncome.map(({ materialId, materialName, category, rate }) => (
+            <Box
+              key={materialId}
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+                <MaterialIcon
+                  materialId={materialId}
+                  materialName={materialName}
+                  category={category}
+                  size={20}
+                />
+                <Typography variant="body2" noWrap>
+                  {materialName}
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="success.main" sx={{ fontFamily: 'monospace', flexShrink: 0 }}>
+                +{rate}{t('game.exploration.perTick', '/ tick')}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          {t('game.exploration.noIncome')}
+        </Typography>
+      )
+    },
+    {
       id: 'selectedTile',
       title: t('game.exploration.selectedTile'),
       icon: <InfoIcon sx={{ color: 'primary.main', fontSize: 20 }} />,
@@ -728,12 +779,19 @@ function ExplorationTab() {
                     category="raw"
                     size={20}
                   />
-                  <Typography variant="body2">{selectedTile.extractionNode.resourceType}</Typography>
+                  <Typography variant="body2">
+                    {getMaterialName(
+                      selectedTile.extractionNode.resourceType,
+                      materialsById.get(selectedTile.extractionNode.resourceType)?.name
+                    )}
+                  </Typography>
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2" color="text.secondary">{t('game.exploration.rate')}</Typography>
-                <Typography variant="body2">{selectedTile.extractionNode.rate}/tick</Typography>
+                <Typography variant="body2">
+                  {selectedTile.extractionNode.rate}{t('game.exploration.perTick', '/ tick')}
+                </Typography>
               </Box>
               {!selectedTile.extractionNode.unlocked && (() => {
                 const unlockCost = getNodeUnlockCost(
@@ -805,9 +863,7 @@ function ExplorationTab() {
         {/* Right Sidebar */}
         <CollapsibleSidebar
           sections={sidebarSections}
-          defaultExpanded="stats"
-          expanded={expandedSection}
-          onExpandedChange={setExpandedSection}
+          staticSections={true}
         />
       </Box>
 

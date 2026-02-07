@@ -196,6 +196,9 @@
       "position": "Position",
       "resource": "Ressource",
       "rate": "Rate",
+      "perTick": "/ Tick",
+      "income": "Rohstoff-Einkommen",
+      "noIncome": "Keine freigeschalteten Vorkommen",
       "unlock": "Vorkommen Freischalten",
       "active": "Aktiv",
       "clickToSelect": "Klicken Sie auf eine Kachel für Details"

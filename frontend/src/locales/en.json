@@ -195,6 +195,9 @@
       "position": "Position",
       "resource": "Resource",
       "rate": "Rate",
+      "perTick": "/ tick",
+      "income": "Raw Material Income",
+      "noIncome": "No unlocked resource nodes",
       "unlock": "Unlock Node",
       "active": "Active",
       "clickToSelect": "Click a tile to view details"

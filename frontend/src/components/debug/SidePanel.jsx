@@ -87,6 +87,7 @@ export default function SidePanel({
                 issues.missingMaterials.length +
                 issues.unproduceable.length +
                 issues.recipesMissingMachine.length +
+                (issues.missingStructureBlueprints?.length || 0) +
                 (issues.intermediateNotUsedInAge?.length || 0) +
                 (issues.recipesWithZeroQuantity?.length || 0) +
                 (issues.recipeAgeIssues?.length || 0) +
@@ -183,6 +184,34 @@ export default function SidePanel({
                     </ListItemButton>
                   );
                 })}
+              </List>
+            </>
+          )}
+
+          {/* Missing Structure Blueprints */}
+          {issues.missingStructureBlueprints && issues.missingStructureBlueprints.length > 0 && (
+            <>
+              <Typography
+                variant="caption"
+                sx={{ px: 2, py: 1, display: 'block', bgcolor: '#fee2e2', color: '#991b1b', fontWeight: 600 }}
+              >
+                Missing Structure Blueprints ({issues.missingStructureBlueprints.length})
+              </Typography>
+              <List dense disablePadding>
+                {issues.missingStructureBlueprints.map((issue) => (
+                  <ListItemButton
+                    key={issue.structureId}
+                    onClick={() => handleIssueClick([issue.structureId])}
+                  >
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <ErrorIcon fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={issue.structureName}
+                      secondary={`${issue.structureType} '${issue.structureId}' missing research recipe`}
+                    />
+                  </ListItemButton>
+                ))}
               </List>
             </>
           )}
@@ -371,6 +400,7 @@ export default function SidePanel({
             issues.missingMaterials.length === 0 &&
             issues.unproduceable.length === 0 &&
             issues.recipesMissingMachine.length === 0 &&
+            (!issues.missingStructureBlueprints || issues.missingStructureBlueprints.length === 0) &&
             (!issues.intermediateNotUsedInAge || issues.intermediateNotUsedInAge.length === 0) &&
             (!issues.recipesWithZeroQuantity || issues.recipesWithZeroQuantity.length === 0) &&
             (!issues.recipeAgeIssues || issues.recipeAgeIssues.length === 0) &&

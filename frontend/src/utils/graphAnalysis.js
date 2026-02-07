@@ -194,6 +194,7 @@ export function analyzeIssues(rules, initialState = null) {
   const producedByRecipe = new Set();
   const recipesMissingMachine = [];
   const missingMaterials = new Set();
+  const missingStructureBlueprints = [];
 
   // Get extractable resources
   const extractableResources = getExtractableResources(rules);
@@ -214,6 +215,24 @@ export function analyzeIssues(rules, initialState = null) {
       }
     });
   });
+
+  const collectMissingStructureBlueprints = (structures, buildRecipes, structureType) => {
+    (structures || []).forEach(structure => {
+      if (structure?.disabled) return;
+      const buildRecipe = buildRecipes?.[structure.id];
+      if (!buildRecipe?.slots?.length) return;
+      if (recipeIds.has(structure.id)) return;
+
+      missingStructureBlueprints.push({
+        structureId: structure.id,
+        structureName: structure.name || structure.id,
+        structureType,
+      });
+    });
+  };
+
+  collectMissingStructureBlueprints(rules.machines, rules.machineRecipes, 'machine');
+  collectMissingStructureBlueprints(rules.generators, rules.generatorRecipes, 'generator');
 
   // Track recipes with zero quantities
   const recipesWithZeroQuantity = [];
@@ -317,6 +336,7 @@ export function analyzeIssues(rules, initialState = null) {
     missingMaterials: Array.from(missingMaterials),
     unproduceable,
     recipesMissingMachine,
+    missingStructureBlueprints,
     noMachineOutputs,
     intermediateNotUsedInAge,
     recipesWithZeroQuantity,

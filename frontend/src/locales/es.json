@@ -205,6 +205,9 @@
       "position": "Posición",
       "resource": "Recurso",
       "rate": "Tasa",
+      "perTick": "/ tick",
+      "income": "Ingreso de Materias Primas",
+      "noIncome": "No hay nodos de recursos desbloqueados",
       "unlock": "Desbloquear Nodo",
       "active": "Activo",
       "clickToSelect": "Haz clic en una casilla para ver detalles"
