@@ -56,6 +56,7 @@ import TutorialOverlay from '../components/tutorial/TutorialOverlay';
 import TipSnackbar from '../components/tips/TipSnackbar';
 import { formatCredits } from '../utils/currency';
 import { calculateRawMaterialBalance } from '../utils/rawMaterialBalance';
+import { calculateMaterialThroughput } from '../utils/materialThroughput';
 import { calculateRequestedEnergyConsumption } from '../utils/energyDemand';
 
 function TabPanel({ children, value, index, ...other }) {
@@ -148,6 +149,11 @@ function FactoryTab() {
       materialName: getMaterialName(materialId, mat?.name),
       category: mat?.category || 'raw',
     };
+  });
+  const materialThroughput = calculateMaterialThroughput({
+    machines,
+    materials: rules.materials,
+    recipes: rules.recipes,
   });
   const requestedEnergyConsumption = calculateRequestedEnergyConsumption({
     machines,
@@ -550,6 +556,7 @@ function FactoryTab() {
         inventory={inventory}
         rules={rules}
         tick={engineState.tick}
+        materialThroughput={materialThroughput}
       />
 
       {/* Machine Info Popup */}

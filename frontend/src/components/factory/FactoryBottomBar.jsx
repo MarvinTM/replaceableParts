@@ -63,10 +63,29 @@ const INVENTORY_MIN_HEIGHT = 160;
 /**
  * FactoryBottomBar - Bottom bar with inventory (wrapping grid) and play controls
  */
-const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules, tick }, ref) {
+const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules, tick, materialThroughput = new Map() }, ref) {
   const { t } = useTranslation();
 
-  const inventoryEntries = Object.entries(inventory);
+  const inventoryEntries = Object.entries(inventory).sort(([idA], [idB]) => {
+    const tA = materialThroughput.get(idA);
+    const tB = materialThroughput.get(idB);
+    const activeA = tA && (tA.produced > 0 || tA.consumed > 0);
+    const activeB = tB && (tB.produced > 0 || tB.consumed > 0);
+
+    if (activeA && !activeB) return -1;
+    if (!activeA && activeB) return 1;
+
+    if (activeA && activeB) {
+      const deficitA = tA.consumed > tA.produced;
+      const deficitB = tB.consumed > tB.produced;
+      if (deficitA && !deficitB) return -1;
+      if (!deficitA && deficitB) return 1;
+    }
+
+    const matA = rules.materials.find(m => m.id === idA);
+    const matB = rules.materials.find(m => m.id === idB);
+    return getMaterialName(idA, matA?.name).localeCompare(getMaterialName(idB, matB?.name));
+  });
   const totalItems = Object.values(inventory).reduce((a, b) => a + b, 0);
 
   return (
@@ -155,20 +174,34 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules
         ) : (
           inventoryEntries.map(([itemId, quantity]) => {
             const material = rules.materials.find(m => m.id === itemId);
+            const tp = materialThroughput.get(itemId);
+            const hasTP = tp && (tp.produced > 0 || tp.consumed > 0);
+            const name = getMaterialName(itemId, material?.name);
+            const label = hasTP
+              ? `${name}: ${quantity} (${tp.consumed}/${tp.produced})`
+              : `${name}: ${quantity}`;
+
+            const chipSx = hasTP
+              ? tp.consumed > tp.produced
+                ? { backgroundColor: 'rgba(244, 67, 54, 0.12)', borderColor: 'rgba(244, 67, 54, 0.4)' }
+                : { backgroundColor: 'rgba(76, 175, 80, 0.12)', borderColor: 'rgba(76, 175, 80, 0.4)' }
+              : {};
+
             return (
               <Chip
                 key={itemId}
                 icon={
                   <MaterialIcon
                     materialId={itemId}
-                    materialName={getMaterialName(itemId, material?.name)}
+                    materialName={name}
                     category={material?.category}
                     size={16}
                   />
                 }
-                label={`${getMaterialName(itemId, material?.name)}: ${quantity}`}
+                label={label}
                 variant="outlined"
                 size="small"
+                sx={chipSx}
               />
             );
           })
