@@ -1319,12 +1319,12 @@ export const defaultRules = {
     foundry: {
       slots: [
         { label: 'Furnace Bricks', material: 'bricks', quantity: 10 },
-        { label: 'Structural Frame', material: 'steel_beam', quantity: 4 }
+        { label: 'Structural Frame', material: 'iron_plate', quantity: 4 }
       ]
     },
     steel_forge: {
       slots: [
-        { label: 'Heavy Plating', material: 'steel_plate', quantity: 10 },
+        { label: 'Heavy Plating', material: 'steel_ingot', quantity: 10 },
         { label: 'Refractory Bricks', material: 'bricks', quantity: 12 },
         { label: 'Heavy Chains', material: 'iron_chain', quantity: 4 }
       ]
@@ -1341,7 +1341,7 @@ export const defaultRules = {
       slots: [
         { label: 'Precision Frame', material: 'steel_plate', quantity: 10 },
         { label: 'Gear Train', material: 'gear', quantity: 10 },
-        { label: 'Drive Motors', material: 'electric_motor', quantity: 2 },
+        { label: 'Drive Motors', material: 'drive_shaft', quantity: 2 },
         { label: 'Precision Bearings', material: 'ball_bearing', quantity: 4 }
       ]
     },
