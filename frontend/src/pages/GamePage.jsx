@@ -55,6 +55,7 @@ import DiscoveryNotifier from '../components/research/DiscoveryNotifier';
 import TutorialOverlay from '../components/tutorial/TutorialOverlay';
 import TipSnackbar from '../components/tips/TipSnackbar';
 import { formatCredits } from '../utils/currency';
+import { calculateRawMaterialBalance } from '../utils/rawMaterialBalance';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -131,6 +132,22 @@ function FactoryTab() {
   const selectedMachine = selectedMachineId
     ? machines.find(m => m.id === selectedMachineId)
     : null;
+
+  const rawMaterialBalance = calculateRawMaterialBalance({
+    machines,
+    generators,
+    extractionNodes: engineState.extractionNodes,
+    materials: rules.materials,
+    recipes: rules.recipes,
+    generatorConfigs: rules.generators,
+  }).map(({ materialId, produced, consumed }) => {
+    const mat = rules.materials.find(m => m.id === materialId);
+    return {
+      materialId, produced, consumed,
+      materialName: getMaterialName(materialId, mat?.name),
+      category: mat?.category || 'raw',
+    };
+  });
 
   // Calculate next expansion info
   const expansion = getNextExpansionChunk(engineState, rules);
@@ -453,7 +470,7 @@ function FactoryTab() {
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {/* Canvas container */}
         <Box sx={{ flex: 1, position: 'relative', minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <FloatingHUD credits={credits} energy={engineState.energy} />
+          <FloatingHUD credits={credits} energy={engineState.energy} rawMaterialBalance={rawMaterialBalance} />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1, py: 0.5 }}>
             <Typography variant="caption" color="text.secondary">
               {t('game.factory.gridSize', { width: floorSpace.width, height: floorSpace.height })}

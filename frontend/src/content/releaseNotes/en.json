@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.5.5",
+      "date": "2024-02-07",
+      "highlights": "Fixed machine research. Improved visualization of raw material input and consumption.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Raw material input and consumption is now displayed in the factory and exploration tabs"
+        },
+        {
+          "type": "improvement",
+          "text": "It is now possible to target the research of required machines"
+        },
+        {
+          "type": "fix",
+          "text": "Machines are now researchable again"
+        }
+      ]
+    },
+    {
       "version": "0.5.0",
       "date": "2024-02-06",
       "highlights": "Significant game mechanics rebalance. New Solar Array design.",
