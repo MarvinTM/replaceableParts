@@ -753,198 +753,225 @@ function findRecipeAgeIssues(rules) {
 function findMachineCycleIssues(rules, initialState = null) {
   const materialMap = new Map(rules.materials.map(m => [m.id, m]));
   const machineMap = new Map(rules.machines.map(m => [m.id, m]));
-  const machineAgeMap = new Map();
+  const extractableResources = getExtractableResources(rules);
+  const recipesByOutput = new Map();
+  const machinesByRecipe = new Map();
+  const machineIdsByItemId = new Map();
 
-  // Create set of starter machines from initial state (bootstrapped machines)
+  rules.recipes.forEach(recipe => {
+    Object.keys(recipe.outputs || {}).forEach(outputId => {
+      if (!recipesByOutput.has(outputId)) recipesByOutput.set(outputId, []);
+      recipesByOutput.get(outputId).push(recipe);
+    });
+  });
+
+  rules.machines.forEach(machine => {
+    const itemId = machine.itemId || machine.id;
+    if (!machineIdsByItemId.has(itemId)) machineIdsByItemId.set(itemId, []);
+    machineIdsByItemId.get(itemId).push(machine.id);
+
+    machine.allowedRecipes.forEach(recipeId => {
+      if (!machinesByRecipe.has(recipeId)) machinesByRecipe.set(recipeId, []);
+      machinesByRecipe.get(recipeId).push(machine.id);
+    });
+  });
+
   const starterMachines = new Set();
+  const registerStarterMachine = (id) => {
+    if (!id) return;
+    if (machineMap.has(id)) starterMachines.add(id);
+    (machineIdsByItemId.get(id) || []).forEach(machineId => starterMachines.add(machineId));
+  };
+
   if (initialState) {
-    // Items in inventory
     if (initialState.inventory) {
-      Object.keys(initialState.inventory).forEach(key => starterMachines.add(key));
+      Object.keys(initialState.inventory).forEach(registerStarterMachine);
     }
-    // Items already deployed (machines/generators)
-    if (initialState.floorSpace && initialState.floorSpace.placements) {
-      initialState.floorSpace.placements.forEach(p => {
-        if (p.structureType) starterMachines.add(p.structureType);
-      });
+    if (initialState.floorSpace?.placements) {
+      initialState.floorSpace.placements.forEach(placement => registerStarterMachine(placement.structureType));
     }
-    // Deployed machines list
     if (initialState.machines) {
-      initialState.machines.forEach(m => starterMachines.add(m.type));
+      initialState.machines.forEach(machine => registerStarterMachine(machine.type));
     }
-    // Built machines (ready to deploy, not yet placed)
     if (initialState.builtMachines) {
-      Object.keys(initialState.builtMachines).forEach(key => starterMachines.add(key));
+      Object.keys(initialState.builtMachines).forEach(registerStarterMachine);
     }
-    // Built generators (ready to deploy, not yet placed)
     if (initialState.builtGenerators) {
-      Object.keys(initialState.builtGenerators).forEach(key => starterMachines.add(key));
+      Object.keys(initialState.builtGenerators).forEach(registerStarterMachine);
     }
   }
 
-  // Map machine ID to its material age
-  rules.machines.forEach(machine => {
-    const matId = machine.itemId || machine.id;
-    const material = materialMap.get(matId);
-    if (material && material.age) {
-      machineAgeMap.set(machine.id, material.age);
-    } else {
-      machineAgeMap.set(machine.id, 1);
-    }
+  const starterMaterials = new Set();
+  rules.materials.forEach(material => {
+    if (material.category === 'raw') starterMaterials.add(material.id);
   });
+  extractableResources.forEach(materialId => starterMaterials.add(materialId));
+  if (initialState?.inventory) {
+    Object.keys(initialState.inventory).forEach(materialId => starterMaterials.add(materialId));
+  }
 
-  // Build dependency graph: machine -> set of machines it depends on
-  // A machine M depends on machine N if N is required to produce M
-  const dependencies = new Map(); // machineId -> Set of machineIds it depends on
-  const dependencyReasons = new Map(); // "machineId->depId" -> reason string
+  const buildableMachines = rules.machines.filter(machine =>
+    !machine.disabled && rules.machineRecipes?.[machine.id]?.slots?.length > 0
+  );
 
-  rules.machines.forEach(machine => {
-    const machineAge = machineAgeMap.get(machine.id);
-    const machineItemId = machine.itemId || machine.id;
-    const deps = new Set();
-    dependencies.set(machine.id, deps);
+  const forbiddenCacheKey = (forbiddenMachines) => Array.from(forbiddenMachines).sort().join('|');
+  const buildMemo = new Map();
+  const materialMemo = new Map();
 
-    // If bootstrapped, no dependencies matter
-    if (starterMachines.has(machineItemId)) return;
+  function canBuildMachine(machineId, forbiddenMachines = new Set(), stack = { machines: new Set(), materials: new Set() }) {
+    if (starterMachines.has(machineId)) return true;
 
-    // Find recipes that output this machine's item
-    const producingRecipes = rules.recipes.filter(r => r.outputs[machineItemId]);
-    if (producingRecipes.length === 0) return;
+    const memoKey = `${machineId}::${forbiddenCacheKey(forbiddenMachines)}`;
+    if (buildMemo.has(memoKey)) return buildMemo.get(memoKey);
+    if (stack.machines.has(machineId)) return false;
 
-    // Check 1: Which machines can RUN the recipe that produces this machine?
-    const machinesThatCanProduceThis = new Set();
-    producingRecipes.forEach(recipe => {
-      rules.machines.forEach(m => {
-        if (m.allowedRecipes.includes(recipe.id)) {
-          const mAge = machineAgeMap.get(m.id);
-          if (mAge <= machineAge) {
-            machinesThatCanProduceThis.add(m.id);
-          }
-        }
-      });
-    });
-
-    // If only specific machines can produce this, we depend on them
-    if (machinesThatCanProduceThis.size > 0) {
-      // We depend on ALL of these machines (need at least one)
-      // But for cycle detection, if the ONLY option includes ourselves, that's a problem
-      // We track all required machines
-      machinesThatCanProduceThis.forEach(mId => {
-        if (mId !== machine.id || machinesThatCanProduceThis.size === 1) {
-          // Only add self-dependency if it's the ONLY option
-          if (machinesThatCanProduceThis.size === 1) {
-            deps.add(mId);
-            dependencyReasons.set(`${machine.id}->${mId}`, `recipe '${producingRecipes[0].id}' can only be run by this machine`);
-          }
-        }
-      });
+    const machine = machineMap.get(machineId);
+    if (!machine || machine.disabled) {
+      buildMemo.set(memoKey, false);
+      return false;
     }
 
-    // Check 2: For each input needed, which machines can produce it?
-    producingRecipes.forEach(recipe => {
-      Object.keys(recipe.inputs).forEach(inputId => {
-        const inputProducingRecipes = rules.recipes.filter(r => r.outputs[inputId]);
+    const itemId = machine.itemId || machine.id;
+    const producingRecipes = recipesByOutput.get(itemId) || [];
+    if (producingRecipes.length === 0) {
+      buildMemo.set(memoKey, false);
+      return false;
+    }
 
-        // If raw material (no recipe), skip
-        if (inputProducingRecipes.length === 0) return;
-
-        // Find all machines that can produce this input (at or before our age)
-        const machinesForInput = new Set();
-        inputProducingRecipes.forEach(r => {
-          rules.machines.forEach(m => {
-            if (m.allowedRecipes.includes(r.id)) {
-              const mAge = machineAgeMap.get(m.id);
-              if (mAge <= machineAge) {
-                machinesForInput.add(m.id);
-              }
-            }
-          });
-        });
-
-        // If only ONE machine can produce this input, we depend on it
-        if (machinesForInput.size === 1) {
-          const depMachine = Array.from(machinesForInput)[0];
-          deps.add(depMachine);
-          const inputName = materialMap.get(inputId)?.name || inputId;
-          dependencyReasons.set(`${machine.id}->${depMachine}`, `needs '${inputName}' which only this machine can produce`);
-        }
-      });
-    });
-  });
-
-  // Detect cycles using DFS with coloring
-  // WHITE (0) = unvisited, GRAY (1) = in current path, BLACK (2) = fully processed
-  const color = new Map();
-  const parent = new Map();
-  const cycles = [];
-
-  rules.machines.forEach(m => color.set(m.id, 0));
-
-  function dfs(machineId, path) {
-    color.set(machineId, 1); // GRAY - currently exploring
-    path.push(machineId);
-
-    const deps = dependencies.get(machineId) || new Set();
-    for (const depId of deps) {
-      if (!machineMap.has(depId)) continue; // Skip non-machine dependencies
-
-      if (color.get(depId) === 1) {
-        // Found a cycle! Extract it from the path
-        const cycleStart = path.indexOf(depId);
-        const cyclePath = path.slice(cycleStart);
-        cyclePath.push(depId); // Close the cycle
-        cycles.push(cyclePath);
-      } else if (color.get(depId) === 0) {
-        dfs(depId, path);
+    stack.machines.add(machineId);
+    let buildable = false;
+    for (const recipe of producingRecipes) {
+      if (canExecuteRecipe(recipe, forbiddenMachines, stack)) {
+        buildable = true;
+        break;
       }
     }
+    stack.machines.delete(machineId);
 
-    path.pop();
-    color.set(machineId, 2); // BLACK - fully processed
+    buildMemo.set(memoKey, buildable);
+    return buildable;
   }
 
-  // Run DFS from each unvisited machine
-  rules.machines.forEach(machine => {
-    if (color.get(machine.id) === 0) {
-      dfs(machine.id, []);
+  function canProduceMaterial(materialId, forbiddenMachines = new Set(), stack = { machines: new Set(), materials: new Set() }) {
+    if (starterMaterials.has(materialId)) return true;
+    if (extractableResources.has(materialId)) return true;
+
+    const material = materialMap.get(materialId);
+    if (material?.category === 'raw') return true;
+
+    const memoKey = `${materialId}::${forbiddenCacheKey(forbiddenMachines)}`;
+    if (materialMemo.has(memoKey)) return materialMemo.get(memoKey);
+    if (stack.materials.has(materialId)) return false;
+
+    const producingRecipes = recipesByOutput.get(materialId) || [];
+    if (producingRecipes.length === 0) {
+      materialMemo.set(memoKey, false);
+      return false;
     }
-  });
 
-  // Convert cycles to issue format
+    stack.materials.add(materialId);
+    let producible = false;
+    for (const recipe of producingRecipes) {
+      if (canExecuteRecipe(recipe, forbiddenMachines, stack)) {
+        producible = true;
+        break;
+      }
+    }
+    stack.materials.delete(materialId);
+
+    materialMemo.set(memoKey, producible);
+    return producible;
+  }
+
+  function canExecuteRecipe(recipe, forbiddenMachines = new Set(), stack = { machines: new Set(), materials: new Set() }) {
+    const capableMachines = machinesByRecipe.get(recipe.id) || [];
+    const outputIds = Object.keys(recipe.outputs || {});
+    const outputsAreEquipment =
+      outputIds.length > 0 &&
+      outputIds.every(outputId => materialMap.get(outputId)?.category === 'equipment');
+
+    let canRunRecipe = false;
+    if (capableMachines.length === 0) {
+      // Machine/generator blueprint recipes are manually assembled (slot build), so they are still executable.
+      canRunRecipe = outputsAreEquipment;
+    } else {
+      canRunRecipe = capableMachines.some(machineId =>
+        !forbiddenMachines.has(machineId) && canBuildMachine(machineId, forbiddenMachines, stack)
+      );
+    }
+
+    if (!canRunRecipe) return false;
+
+    return Object.keys(recipe.inputs || {}).every(inputId =>
+      canProduceMaterial(inputId, forbiddenMachines, stack)
+    );
+  }
+
+  function getBlockingMaterials(machineId, forbiddenMachines = new Set()) {
+    const machine = machineMap.get(machineId);
+    if (!machine) return [];
+
+    const itemId = machine.itemId || machine.id;
+    const producingRecipes = recipesByOutput.get(itemId) || [];
+    const blockers = new Set();
+
+    producingRecipes.forEach(recipe => {
+      Object.keys(recipe.inputs || {}).forEach(inputId => {
+        const stack = { machines: new Set(), materials: new Set() };
+        if (!canProduceMaterial(inputId, forbiddenMachines, stack)) {
+          blockers.add(inputId);
+        }
+      });
+    });
+
+    return Array.from(blockers);
+  }
+
   const issues = [];
-  const seenCycles = new Set(); // Avoid duplicate cycle reports
 
-  cycles.forEach(cyclePath => {
-    // Normalize cycle to avoid duplicates (start from smallest ID)
-    const cycleOnly = cyclePath.slice(0, -1); // Remove the closing duplicate
-    const minIdx = cycleOnly.indexOf(cycleOnly.reduce((a, b) => a < b ? a : b));
-    const normalized = [...cycleOnly.slice(minIdx), ...cycleOnly.slice(0, minIdx)].join('->');
+  buildableMachines.forEach(machine => {
+    if (starterMachines.has(machine.id)) return;
 
-    if (seenCycles.has(normalized)) return;
-    seenCycles.add(normalized);
+    const buildable = canBuildMachine(machine.id, new Set(), { machines: new Set(), materials: new Set() });
+    if (!buildable) {
+      const blockingMaterialIds = getBlockingMaterials(machine.id, new Set());
+      const blockingMaterials = blockingMaterialIds.map(id => materialMap.get(id)?.name || id);
+      const reason = blockingMaterials.length > 0
+        ? `Cannot be bootstrapped from starter state. Blocking inputs: ${blockingMaterials.join(', ')}`
+        : 'Cannot be bootstrapped from starter state.';
 
-    // Build descriptive message
-    const cycleDescription = cyclePath.map(id => machineMap.get(id)?.name || id).join(' → ');
+      issues.push({
+        type: 'unbuildable_machine',
+        machineId: machine.id,
+        machineName: machine.name || machine.id,
+        blockingMaterialIds,
+        blockingMaterials,
+        reason,
+      });
+      return;
+    }
 
-    // For single-machine cycles (self-dependency)
-    if (cyclePath.length === 2) {
-      const machineId = cyclePath[0];
-      const machine = machineMap.get(machineId);
-      const reason = dependencyReasons.get(`${machineId}->${machineId}`) || 'requires itself';
+    const buildableWithoutSelf = canBuildMachine(
+      machine.id,
+      new Set([machine.id]),
+      { machines: new Set(), materials: new Set() }
+    );
+
+    if (!buildableWithoutSelf) {
+      const blockingMaterialIds = getBlockingMaterials(machine.id, new Set([machine.id]));
+      const blockingMaterials = blockingMaterialIds.map(id => materialMap.get(id)?.name || id);
+      const reason = blockingMaterials.length > 0
+        ? `Requires itself (directly or transitively). Blocking inputs: ${blockingMaterials.join(', ')}`
+        : 'Requires itself (directly or transitively).';
+
       issues.push({
         type: 'self_dependency',
-        machineId,
-        machineName: machine?.name || machineId,
-        cycle: cycleDescription,
-        reason
-      });
-    } else {
-      // Multi-machine cycle
-      issues.push({
-        type: 'circular_dependency',
-        cycle: cycleDescription,
-        machineIds: cycleOnly,
-        machineNames: cycleOnly.map(id => machineMap.get(id)?.name || id)
+        machineId: machine.id,
+        machineName: machine.name || machine.id,
+        cycle: `${machine.name || machine.id} → ${machine.name || machine.id}`,
+        reason,
+        blockingMaterialIds,
+        blockingMaterials,
       });
     }
   });

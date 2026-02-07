@@ -151,6 +151,19 @@ export default function DebugGraphPage() {
     (issues.machineCycleIssues?.length || 0) +
     materialsMissingIcons.length;
 
+  const formatMachineCycleIssue = (issue) => {
+    if (issue.type === 'circular_dependency') {
+      return `Cycle: ${issue.cycle || 'Unknown cycle'}`;
+    }
+    if (issue.type === 'self_dependency') {
+      return `${issue.machineName || issue.machineId}: ${issue.reason || 'Requires itself'}`;
+    }
+    if (issue.type === 'unbuildable_machine') {
+      return `${issue.machineName || issue.machineId}: ${issue.reason || 'Cannot be bootstrapped from starter state'}`;
+    }
+    return JSON.stringify(issue);
+  };
+
   // Generate issues text log
   const generateIssuesLog = () => {
     let log = '=== Recipe Graph Issues ===\n\n';
@@ -225,7 +238,7 @@ export default function DebugGraphPage() {
     if (issues.machineCycleIssues && issues.machineCycleIssues.length > 0) {
       log += `Circular Dependency (${issues.machineCycleIssues.length}):\n`;
       issues.machineCycleIssues.forEach(issue => {
-        log += `  - ${issue.machineName} requires ${issue.partName} (only produced by this machine)\n`;
+        log += `  - ${formatMachineCycleIssue(issue)}\n`;
       });
       log += '\n';
     }

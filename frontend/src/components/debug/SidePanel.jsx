@@ -62,6 +62,45 @@ export default function SidePanel({
     onHighlightNodes(outputNodes);
   };
 
+  const getMachineCycleIssueNodeIds = (issue) => {
+    const ids = new Set();
+    if (issue.machineId) ids.add(issue.machineId);
+    if (issue.partId) ids.add(issue.partId);
+    (issue.machineIds || []).forEach(id => ids.add(id));
+    (issue.blockingMaterialIds || []).forEach(id => ids.add(id));
+    return Array.from(ids).filter(Boolean);
+  };
+
+  const getMachineCycleIssueText = (issue) => {
+    if (issue.type === 'circular_dependency') {
+      return {
+        primary: 'Circular dependency',
+        secondary: issue.cycle || 'Machine dependency cycle',
+      };
+    }
+    if (issue.type === 'self_dependency') {
+      return {
+        primary: issue.machineName || issue.machineId || 'Machine',
+        secondary: issue.reason || 'Requires itself',
+      };
+    }
+    if (issue.type === 'unbuildable_machine') {
+      const blockers = issue.blockingMaterials?.length
+        ? `Blocking: ${issue.blockingMaterials.join(', ')}`
+        : null;
+      return {
+        primary: issue.machineName || issue.machineId || 'Machine',
+        secondary: blockers
+          ? `${issue.reason || 'Cannot be bootstrapped from starter state'} | ${blockers}`
+          : (issue.reason || 'Cannot be bootstrapped from starter state'),
+      };
+    }
+    return {
+      primary: issue.machineName || issue.machineId || 'Machine dependency issue',
+      secondary: issue.reason || 'Unknown machine dependency issue',
+    };
+  };
+
   return (
     <Paper
       elevation={2}
@@ -322,20 +361,24 @@ export default function SidePanel({
                 Circular Dependency ({issues.machineCycleIssues.length})
               </Typography>
               <List dense disablePadding>
-                {issues.machineCycleIssues.map((issue, idx) => (
-                  <ListItemButton
-                    key={`${issue.machineId}-${issue.partId}-${idx}`}
-                    onClick={() => handleIssueClick([issue.partId])}
-                  >
-                    <ListItemIcon sx={{ minWidth: 32 }}>
-                      <ErrorIcon fontSize="small" color="error" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={issue.machineName}
-                      secondary={`Requires ${issue.partName} (only made by this machine)`}
-                    />
-                  </ListItemButton>
-                ))}
+                {issues.machineCycleIssues.map((issue, idx) => {
+                  const nodeIds = getMachineCycleIssueNodeIds(issue);
+                  const text = getMachineCycleIssueText(issue);
+                  return (
+                    <ListItemButton
+                      key={`${issue.type || 'machine-issue'}-${issue.machineId || issue.cycle || idx}`}
+                      onClick={() => handleIssueClick(nodeIds)}
+                    >
+                      <ListItemIcon sx={{ minWidth: 32 }}>
+                        <ErrorIcon fontSize="small" color="error" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={text.primary}
+                        secondary={text.secondary}
+                      />
+                    </ListItemButton>
+                  );
+                })}
               </List>
             </>
           )}

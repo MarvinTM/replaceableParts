@@ -58,9 +58,15 @@ describe('Game Rules Validation', () => {
     const formatted = issues.machineCycleIssues.map(i => {
       if (i.type === 'self_dependency') {
         return `${i.machineName}: ${i.reason}`;
-      } else {
+      }
+      if (i.type === 'circular_dependency') {
         return `Cycle: ${i.cycle}`;
       }
+      if (i.type === 'unbuildable_machine') {
+        const blockers = i.blockingMaterials?.length ? ` (Blocking: ${i.blockingMaterials.join(', ')})` : '';
+        return `${i.machineName}: ${i.reason}${blockers}`;
+      }
+      return JSON.stringify(i);
     });
     expect(issues.machineCycleIssues, `Circular dependencies: ${formatted.join('; ')}`).toEqual([]);
   });
