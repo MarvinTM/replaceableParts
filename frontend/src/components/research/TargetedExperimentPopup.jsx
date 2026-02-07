@@ -14,6 +14,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import TargetIcon from '@mui/icons-material/GpsFixed';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import BuildIcon from '@mui/icons-material/Build';
 import MaterialIcon from '../common/MaterialIcon';
 import useGameStore from '../../stores/gameStore';
 import { getMaterialName } from '../../utils/translationHelpers';
@@ -21,7 +22,8 @@ import { getMaterialName } from '../../utils/translationHelpers';
 export default function TargetedExperimentPopup({
   open,
   onClose,
-  eligibleRecipes,
+  eligibleMaterialRecipes = [],
+  eligibleEnablerRecipes = [],
   targetedCost,
   researchPoints
 }) {
@@ -49,13 +51,22 @@ export default function TargetedExperimentPopup({
     onClose();
   };
 
-  // Sort eligible recipes by age, then by name
-  const sortedRecipes = [...eligibleRecipes].sort((a, b) => {
+  const sortByAgeThenName = (a, b) => {
     if (a.materialAge !== b.materialAge) {
       return (a.materialAge || 0) - (b.materialAge || 0);
     }
     return a.materialName.localeCompare(b.materialName);
-  });
+  };
+
+  const sortedMaterialRecipes = [...eligibleMaterialRecipes].sort(sortByAgeThenName);
+  const sortedEnablerRecipes = [...eligibleEnablerRecipes]
+    .sort((a, b) => {
+      if ((b.blockedCount || 0) !== (a.blockedCount || 0)) {
+        return (b.blockedCount || 0) - (a.blockedCount || 0);
+      }
+      return sortByAgeThenName(a, b);
+    });
+  const hasTargets = sortedMaterialRecipes.length > 0 || sortedEnablerRecipes.length > 0;
 
   return (
     <Dialog
@@ -92,7 +103,7 @@ export default function TargetedExperimentPopup({
           </Box>
         </Box>
 
-        {sortedRecipes.length === 0 ? (
+        {!hasTargets ? (
           <Box sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -102,76 +113,55 @@ export default function TargetedExperimentPopup({
             color: 'text.secondary'
           }}>
             <Typography variant="body1">
-              {t('research.noEligibleRecipes')}
+              {t('research.noEligibleTargets')}
             </Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              {t('research.allMaterialsResearched')}
+              {t('research.allTargetsResearched')}
             </Typography>
           </Box>
         ) : (
-          <List sx={{ bgcolor: 'background.default', borderRadius: 1 }}>
-            {sortedRecipes.map(({ recipe, outputId, materialName, materialAge, neededBy }) => (
-              <ListItemButton
-                key={recipe.id}
-                selected={selectedRecipeId === recipe.id}
-                onClick={() => handleSelectRecipe(recipe.id)}
-                sx={{
-                  borderRadius: 1,
-                  mb: 0.5,
-                  border: '1px solid',
-                  borderColor: selectedRecipeId === recipe.id ? 'primary.main' : 'transparent',
-                  '&.Mui-selected': {
-                    bgcolor: 'rgba(139, 90, 43, 0.15)',
-                    '&:hover': {
-                      bgcolor: 'rgba(139, 90, 43, 0.2)',
-                    }
-                  }
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 56 }}>
-                  <MaterialIcon materialId={outputId} size={40} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography component="span" variant="body1" fontWeight="medium">
-                        {getMaterialName(outputId, materialName)}
-                      </Typography>
-                      {materialAge && (
-                        <Chip
-                          label={t('research.age', { age: materialAge })}
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
-                    </Box>
-                  }
-                  secondary={
-                    neededBy.length > 0 && (
-                      <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-                        <Typography component="span" variant="caption" color="text.secondary">
-                          {t('research.neededFor')}
-                        </Typography>
-                        {neededBy.slice(0, 3).map((id, idx) => (
-                          <Box component="span" key={idx} sx={{ display: 'inline-flex', alignItems: 'center' }}>
-                            <ArrowForwardIcon sx={{ fontSize: 12, color: 'text.secondary', mr: 0.25 }} />
-                            <Typography component="span" variant="caption" color="primary.light">
-                              {getMaterialName(id)}
-                            </Typography>
-                          </Box>
-                        ))}
-                        {neededBy.length > 3 && (
-                          <Typography component="span" variant="caption" color="text.secondary">
-                            {t('research.andMore', { count: neededBy.length - 3 })}
-                          </Typography>
-                        )}
-                      </Box>
-                    )
-                  }
-                />
-              </ListItemButton>
-            ))}
-          </List>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {sortedMaterialRecipes.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {t('research.materialTargets')}
+                </Typography>
+                <List sx={{ bgcolor: 'background.default', borderRadius: 1 }}>
+                  {sortedMaterialRecipes.map((target) => (
+                    <TargetListItem
+                      key={target.recipe.id}
+                      target={target}
+                      selectedRecipeId={selectedRecipeId}
+                      onSelect={handleSelectRecipe}
+                      t={t}
+                    />
+                  ))}
+                </List>
+              </Box>
+            )}
+
+            {sortedEnablerRecipes.length > 0 && (
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                  <BuildIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                  <Typography variant="subtitle2">
+                    {t('research.productionEnablers')}
+                  </Typography>
+                </Box>
+                <List sx={{ bgcolor: 'background.default', borderRadius: 1 }}>
+                  {sortedEnablerRecipes.map((target) => (
+                    <TargetListItem
+                      key={target.recipe.id}
+                      target={target}
+                      selectedRecipeId={selectedRecipeId}
+                      onSelect={handleSelectRecipe}
+                      t={t}
+                    />
+                  ))}
+                </List>
+              </Box>
+            )}
+          </Box>
         )}
       </DialogContent>
 
@@ -190,5 +180,138 @@ export default function TargetedExperimentPopup({
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function TargetListItem({ target, selectedRecipeId, onSelect, t }) {
+  const {
+    recipe,
+    outputId,
+    structureId,
+    materialName,
+    materialAge,
+    category,
+    neededBy,
+    type,
+    blockedCount = 0,
+  } = target;
+
+  return (
+    <ListItemButton
+      selected={selectedRecipeId === recipe.id}
+      onClick={() => onSelect(recipe.id)}
+      sx={{
+        borderRadius: 1,
+        mb: 0.5,
+        border: '1px solid',
+        borderColor: selectedRecipeId === recipe.id ? 'primary.main' : 'transparent',
+        '&.Mui-selected': {
+          bgcolor: 'rgba(139, 90, 43, 0.15)',
+          '&:hover': {
+            bgcolor: 'rgba(139, 90, 43, 0.2)',
+          }
+        }
+      }}
+    >
+      <ListItemIcon sx={{ minWidth: 56 }}>
+        {type === 'enabler' ? (
+          <FactoryStructureIcon
+            structureId={structureId || recipe.id}
+            materialId={outputId}
+            materialName={materialName}
+            category={category}
+          />
+        ) : (
+          <MaterialIcon materialId={outputId} category={category} size={40} />
+        )}
+      </ListItemIcon>
+      <ListItemText
+        primary={(
+          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Typography component="span" variant="body1" fontWeight="medium">
+              {getMaterialName(outputId, materialName)}
+            </Typography>
+            {materialAge && (
+              <Chip
+                label={t('research.age', { age: materialAge })}
+                size="small"
+                variant="outlined"
+              />
+            )}
+            {type === 'enabler' && (
+              <Chip
+                label={t('research.productionEnabler')}
+                size="small"
+                color="warning"
+                variant="outlined"
+              />
+            )}
+          </Box>
+        )}
+        secondary={(
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+            {type === 'enabler' && (
+              <Typography component="span" variant="caption" color="warning.main">
+                {t('research.unblocksRecipes', { count: blockedCount })}
+              </Typography>
+            )}
+            {neededBy?.length > 0 && (
+              <>
+                <Typography component="span" variant="caption" color="text.secondary">
+                  {t('research.neededFor')}
+                </Typography>
+                {neededBy.slice(0, 3).map((id, idx) => (
+                  <Box component="span" key={idx} sx={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <ArrowForwardIcon sx={{ fontSize: 12, color: 'text.secondary', mr: 0.25 }} />
+                    <Typography component="span" variant="caption" color="primary.light">
+                      {getMaterialName(id)}
+                    </Typography>
+                  </Box>
+                ))}
+                {neededBy.length > 3 && (
+                  <Typography component="span" variant="caption" color="text.secondary">
+                    {t('research.andMore', { count: neededBy.length - 3 })}
+                  </Typography>
+                )}
+              </>
+            )}
+          </Box>
+        )}
+      />
+    </ListItemButton>
+  );
+}
+
+function FactoryStructureIcon({ structureId, materialId, materialName, category }) {
+  const [spriteSrc, setSpriteSrc] = useState(`/assets/factory/${structureId}_idle.png`);
+  const [triedFallback, setTriedFallback] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  const handleError = () => {
+    if (!triedFallback) {
+      setTriedFallback(true);
+      setSpriteSrc(`/assets/factory/${structureId}.png`);
+      return;
+    }
+    setHasError(true);
+  };
+
+  if (hasError) {
+    return <MaterialIcon materialId={materialId} materialName={materialName} category={category} size={40} />;
+  }
+
+  return (
+    <Box
+      component="img"
+      src={spriteSrc}
+      alt={getMaterialName(materialId, materialName)}
+      sx={{
+        width: 40,
+        height: 40,
+        objectFit: 'contain',
+        imageRendering: 'pixelated',
+      }}
+      onError={handleError}
+    />
   );
 }
