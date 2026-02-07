@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.5.5",
+      "date": "2024-02-07",
+      "highlights": "Recherche des machines corrigée. Visualisation de la production et de la consommation de matières premières et de pièces améliorée.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "La production et la consommation des pièces sont désormais clairement affichées dans l'onglet Usine"
+        },
+        {
+          "type": "improvement",
+          "text": "L'approvisionnement et la consommation de matières premières sont désormais affichés dans les onglets Usine et Exploration"
+        },
+        {
+          "type": "improvement",
+          "text": "Il est désormais possible de cibler la recherche des machines requises"
+        },
+        {
+          "type": "fix",
+          "text": "Les machines peuvent de nouveau être recherchées"
+        }
+      ]
+    },
+    {
       "version": "0.5.0",
       "date": "2024-02-06",
       "highlights": "Rééquilibrage significatif des mécaniques de jeu. Nouveau design du parc solaire.",

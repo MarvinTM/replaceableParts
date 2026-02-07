@@ -3,8 +3,12 @@
     {
       "version": "0.5.5",
       "date": "2024-02-07",
-      "highlights": "Fixed machine research. Improved visualization of raw material input and consumption.",
+      "highlights": "Fixed machine research. Improved visualization of raw material and parts input and consumption.",
       "changes": [
+        {
+          "type": "improvement",
+          "text": "Parts production and consumption will be clearly shown in the factory tab"
+        },
         {
           "type": "improvement",
           "text": "Raw material input and consumption is now displayed in the factory and exploration tabs"

@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.5.5",
+      "date": "2024-02-07",
+      "highlights": "Corretto il sistema di ricerca delle macchine. Migliorata la visualizzazione di produzione e consumo di materie prime e componenti.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "La produzione e il consumo dei componenti sono ora mostrati chiaramente nella scheda Fabbrica"
+        },
+        {
+          "type": "improvement",
+          "text": "L'ingresso e il consumo delle materie prime sono ora mostrati nelle schede Fabbrica ed Esplorazione"
+        },
+        {
+          "type": "improvement",
+          "text": "Ora è possibile indirizzare la ricerca delle macchine richieste"
+        },
+        {
+          "type": "fix",
+          "text": "Le macchine possono ora essere ricercate di nuovo"
+        }
+      ]
+    },
+    {
       "version": "0.5.0",
       "date": "2024-02-06",
       "highlights": "Ribilanciamento significativo delle meccaniche di gioco. Nuovo design dell'impianto solare.",

@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.5.5",
+      "date": "2024-02-07",
+      "highlights": "Maschinenforschung behoben. Visualisierung von Rohstoff- und Teileproduktion sowie -verbrauch verbessert.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Produktion und Verbrauch von Teilen werden jetzt im Fabrik-Tab klar angezeigt"
+        },
+        {
+          "type": "improvement",
+          "text": "Rohstoffzufuhr und -verbrauch werden jetzt im Fabrik- und Erkundungs-Tab angezeigt"
+        },
+        {
+          "type": "improvement",
+          "text": "Es ist jetzt möglich, die Forschung benötigter Maschinen gezielt anzusteuern"
+        },
+        {
+          "type": "fix",
+          "text": "Maschinen können jetzt wieder erforscht werden"
+        }
+      ]
+    },
+    {
       "version": "0.5.0",
       "date": "2024-02-06",
       "highlights": "Signifikante Neuausrichtung der Spielmechaniken. Neues Design der Solaranlage.",

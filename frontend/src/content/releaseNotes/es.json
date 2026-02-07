@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.5.5",
+      "date": "2024-02-07",
+      "highlights": "Corregida la investigación de máquinas. Mejorada la visualización de producción y consumo de materias primas y piezas.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "La producción y el consumo de piezas se muestran claramente en la pestaña Fábrica"
+        },
+        {
+          "type": "improvement",
+          "text": "La entrada y el consumo de materias primas ahora se muestran en las pestañas Fábrica y Exploración"
+        },
+        {
+          "type": "improvement",
+          "text": "Ahora es posible orientar la investigación de las máquinas requeridas"
+        },
+        {
+          "type": "fix",
+          "text": "Las máquinas vuelven a poder investigarse"
+        }
+      ]
+    },
+    {
       "version": "0.5.0",
       "date": "2024-02-06",
       "highlights": "Reequilibrio significativo de las mecánicas del juego. Nuevo diseño del panel solar.",
