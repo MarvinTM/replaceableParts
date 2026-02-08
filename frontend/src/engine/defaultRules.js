@@ -1220,6 +1220,7 @@ export const defaultRules = {
       itemId: 'windmill',
       name: 'Windmill',
       sizeX: 6, sizeY: 8,
+      offsetX: 80, offsetY: -80,
       energyOutput: 30,
       disableAutoScale: true,
       animation: { frames: 4, speed: 0.005, separateFrames: true }
