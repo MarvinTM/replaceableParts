@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.6.0",
+      "date": "2024-02-08",
+      "highlights": "Nueva pestaña Enciclopedia. Nuevo componente de Inventario. Corregidos varios problemas de visualización en la fábrica.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Nueva pestaña Enciclopedia. Puede usarse para explorar todas las recetas investigadas y ver cómo se fabrican."
+        },
+        {
+          "type": "improvement",
+          "text": "Nuevo componente de Inventario. Los bienes finales y las piezas se muestran por separado. El espacio disponible se indica visualmente para los bienes finales."
+        },
+        {
+          "type": "fix",
+          "text": "Se corrigieron varios problemas de visualización en la fábrica."
+        }
+      ]
+    },
+    {
       "version": "0.5.5",
       "date": "2024-02-07",
       "highlights": "Corregida la investigación de máquinas y las dependencias circulares. Mejorada la visualización de producción y consumo de materias primas y piezas.",

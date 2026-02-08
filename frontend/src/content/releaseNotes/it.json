@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.6.0",
+      "date": "2024-02-08",
+      "highlights": "Nuova scheda Enciclopedia. Nuovo componente Inventario. Corretti diversi problemi di visualizzazione della fabbrica.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Nuova scheda Enciclopedia. Può essere usata per sfogliare tutte le ricette ricercate e vedere come vengono prodotte."
+        },
+        {
+          "type": "improvement",
+          "text": "Nuovo componente Inventario. I beni finali e i componenti sono mostrati separatamente. Lo spazio disponibile per i beni finali è indicato visivamente."
+        },
+        {
+          "type": "fix",
+          "text": "Sono stati corretti diversi problemi di visualizzazione della fabbrica."
+        }
+      ]
+    },
+    {
       "version": "0.5.5",
       "date": "2024-02-07",
       "highlights": "Corretto il sistema di ricerca delle macchine e le dipendenze circolari. Migliorata la visualizzazione di produzione e consumo di materie prime e componenti.",

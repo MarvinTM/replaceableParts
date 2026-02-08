@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.6.0",
+      "date": "2024-02-08",
+      "highlights": "Nouvel onglet Encyclopédie. Nouveau composant Inventaire. Correction de plusieurs problèmes de visualisation de l'usine.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Nouvel onglet Encyclopédie. Il permet de parcourir toutes les recettes recherchées et de voir comment elles sont fabriquées."
+        },
+        {
+          "type": "improvement",
+          "text": "Nouveau composant Inventaire. Les biens finaux et les pièces sont affichés séparément. L'espace disponible pour les biens finaux est indiqué visuellement."
+        },
+        {
+          "type": "fix",
+          "text": "Correction de plusieurs problèmes de visualisation de l'usine."
+        }
+      ]
+    },
+    {
       "version": "0.5.5",
       "date": "2024-02-07",
       "highlights": "Recherche des machines et dépendances circulaires corrigées. Visualisation de la production et de la consommation de matières premières et de pièces améliorée.",

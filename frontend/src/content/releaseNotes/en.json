@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.6.0",
+      "date": "2024-02-08",
+      "highlights": "New Encyclopedia tab. New Inventory component. Fixed several factory visualization issues.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "New Encyclopedia tab. Can be used to browse all researched recipes and see how they are made."
+        },
+        {
+          "type": "improvement",
+          "text": "New Inventory component. Final goods and parts are shown separately. Available space is indicated visually for final goods."
+        },
+        {
+          "type": "fix",
+          "text": "Fixed several factory visualization issues."
+        }
+      ]
+    },
+    {
       "version": "0.5.5",
       "date": "2024-02-07",
       "highlights": "Fixed machine research, and circular dependencies. Improved visualization of raw material and parts input and consumption.",

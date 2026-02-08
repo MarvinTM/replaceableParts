@@ -1,6 +1,25 @@
 {
   "releases": [
     {
+      "version": "0.6.0",
+      "date": "2024-02-08",
+      "highlights": "Neuer Enzyklopädie-Tab. Neue Inventarkomponente. Mehrere Visualisierungsprobleme in der Fabrik behoben.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Neuer Enzyklopädie-Tab. Er kann genutzt werden, um alle erforschten Rezepte zu durchsuchen und zu sehen, wie sie hergestellt werden."
+        },
+        {
+          "type": "improvement",
+          "text": "Neue Inventarkomponente. Endprodukte und Teile werden getrennt angezeigt. Der verfügbare Platz für Endprodukte wird visuell dargestellt."
+        },
+        {
+          "type": "fix",
+          "text": "Mehrere Visualisierungsprobleme in der Fabrik wurden behoben."
+        }
+      ]
+    },
+    {
       "version": "0.5.5",
       "date": "2024-02-07",
       "highlights": "Maschinenforschung und zirkuläre Abhängigkeiten behoben. Visualisierung von Rohstoff- und Teileproduktion sowie -verbrauch verbessert.",
