@@ -119,4 +119,22 @@ describe('FactoryBottomBar', () => {
     expect(screen.getByText(/Wood: 100\/100/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Storage full')).not.toBeInTheDocument();
   });
+
+  it('should keep final goods first and show compact FG/P counts without section rows', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ widget: 20, wood: 30 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    expect(screen.getByText('FG 1 · P 1')).toBeInTheDocument();
+    const widget = screen.getByText(/Widget: 20\/100/);
+    const wood = screen.getByText(/Wood: 30\/100/);
+    expect(widget.compareDocumentPosition(wood) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/Wood: 30\/100/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Expand/i })).not.toBeInTheDocument();
+  });
 });
