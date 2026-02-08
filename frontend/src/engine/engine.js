@@ -68,6 +68,20 @@ function getMaxStack(itemId, inventoryCapacity, rules) {
   return Math.floor(inventoryCapacity / weight);
 }
 
+function isRawMaterial(itemId, rules) {
+  const material = rules.materials.find(m => m.id === itemId);
+  return material?.category === 'raw';
+}
+
+function refundBufferToInventory(machine, inventory, rules) {
+  for (const [itemId, quantity] of Object.entries(machine.internalBuffer || {})) {
+    if (!Number.isFinite(quantity) || quantity <= 0) continue;
+    // Raw inputs come from extraction flow and must never be stored in inventory.
+    if (isRawMaterial(itemId, rules)) continue;
+    inventory[itemId] = (inventory[itemId] || 0) + quantity;
+  }
+}
+
 /**
  * Check if a recipe corresponds to a disabled machine or generator
  * Returns true if the recipe should be excluded from discovery
@@ -1342,10 +1356,8 @@ function removeMachine(state, rules, payload) {
 
   const machine = newState.machines[machineIndex];
 
-  // Return items in buffer to inventory
-  for (const [itemId, quantity] of Object.entries(machine.internalBuffer)) {
-    newState.inventory[itemId] = (newState.inventory[itemId] || 0) + quantity;
-  }
+  // Return only non-raw items in buffer to inventory.
+  refundBufferToInventory(machine, newState.inventory, rules);
 
   // Return machine to the built machines pool
   if (!newState.builtMachines) {
@@ -1432,10 +1444,8 @@ function assignRecipe(state, rules, payload) {
     }
   }
 
-  // Return items in buffer to inventory when changing recipe
-  for (const [itemId, quantity] of Object.entries(machine.internalBuffer)) {
-    newState.inventory[itemId] = (newState.inventory[itemId] || 0) + quantity;
-  }
+  // Return only non-raw items in buffer to inventory when changing recipe.
+  refundBufferToInventory(machine, newState.inventory, rules);
 
   machine.recipeId = recipeId;
   machine.internalBuffer = {};

@@ -72,4 +72,42 @@ describe('Engine: ASSIGN_RECIPE', () => {
         expect(result.error).toBeNull();
         expect(result.state.machines[0].recipeId).toBe(lockedRecipeId);
     });
+
+    it('should not refund raw materials from buffer when clearing recipe', () => {
+        const state = setupState();
+        state.machines[0].recipeId = unlockedRecipeId;
+        state.machines[0].internalBuffer = { iron_ore: 1 };
+
+        const action = {
+            type: 'ASSIGN_RECIPE',
+            payload: {
+                machineId: 'm1',
+                recipeId: null
+            }
+        };
+
+        const result = engine(state, defaultRules, action);
+        expect(result.error).toBeNull();
+        expect(result.state.machines[0].recipeId).toBeNull();
+        expect(result.state.machines[0].internalBuffer).toEqual({});
+        expect(result.state.inventory.iron_ore).toBeUndefined();
+    });
+
+    it('should refund non-raw materials from buffer when changing recipe', () => {
+        const state = setupState();
+        state.machines[0].recipeId = unlockedRecipeId;
+        state.machines[0].internalBuffer = { iron_ingot: 2 };
+
+        const action = {
+            type: 'ASSIGN_RECIPE',
+            payload: {
+                machineId: 'm1',
+                recipeId: null
+            }
+        };
+
+        const result = engine(state, defaultRules, action);
+        expect(result.error).toBeNull();
+        expect(result.state.inventory.iron_ingot).toBe(2);
+    });
 });

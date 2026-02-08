@@ -149,8 +149,7 @@ describe('Engine: REMOVE_MACHINE', () => {
     expect(result.state.floorSpace.placements).toHaveLength(0);
   });
 
-  it('should return internal buffer contents to inventory', () => {
-    // Add items to buffer
+  it('should not return raw materials from internal buffer to inventory', () => {
     stateWithMachine.machines[0].internalBuffer = {
       iron_ore: 5,
       coal: 3
@@ -163,8 +162,25 @@ describe('Engine: REMOVE_MACHINE', () => {
     });
 
     expect(result.error).toBeNull();
-    expect(result.state.inventory.iron_ore).toBe(5);
-    expect(result.state.inventory.coal).toBe(3);
+    expect(result.state.inventory.iron_ore).toBeUndefined();
+    expect(result.state.inventory.coal).toBeUndefined();
+  });
+
+  it('should return non-raw internal buffer contents to inventory', () => {
+    stateWithMachine.machines[0].internalBuffer = {
+      iron_ingot: 2,
+      nails: 8
+    };
+
+    const machineId = stateWithMachine.machines[0].id;
+    const result = engine(stateWithMachine, defaultRules, {
+      type: 'REMOVE_MACHINE',
+      payload: { machineId }
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.state.inventory.iron_ingot).toBe(2);
+    expect(result.state.inventory.nails).toBe(8);
   });
 
   it('should fail when machine not found', () => {
