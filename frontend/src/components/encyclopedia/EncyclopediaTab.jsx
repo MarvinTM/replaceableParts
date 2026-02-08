@@ -94,7 +94,7 @@ export default function EncyclopediaTab() {
 
         // Category filter
         if (categoryFilter !== 'all') {
-          if (categoryFilter === 'parts' && recipe.category !== 'part') return false;
+          if (categoryFilter === 'parts' && recipe.category !== 'intermediate') return false;
           if (categoryFilter === 'finalGoods' && recipe.category !== 'final') return false;
         }
 
@@ -359,7 +359,7 @@ export default function EncyclopediaTab() {
                   }}
                 />
                 <Chip
-                  label={t(`encyclopedia.cat_${selectedRecipe.category === 'final' ? 'finalGoods' : selectedRecipe.category === 'part' ? 'parts' : 'other'}`)}
+                  label={t(`encyclopedia.cat_${selectedRecipe.category === 'final' ? 'finalGoods' : selectedRecipe.category === 'intermediate' ? 'parts' : 'other'}`)}
                   size="small"
                   variant="outlined"
                 />
