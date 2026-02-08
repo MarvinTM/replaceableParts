@@ -10,10 +10,10 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
-import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import TimerIcon from '@mui/icons-material/Timer';
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
+import StructureSpriteIcon from '../common/StructureSpriteIcon';
 import RecipeIODisplay from '../common/RecipeIODisplay';
 import { getMaterialName, getRecipeName, getMaterialDescription } from '../../utils/translationHelpers';
 import { formatCredits } from '../../utils/currency';
@@ -141,6 +141,32 @@ export default function EncyclopediaTab() {
 
   if (!engineState || !rules) return null;
 
+  const renderRecipeMaterialIcon = (materialId, material, size) => {
+    const materialName = getMaterialName(materialId, material?.name);
+    const category = material?.category;
+
+    if (category === 'equipment') {
+      return (
+        <StructureSpriteIcon
+          structureId={materialId}
+          materialId={materialId}
+          materialName={materialName}
+          category={category}
+          size={size}
+        />
+      );
+    }
+
+    return (
+      <MaterialIcon
+        materialId={materialId}
+        materialName={materialName}
+        category={category}
+        size={size}
+      />
+    );
+  };
+
   return (
     <Box sx={{ display: 'flex', height: '100%', gap: 2, p: 2 }}>
       {/* Left Panel - Filters + Grid */}
@@ -252,7 +278,7 @@ export default function EncyclopediaTab() {
                       onClick={() => setSelectedRecipeId(recipe.id)}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <MaterialIcon materialId={recipe.primaryOutputId} size={32} />
+                        {renderRecipeMaterialIcon(recipe.primaryOutputId, recipe.primaryOutputMat, 32)}
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Typography variant="body1" fontWeight="bold" noWrap>
                             {getRecipeName(recipe.id)}
@@ -305,7 +331,7 @@ export default function EncyclopediaTab() {
             <Box>
               {/* Header */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                <MaterialIcon materialId={selectedRecipe.primaryOutputId} size={56} />
+                {renderRecipeMaterialIcon(selectedRecipe.primaryOutputId, selectedRecipe.primaryOutputMat, 56)}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="h6" fontWeight="bold">
                     {getRecipeName(selectedRecipe.id)}
@@ -350,13 +376,23 @@ export default function EncyclopediaTab() {
                   const mat = rules.materials?.find(m => m.id === matId);
                   return (
                     <Box key={matId} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MaterialIcon
-                        materialId={matId}
-                        materialName={getMaterialName(matId, mat?.name)}
-                        category={mat?.category}
-                        size={24}
-                        showTooltip
-                      />
+                      {mat?.category === 'equipment' ? (
+                        <StructureSpriteIcon
+                          structureId={matId}
+                          materialId={matId}
+                          materialName={getMaterialName(matId, mat?.name)}
+                          category={mat?.category}
+                          size={24}
+                        />
+                      ) : (
+                        <MaterialIcon
+                          materialId={matId}
+                          materialName={getMaterialName(matId, mat?.name)}
+                          category={mat?.category}
+                          size={24}
+                          showTooltip
+                        />
+                      )}
                       <Typography variant="body2" sx={{ flex: 1 }}>
                         {getMaterialName(matId, mat?.name)}
                       </Typography>
@@ -377,13 +413,23 @@ export default function EncyclopediaTab() {
                   const mat = rules.materials?.find(m => m.id === matId);
                   return (
                     <Box key={matId} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MaterialIcon
-                        materialId={matId}
-                        materialName={getMaterialName(matId, mat?.name)}
-                        category={mat?.category}
-                        size={24}
-                        showTooltip
-                      />
+                      {mat?.category === 'equipment' ? (
+                        <StructureSpriteIcon
+                          structureId={matId}
+                          materialId={matId}
+                          materialName={getMaterialName(matId, mat?.name)}
+                          category={mat?.category}
+                          size={24}
+                        />
+                      ) : (
+                        <MaterialIcon
+                          materialId={matId}
+                          materialName={getMaterialName(matId, mat?.name)}
+                          category={mat?.category}
+                          size={24}
+                          showTooltip
+                        />
+                      )}
                       <Typography variant="body2" sx={{ flex: 1 }}>
                         {getMaterialName(matId, mat?.name)}
                       </Typography>
@@ -431,7 +477,13 @@ export default function EncyclopediaTab() {
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                     {selectedRecipe.machines.map(machine => (
                       <Box key={machine.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PrecisionManufacturingIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                        <StructureSpriteIcon
+                          structureId={machine.id}
+                          materialId={machine.id}
+                          materialName={getMaterialName(machine.id, machine.name)}
+                          category="equipment"
+                          size={20}
+                        />
                         <Typography variant="body2">
                           {getMaterialName(machine.id, machine.name)}
                         </Typography>

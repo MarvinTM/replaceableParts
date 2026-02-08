@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Box, Tooltip } from '@mui/material';
 import { getIconUrl } from '../../services/iconService';
@@ -63,6 +63,12 @@ export default function MaterialIcon({
 }) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Reset loading/error state whenever the icon source changes.
+  useEffect(() => {
+    setHasError(false);
+    setIsLoading(true);
+  }, [materialId]);
 
   const handleError = useCallback(() => {
     setHasError(true);
