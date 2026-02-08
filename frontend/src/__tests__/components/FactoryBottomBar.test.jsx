@@ -26,6 +26,18 @@ vi.mock('../../utils/translationHelpers', () => ({
   getMaterialName: (id, defaultName) => defaultName || id
 }));
 
+vi.mock('@mui/material/Chip', () => ({
+  default: ({ label, sx }) => (
+    <div
+      data-testid="mock-chip"
+      data-border-color={sx?.borderColor ?? ''}
+      data-background-color={sx?.backgroundColor ?? ''}
+    >
+      {label}
+    </div>
+  )
+}));
+
 // Mock store
 const mockStartGameLoop = vi.fn();
 const mockStopGameLoop = vi.fn();
@@ -136,5 +148,23 @@ describe('FactoryBottomBar', () => {
     expect(widget.compareDocumentPosition(wood) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText(/Wood: 30\/100/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Expand/i })).not.toBeInTheDocument();
+  });
+
+  it('should color non-final deficits red when consumption is higher than production', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ iron_ingot: 10 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+        materialThroughput={new Map([['iron_ingot', { consumed: 5, produced: 2 }]])}
+      />
+    );
+
+    const label = screen.getByText(/Iron Ingot: 10\/100 \(5\/2\)/);
+    const chip = label.closest('[data-testid="mock-chip"]');
+
+    expect(chip).toHaveAttribute('data-background-color', 'rgba(244, 67, 54, 0.08)');
+    expect(chip).toHaveAttribute('data-border-color', 'rgba(244, 67, 54, 0.4)');
   });
 });

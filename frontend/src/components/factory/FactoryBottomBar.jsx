@@ -131,6 +131,7 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
     const material = materialsById.get(itemId);
     const tp = materialThroughput.get(itemId);
     const hasTP = tp && (tp.produced > 0 || tp.consumed > 0);
+    const hasDeficit = hasTP && tp.consumed > tp.produced;
     const isFinalGood = material?.category === 'final';
     const name = getMaterialName(itemId, material?.name);
     const maxStack = getMaxStack(material, inventoryCapacity);
@@ -146,8 +147,8 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
     let baseBackground = 'transparent';
     let borderColor = 'divider';
 
-    if (isFinalGood && hasTP) {
-      if (tp.consumed > tp.produced) {
+    if (hasTP) {
+      if (hasDeficit) {
         baseBackground = 'rgba(244, 67, 54, 0.08)';
         borderColor = 'rgba(244, 67, 54, 0.4)';
       } else {
@@ -169,7 +170,11 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
         : isStorageNearFull
           ? 'rgba(237, 108, 2, 0.20)'
           : 'rgba(25, 118, 210, 0.15)'
-      : 'rgba(25, 118, 210, 0.15)';
+      : hasTP
+        ? hasDeficit
+          ? 'rgba(244, 67, 54, 0.18)'
+          : 'rgba(76, 175, 80, 0.18)'
+        : 'rgba(25, 118, 210, 0.15)';
 
     const chipSx = {
       borderColor,
