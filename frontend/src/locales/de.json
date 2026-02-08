@@ -151,6 +151,8 @@
       "inventory": "Inventar",
       "capacity": "Kapazität",
       "emptyInventory": "Inventar ist leer",
+      "finalGoods": "Fertigwaren",
+      "parts": "Teile",
       "zoomHint": "Scrollen zum Zoomen, Ziehen zum Bewegen",
       "actions": "Aktionen",
       "expand": "Fabrik Erweitern",

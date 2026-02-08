@@ -132,7 +132,7 @@ describe('FactoryBottomBar', () => {
     expect(screen.queryByLabelText('Storage full')).not.toBeInTheDocument();
   });
 
-  it('should keep final goods first and show compact FG/P counts without section rows', () => {
+  it('should show two columns with section headers when both final goods and parts exist', () => {
     render(
       <FactoryBottomBar
         inventory={{ widget: 20, wood: 30 }}
@@ -142,12 +142,39 @@ describe('FactoryBottomBar', () => {
       />
     );
 
-    expect(screen.getByText('FG 1 · P 1')).toBeInTheDocument();
+    expect(screen.getByText('Final Goods (1)')).toBeInTheDocument();
+    expect(screen.getByText('Parts (1)')).toBeInTheDocument();
     const widget = screen.getByText(/Widget: 20\/100/);
     const wood = screen.getByText(/Wood: 30\/100/);
     expect(widget.compareDocumentPosition(wood) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText(/Wood: 30\/100/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Expand/i })).not.toBeInTheDocument();
+  });
+
+  it('should show single column when only parts exist', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ wood: 30, iron_ingot: 10 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    expect(screen.getByText('Parts (2)')).toBeInTheDocument();
+    expect(screen.queryByText(/Final Goods/)).not.toBeInTheDocument();
+  });
+
+  it('should show single column when only final goods exist', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ widget: 20 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    expect(screen.getByText('Final Goods (1)')).toBeInTheDocument();
+    expect(screen.queryByText(/Parts/)).not.toBeInTheDocument();
   });
 
   it('should color non-final deficits red when consumption is higher than production', () => {

@@ -150,6 +150,8 @@
       "inventory": "Inventario",
       "capacity": "capacidad",
       "emptyInventory": "El inventario está vacío",
+      "finalGoods": "Bienes Finales",
+      "parts": "Piezas",
       "zoomHint": "Desplaza para zoom, arrastra para mover",
       "actions": "Acciones",
       "expand": "Expandir Fábrica",

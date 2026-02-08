@@ -122,12 +122,9 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
   );
 
   const totalItems = Object.values(inventory).reduce((a, b) => a + b, 0);
-  const finalGoodsCount = finalGoodsEntries.length;
-  const partsCount = partAndMaterialEntries.length;
-  const hasCategorySplit = finalGoodsCount > 0 && partsCount > 0;
-  const summaryLabel = `${t('game.factory.finalGoodsShort', 'FG')} ${finalGoodsCount} · ${t('game.factory.partsShort', 'P')} ${partsCount}`;
+  const hasBothCategories = finalGoodsEntries.length > 0 && partAndMaterialEntries.length > 0;
 
-  const renderInventoryChip = ([itemId, quantity], isPartBoundary = false) => {
+  const renderInventoryChip = ([itemId, quantity]) => {
     const material = materialsById.get(itemId);
     const tp = materialThroughput.get(itemId);
     const hasTP = tp && (tp.produced > 0 || tp.consumed > 0);
@@ -182,7 +179,6 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
       backgroundImage: storageRatio !== null
         ? `linear-gradient(90deg, ${storageFillColor} 0%, ${storageFillColor} ${storagePercent}%, ${baseBackground} ${storagePercent}%, ${baseBackground} 100%)`
         : undefined,
-      ...(isPartBoundary ? { ml: 0.75, boxShadow: 'inset 2px 0 0 rgba(25, 118, 210, 0.6)' } : {}),
     };
 
     const labelNode = (
@@ -263,15 +259,6 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
               {totalItems}
             </Typography>
           )}
-          {inventoryEntries.length > 0 && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontFamily: 'monospace', display: { xs: 'none', md: 'inline' } }}
-            >
-              {summaryLabel}
-            </Typography>
-          )}
         </Box>
 
         {/* Tick Progress and Play Controls */}
@@ -284,34 +271,134 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
         </Box>
       </Box>
 
-      {/* Inventory content area - wrapping grid with vertical scroll */}
+      {/* Inventory content area */}
       <Box
         ref={ref}
         sx={{
           flex: 1,
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          gap: 0.75,
-          p: 1,
-          overflowY: 'auto',
-          '&::-webkit-scrollbar': {
-            width: 6,
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: 'action.disabled',
-            borderRadius: 3,
-          },
+          flexDirection: { xs: 'column', sm: 'row' },
+          overflow: 'hidden',
+          minHeight: 0,
         }}
       >
         {inventoryEntries.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            {t('game.factory.emptyInventory')}
-          </Typography>
+          <Box sx={{ p: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              {t('game.factory.emptyInventory')}
+            </Typography>
+          </Box>
+        ) : hasBothCategories ? (
+          <>
+            {/* Final Goods column */}
+            <Box
+              sx={{
+                flex: { xs: 'none', sm: '0 0 35%' },
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                minHeight: 0,
+              }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600, px: 1, pt: 0.75, pb: 0.25 }}
+              >
+                {t('game.factory.finalGoods', 'Final Goods')} ({finalGoodsEntries.length})
+              </Typography>
+              <Box
+                sx={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  px: 1,
+                  pb: 0.5,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignContent: 'flex-start',
+                  gap: 0.5,
+                  '&::-webkit-scrollbar': { width: 6 },
+                  '&::-webkit-scrollbar-thumb': { backgroundColor: 'action.disabled', borderRadius: 3 },
+                }}
+              >
+                {finalGoodsEntries.map((entry) => renderInventoryChip(entry))}
+              </Box>
+            </Box>
+            {/* Vertical divider */}
+            <Box sx={{ width: '1px', backgroundColor: 'divider', flexShrink: 0 }} />
+            {/* Parts & Materials column */}
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                minHeight: 0,
+              }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600, px: 1, pt: 0.75, pb: 0.25 }}
+              >
+                {t('game.factory.parts', 'Parts')} ({partAndMaterialEntries.length})
+              </Typography>
+              <Box
+                sx={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  px: 1,
+                  pb: 0.5,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignContent: 'flex-start',
+                  gap: 0.5,
+                  '&::-webkit-scrollbar': { width: 6 },
+                  '&::-webkit-scrollbar-thumb': { backgroundColor: 'action.disabled', borderRadius: 3 },
+                }}
+              >
+                {partAndMaterialEntries.map((entry) => renderInventoryChip(entry))}
+              </Box>
+            </Box>
+          </>
         ) : (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignContent: 'flex-start', gap: 0.5 }}>
-            {finalGoodsEntries.map((entry) => renderInventoryChip(entry))}
-            {partAndMaterialEntries.map((entry, index) => renderInventoryChip(entry, hasCategorySplit && index === 0))}
+          /* Single category - full width */
+          <Box
+            sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              minHeight: 0,
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 600, px: 1, pt: 0.75, pb: 0.25 }}
+            >
+              {finalGoodsEntries.length > 0
+                ? `${t('game.factory.finalGoods', 'Final Goods')} (${finalGoodsEntries.length})`
+                : `${t('game.factory.parts', 'Parts')} (${partAndMaterialEntries.length})`
+              }
+            </Typography>
+            <Box
+              sx={{
+                flex: 1,
+                overflowY: 'auto',
+                px: 1,
+                pb: 0.5,
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignContent: 'flex-start',
+                gap: 0.5,
+                '&::-webkit-scrollbar': { width: 6 },
+                '&::-webkit-scrollbar-thumb': { backgroundColor: 'action.disabled', borderRadius: 3 },
+              }}
+            >
+              {(finalGoodsEntries.length > 0 ? finalGoodsEntries : partAndMaterialEntries)
+                .map((entry) => renderInventoryChip(entry))}
+            </Box>
           </Box>
         )}
       </Box>

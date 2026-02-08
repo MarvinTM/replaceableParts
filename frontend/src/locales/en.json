@@ -159,6 +159,8 @@
       "inventory": "Inventory",
       "capacity": "capacity",
       "emptyInventory": "Inventory is empty",
+      "finalGoods": "Final Goods",
+      "parts": "Parts",
       "zoomHint": "Scroll to zoom, drag to pan",
       "actions": "Actions",
       "expand": "Expand Factory",
