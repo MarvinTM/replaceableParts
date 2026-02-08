@@ -1300,15 +1300,18 @@ export default function FactoryCanvas({
     world.addChild(floorContainer);
 
     // === RENDER UPPER WALLS ===
-    // Upper walls on the TRUE outer perimeter only (x=0 and y=height-1)
-    // Internal step edges will be rendered in the lower walls section with transparency
+    // Upper walls render before structures:
+    // 1) True outer perimeter (x=0 and y=height-1)
+    // Internal seam walls are rendered in the sortable structures layer for depth-correct overlap.
     const wallHeight = assets?.walls.segment ? assets.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset : 0;
     const numberOfRows = getWallRowCount(width, height);
+    const lowerWallAlpha = isHovering ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
+    const lowerWallSprites = [];
 
     if (assets?.walls.segment) {
       const upperWallContainer = new Container();
 
-      // Only collect outer perimeter edges (not internal step edges)
+      // Collect upper-facing edges
       const outerUpperLeftEdges = []; // Tiles at x=0 with no neighbor at x-1
       const outerUpperRightEdges = []; // Tiles at y=height-1 with no neighbor at y+1
 
@@ -1321,9 +1324,11 @@ export default function FactoryCanvas({
             outerUpperLeftEdges.push({ x, y });
           }
 
-          // Outer upper-right: must be at y=height-1 (true top edge of bounding box)
-          if (y === height - 1 && !isTileValid(x, y + 1)) {
-            outerUpperRightEdges.push({ x, y });
+          // Upper-right edges: split outer perimeter and internal step edges
+          if (!isTileValid(x, y + 1)) {
+            if (y === height - 1) {
+              outerUpperRightEdges.push({ x, y });
+            }
           }
         }
       }
@@ -1365,6 +1370,67 @@ export default function FactoryCanvas({
     // === RENDER STRUCTURES ===
     const structuresContainer = new Container();
     structuresContainer.sortableChildren = true;
+
+    // Internal seam walls are depth-sorted with structures using zIndex:
+    // upper-right seam is slightly behind structures at similar depth,
+    // lower-right seam is slightly in front.
+    if (assets?.walls.segment) {
+      const internalLowerRightStepEdges = [];
+      const internalUpperRightStepEdges = [];
+      const SEAM_Z_BIAS = {
+        upperRight: -0.5,
+        lowerRight: 0.5
+      };
+
+      for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+          if (!isTileValid(x, y)) continue;
+
+          if (x < width - 1 && !isTileValid(x + 1, y)) {
+            internalLowerRightStepEdges.push({ x, y });
+          }
+
+          if (y < height - 1 && !isTileValid(x, y + 1)) {
+            internalUpperRightStepEdges.push({ x, y });
+          }
+        }
+      }
+
+      internalLowerRightStepEdges.sort((a, b) => b.y - a.y);
+      for (let row = 0; row < numberOfRows; row++) {
+        for (const edge of internalLowerRightStepEdges) {
+          const screenPos = gridToScreen(edge.x, edge.y);
+          const wallSprite = new Sprite(assets.walls.segment);
+
+          wallSprite.anchor.set(0.5, 1);
+          wallSprite.alpha = lowerWallAlpha;
+          wallSprite.x = screenPos.x + WALL_CONFIG.lowerRightOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.lowerRightOffsetY - (row * wallHeight);
+          wallSprite.zIndex = screenPos.y + SEAM_Z_BIAS.lowerRight - (row * 0.01);
+
+          structuresContainer.addChild(wallSprite);
+          lowerWallSprites.push(wallSprite);
+        }
+      }
+
+      internalUpperRightStepEdges.sort((a, b) => b.x - a.x);
+      for (let row = 0; row < numberOfRows; row++) {
+        for (const edge of internalUpperRightStepEdges) {
+          const screenPos = gridToScreen(edge.x, edge.y);
+          const wallSprite = new Sprite(assets.walls.segment);
+
+          wallSprite.anchor.set(0.5, 1);
+          wallSprite.scale.x = -1;
+          wallSprite.alpha = lowerWallAlpha;
+          wallSprite.x = screenPos.x + WALL_CONFIG.upperRightOffsetX;
+          wallSprite.y = screenPos.y + WALL_CONFIG.upperRightOffsetY - (row * wallHeight);
+          wallSprite.zIndex = screenPos.y + SEAM_Z_BIAS.upperRight - (row * 0.01);
+
+          structuresContainer.addChild(wallSprite);
+          lowerWallSprites.push(wallSprite);
+        }
+      }
+    }
 
     // Render generators
     generators?.forEach((gen) => {
@@ -1743,19 +1809,16 @@ export default function FactoryCanvas({
 
     // === RENDER LOWER WALLS (after structures, so they appear on top) ===
     // This section renders:
-    // 1. Internal step edges (upper-style walls not on outer perimeter) - with transparency
+    // 1. Internal upper-left step edges - with transparency
     // 2. Lower walls facing toward camera - with transparency
-    // Render order: internal upper walls first, then lower walls (for correct depth)
+    // Render order keeps far edges first and outer lower-right perimeter last (closest to camera)
     if (assets?.walls.segment) {
       const lowerWallContainer = new Container();
-      const lowerWallSprites = [];
-      const currentAlpha = isHovering ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
+      const currentAlpha = lowerWallAlpha;
 
       // Collect all boundary edges by checking each valid tile
       const internalUpperLeftEdges = []; // Step walls: no neighbor at x-1, but NOT at x=0
-      const internalUpperRightEdges = []; // Step walls: no neighbor at y+1, but NOT at y=height-1
       const lowerLeftEdges = []; // Tiles needing wall on their bottom (no neighbor at y-1)
-      const internalLowerRightEdges = []; // Step walls: no neighbor at x+1, but NOT at x=width-1
       const outerLowerRightEdges = []; // Outer perimeter: at x=width-1 with no neighbor at x+1
 
       for (let x = 0; x < width; x++) {
@@ -1767,22 +1830,15 @@ export default function FactoryCanvas({
             internalUpperLeftEdges.push({ x, y });
           }
 
-          // Internal upper-right step wall (not on outer perimeter)
-          if (y < height - 1 && !isTileValid(x, y + 1)) {
-            internalUpperRightEdges.push({ x, y });
-          }
-
           // Lower-left wall (no valid neighbor at y-1)
           if (!isTileValid(x, y - 1)) {
             lowerLeftEdges.push({ x, y });
           }
 
-          // Lower-right walls - split into internal step and outer perimeter
+          // Outer lower-right perimeter walls only
           if (!isTileValid(x + 1, y)) {
             if (x === width - 1) {
               outerLowerRightEdges.push({ x, y });
-            } else {
-              internalLowerRightEdges.push({ x, y });
             }
           }
         }
@@ -1826,42 +1882,7 @@ export default function FactoryCanvas({
         }
       }
 
-      // 3. Render internal lower-right step walls
-      internalLowerRightEdges.sort((a, b) => b.y - a.y);
-      for (let row = 0; row < numberOfRows; row++) {
-        for (const edge of internalLowerRightEdges) {
-          const screenPos = gridToScreen(edge.x, edge.y);
-          const wallSprite = new Sprite(assets.walls.segment);
-
-          wallSprite.anchor.set(0.5, 1);
-          wallSprite.alpha = currentAlpha;
-          wallSprite.x = screenPos.x + WALL_CONFIG.lowerRightOffsetX;
-          wallSprite.y = screenPos.y + WALL_CONFIG.lowerRightOffsetY - (row * wallHeight);
-
-          lowerWallContainer.addChild(wallSprite);
-          lowerWallSprites.push(wallSprite);
-        }
-      }
-
-      // 4. Render internal upper-right step walls
-      internalUpperRightEdges.sort((a, b) => b.x - a.x);
-      for (let row = 0; row < numberOfRows; row++) {
-        for (const edge of internalUpperRightEdges) {
-          const screenPos = gridToScreen(edge.x, edge.y);
-          const wallSprite = new Sprite(assets.walls.segment);
-
-          wallSprite.anchor.set(0.5, 1);
-          wallSprite.scale.x = -1;
-          wallSprite.alpha = currentAlpha;
-          wallSprite.x = screenPos.x + WALL_CONFIG.upperRightOffsetX;
-          wallSprite.y = screenPos.y + WALL_CONFIG.upperRightOffsetY - (row * wallHeight);
-
-          lowerWallContainer.addChild(wallSprite);
-          lowerWallSprites.push(wallSprite);
-        }
-      }
-
-      // 5. Render outer lower-right walls LAST (original perimeter, closest to camera)
+      // 3. Render outer lower-right walls LAST (original perimeter, closest to camera)
       outerLowerRightEdges.sort((a, b) => b.y - a.y);
       for (let row = 0; row < numberOfRows; row++) {
         for (const edge of outerLowerRightEdges) {
