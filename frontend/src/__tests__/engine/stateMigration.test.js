@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, defaultRules } from '../testHelpers';
 import { migrateGameState } from '../../engine/engine';
+import { compressStateForSave } from '../../utils/saveCompression';
 
 describe('State Migration', () => {
   it('should migrate stale foundry prototype slots to current recipe inputs and refund removed fills', () => {
@@ -87,5 +88,61 @@ describe('State Migration', () => {
 
     // Old electric motor slot progress should be refunded.
     expect(migrated.inventory.electric_motor).toBe(3);
+  });
+
+  it('should normalize all node rates in legacy saves to the configured interval max', () => {
+    const legacyState = createTestState({
+      extractionNodes: [
+        { id: 'wood_active', resourceType: 'wood', rate: 1, active: true },
+        { id: 'iron_active', resourceType: 'iron_ore', rate: 99, active: true }
+      ],
+      explorationMap: {
+        generatedWidth: 2,
+        generatedHeight: 2,
+        tiles: {
+          '0,0': {
+            x: 0,
+            y: 0,
+            terrain: 'forest',
+            explored: true,
+            extractionNode: { id: 'exp_node_wood_0_0', resourceType: 'wood', rate: 1, unlocked: true }
+          },
+          '1,0': {
+            x: 1,
+            y: 0,
+            terrain: 'hills',
+            explored: true,
+            extractionNode: { id: 'exp_node_iron_ore_1_0', resourceType: 'iron_ore', rate: 7, unlocked: false }
+          },
+          '0,1': {
+            x: 0,
+            y: 1,
+            terrain: 'plains',
+            explored: false,
+            extractionNode: null
+          },
+          '1,1': {
+            x: 1,
+            y: 1,
+            terrain: 'hills',
+            explored: false,
+            extractionNode: { id: 'exp_node_stone_1_1', resourceType: 'stone', rate: 123, unlocked: false }
+          }
+        }
+      }
+    });
+
+    const compressedLegacyState = compressStateForSave(legacyState);
+    const migrated = migrateGameState(compressedLegacyState, defaultRules);
+    const normalizedRate = defaultRules.exploration.nodeRateRange.max;
+
+    expect(migrated.extractionNodes.every(node => node.rate === normalizedRate)).toBe(true);
+    expect(migrated.explorationMap.tiles['0,0'].extractionNode.rate).toBe(normalizedRate);
+    expect(migrated.explorationMap.tiles['1,0'].extractionNode.rate).toBe(normalizedRate);
+    expect(migrated.explorationMap.tiles['1,1'].extractionNode.rate).toBe(normalizedRate);
+
+    // Input object should remain untouched.
+    expect(legacyState.extractionNodes[0].rate).toBe(1);
+    expect(legacyState.explorationMap.tiles['1,0'].extractionNode.rate).toBe(7);
   });
 });

@@ -1458,6 +1458,9 @@ export const defaultRules = {
     nodeUnlockCost: 15,             // Base cost for first node (was 8)
     globalNodeScaleFactor: 1.015,   // Each node unlock increases ALL future costs by 1.5%
     nodeSpawnChance: 0.20,
+    nodeRateRange: { min: 1, max: 2 },
+    // All nodes are standardized to the interval max to avoid hidden node-roll penalties.
+    fixedNodeRatesByResource: {},
     terrainScale: 10,
     moistureScale: 8,
 

@@ -5,6 +5,7 @@
 
 import { getNextExplorationExpansion, expandGeneratedMap } from './mapGenerator.js';
 import { expandStateFromSave } from '../utils/saveCompression.js';
+import { normalizeExtractionNodeRatesInState } from './extractionNodeRates.js';
 import {
   getExperimentCostForAge,
   getRecipeAge,
@@ -239,6 +240,7 @@ function migrateGameState(state, rules) {
   if (!state || !rules) return state;
 
   const migratedState = expandStateFromSave(deepClone(state));
+  normalizeExtractionNodeRatesInState(migratedState, rules);
   if (!migratedState.research) {
     migratedState.research = { active: false, researchPoints: 0, awaitingPrototype: [] };
   }

@@ -5,6 +5,7 @@
 
 import { generateExplorationMap } from './mapGenerator.js';
 import { defaultRules } from './defaultRules.js';
+import { getStandardizedNodeRate } from './extractionNodeRates.js';
 
 export const initialState = {
   tick: 0,
@@ -99,6 +100,11 @@ export function createInitialState(customSeed = null, rules = defaultRules) {
   if (customSeed !== null) {
     state.rngSeed = customSeed;
   }
+
+  state.extractionNodes = (state.extractionNodes || []).map((node) => ({
+    ...node,
+    rate: getStandardizedNodeRate(node.resourceType, rules)
+  }));
 
   const explorationRules = rules.exploration;
   state.explorationMap = generateExplorationMap(

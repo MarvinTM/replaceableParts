@@ -4,6 +4,7 @@
  * Generates terrain using multi-layer value noise for natural-looking biomes.
  * Uses seeded RNG for deterministic generation.
  */
+import { getStandardizedNodeRate } from './extractionNodeRates.js';
 
 /**
  * Mulberry32 PRNG - same as used in engine.js for consistency
@@ -267,7 +268,7 @@ function ensureGuaranteedNodes(tiles, exploredBounds, rules, rng) {
         tile.extractionNode = {
           id: `exp_node_${resource}_${tile.x}_${tile.y}`,
           resourceType: resource,
-          rate: Math.floor(rng() * 2) + 1,
+          rate: getStandardizedNodeRate(resource, rules),
           unlocked: false
         };
       }
@@ -319,7 +320,7 @@ export function generateExplorationMap(seed, width, height, rules) {
           extractionNode = {
             id: `exp_node_${resourceType}_${x}_${y}`,
             resourceType,
-            rate: Math.floor(rng() * 2) + 1, // 1-2 per tick
+            rate: getStandardizedNodeRate(resourceType, rules),
             unlocked: false
           };
         }
@@ -632,7 +633,7 @@ export function expandGeneratedMap(explorationMap, rules) {
             extractionNode = {
               id: `exp_node_${resourceType}_${x}_${y}`,
               resourceType,
-              rate: Math.floor(rng() * 2) + 1,
+              rate: getStandardizedNodeRate(resourceType, rules),
               unlocked: false
             };
           }
