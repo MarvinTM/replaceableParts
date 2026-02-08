@@ -1234,7 +1234,7 @@ export const defaultRules = {
       energyOutput: 500,
       disableAutoScale: true,
       animation: { frames: 4, speed: 0.01 , separateFrames: true},
-      fuelRequirement: { materialId: 'coal', consumptionRate: 1 }
+      fuelRequirement: { materialId: 'coal', consumptionRate: 8 }
     },
     {
       id: 'diesel_gen',
