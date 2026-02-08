@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
-import { engine } from '../engine/engine.js';
+import { engine, migrateGameState } from '../engine/engine.js';
 import { createInitialState } from '../engine/initialState.js';
 import { defaultRules } from '../engine/defaultRules.js';
 
@@ -54,8 +54,10 @@ const useGameStore = create(
 
       // Load game from saved data
       loadGame: (saveId, saveName, savedState) => {
+        const rules = get().rules || defaultRules;
+        const migratedState = migrateGameState(savedState, rules);
         set({
-          engineState: savedState,
+          engineState: migratedState,
           saveId,
           saveName,
           lastError: null,
@@ -354,8 +356,10 @@ const useGameStore = create(
           if (!data.state) {
             throw new Error('Invalid save file format');
           }
+          const rules = get().rules || defaultRules;
+          const migratedState = migrateGameState(data.state, rules);
           set({
-            engineState: data.state,
+            engineState: migratedState,
             saveId: null,
             saveName: data.name || 'Imported Game',
             lastError: null,

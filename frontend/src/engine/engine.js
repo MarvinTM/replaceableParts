@@ -238,6 +238,98 @@ function createPrototypeEntry(recipe, rules) {
   }
 }
 
+function normalizeFilledAmount(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return 0;
+  return Math.floor(numeric);
+}
+
+/**
+ * Migrate loaded game state to current prototype recipe definitions.
+ * This keeps old saves compatible when blueprint/prototype requirements change.
+ */
+function migrateGameState(state, rules) {
+  if (!state || !rules) return state;
+
+  const migratedState = deepClone(state);
+  if (!migratedState.research) {
+    migratedState.research = { active: false, researchPoints: 0, awaitingPrototype: [] };
+  }
+  if (!Array.isArray(migratedState.research.awaitingPrototype)) {
+    migratedState.research.awaitingPrototype = [];
+  }
+  if (!migratedState.inventory || typeof migratedState.inventory !== 'object') {
+    migratedState.inventory = {};
+  }
+
+  const migratedPrototypes = migratedState.research.awaitingPrototype.map((prototype) => {
+    if (!prototype?.recipeId) return prototype;
+
+    const recipe = rules.recipes.find(r => r.id === prototype.recipeId);
+    if (!recipe) return prototype;
+
+    const expectedPrototype = createPrototypeEntry(recipe, rules);
+    const oldFilledByMaterial = new Map();
+
+    if (prototype.mode === 'slots' && Array.isArray(prototype.slots)) {
+      prototype.slots.forEach(slot => {
+        if (!slot?.material) return;
+        const filled = normalizeFilledAmount(slot.filled);
+        if (filled <= 0) return;
+        oldFilledByMaterial.set(slot.material, (oldFilledByMaterial.get(slot.material) || 0) + filled);
+      });
+    } else if (prototype.mode === 'flow' && prototype.prototypeProgress) {
+      Object.entries(prototype.prototypeProgress).forEach(([materialId, amount]) => {
+        const filled = normalizeFilledAmount(amount);
+        if (filled <= 0) return;
+        oldFilledByMaterial.set(materialId, (oldFilledByMaterial.get(materialId) || 0) + filled);
+      });
+    }
+
+    if (expectedPrototype.mode === 'slots') {
+      const remainingByMaterial = new Map(oldFilledByMaterial);
+
+      expectedPrototype.slots = expectedPrototype.slots.map(slot => {
+        const available = remainingByMaterial.get(slot.material) || 0;
+        const carried = Math.min(slot.quantity, available);
+        if (carried > 0) {
+          const leftover = available - carried;
+          if (leftover > 0) {
+            remainingByMaterial.set(slot.material, leftover);
+          } else {
+            remainingByMaterial.delete(slot.material);
+          }
+        }
+        return {
+          ...slot,
+          filled: carried,
+        };
+      });
+
+      // Slots mode consumes inventory directly when filling.
+      // If requirements changed and old filled materials no longer exist, refund leftovers.
+      if (prototype.mode === 'slots') {
+        remainingByMaterial.forEach((amount, materialId) => {
+          if (amount <= 0) return;
+          migratedState.inventory[materialId] = (migratedState.inventory[materialId] || 0) + amount;
+        });
+      }
+    } else if (expectedPrototype.mode === 'flow') {
+      const nextProgress = {};
+      Object.entries(expectedPrototype.requiredAmounts || {}).forEach(([materialId, requiredAmount]) => {
+        const available = oldFilledByMaterial.get(materialId) || 0;
+        nextProgress[materialId] = Math.min(requiredAmount, available);
+      });
+      expectedPrototype.prototypeProgress = nextProgress;
+    }
+
+    return expectedPrototype;
+  });
+
+  migratedState.research.awaitingPrototype = migratedPrototypes;
+  return migratedState;
+}
+
 function getPrototypeMultiplierForRecipe(recipe, rules) {
   const configured = rules?.research?.prototypeMultiplier;
   if (typeof configured === 'number') {
@@ -2432,6 +2524,7 @@ export {
   createRNG,
   calculateEnergy,
   deepClone,
+  migrateGameState,
   getItemWeight,
   getMaxStack,
   canPlaceAt,
