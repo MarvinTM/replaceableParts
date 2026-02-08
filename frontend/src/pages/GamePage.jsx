@@ -557,6 +557,7 @@ function FactoryTab() {
         rules={rules}
         tick={engineState.tick}
         materialThroughput={materialThroughput}
+        inventoryCapacity={engineState.inventorySpace}
       />
 
       {/* Machine Info Popup */}

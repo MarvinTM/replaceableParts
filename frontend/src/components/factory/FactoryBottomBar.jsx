@@ -7,6 +7,7 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FastForwardIcon from '@mui/icons-material/FastForward';
@@ -60,10 +61,25 @@ function PlayControls() {
 // Minimum height for the inventory area (in pixels)
 const INVENTORY_MIN_HEIGHT = 160;
 
+function getMaxStack(material, inventoryCapacity) {
+  if (!Number.isFinite(inventoryCapacity) || inventoryCapacity <= 0) {
+    return null;
+  }
+  const weight = Number(material?.weight);
+  const safeWeight = Number.isFinite(weight) && weight > 0 ? weight : 1;
+  return Math.max(1, Math.floor(inventoryCapacity / safeWeight));
+}
+
 /**
  * FactoryBottomBar - Bottom bar with inventory (wrapping grid) and play controls
  */
-const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules, tick, materialThroughput = new Map() }, ref) {
+const FactoryBottomBar = forwardRef(function FactoryBottomBar({
+  inventory,
+  rules,
+  tick,
+  materialThroughput = new Map(),
+  inventoryCapacity = null,
+}, ref) {
   const { t } = useTranslation();
 
   const inventoryEntries = Object.entries(inventory).sort(([idA], [idB]) => {
@@ -176,16 +192,65 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules
             const material = rules.materials.find(m => m.id === itemId);
             const tp = materialThroughput.get(itemId);
             const hasTP = tp && (tp.produced > 0 || tp.consumed > 0);
+            const isFinalGood = material?.category === 'final';
             const name = getMaterialName(itemId, material?.name);
+            const maxStack = getMaxStack(material, inventoryCapacity);
+            const storageRatio = maxStack ? Math.min(quantity / maxStack, 1) : null;
+            const storagePercent = storageRatio !== null ? Math.round(storageRatio * 100) : 0;
+            const isStorageNearFull = storageRatio !== null && storageRatio >= 0.85 && storageRatio < 1;
+            const isStorageFull = maxStack !== null && quantity >= maxStack;
+            const quantityLabel = maxStack ? `${quantity}/${maxStack}` : `${quantity}`;
             const label = hasTP
-              ? `${name}: ${quantity} (${tp.consumed}/${tp.produced})`
-              : `${name}: ${quantity}`;
+              ? `${name}: ${quantityLabel} (${tp.consumed}/${tp.produced})`
+              : `${name}: ${quantityLabel}`;
 
-            const chipSx = hasTP
-              ? tp.consumed > tp.produced
-                ? { backgroundColor: 'rgba(244, 67, 54, 0.12)', borderColor: 'rgba(244, 67, 54, 0.4)' }
-                : { backgroundColor: 'rgba(76, 175, 80, 0.12)', borderColor: 'rgba(76, 175, 80, 0.4)' }
-              : {};
+            let baseBackground = 'transparent';
+            let borderColor = 'divider';
+
+            if (isFinalGood && hasTP) {
+              if (tp.consumed > tp.produced) {
+                baseBackground = 'rgba(244, 67, 54, 0.08)';
+                borderColor = 'rgba(244, 67, 54, 0.4)';
+              } else {
+                baseBackground = 'rgba(76, 175, 80, 0.08)';
+                borderColor = 'rgba(76, 175, 80, 0.4)';
+              }
+            }
+
+            if (isFinalGood && isStorageNearFull) {
+              borderColor = 'rgba(237, 108, 2, 0.55)';
+            }
+            if (isFinalGood && isStorageFull) {
+              borderColor = 'rgba(244, 67, 54, 0.7)';
+            }
+
+            const storageFillColor = isFinalGood
+              ? isStorageFull
+                ? 'rgba(244, 67, 54, 0.22)'
+                : isStorageNearFull
+                  ? 'rgba(237, 108, 2, 0.20)'
+                  : 'rgba(25, 118, 210, 0.15)'
+              : 'rgba(25, 118, 210, 0.15)';
+
+            const chipSx = {
+              borderColor,
+              backgroundColor: baseBackground,
+              backgroundImage: storageRatio !== null
+                ? `linear-gradient(90deg, ${storageFillColor} 0%, ${storageFillColor} ${storagePercent}%, ${baseBackground} ${storagePercent}%, ${baseBackground} 100%)`
+                : undefined,
+            };
+
+            const labelNode = (
+              <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                <span>{label}</span>
+                {isFinalGood && isStorageFull && (
+                  <WarningAmberIcon
+                    sx={{ fontSize: 14, color: 'error.main' }}
+                    aria-label={t('game.factory.storageFull', 'Storage full')}
+                  />
+                )}
+              </Box>
+            );
 
             return (
               <Chip
@@ -198,7 +263,7 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({ inventory, rules
                     size={16}
                   />
                 }
-                label={label}
+                label={labelNode}
                 variant="outlined"
                 size="small"
                 sx={chipSx}

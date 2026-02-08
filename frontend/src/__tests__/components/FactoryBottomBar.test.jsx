@@ -1,5 +1,5 @@
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import FactoryBottomBar from '../../components/factory/FactoryBottomBar';
@@ -49,13 +49,14 @@ const mockInventory = {
 const mockRules = {
   materials: [
     { id: 'iron_ingot', name: 'Iron Ingot', category: 'intermediate' },
-    { id: 'wood', name: 'Wood', category: 'raw' }
+    { id: 'wood', name: 'Wood', category: 'raw' },
+    { id: 'widget', name: 'Widget', category: 'final' }
   ]
 };
 
 describe('FactoryBottomBar', () => {
   it('should display inventory items and quantities', () => {
-    render(<FactoryBottomBar inventory={mockInventory} rules={mockRules} tick={100} />);
+    render(<FactoryBottomBar inventory={mockInventory} rules={mockRules} tick={100} inventoryCapacity={100} />);
     
     expect(screen.getByText(/Iron Ingot: 10/)).toBeInTheDocument();
     expect(screen.getByText(/Wood: 5/)).toBeInTheDocument();
@@ -89,5 +90,33 @@ describe('FactoryBottomBar', () => {
 
     await user.click(fastBtn);
     expect(mockStartGameLoop).toHaveBeenCalledWith('fast');
+  });
+
+  it('should show a full storage indicator when a final good reaches stack capacity', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ widget: 100 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    expect(screen.getByText(/Widget: 100\/100/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Storage full')).toBeInTheDocument();
+  });
+
+  it('should not show full storage indicator for non-final items', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ wood: 100 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    expect(screen.getByText(/Wood: 100\/100/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Storage full')).not.toBeInTheDocument();
   });
 });
