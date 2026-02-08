@@ -3,7 +3,7 @@
     {
       "version": "0.5.5",
       "date": "2024-02-07",
-      "highlights": "Fixed machine research. Improved visualization of raw material and parts input and consumption.",
+      "highlights": "Fixed machine research, and circular dependencies. Improved visualization of raw material and parts input and consumption.",
       "changes": [
         {
           "type": "improvement",
@@ -24,6 +24,10 @@
         {
           "type": "fix",
           "text": "Machines are now researchable again"
+        },
+        {
+          "type": "fix",
+          "text": "Fixed several circular dependencies between recipes and machines"
         }
       ]
     },

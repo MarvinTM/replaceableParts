@@ -3,7 +3,7 @@
     {
       "version": "0.5.5",
       "date": "2024-02-07",
-      "highlights": "Recherche des machines corrigée. Visualisation de la production et de la consommation de matières premières et de pièces améliorée.",
+      "highlights": "Recherche des machines et dépendances circulaires corrigées. Visualisation de la production et de la consommation de matières premières et de pièces améliorée.",
       "changes": [
         {
           "type": "improvement",
@@ -18,8 +18,16 @@
           "text": "Il est désormais possible de cibler la recherche des machines requises"
         },
         {
+          "type": "improvement",
+          "text": "Il est désormais possible de construire plus d'une machine ou d'un générateur à la fois"
+        },
+        {
           "type": "fix",
           "text": "Les machines peuvent de nouveau être recherchées"
+        },
+        {
+          "type": "fix",
+          "text": "Correction de plusieurs dépendances circulaires entre recettes et machines"
         }
       ]
     },

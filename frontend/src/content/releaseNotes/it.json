@@ -3,7 +3,7 @@
     {
       "version": "0.5.5",
       "date": "2024-02-07",
-      "highlights": "Corretto il sistema di ricerca delle macchine. Migliorata la visualizzazione di produzione e consumo di materie prime e componenti.",
+      "highlights": "Corretto il sistema di ricerca delle macchine e le dipendenze circolari. Migliorata la visualizzazione di produzione e consumo di materie prime e componenti.",
       "changes": [
         {
           "type": "improvement",
@@ -18,8 +18,16 @@
           "text": "Ora è possibile indirizzare la ricerca delle macchine richieste"
         },
         {
+          "type": "improvement",
+          "text": "Ora è possibile costruire più di una macchina o generatore alla volta"
+        },
+        {
           "type": "fix",
           "text": "Le macchine possono ora essere ricercate di nuovo"
+        },
+        {
+          "type": "fix",
+          "text": "Corrette diverse dipendenze circolari tra ricette e macchine"
         }
       ]
     },

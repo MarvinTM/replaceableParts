@@ -3,7 +3,7 @@
     {
       "version": "0.5.5",
       "date": "2024-02-07",
-      "highlights": "Maschinenforschung behoben. Visualisierung von Rohstoff- und Teileproduktion sowie -verbrauch verbessert.",
+      "highlights": "Maschinenforschung und zirkuläre Abhängigkeiten behoben. Visualisierung von Rohstoff- und Teileproduktion sowie -verbrauch verbessert.",
       "changes": [
         {
           "type": "improvement",
@@ -18,8 +18,16 @@
           "text": "Es ist jetzt möglich, die Forschung benötigter Maschinen gezielt anzusteuern"
         },
         {
+          "type": "improvement",
+          "text": "Es ist jetzt möglich, mehr als eine Maschine oder einen Generator gleichzeitig zu bauen"
+        },
+        {
           "type": "fix",
           "text": "Maschinen können jetzt wieder erforscht werden"
+        },
+        {
+          "type": "fix",
+          "text": "Mehrere zirkuläre Abhängigkeiten zwischen Rezepten und Maschinen wurden behoben"
         }
       ]
     },

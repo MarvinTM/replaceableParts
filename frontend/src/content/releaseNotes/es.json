@@ -3,7 +3,7 @@
     {
       "version": "0.5.5",
       "date": "2024-02-07",
-      "highlights": "Corregida la investigación de máquinas. Mejorada la visualización de producción y consumo de materias primas y piezas.",
+      "highlights": "Corregida la investigación de máquinas y las dependencias circulares. Mejorada la visualización de producción y consumo de materias primas y piezas.",
       "changes": [
         {
           "type": "improvement",
@@ -18,8 +18,16 @@
           "text": "Ahora es posible orientar la investigación de las máquinas requeridas"
         },
         {
+          "type": "improvement",
+          "text": "Ahora es posible construir más de una máquina o generador al mismo tiempo"
+        },
+        {
           "type": "fix",
           "text": "Las máquinas vuelven a poder investigarse"
+        },
+        {
+          "type": "fix",
+          "text": "Se corrigieron varias dependencias circulares entre recetas y máquinas"
         }
       ]
     },
