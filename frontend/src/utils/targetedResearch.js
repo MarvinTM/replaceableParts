@@ -1,3 +1,5 @@
+import { getTargetedExperimentCostForRecipe } from './researchCosts.js';
+
 /**
  * Build targeted-research candidates grouped by type:
  * - materialRecipes: recipes that produce currently missing input materials.
@@ -19,6 +21,7 @@ export function getEligibleTargetedResearchOptions({
   const unlockedSet = new Set(unlockedRecipes || []);
 
   const materialRecipes = getMissingInputTargets({
+    rules,
     recipeMap,
     materialMap,
     discoveredOrUnlocked,
@@ -35,7 +38,7 @@ export function getEligibleTargetedResearchOptions({
   return { materialRecipes, productionEnablers };
 }
 
-function getMissingInputTargets({ recipeMap, materialMap, discoveredOrUnlocked }) {
+function getMissingInputTargets({ rules, recipeMap, materialMap, discoveredOrUnlocked }) {
   const neededInputMaterials = new Set();
 
   for (const recipeId of discoveredOrUnlocked) {
@@ -77,6 +80,7 @@ function getMissingInputTargets({ recipeMap, materialMap, discoveredOrUnlocked }
       materialAge: material?.age,
       category: material?.category || 'intermediate',
       neededBy,
+      targetedCost: getTargetedExperimentCostForRecipe(recipe, rules),
     });
   }
 
@@ -147,6 +151,7 @@ function getProductionEnablerTargets({
       category: material?.category || 'equipment',
       neededBy,
       blockedCount: neededBy.length,
+      targetedCost: getTargetedExperimentCostForRecipe(recipe, rules),
     });
   }
 

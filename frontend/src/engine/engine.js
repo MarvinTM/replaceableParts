@@ -5,6 +5,11 @@
 
 import { getNextExplorationExpansion, expandGeneratedMap } from './mapGenerator.js';
 import { expandStateFromSave } from '../utils/saveCompression.js';
+import {
+  getExperimentCostForAge,
+  getRecipeAge,
+  getTargetedExperimentCostForRecipe
+} from '../utils/researchCosts.js';
 
 // ============================================================================
 // PRNG - Mulberry32 (deterministic random number generator)
@@ -92,13 +97,7 @@ function calculateHighestUnlockedAge(state, rules) {
   for (const recipeId of state.unlockedRecipes) {
     const recipe = rules.recipes.find(r => r.id === recipeId);
     if (recipe) {
-      // Check output materials for their age
-      for (const outputId of Object.keys(recipe.outputs)) {
-        const material = rules.materials.find(m => m.id === outputId);
-        if (material && material.age > highestAge) {
-          highestAge = material.age;
-        }
-      }
+      highestAge = Math.max(highestAge, getRecipeAge(recipe, rules));
     }
   }
   return highestAge;
@@ -115,14 +114,7 @@ function selectRecipeByAgeWeighting(undiscovered, state, rules, rng) {
   // Group undiscovered recipes by age
   const recipesByAge = {};
   for (const recipe of undiscovered) {
-    // Determine recipe age from its outputs
-    let recipeAge = 1;
-    for (const outputId of Object.keys(recipe.outputs)) {
-      const material = rules.materials.find(m => m.id === outputId);
-      if (material && material.age > recipeAge) {
-        recipeAge = material.age;
-      }
-    }
+    const recipeAge = getRecipeAge(recipe, rules);
     if (!recipesByAge[recipeAge]) {
       recipesByAge[recipeAge] = [];
     }
@@ -132,13 +124,7 @@ function selectRecipeByAgeWeighting(undiscovered, state, rules, rng) {
   // Calculate total recipes per age (for missing ratio calculation)
   const totalRecipesByAge = {};
   for (const recipe of rules.recipes) {
-    let recipeAge = 1;
-    for (const outputId of Object.keys(recipe.outputs)) {
-      const material = rules.materials.find(m => m.id === outputId);
-      if (material && material.age > recipeAge) {
-        recipeAge = material.age;
-      }
-    }
+    const recipeAge = getRecipeAge(recipe, rules);
     totalRecipesByAge[recipeAge] = (totalRecipesByAge[recipeAge] || 0) + 1;
   }
 
@@ -1979,7 +1965,7 @@ function runExperiment(state, rules, payload) {
 
   // Calculate experiment cost based on highest unlocked age
   const highestAge = calculateHighestUnlockedAge(newState, rules);
-  const experimentCost = rules.research.experimentCosts[highestAge] || rules.research.experimentCosts[1];
+  const experimentCost = getExperimentCostForAge(highestAge, rules);
 
   if (newState.research.researchPoints < experimentCost) {
     return { state: newState, error: `Not enough Research Points (need ${experimentCost} RP)` };
@@ -2006,7 +1992,7 @@ function runExperiment(state, rules, payload) {
 
 /**
  * Run a targeted experiment to discover a specific recipe
- * Cost is based on the highest unlocked age multiplied by the targeted experiment multiplier
+ * Cost is based on the target recipe age multiplied by the targeted experiment multiplier
  */
 function runTargetedExperiment(state, rules, payload) {
   const newState = deepClone(state);
@@ -2033,11 +2019,8 @@ function runTargetedExperiment(state, rules, payload) {
     return { state: newState, error: 'Recipe already discovered or unlocked' };
   }
 
-  // Calculate targeted experiment cost
-  const highestAge = calculateHighestUnlockedAge(newState, rules);
-  const baseCost = rules.research.experimentCosts[highestAge] || rules.research.experimentCosts[1];
-  const multiplier = rules.research.targetedExperimentMultiplier || 10;
-  const targetedCost = baseCost * multiplier;
+  // Calculate targeted experiment cost from the target recipe age.
+  const targetedCost = getTargetedExperimentCostForRecipe(recipe, rules);
 
   if (newState.research.researchPoints < targetedCost) {
     return { state: newState, error: `Not enough Research Points (need ${targetedCost} RP)` };

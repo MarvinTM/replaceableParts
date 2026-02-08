@@ -5,6 +5,7 @@
 
 import { BaseStrategy } from './baseStrategy.js';
 import { getHighestUnlockedAge, getFinalGoodsInInventory, getAffordableOptions } from '../simulator.js';
+import { getTargetedExperimentCostForRecipe } from '../../../src/utils/researchCosts.js';
 
 export class BalancedBot extends BaseStrategy {
   constructor(params = {}) {
@@ -1785,9 +1786,7 @@ export class BalancedBot extends BaseStrategy {
 
     // Prioritize dependency-first targeted research when progression/backlog pressure is high.
     if (this.enableTargetedCatchUpResearch) {
-      const targetedCost = experimentCost * (rules.research.targetedExperimentMultiplier || 10);
       const shouldEvaluateTargeted =
-        researchPointsAvailable >= targetedCost &&
         sim.currentTick - this.lastTargetedExperimentTick >= this.targetedResearchCooldownTicks &&
         (
           ageStalled ||
@@ -1805,12 +1804,19 @@ export class BalancedBot extends BaseStrategy {
         shouldEvaluateTargeted;
 
       if (shouldRunTargeted) {
-        actions.push({
-          type: 'RUN_TARGETED_EXPERIMENT',
-          payload: { recipeId: targetedRecipeId }
-        });
-        researchPointsAvailable -= targetedCost;
-        this.lastTargetedExperimentTick = sim.currentTick;
+        const targetedRecipe = rules.recipes.find((recipe) => recipe.id === targetedRecipeId);
+        const targetedCost = targetedRecipe
+          ? getTargetedExperimentCostForRecipe(targetedRecipe, rules)
+          : Infinity;
+
+        if (researchPointsAvailable >= targetedCost) {
+          actions.push({
+            type: 'RUN_TARGETED_EXPERIMENT',
+            payload: { recipeId: targetedRecipeId }
+          });
+          researchPointsAvailable -= targetedCost;
+          this.lastTargetedExperimentTick = sim.currentTick;
+        }
       }
     }
 

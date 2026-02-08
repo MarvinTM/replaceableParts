@@ -6,6 +6,7 @@ import {
   createTestState,
   simulateTicks
 } from '../testHelpers';
+import { getRecipeAge, getTargetedExperimentCostForRecipe } from '../../utils/researchCosts';
 
 describe('Research: DONATE_CREDITS', () => {
   it('should convert credits to RP at configured ratio', () => {
@@ -141,6 +142,64 @@ describe('Research: RUN_TARGETED_EXPERIMENT', () => {
 
     expect(result.state.discoveredRecipes).toContain(targetRecipe.id);
     expect(result.state.research.awaitingPrototype.some(p => p.recipeId === targetRecipe.id)).toBe(true);
+  });
+
+  it('should price targeted experiments using the target recipe age, not highest unlocked age', () => {
+    const nonStructureRecipes = defaultRules.recipes.filter((recipe) => {
+      return !defaultRules.machineRecipes?.[recipe.id] && !defaultRules.generatorRecipes?.[recipe.id];
+    });
+    const highestAgeRecipe = [...nonStructureRecipes]
+      .sort((a, b) => getRecipeAge(b, defaultRules) - getRecipeAge(a, defaultRules))[0];
+    const oldAgeRecipe = nonStructureRecipes.find((recipe) => {
+      return getRecipeAge(recipe, defaultRules) === 1 && recipe.id !== highestAgeRecipe?.id;
+    });
+
+    expect(highestAgeRecipe).toBeDefined();
+    expect(oldAgeRecipe).toBeDefined();
+
+    const targetedCost = getTargetedExperimentCostForRecipe(oldAgeRecipe, defaultRules);
+    const state = createTestState({
+      research: { researchPoints: 1000, awaitingPrototype: [] },
+      discoveredRecipes: [],
+      unlockedRecipes: [highestAgeRecipe.id]
+    });
+
+    const result = engine(state, defaultRules, {
+      type: 'RUN_TARGETED_EXPERIMENT',
+      payload: { recipeId: oldAgeRecipe.id }
+    });
+
+    expect(result.error).toBeNull();
+    expect(result.state.research.researchPoints).toBe(1000 - targetedCost);
+    expect(result.state.discoveredRecipes).toContain(oldAgeRecipe.id);
+  });
+
+  it('should use the target recipe age cost in insufficient RP errors', () => {
+    const nonStructureRecipes = defaultRules.recipes.filter((recipe) => {
+      return !defaultRules.machineRecipes?.[recipe.id] && !defaultRules.generatorRecipes?.[recipe.id];
+    });
+    const highestAgeRecipe = [...nonStructureRecipes]
+      .sort((a, b) => getRecipeAge(b, defaultRules) - getRecipeAge(a, defaultRules))[0];
+    const oldAgeRecipe = nonStructureRecipes.find((recipe) => {
+      return getRecipeAge(recipe, defaultRules) === 1 && recipe.id !== highestAgeRecipe?.id;
+    });
+
+    expect(highestAgeRecipe).toBeDefined();
+    expect(oldAgeRecipe).toBeDefined();
+
+    const targetedCost = getTargetedExperimentCostForRecipe(oldAgeRecipe, defaultRules);
+    const state = createTestState({
+      research: { researchPoints: targetedCost - 1, awaitingPrototype: [] },
+      discoveredRecipes: [],
+      unlockedRecipes: [highestAgeRecipe.id]
+    });
+
+    const result = engine(state, defaultRules, {
+      type: 'RUN_TARGETED_EXPERIMENT',
+      payload: { recipeId: oldAgeRecipe.id }
+    });
+
+    expect(result.error).toBe(`Not enough Research Points (need ${targetedCost} RP)`);
   });
 });
 

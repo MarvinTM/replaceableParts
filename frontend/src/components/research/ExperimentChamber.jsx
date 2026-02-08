@@ -26,9 +26,7 @@ export default function ExperimentChamber({
 
   const canRunRandomExperiment = researchPoints >= experimentCost && undiscoveredCount > 0;
 
-  // Calculate targeted experiment cost
   const targetedMultiplier = rules.research.targetedExperimentMultiplier || 10;
-  const targetedCost = experimentCost * targetedMultiplier;
 
   const targetedOptions = useMemo(() => (
     getEligibleTargetedResearchOptions({
@@ -38,8 +36,23 @@ export default function ExperimentChamber({
     })
   ), [rules, engineState?.discoveredRecipes, engineState?.unlockedRecipes]);
 
-  const totalEligibleTargeted = targetedOptions.materialRecipes.length + targetedOptions.productionEnablers.length;
-  const canRunTargetedExperiment = researchPoints >= targetedCost && totalEligibleTargeted > 0;
+  const allTargetedOptions = useMemo(
+    () => [...targetedOptions.materialRecipes, ...targetedOptions.productionEnablers],
+    [targetedOptions.materialRecipes, targetedOptions.productionEnablers]
+  );
+  const totalEligibleTargeted = allTargetedOptions.length;
+
+  const targetedCosts = allTargetedOptions
+    .map((target) => target.targetedCost)
+    .filter((cost) => Number.isFinite(cost));
+  const minTargetedCost = targetedCosts.length > 0 ? Math.min(...targetedCosts) : null;
+  const maxTargetedCost = targetedCosts.length > 0 ? Math.max(...targetedCosts) : null;
+  const targetedCostLabel = minTargetedCost === null
+    ? '-- RP'
+    : minTargetedCost === maxTargetedCost
+      ? `${minTargetedCost} RP`
+      : `${minTargetedCost}-${maxTargetedCost} RP`;
+  const canRunTargetedExperiment = totalEligibleTargeted > 0 && minTargetedCost !== null && researchPoints >= minTargetedCost;
 
   const handleRunRandomExperiment = () => {
     runExperiment();
@@ -113,7 +126,7 @@ export default function ExperimentChamber({
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
             <Typography variant="caption">{t('research.targeted')}:</Typography>
             <Chip
-              label={`${targetedCost} RP`}
+              label={targetedCostLabel}
               color={canRunTargetedExperiment ? 'warning' : 'default'}
               variant={canRunTargetedExperiment ? 'filled' : 'outlined'}
               size="small"
@@ -155,7 +168,8 @@ export default function ExperimentChamber({
         onClose={() => setTargetedPopupOpen(false)}
         eligibleMaterialRecipes={targetedOptions.materialRecipes}
         eligibleEnablerRecipes={targetedOptions.productionEnablers}
-        targetedCost={targetedCost}
+        minTargetedCost={minTargetedCost}
+        maxTargetedCost={maxTargetedCost}
         researchPoints={researchPoints}
       />
     </Box>

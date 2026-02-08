@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { defaultRules } from '../../engine/defaultRules.js';
 import { getEligibleTargetedResearchOptions } from '../../utils/targetedResearch';
+import { getTargetedExperimentCostForRecipe } from '../../utils/researchCosts.js';
 
 describe('targeted research eligibility', () => {
   it('includes missing-input material targets for discovered recipes', () => {
@@ -35,5 +36,18 @@ describe('targeted research eligibility', () => {
     const enablerIds = options.productionEnablers.map(target => target.recipe.id);
     expect(enablerIds).not.toContain('carpenters_bench');
   });
-});
 
+  it('assigns targeted costs based on each target recipe age', () => {
+    const options = getEligibleTargetedResearchOptions({
+      rules: defaultRules,
+      discoveredRecipes: ['iron_plate'],
+      unlockedRecipes: [],
+    });
+
+    const ironIngotTarget = options.materialRecipes.find((target) => target.recipe.id === 'iron_ingot');
+    expect(ironIngotTarget).toBeDefined();
+    expect(ironIngotTarget.targetedCost).toBe(
+      getTargetedExperimentCostForRecipe(ironIngotTarget.recipe, defaultRules)
+    );
+  });
+});

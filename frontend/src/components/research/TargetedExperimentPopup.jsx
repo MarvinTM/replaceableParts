@@ -24,15 +24,13 @@ export default function TargetedExperimentPopup({
   onClose,
   eligibleMaterialRecipes = [],
   eligibleEnablerRecipes = [],
-  targetedCost,
+  minTargetedCost = null,
+  maxTargetedCost = null,
   researchPoints
 }) {
   const { t } = useTranslation();
   const runTargetedExperiment = useGameStore((state) => state.runTargetedExperiment);
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
-
-  const canAfford = researchPoints >= targetedCost;
-  const canRun = canAfford && selectedRecipeId !== null;
 
   const handleSelectRecipe = (recipeId) => {
     setSelectedRecipeId(recipeId);
@@ -67,6 +65,32 @@ export default function TargetedExperimentPopup({
       return sortByAgeThenName(a, b);
     });
   const hasTargets = sortedMaterialRecipes.length > 0 || sortedEnablerRecipes.length > 0;
+  const allTargets = [...sortedMaterialRecipes, ...sortedEnablerRecipes];
+  const selectedTarget = allTargets.find((target) => target.recipe.id === selectedRecipeId) || null;
+  const selectedTargetCost = selectedTarget?.targetedCost ?? null;
+  const canAffordSelected = selectedTargetCost !== null && researchPoints >= selectedTargetCost;
+  const canAffordAny = minTargetedCost !== null && researchPoints >= minTargetedCost;
+  const canRun = selectedRecipeId !== null && canAffordSelected;
+  const costLabel = selectedTargetCost !== null
+    ? `${selectedTargetCost} RP`
+    : minTargetedCost === null
+      ? '-- RP'
+      : minTargetedCost === maxTargetedCost
+        ? `${minTargetedCost} RP`
+        : `${minTargetedCost}-${maxTargetedCost} RP`;
+  const needMoreAmount = selectedTargetCost !== null
+    ? Math.max(0, selectedTargetCost - researchPoints)
+    : Math.max(0, (minTargetedCost || 0) - researchPoints);
+  const showNeedMore = selectedTargetCost !== null
+    ? !canAffordSelected
+    : (minTargetedCost !== null && !canAffordAny);
+  const actionCost = selectedTargetCost !== null
+    ? selectedTargetCost
+    : (
+      minTargetedCost !== null && maxTargetedCost !== null && minTargetedCost !== maxTargetedCost
+        ? `${minTargetedCost}-${maxTargetedCost}`
+        : (minTargetedCost ?? '--')
+    );
 
   return (
     <Dialog
@@ -91,13 +115,13 @@ export default function TargetedExperimentPopup({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
             <Typography variant="body2">{t('research.cost')}:</Typography>
             <Chip
-              label={`${targetedCost} RP`}
-              color={canAfford ? 'primary' : 'error'}
+              label={costLabel}
+              color={(selectedTargetCost !== null ? canAffordSelected : canAffordAny) ? 'primary' : 'error'}
               size="small"
             />
-            {!canAfford && (
+            {showNeedMore && (
               <Typography variant="caption" color="error.main">
-                ({t('research.needMoreRP', { amount: targetedCost - researchPoints })})
+                ({t('research.needMoreRP', { amount: needMoreAmount })})
               </Typography>
             )}
           </Box>
@@ -131,6 +155,7 @@ export default function TargetedExperimentPopup({
                     <TargetListItem
                       key={target.recipe.id}
                       target={target}
+                      researchPoints={researchPoints}
                       selectedRecipeId={selectedRecipeId}
                       onSelect={handleSelectRecipe}
                       t={t}
@@ -153,6 +178,7 @@ export default function TargetedExperimentPopup({
                     <TargetListItem
                       key={target.recipe.id}
                       target={target}
+                      researchPoints={researchPoints}
                       selectedRecipeId={selectedRecipeId}
                       onSelect={handleSelectRecipe}
                       t={t}
@@ -176,14 +202,14 @@ export default function TargetedExperimentPopup({
           disabled={!canRun}
           startIcon={<TargetIcon />}
         >
-          {t('research.researchSelected', { cost: targetedCost })}
+          {t('research.researchSelected', { cost: actionCost })}
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
 
-function TargetListItem({ target, selectedRecipeId, onSelect, t }) {
+function TargetListItem({ target, researchPoints, selectedRecipeId, onSelect, t }) {
   const {
     recipe,
     outputId,
@@ -194,7 +220,9 @@ function TargetListItem({ target, selectedRecipeId, onSelect, t }) {
     neededBy,
     type,
     blockedCount = 0,
+    targetedCost = 0,
   } = target;
+  const canAfford = researchPoints >= targetedCost;
 
   return (
     <ListItemButton
@@ -238,6 +266,12 @@ function TargetListItem({ target, selectedRecipeId, onSelect, t }) {
                 variant="outlined"
               />
             )}
+            <Chip
+              label={`${targetedCost} RP`}
+              size="small"
+              color={canAfford ? 'primary' : 'error'}
+              variant={canAfford ? 'filled' : 'outlined'}
+            />
             {type === 'enabler' && (
               <Chip
                 label={t('research.productionEnabler')}
