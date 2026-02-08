@@ -195,7 +195,7 @@ export default function MainMenuPage() {
   };
 
   const downloadPayload = (fileName, payload) => {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

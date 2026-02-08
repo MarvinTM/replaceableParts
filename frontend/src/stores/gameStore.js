@@ -3,6 +3,7 @@ import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { engine, migrateGameState } from '../engine/engine.js';
 import { createInitialState } from '../engine/initialState.js';
 import { defaultRules } from '../engine/defaultRules.js';
+import { compressStateForSave } from '../utils/saveCompression.js';
 
 // Game tick speed constants (in milliseconds)
 export const NORMAL_TICK_MS = 5000;  // 7 seconds per tick
@@ -340,13 +341,14 @@ const useGameStore = create(
       exportGameState: () => {
         const { engineState, saveName } = get();
         if (!engineState) return null;
+        const serializedState = compressStateForSave(engineState);
 
         return JSON.stringify({
           version: '1.0',
           exportedAt: new Date().toISOString(),
           name: saveName,
-          state: engineState
-        }, null, 2);
+          state: serializedState
+        });
       },
 
       // Import game state from JSON string

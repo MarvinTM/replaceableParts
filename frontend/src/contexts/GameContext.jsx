@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 import useGameStore from '../stores/gameStore';
 import { defaultRules } from '../engine/defaultRules';
+import { compressImportPayload, compressStateForSave } from '../utils/saveCompression';
 
 const GameContext = createContext(null);
 
@@ -228,10 +229,11 @@ export function GameProvider({ children }) {
       return null;
     }
 
+    const serializedState = compressStateForSave(state);
     const guestSave = {
       id: 'guest',
       name,
-      data: state,
+      data: serializedState,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -311,9 +313,10 @@ export function GameProvider({ children }) {
     setIsMigrating(true);
     try {
       // Create a new cloud save with the guest data
+      const serializedGuestState = compressStateForSave(guestSave.data);
       const { save } = await api.createSave({
         name: guestSave.name || 'Migrated Save',
-        data: guestSave.data
+        data: serializedGuestState
       });
 
       // Clear the guest save after successful migration
@@ -369,9 +372,10 @@ export function GameProvider({ children }) {
         }
 
         // Create save in backend with engine state
+        const serializedState = compressStateForSave(newEngineState);
         const { save } = await api.createSave({
           name,
-          data: newEngineState
+          data: serializedState
         });
 
         // Update store with save info
@@ -543,8 +547,9 @@ export function GameProvider({ children }) {
       };
       console.log('[SaveDiag] Save request started', diagnostics);
       try {
+        const serializedState = compressStateForSave(currentState);
         const { save } = await api.updateSave(saveId, {
-          data: currentState,
+          data: serializedState,
           meta: diagnostics
         }, {
           headers: {
@@ -630,10 +635,11 @@ export function GameProvider({ children }) {
       throw new Error('Must be authenticated to import saves');
     }
 
+    const serializedPayload = compressImportPayload(payload);
     const response = await api.importSave({
       targetSaveId,
       name,
-      payload
+      payload: serializedPayload
     });
 
     await loadSaves();

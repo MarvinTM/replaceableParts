@@ -4,6 +4,7 @@
  */
 
 import { getNextExplorationExpansion, expandGeneratedMap } from './mapGenerator.js';
+import { expandStateFromSave } from '../utils/saveCompression.js';
 
 // ============================================================================
 // PRNG - Mulberry32 (deterministic random number generator)
@@ -251,7 +252,7 @@ function normalizeFilledAmount(value) {
 function migrateGameState(state, rules) {
   if (!state || !rules) return state;
 
-  const migratedState = deepClone(state);
+  const migratedState = expandStateFromSave(deepClone(state));
   if (!migratedState.research) {
     migratedState.research = { active: false, researchPoints: 0, awaitingPrototype: [] };
   }

@@ -51,4 +51,14 @@ describe('SaveImportDialog', () => {
 
     expect(await screen.findByText('saves.importInvalidFile')).toBeInTheDocument();
   });
+
+  it('shows error when file exceeds max size', async () => {
+    render(<SaveImportDialog {...defaultProps} maxFileSizeBytes={5} />);
+    const input = screen.getByTestId('save-import-file-input');
+    const largeFile = new File(['123456'], 'large.rpsave.json', { type: 'application/json' });
+
+    fireEvent.change(input, { target: { files: [largeFile] } });
+
+    expect(await screen.findByText('saves.importFileTooLarge')).toBeInTheDocument();
+  });
 });
