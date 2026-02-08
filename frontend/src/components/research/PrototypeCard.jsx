@@ -9,6 +9,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import LoopIcon from '@mui/icons-material/Loop';
 import StarIcon from '@mui/icons-material/Star';
 import MaterialIcon from '../common/MaterialIcon';
+import StructureSpriteIcon from '../common/StructureSpriteIcon';
 import { getMaterialName } from '../../utils/translationHelpers';
 
 export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }) {
@@ -70,16 +71,12 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
       }}
     >
       {outputInfo?.material?.category === 'equipment' ? (
-        <Box
-          component="img"
-          src={`/assets/factory/${outputInfo?.outputId}_idle.png`}
-          alt={outputInfo?.material?.name}
-          sx={{
-            width: 48,
-            height: 48,
-            objectFit: 'contain',
-            imageRendering: 'pixelated',
-          }}
+        <StructureSpriteIcon
+          structureId={outputInfo?.outputId}
+          materialId={outputInfo?.outputId}
+          materialName={outputInfo?.material?.name}
+          category={outputInfo?.material?.category}
+          size={48}
         />
       ) : (
         <MaterialIcon materialId={outputInfo?.outputId} size={48} />

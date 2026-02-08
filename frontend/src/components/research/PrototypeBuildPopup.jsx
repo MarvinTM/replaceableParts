@@ -16,6 +16,7 @@ import BuildIcon from '@mui/icons-material/Build';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import MaterialIcon from '../common/MaterialIcon';
+import StructureSpriteIcon from '../common/StructureSpriteIcon';
 import useGameStore from '../../stores/gameStore';
 import { getMaterialDescription, getMaterialName } from '../../utils/translationHelpers';
 
@@ -327,16 +328,12 @@ export default function PrototypeBuildPopup({
               {t('research.prototypeComplete')}
             </Typography>
             {outputInfo.material?.category === 'equipment' ? (
-              <Box
-                component="img"
-                src={`/assets/factory/${outputInfo.outputId}_idle.png`}
-                alt={outputInfo.material?.name}
-                sx={{
-                  width: 64,
-                  height: 64,
-                  objectFit: 'contain',
-                  imageRendering: 'pixelated',
-                }}
+              <StructureSpriteIcon
+                structureId={outputInfo.outputId}
+                materialId={outputInfo.outputId}
+                materialName={outputInfo.material?.name}
+                category={outputInfo.material?.category}
+                size={64}
               />
             ) : (
               <MaterialIcon materialId={outputInfo.outputId} size={64} />
@@ -388,16 +385,12 @@ export default function PrototypeBuildPopup({
         {/* Material Preview */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
           {outputInfo.material?.category === 'equipment' ? (
-            <Box
-              component="img"
-              src={`/assets/factory/${outputInfo.outputId}_idle.png`}
-              alt={getMaterialName(outputInfo.outputId, outputInfo.material?.name)}
-              sx={{
-                width: 64,
-                height: 64,
-                objectFit: 'contain',
-                imageRendering: 'pixelated',
-              }}
+            <StructureSpriteIcon
+              structureId={outputInfo.outputId}
+              materialId={outputInfo.outputId}
+              materialName={outputInfo.material?.name}
+              category={outputInfo.material?.category}
+              size={64}
             />
           ) : (
             <MaterialIcon materialId={outputInfo.outputId} size={64} />
