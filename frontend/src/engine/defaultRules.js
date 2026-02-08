@@ -186,7 +186,7 @@ export const defaultRules = {
     { id: 'lathe', name: 'Metal Lathe', basePrice: 3700, category: 'final', weight: 50, age: 3, description: 'Spinning machine that turns rods into precise parts.' },
     { id: 'milling_machine', name: 'Milling Machine', basePrice: 2500, category: 'final', weight: 55, age: 3, description: 'Cutting machine that removes metal with precision.' },
     { id: 'safe', name: 'Steel Safe', basePrice: 5750, category: 'final', weight: 45, age: 3, description: 'Thick steel box built to resist theft and fire.' },
-    { id: 'crane', name: 'Industrial Crane', basePrice: 4600, category: 'final', weight: 100, age: 3, description: 'Tower machine for lifting heavy loads at a distance.' },
+    { id: 'crane', name: 'Industrial Crane', basePrice: 4600, category: 'final', weight: 50, age: 3, description: 'Tower machine for lifting heavy loads at a distance.' },
     { id: 'elevator', name: 'Elevator System', basePrice: 3300, category: 'final', weight: 90, age: 3, description: 'Lift system for moving people or cargo between levels.' },
     { id: 'mechanical_loom', name: 'Mechanical Loom', basePrice: 2300, category: 'final', weight: 40, age: 3, description: 'Automated loom that weaves fabric quickly.' },
     { id: 'pocket_watch', name: 'Pocket Watch', basePrice: 1800, category: 'final', weight: 1, age: 3, description: 'Portable timepiece with spring movement and cover.' },
