@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
@@ -50,6 +50,14 @@ export default function PrototypeBuildPopup({
   // LOCAL state for slot fills - only committed to store on Build
   // Key: slot index, Value: number of units filled locally
   const [localSlotFills, setLocalSlotFills] = useState({});
+  const autoCloseTimeoutRef = useRef(null);
+
+  const clearAutoCloseTimeout = useCallback(() => {
+    if (autoCloseTimeoutRef.current) {
+      clearTimeout(autoCloseTimeoutRef.current);
+      autoCloseTimeoutRef.current = null;
+    }
+  }, []);
 
   // Reset state when popup opens/closes
   useEffect(() => {
@@ -59,6 +67,20 @@ export default function PrototypeBuildPopup({
       setLocalSlotFills({});
     }
   }, [open]);
+
+  // Prevent stale auto-close callbacks from closing future popups.
+  useEffect(() => {
+    if (!open) {
+      clearAutoCloseTimeout();
+    }
+  }, [open, clearAutoCloseTimeout]);
+
+  // Cleanup on unmount.
+  useEffect(() => {
+    return () => {
+      clearAutoCloseTimeout();
+    };
+  }, [clearAutoCloseTimeout]);
 
   // Get recipe output info
   const outputInfo = useMemo(() => {
@@ -255,18 +277,20 @@ export default function PrototypeBuildPopup({
     // Show success state
     setBuildState('success');
     // Auto-close after 3 seconds
-    setTimeout(() => {
+    clearAutoCloseTimeout();
+    autoCloseTimeoutRef.current = setTimeout(() => {
       handleClose();
     }, 3000);
   };
 
   // Handle close - just close without committing anything
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    clearAutoCloseTimeout();
     setBuildState('building');
     setDragOverSlot(null);
     setLocalSlotFills({});
     onClose();
-  };
+  }, [clearAutoCloseTimeout, onClose]);
 
   // Only render nothing if we don't have basic info
   if (!initialPrototype || !recipe || !outputInfo) return null;

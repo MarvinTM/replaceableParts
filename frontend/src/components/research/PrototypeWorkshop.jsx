@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -8,20 +8,37 @@ import PrototypeBuildPopup from './PrototypeBuildPopup';
 
 export default function PrototypeWorkshop({ awaitingPrototype, rules, inventory }) {
   const { t } = useTranslation();
-  const [selectedPrototype, setSelectedPrototype] = useState(null);
+  const [selectedPrototypeId, setSelectedPrototypeId] = useState(null);
+  const [selectedPrototypeSnapshot, setSelectedPrototypeSnapshot] = useState(null);
 
   const handleBuildClick = (prototype) => {
-    setSelectedPrototype(prototype);
+    setSelectedPrototypeId(prototype.recipeId);
+    setSelectedPrototypeSnapshot(prototype);
   };
 
   const handleClosePopup = () => {
-    setSelectedPrototype(null);
+    setSelectedPrototypeId(null);
+    setSelectedPrototypeSnapshot(null);
   };
 
-  // Get selected recipe for popup
-  const selectedRecipe = selectedPrototype
-    ? rules.recipes.find(r => r.id === selectedPrototype.recipeId)
-    : null;
+  const selectedPrototypeFromState = useMemo(() => {
+    if (!selectedPrototypeId) return null;
+    return awaitingPrototype.find((prototype) => prototype.recipeId === selectedPrototypeId) || null;
+  }, [awaitingPrototype, selectedPrototypeId]);
+
+  // Keep an updated snapshot while the prototype still exists in state.
+  useEffect(() => {
+    if (selectedPrototypeFromState) {
+      setSelectedPrototypeSnapshot(selectedPrototypeFromState);
+    }
+  }, [selectedPrototypeFromState]);
+
+  const selectedPrototype = selectedPrototypeFromState || selectedPrototypeSnapshot;
+
+  const selectedRecipe = useMemo(() => {
+    if (!selectedPrototypeId) return null;
+    return rules.recipes.find((recipe) => recipe.id === selectedPrototypeId) || null;
+  }, [rules.recipes, selectedPrototypeId]);
 
   return (
     <>
@@ -70,7 +87,7 @@ export default function PrototypeWorkshop({ awaitingPrototype, rules, inventory 
       {/* Slots-mode build popup */}
       {selectedPrototype && selectedRecipe && (
         <PrototypeBuildPopup
-          open={Boolean(selectedPrototype)}
+          open={Boolean(selectedPrototypeId)}
           onClose={handleClosePopup}
           prototype={selectedPrototype}
           recipe={selectedRecipe}
