@@ -8,6 +8,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import BuildIcon from '@mui/icons-material/Build';
 import LoopIcon from '@mui/icons-material/Loop';
 import StarIcon from '@mui/icons-material/Star';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import MaterialIcon from '../common/MaterialIcon';
 import StructureSpriteIcon from '../common/StructureSpriteIcon';
 import { getMaterialName } from '../../utils/translationHelpers';
@@ -56,6 +57,7 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
   const age = outputInfo?.material?.age || recipe?.age || 1;
   const ageMultiplier = rules.research?.ageMultipliers?.[age] || 1.0;
   const rpBonus = Math.floor(50 * ageMultiplier);
+  const isInfrastructureBlueprint = outputInfo?.material?.category === 'equipment';
 
   return (
     <Paper
@@ -68,6 +70,38 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
         minWidth: 160,
         maxWidth: 180,
         textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        border: '1px solid',
+        borderColor: isInfrastructureBlueprint ? '#FF9800' : 'divider',
+        bgcolor: isInfrastructureBlueprint ? '#1f1610' : 'background.paper',
+        backgroundImage: isInfrastructureBlueprint
+          ? 'linear-gradient(150deg, rgba(255, 179, 0, 0.34) 0%, rgba(255, 111, 0, 0.22) 45%, rgba(84, 47, 14, 0.92) 100%)'
+          : 'none',
+        boxShadow: isInfrastructureBlueprint
+          ? '0 0 0 1px rgba(255, 152, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 235, 180, 0.25)'
+          : undefined,
+        '&::before': isInfrastructureBlueprint ? {
+          content: '""',
+          position: 'absolute',
+          top: '-30%',
+          left: '-65%',
+          width: '52%',
+          height: '180%',
+          transform: 'rotate(23deg)',
+          background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,245,210,0.32) 50%, rgba(255,255,255,0) 100%)',
+          animation: 'infraShine 3.5s linear infinite',
+          pointerEvents: 'none',
+        } : undefined,
+        '@keyframes infraShine': {
+          '0%': { left: '-65%' },
+          '100%': { left: '140%' }
+        },
+        '&:hover': isInfrastructureBlueprint ? {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 0 0 1px rgba(255, 152, 0, 0.7), 0 14px 28px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 235, 180, 0.35)'
+        } : undefined,
       }}
     >
       {outputInfo?.material?.category === 'equipment' ? (
@@ -82,21 +116,56 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
         <MaterialIcon materialId={outputInfo?.outputId} size={48} />
       )}
 
-      <Typography variant="subtitle2" noWrap sx={{ maxWidth: 150 }}>
+      <Typography
+        variant="subtitle2"
+        noWrap
+        sx={{
+          maxWidth: 150,
+          color: isInfrastructureBlueprint ? '#FFF4D6' : 'text.primary',
+          textShadow: isInfrastructureBlueprint ? '0 1px 2px rgba(0, 0, 0, 0.45)' : 'none',
+          fontWeight: isInfrastructureBlueprint ? 700 : 500,
+        }}
+      >
         {getMaterialName(outputInfo?.outputId, outputInfo?.material?.name || prototype.recipeId)}
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {isInfrastructureBlueprint && (
+          <Chip
+            icon={<AutoAwesomeIcon sx={{ fontSize: 14 }} />}
+            label={t('research.infrastructureUnlock', 'Infrastructure Unlock')}
+            size="small"
+            sx={{
+              bgcolor: 'rgba(27, 18, 10, 0.72)',
+              color: '#FFE5B0',
+              border: '1px solid rgba(255, 193, 7, 0.8)',
+              '& .MuiChip-icon': {
+                color: '#FFD54F',
+              }
+            }}
+            variant="filled"
+          />
+        )}
         <Chip
           label={`${t('market.age')} ${outputInfo?.material?.age || '?'}`}
           size="small"
-          variant="outlined"
+          variant={isInfrastructureBlueprint ? 'filled' : 'outlined'}
+          sx={isInfrastructureBlueprint ? {
+            bgcolor: 'rgba(30, 20, 12, 0.75)',
+            color: '#FFE9B8',
+            border: '1px solid rgba(255, 213, 79, 0.65)',
+          } : undefined}
         />
         <Chip
           label={t(isFlowMode ? 'research.flow' : 'research.slots')}
           size="small"
-          color={isFlowMode ? 'info' : 'warning'}
-          variant="outlined"
+          color={isInfrastructureBlueprint ? undefined : (isFlowMode ? 'info' : 'warning')}
+          variant={isInfrastructureBlueprint ? 'filled' : 'outlined'}
+          sx={isInfrastructureBlueprint ? {
+            bgcolor: isFlowMode ? 'rgba(15, 48, 57, 0.82)' : 'rgba(60, 33, 12, 0.82)',
+            color: isFlowMode ? '#B3ECFF' : '#FFD89E',
+            border: `1px solid ${isFlowMode ? 'rgba(77, 208, 225, 0.65)' : 'rgba(255, 183, 77, 0.65)'}`,
+          } : undefined}
         />
       </Box>
 
