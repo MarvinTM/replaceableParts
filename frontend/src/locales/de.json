@@ -115,7 +115,8 @@
       "factory": "Fabrik",
       "exploration": "Erkundung",
       "research": "Forschung",
-      "market": "Markt"
+      "market": "Markt",
+      "encyclopedia": "Enzyklopädie"
     },
     "comingSoon": "Kommt bald...",
     "factoryDescription": "Bauen und verwalten Sie Ihre Produktionslinien",
@@ -500,6 +501,32 @@
     "externalEvent": "Externes Marktereignis ({{ticks}} Ticks verbleibend)",
     "externalEventPositive": "Hohe Nachfrage",
     "externalEventNegative": "Geringe Nachfrage"
+  },
+  "encyclopedia": {
+    "title": "Rezept-Enzyklopädie",
+    "search": "Rezepte suchen...",
+    "age": "Zeitalter",
+    "ageShort": "T",
+    "category": "Kategorie",
+    "cat_all": "Alle",
+    "cat_parts": "Teile",
+    "cat_finalGoods": "Fertigwaren",
+    "cat_other": "Sonstige",
+    "machine": "Maschine",
+    "allMachines": "Alle Maschinen",
+    "status": "Status",
+    "status_all": "Alle",
+    "status_discovered": "Entdeckt",
+    "status_unlocked": "Freigeschaltet",
+    "selectRecipe": "Wähle ein Rezept aus, um Details anzuzeigen",
+    "noMatchingRecipes": "Keine Rezepte entsprechen deinen Filtern.",
+    "noRecipesYet": "Noch keine Rezepte entdeckt. Führe Experimente im Forschungs-Tab durch!",
+    "inputs": "Eingaben",
+    "outputs": "Ausgaben",
+    "production": "Produktion",
+    "ticksToComplete": "Ticks bis zur Fertigstellung",
+    "basePrice": "Grundpreis",
+    "producedBy": "Hergestellt Von"
   },
   "materialDescriptions": {
     "wood": "Holz, das für frühe Bauten, Werkzeuge und Brennstoff gefällt wird.",

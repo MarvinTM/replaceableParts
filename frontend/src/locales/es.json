@@ -114,7 +114,8 @@
       "factory": "Fábrica",
       "exploration": "Exploración",
       "research": "Investigación",
-      "market": "Mercado"
+      "market": "Mercado",
+      "encyclopedia": "Enciclopedia"
     },
     "comingSoon": "Próximamente...",
     "factoryDescription": "Construye y gestiona tus líneas de producción",
@@ -505,6 +506,32 @@
     "externalEvent": "Evento de mercado externo ({{ticks}} ticks restantes)",
     "externalEventPositive": "Alta Demanda",
     "externalEventNegative": "Baja Demanda"
+  },
+  "encyclopedia": {
+    "title": "Enciclopedia de Recetas",
+    "search": "Buscar recetas...",
+    "age": "Era",
+    "ageShort": "T",
+    "category": "Categoría",
+    "cat_all": "Todas",
+    "cat_parts": "Piezas",
+    "cat_finalGoods": "Productos Finales",
+    "cat_other": "Otros",
+    "machine": "Máquina",
+    "allMachines": "Todas las Máquinas",
+    "status": "Estado",
+    "status_all": "Todos",
+    "status_discovered": "Descubierta",
+    "status_unlocked": "Desbloqueada",
+    "selectRecipe": "Selecciona una receta para ver los detalles",
+    "noMatchingRecipes": "Ninguna receta coincide con tus filtros.",
+    "noRecipesYet": "Aún no se han descubierto recetas. ¡Ejecuta experimentos en la pestaña de Investigación!",
+    "inputs": "Entradas",
+    "outputs": "Salidas",
+    "production": "Producción",
+    "ticksToComplete": "Ticks para completar",
+    "basePrice": "Precio base",
+    "producedBy": "Producido Por"
   },
   "materialDescriptions": {
     "wood": "Madera cortada para estructuras tempranas, herramientas y combustible.",

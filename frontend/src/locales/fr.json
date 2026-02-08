@@ -115,7 +115,8 @@
       "factory": "Usine",
       "exploration": "Exploration",
       "research": "Recherche",
-      "market": "Marché"
+      "market": "Marché",
+      "encyclopedia": "Encyclopédie"
     },
     "comingSoon": "Bientôt disponible...",
     "factoryDescription": "Construisez et gérez vos lignes de production",
@@ -497,6 +498,32 @@
     "externalEvent": "Événement de marché externe ({{ticks}} ticks restants)",
     "externalEventPositive": "Demande Élevée",
     "externalEventNegative": "Faible Demande"
+  },
+  "encyclopedia": {
+    "title": "Encyclopédie des Recettes",
+    "search": "Rechercher des recettes...",
+    "age": "Ère",
+    "ageShort": "T",
+    "category": "Catégorie",
+    "cat_all": "Toutes",
+    "cat_parts": "Pièces",
+    "cat_finalGoods": "Produits Finis",
+    "cat_other": "Autres",
+    "machine": "Machine",
+    "allMachines": "Toutes les Machines",
+    "status": "Statut",
+    "status_all": "Tous",
+    "status_discovered": "Découverte",
+    "status_unlocked": "Débloquée",
+    "selectRecipe": "Sélectionnez une recette pour voir les détails",
+    "noMatchingRecipes": "Aucune recette ne correspond à vos filtres.",
+    "noRecipesYet": "Aucune recette découverte pour le moment. Lancez des expériences dans l'onglet Recherche !",
+    "inputs": "Entrées",
+    "outputs": "Sorties",
+    "production": "Production",
+    "ticksToComplete": "Ticks pour compléter",
+    "basePrice": "Prix de base",
+    "producedBy": "Produit Par"
   },
   "materialDescriptions": {
     "wood": "Bois coupé pour les premières structures, outils et combustible.",

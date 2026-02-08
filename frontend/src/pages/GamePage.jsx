@@ -17,6 +17,7 @@ import FactoryIcon from '@mui/icons-material/Factory';
 import ExploreIcon from '@mui/icons-material/Explore';
 import ScienceIcon from '@mui/icons-material/Science';
 import StorefrontIcon from '@mui/icons-material/Storefront';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import BoltIcon from '@mui/icons-material/Bolt';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import TerrainIcon from '@mui/icons-material/Terrain';
@@ -49,6 +50,7 @@ import CollapsibleActionsPanel from '../components/common/CollapsibleActionsPane
 import SplitSidebar from '../components/common/SplitSidebar';
 import FactoryBottomBar from '../components/factory/FactoryBottomBar';
 import MarketTab from '../components/market/MarketTab';
+import EncyclopediaTab from '../components/encyclopedia/EncyclopediaTab';
 import ResearchTab from '../components/research/ResearchTab';
 import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier';
 import DiscoveryNotifier from '../components/research/DiscoveryNotifier';
@@ -1077,7 +1079,8 @@ export default function GamePage() {
         </Badge>
       )
     },
-    { label: t('main.tabs.market'), icon: <StorefrontIcon /> }
+    { label: t('main.tabs.market'), icon: <StorefrontIcon /> },
+    { label: t('main.tabs.encyclopedia'), icon: <MenuBookIcon /> }
   ];
 
   return (
@@ -1143,6 +1146,10 @@ export default function GamePage() {
 
       <TabPanel value={tabValue} index={3}>
         <MarketTab />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={4}>
+        <EncyclopediaTab />
       </TabPanel>
 
       {/* Global notifier for flow-mode prototype completions */}

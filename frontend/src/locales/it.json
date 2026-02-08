@@ -115,7 +115,8 @@
       "factory": "Fabbrica",
       "exploration": "Esplorazione",
       "research": "Ricerca",
-      "market": "Mercato"
+      "market": "Mercato",
+      "encyclopedia": "Enciclopedia"
     },
     "comingSoon": "Prossimamente...",
     "factoryDescription": "Costruisci e gestisci le tue linee di produzione",
@@ -496,6 +497,32 @@
     "externalEvent": "Evento di mercato esterno ({{ticks}} tick rimanenti)",
     "externalEventPositive": "Alta Domanda",
     "externalEventNegative": "Bassa Domanda"
+  },
+  "encyclopedia": {
+    "title": "Enciclopedia delle Ricette",
+    "search": "Cerca ricette...",
+    "age": "Era",
+    "ageShort": "T",
+    "category": "Categoria",
+    "cat_all": "Tutte",
+    "cat_parts": "Componenti",
+    "cat_finalGoods": "Prodotti Finiti",
+    "cat_other": "Altro",
+    "machine": "Macchina",
+    "allMachines": "Tutte le Macchine",
+    "status": "Stato",
+    "status_all": "Tutti",
+    "status_discovered": "Scoperta",
+    "status_unlocked": "Sbloccata",
+    "selectRecipe": "Seleziona una ricetta per vedere i dettagli",
+    "noMatchingRecipes": "Nessuna ricetta corrisponde ai tuoi filtri.",
+    "noRecipesYet": "Nessuna ricetta scoperta ancora. Esegui esperimenti nella scheda Ricerca!",
+    "inputs": "Input",
+    "outputs": "Output",
+    "production": "Produzione",
+    "ticksToComplete": "Tick per completare",
+    "basePrice": "Prezzo base",
+    "producedBy": "Prodotto Da"
   },
   "materialDescriptions": {
     "wood": "Legno tagliato per strutture iniziali, attrezzi e combustibile.",

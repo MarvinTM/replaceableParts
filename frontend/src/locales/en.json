@@ -123,7 +123,8 @@
       "factory": "Factory",
       "exploration": "Exploration",
       "research": "Research",
-      "market": "Market"
+      "market": "Market",
+      "encyclopedia": "Encyclopedia"
     },
     "comingSoon": "Coming soon...",
     "factoryDescription": "Build and manage your production lines",
@@ -508,6 +509,32 @@
     "externalEvent": "External market event ({{ticks}} ticks remaining)",
     "externalEventPositive": "High Demand",
     "externalEventNegative": "Low Demand"
+  },
+  "encyclopedia": {
+    "title": "Recipe Encyclopedia",
+    "search": "Search recipes...",
+    "age": "Age",
+    "ageShort": "T",
+    "category": "Category",
+    "cat_all": "All",
+    "cat_parts": "Parts",
+    "cat_finalGoods": "Final Goods",
+    "cat_other": "Other",
+    "machine": "Machine",
+    "allMachines": "All Machines",
+    "status": "Status",
+    "status_all": "All",
+    "status_discovered": "Discovered",
+    "status_unlocked": "Unlocked",
+    "selectRecipe": "Select a recipe to view details",
+    "noMatchingRecipes": "No recipes match your filters.",
+    "noRecipesYet": "No recipes discovered yet. Run experiments in the Research tab!",
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "production": "Production",
+    "ticksToComplete": "Ticks to complete",
+    "basePrice": "Base price",
+    "producedBy": "Produced By"
   },
   "materialDescriptions": {
     "wood": "Timber cut for early structures, tools, and fuel.",
