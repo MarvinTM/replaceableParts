@@ -198,7 +198,7 @@ export const defaultRules = {
     { id: 'rail_track', name: 'Rail Track Section', basePrice: 80, category: 'final', weight: 40, age: 3, description: 'Steel rail segment for building train lines.' },
     { id: 'padlock', name: 'Steel Padlock', basePrice: 200, category: 'final', weight: 2, age: 3, description: 'Lockable shackle for securing doors and crates.' },
     { id: 'wrench', name: 'Steel Wrench', basePrice: 175, category: 'final', weight: 2, age: 3, description: 'Adjustable tool for tightening bolts and fittings.' },
-    { id: 'pipe_organ', name: 'Pipe Organ', basePrice: 2300, category: 'final', weight: 150, age: 3, description: 'Air-powered instrument with banks of tuned pipes.' },
+    { id: 'pipe_organ', name: 'Pipe Organ', basePrice: 2300, category: 'final', weight: 30, age: 3, description: 'Air-powered instrument with banks of tuned pipes.' },
     { id: 'industrial_boiler', name: 'Industrial Boiler', basePrice: 7250, category: 'final', weight: 95, age: 3, description: 'Large steam boiler for factories and heat networks.' },
     { id: 'conveyor_belt', name: 'Conveyor Belt', basePrice: 3200, category: 'final', weight: 50, age: 3, description: 'Moving belt that carries parts between workstations.' },
     { id: 'pressure_cooker', name: 'Pressure Cooker', basePrice: 1500, category: 'final', weight: 15, age: 3, description: 'Sealed pot that cooks faster under pressure.' },
