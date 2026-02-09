@@ -571,8 +571,8 @@ export const defaultRules = {
     // Intermediates
     { id: 'bricks', inputs: { clay: 2 }, outputs: { bricks: 3 }, ticksToComplete: 2, age: 3 },
     { id: 'steel_ingot', inputs: { iron_ingot: 2, coal: 2 }, outputs: { steel_ingot: 1 }, ticksToComplete: 4, age: 3 },
-    { id: 'steel_beam', inputs: { steel_ingot: 3 }, outputs: { steel_beam: 1 }, ticksToComplete: 3, age: 3 },
-    { id: 'steel_plate', inputs: { steel_ingot: 2 }, outputs: { steel_plate: 1 }, ticksToComplete: 3, age: 3 },
+    { id: 'steel_beam', inputs: { steel_ingot: 1 }, outputs: { steel_beam: 1 }, ticksToComplete: 3, age: 3 },
+    { id: 'steel_plate', inputs: { steel_ingot: 1 }, outputs: { steel_plate: 1 }, ticksToComplete: 3, age: 3 },
     { id: 'steel_rod', inputs: { steel_ingot: 1 }, outputs: { steel_rod: 2 }, ticksToComplete: 2, age: 3 },
     { id: 'gear', inputs: { iron_plate: 1 }, outputs: { gear: 2 }, ticksToComplete: 2, age: 3 },
     { id: 'steel_gear', inputs: { steel_plate: 1 }, outputs: { steel_gear: 2 }, ticksToComplete: 3, age: 3 },
