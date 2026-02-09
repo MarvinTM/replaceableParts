@@ -6,6 +6,8 @@
  */
 import { getStandardizedNodeRate } from './extractionNodeRates.js';
 
+const BIOME_GENERATION_VERSION = 2;
+
 /**
  * Mulberry32 PRNG - same as used in engine.js for consistency
  */
@@ -111,6 +113,9 @@ function getTerrainType(elevation, moisture) {
 
   // Mid elevations: depends on moisture
   if (elevation > 0.35) {
+    if (moisture < 0.15) {
+      return 'desert';
+    }
     if (moisture > 0.7) {
       return 'jungle';
     }
@@ -124,6 +129,12 @@ function getTerrainType(elevation, moisture) {
   }
 
   // Low elevation (above water)
+  if (moisture > 0.75) {
+    return 'swamp';
+  }
+  if (moisture < 0.2) {
+    return 'desert';
+  }
   if (moisture > 0.5) {
     return 'grassland';
   }
@@ -371,6 +382,7 @@ export function generateExplorationMap(seed, width, height, rules) {
   return {
     generatedWidth: width,
     generatedHeight: height,
+    biomeGenerationVersion: BIOME_GENERATION_VERSION,
     centerX,
     centerY,
     exploredBounds,
@@ -655,6 +667,7 @@ export function expandGeneratedMap(explorationMap, rules) {
     ...explorationMap,
     generatedWidth: newWidth,
     generatedHeight: newHeight,
+    biomeGenerationVersion: BIOME_GENERATION_VERSION,
     tiles: newTiles
   };
 }

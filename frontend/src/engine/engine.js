@@ -3,14 +3,17 @@
  * A pure functional game engine for manufacturing simulation
  */
 
-import { getNextExplorationExpansion, expandGeneratedMap } from './mapGenerator.js';
+import { getNextExplorationExpansion, expandGeneratedMap, generateExplorationMap } from './mapGenerator.js';
 import { expandStateFromSave } from '../utils/saveCompression.js';
-import { normalizeExtractionNodeRatesInState } from './extractionNodeRates.js';
+import { normalizeExtractionNodeRatesInState, getStandardizedNodeRate } from './extractionNodeRates.js';
 import {
   getExperimentCostForAge,
   getRecipeAge,
   getTargetedExperimentCostForRecipe
 } from '../utils/researchCosts.js';
+
+const BIOME_GENERATION_VERSION = 2;
+const REQUIRED_EXPLORATION_BIOMES = ['desert', 'swamp'];
 
 // ============================================================================
 // PRNG - Mulberry32 (deterministic random number generator)
@@ -246,6 +249,231 @@ function normalizeFilledAmount(value) {
   return Math.floor(numeric);
 }
 
+function isMapExtractionNode(node) {
+  return typeof node?.id === 'string' && node.id.startsWith('exp_node_');
+}
+
+function hasRequiredExplorationBiomes(explorationMap) {
+  if (!explorationMap?.tiles) return true;
+  const found = new Set();
+
+  for (const tile of Object.values(explorationMap.tiles)) {
+    if (!tile?.terrain) continue;
+    if (REQUIRED_EXPLORATION_BIOMES.includes(tile.terrain)) {
+      found.add(tile.terrain);
+      if (found.size === REQUIRED_EXPLORATION_BIOMES.length) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function shouldRegenerateLegacyExplorationMap(explorationMap) {
+  if (!explorationMap?.tiles) return false;
+  if ((explorationMap.biomeGenerationVersion || 0) >= BIOME_GENERATION_VERSION) return false;
+  return !hasRequiredExplorationBiomes(explorationMap);
+}
+
+function clampChunkToMap(chunk, width, height) {
+  if (!chunk) return null;
+  const x = Math.max(0, Math.floor(Number(chunk.x)));
+  const y = Math.max(0, Math.floor(Number(chunk.y)));
+  const rawWidth = Math.floor(Number(chunk.width));
+  const rawHeight = Math.floor(Number(chunk.height));
+  if (!Number.isInteger(rawWidth) || !Number.isInteger(rawHeight) || rawWidth <= 0 || rawHeight <= 0) {
+    return null;
+  }
+
+  const maxWidth = Math.max(0, width - x);
+  const maxHeight = Math.max(0, height - y);
+  const clampedWidth = Math.min(rawWidth, maxWidth);
+  const clampedHeight = Math.min(rawHeight, maxHeight);
+  if (clampedWidth <= 0 || clampedHeight <= 0) return null;
+
+  return { x, y, width: clampedWidth, height: clampedHeight };
+}
+
+function computeExploredBoundsFromTiles(explorationMap) {
+  const tiles = explorationMap?.tiles || {};
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const tile of Object.values(tiles)) {
+    if (!tile?.explored) continue;
+    minX = Math.min(minX, tile.x);
+    minY = Math.min(minY, tile.y);
+    maxX = Math.max(maxX, tile.x);
+    maxY = Math.max(maxY, tile.y);
+  }
+
+  if (!Number.isFinite(minX)) {
+    return explorationMap.exploredBounds;
+  }
+
+  return { minX, maxX, minY, maxY };
+}
+
+function getMapUnlockTargets(extractionNodes = []) {
+  const totalByResource = new Map();
+  const staticByResource = new Map();
+
+  for (const node of extractionNodes) {
+    const resourceType = node?.resourceType;
+    if (typeof resourceType !== 'string' || !resourceType) continue;
+
+    totalByResource.set(resourceType, (totalByResource.get(resourceType) || 0) + 1);
+    if (!isMapExtractionNode(node)) {
+      staticByResource.set(resourceType, (staticByResource.get(resourceType) || 0) + 1);
+    }
+  }
+
+  const targets = new Map();
+  totalByResource.forEach((totalCount, resourceType) => {
+    const staticCount = staticByResource.get(resourceType) || 0;
+    const mapCount = Math.max(0, totalCount - staticCount);
+    if (mapCount > 0) {
+      targets.set(resourceType, mapCount);
+    }
+  });
+
+  return targets;
+}
+
+function getTerrainAffinityForResource(tile, resourceType, rules) {
+  const terrain = tile?.terrain;
+  if (!terrain) return 0;
+  const affinities = rules?.exploration?.resourceAffinities || {};
+  return affinities[terrain]?.[resourceType] || 0;
+}
+
+function unlockResourceNodesOnMap(explorationMap, resourceType, targetCount, rules) {
+  if (!explorationMap?.tiles || targetCount <= 0) return;
+
+  let remaining = targetCount;
+  const exploredTiles = Object.values(explorationMap.tiles).filter(tile => tile?.explored);
+
+  const matchingNodes = exploredTiles
+    .filter(tile => tile.extractionNode && tile.extractionNode.resourceType === resourceType && !tile.extractionNode.unlocked)
+    .sort((a, b) => getTerrainAffinityForResource(b, resourceType, rules) - getTerrainAffinityForResource(a, resourceType, rules));
+
+  for (const tile of matchingNodes) {
+    if (remaining <= 0) break;
+    tile.extractionNode.unlocked = true;
+    remaining -= 1;
+  }
+
+  if (remaining <= 0) return;
+
+  const emptyTiles = exploredTiles
+    .filter(tile => !tile.extractionNode)
+    .sort((a, b) => getTerrainAffinityForResource(b, resourceType, rules) - getTerrainAffinityForResource(a, resourceType, rules));
+
+  for (const tile of emptyTiles) {
+    if (remaining <= 0) break;
+    tile.extractionNode = {
+      id: `exp_node_${resourceType}_${tile.x}_${tile.y}`,
+      resourceType,
+      rate: getStandardizedNodeRate(resourceType, rules),
+      unlocked: true
+    };
+    remaining -= 1;
+  }
+
+  if (remaining <= 0) return;
+
+  // Last-resort fallback: repurpose still-locked explored nodes to preserve unlocked counts.
+  const replaceableNodes = exploredTiles
+    .filter(tile => tile.extractionNode && !tile.extractionNode.unlocked)
+    .sort((a, b) => getTerrainAffinityForResource(b, resourceType, rules) - getTerrainAffinityForResource(a, resourceType, rules));
+
+  for (const tile of replaceableNodes) {
+    if (remaining <= 0) break;
+    tile.extractionNode = {
+      id: `exp_node_${resourceType}_${tile.x}_${tile.y}`,
+      resourceType,
+      rate: getStandardizedNodeRate(resourceType, rules),
+      unlocked: true
+    };
+    remaining -= 1;
+  }
+}
+
+function rebuildLegacyExplorationMap(migratedState, rules) {
+  const oldMap = migratedState.explorationMap;
+  if (!oldMap?.tiles) return;
+
+  const mapWidth = Number(oldMap.generatedWidth);
+  const mapHeight = Number(oldMap.generatedHeight);
+  if (!Number.isInteger(mapWidth) || !Number.isInteger(mapHeight) || mapWidth <= 0 || mapHeight <= 0) return;
+
+  const legacySeed = Number(oldMap.seed);
+  const fallbackSeed = Number(migratedState.rngSeed);
+  const seed = Number.isInteger(legacySeed)
+    ? legacySeed
+    : (Number.isInteger(fallbackSeed) ? fallbackSeed : Date.now());
+
+  const staticExtractionNodes = (migratedState.extractionNodes || []).filter(node => !isMapExtractionNode(node));
+  const mapUnlockTargets = getMapUnlockTargets(migratedState.extractionNodes || []);
+
+  const newMap = generateExplorationMap(seed, mapWidth, mapHeight, rules);
+
+  for (const tile of Object.values(newMap.tiles)) {
+    tile.explored = false;
+    if (tile.extractionNode) {
+      tile.extractionNode.unlocked = false;
+    }
+  }
+
+  for (const [key, oldTile] of Object.entries(oldMap.tiles)) {
+    if (!oldTile?.explored || !newMap.tiles[key]) continue;
+    newMap.tiles[key].explored = true;
+  }
+
+  const restoredBounds = computeExploredBoundsFromTiles(newMap);
+  if (restoredBounds) {
+    newMap.exploredBounds = restoredBounds;
+  }
+
+  const validChunks = Array.isArray(oldMap.exploredChunks)
+    ? oldMap.exploredChunks
+      .map(chunk => clampChunkToMap(chunk, mapWidth, mapHeight))
+      .filter(Boolean)
+    : [];
+
+  if (validChunks.length > 0) {
+    newMap.exploredChunks = validChunks;
+  } else if (newMap.exploredBounds) {
+    newMap.exploredChunks = [{
+      x: newMap.exploredBounds.minX,
+      y: newMap.exploredBounds.minY,
+      width: newMap.exploredBounds.maxX - newMap.exploredBounds.minX + 1,
+      height: newMap.exploredBounds.maxY - newMap.exploredBounds.minY + 1
+    }];
+  }
+
+  mapUnlockTargets.forEach((count, resourceType) => {
+    unlockResourceNodesOnMap(newMap, resourceType, count, rules);
+  });
+
+  const unlockedMapNodes = [];
+  for (const tile of Object.values(newMap.tiles)) {
+    if (!tile?.explored || !tile?.extractionNode?.unlocked) continue;
+    unlockedMapNodes.push({
+      id: tile.extractionNode.id,
+      resourceType: tile.extractionNode.resourceType,
+      rate: tile.extractionNode.rate,
+      active: true
+    });
+  }
+
+  migratedState.explorationMap = newMap;
+  migratedState.extractionNodes = [...staticExtractionNodes, ...unlockedMapNodes];
+}
+
 /**
  * Migrate loaded game state to current prototype recipe definitions.
  * This keeps old saves compatible when blueprint/prototype requirements change.
@@ -263,6 +491,10 @@ function migrateGameState(state, rules) {
   }
   if (!migratedState.inventory || typeof migratedState.inventory !== 'object') {
     migratedState.inventory = {};
+  }
+
+  if (shouldRegenerateLegacyExplorationMap(migratedState.explorationMap)) {
+    rebuildLegacyExplorationMap(migratedState, rules);
   }
 
   const migratedPrototypes = migratedState.research.awaitingPrototype.map((prototype) => {

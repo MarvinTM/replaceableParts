@@ -5,7 +5,9 @@ const TERRAIN_TO_CODE = {
   forest: '3',
   hills: '4',
   mountain: '5',
-  jungle: '6'
+  jungle: '6',
+  desert: '7',
+  swamp: '8'
 };
 
 const CODE_TO_TERRAIN = Object.fromEntries(

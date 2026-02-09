@@ -2,8 +2,77 @@ import { describe, it, expect } from 'vitest';
 import { createTestState, defaultRules } from '../testHelpers';
 import { migrateGameState } from '../../engine/engine';
 import { compressStateForSave } from '../../utils/saveCompression';
+import { generateExplorationMap } from '../../engine/mapGenerator';
+
+function countByResource(extractionNodes) {
+  return extractionNodes.reduce((acc, node) => {
+    const resourceType = node?.resourceType;
+    if (!resourceType) return acc;
+    acc[resourceType] = (acc[resourceType] || 0) + 1;
+    return acc;
+  }, {});
+}
 
 describe('State Migration', () => {
+  it('should regenerate legacy exploration maps missing desert/swamp while preserving unlock progress', () => {
+    const legacyMap = generateExplorationMap(987654, 64, 64, defaultRules);
+
+    delete legacyMap.biomeGenerationVersion;
+    Object.values(legacyMap.tiles).forEach((tile) => {
+      tile.explored = false;
+      if (tile.terrain === 'desert' || tile.terrain === 'swamp') {
+        tile.terrain = 'plains';
+      }
+    });
+
+    const chunkA = { x: 28, y: 28, width: 8, height: 8 };
+    const chunkB = { x: 36, y: 28, width: 4, height: 4 };
+    for (let y = chunkA.y; y < chunkA.y + chunkA.height; y++) {
+      for (let x = chunkA.x; x < chunkA.x + chunkA.width; x++) {
+        legacyMap.tiles[`${x},${y}`].explored = true;
+      }
+    }
+    for (let y = chunkB.y; y < chunkB.y + chunkB.height; y++) {
+      for (let x = chunkB.x; x < chunkB.x + chunkB.width; x++) {
+        legacyMap.tiles[`${x},${y}`].explored = true;
+      }
+    }
+    legacyMap.exploredBounds = { minX: 28, maxX: 39, minY: 28, maxY: 35 };
+    legacyMap.exploredChunks = [chunkA, chunkB];
+
+    const legacyState = createTestState({
+      extractionNodes: [
+        { id: 'node_wood_1', resourceType: 'wood', rate: 2, active: true },
+        { id: 'node_stone_1', resourceType: 'stone', rate: 2, active: true },
+        { id: 'node_iron_1', resourceType: 'iron_ore', rate: 2, active: true },
+        { id: 'exp_node_coal_29_29', resourceType: 'coal', rate: 2, active: true },
+        { id: 'exp_node_sand_30_29', resourceType: 'sand', rate: 2, active: true },
+        { id: 'exp_node_sand_31_29', resourceType: 'sand', rate: 2, active: true }
+      ],
+      explorationMap: legacyMap
+    });
+
+    const oldResourceCounts = countByResource(legacyState.extractionNodes);
+    const oldExploredCount = Object.values(legacyState.explorationMap.tiles).filter(tile => tile.explored).length;
+    const migrated = migrateGameState(legacyState, defaultRules);
+
+    const terrains = new Set(Object.values(migrated.explorationMap.tiles).map(tile => tile.terrain));
+    const migratedExploredCount = Object.values(migrated.explorationMap.tiles).filter(tile => tile.explored).length;
+    const migratedResourceCounts = countByResource(migrated.extractionNodes);
+
+    expect(terrains.has('desert')).toBe(true);
+    expect(terrains.has('swamp')).toBe(true);
+    expect(migrated.explorationMap.biomeGenerationVersion).toBe(2);
+    expect(migratedExploredCount).toBe(oldExploredCount);
+    expect(migrated.explorationMap.exploredChunks.length).toBe(legacyState.explorationMap.exploredChunks.length);
+    expect(migratedResourceCounts).toEqual(oldResourceCounts);
+
+    // Source object should remain unchanged.
+    const legacyTerrains = new Set(Object.values(legacyState.explorationMap.tiles).map(tile => tile.terrain));
+    expect(legacyTerrains.has('desert')).toBe(false);
+    expect(legacyTerrains.has('swamp')).toBe(false);
+  });
+
   it('should migrate stale foundry prototype slots to current recipe inputs and refund removed fills', () => {
     const state = createTestState({
       inventory: {

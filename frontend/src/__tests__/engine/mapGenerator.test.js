@@ -9,6 +9,19 @@ function collectNodeRates(explorationMap) {
 }
 
 describe('Map Generator Node Rates', () => {
+  it('generates desert and swamp biomes', () => {
+    const map = generateExplorationMap(12345, 64, 64, defaultRules);
+    const terrains = new Set(Object.values(map.tiles).map(tile => tile.terrain));
+
+    expect(terrains.has('desert')).toBe(true);
+    expect(terrains.has('swamp')).toBe(true);
+  });
+
+  it('marks newly generated maps with biome generation version', () => {
+    const map = generateExplorationMap(12345, 64, 64, defaultRules);
+    expect(map.biomeGenerationVersion).toBe(2);
+  });
+
   it('uses a fixed per-resource rate (interval max) for generated nodes', () => {
     const rules = structuredClone(defaultRules);
     rules.exploration.nodeSpawnChance = 1;
@@ -31,6 +44,7 @@ describe('Map Generator Node Rates', () => {
     const expectedRate = defaultRules.exploration.nodeRateRange.max;
 
     expect(expandedMap).toBeTruthy();
+    expect(expandedMap.biomeGenerationVersion).toBe(2);
     expect(rates.length).toBeGreaterThan(0);
     expect(new Set(rates)).toEqual(new Set([expectedRate]));
   });
