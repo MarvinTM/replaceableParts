@@ -126,10 +126,10 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
 
   const renderInventoryChip = ([itemId, quantity]) => {
     const material = materialsById.get(itemId);
-    const tp = materialThroughput.get(itemId);
-    const hasTP = tp && (tp.produced > 0 || tp.consumed > 0);
-    const hasDeficit = hasTP && tp.consumed > tp.produced;
     const isFinalGood = material?.category === 'final';
+    const tp = materialThroughput.get(itemId);
+    const hasTP = !isFinalGood && tp && (tp.produced > 0 || tp.consumed > 0);
+    const hasDeficit = hasTP && tp.consumed > tp.produced;
     const name = getMaterialName(itemId, material?.name);
     const maxStack = getMaxStack(material, inventoryCapacity);
     const storageRatio = maxStack ? Math.min(quantity / maxStack, 1) : null;

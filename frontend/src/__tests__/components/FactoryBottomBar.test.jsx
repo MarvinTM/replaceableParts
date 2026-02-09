@@ -194,4 +194,19 @@ describe('FactoryBottomBar', () => {
     expect(chip).toHaveAttribute('data-background-color', 'rgba(244, 67, 54, 0.08)');
     expect(chip).toHaveAttribute('data-border-color', 'rgba(244, 67, 54, 0.4)');
   });
+
+  it('should not show throughput values for final goods', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ widget: 20 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+        materialThroughput={new Map([['widget', { consumed: 3, produced: 7 }]])}
+      />
+    );
+
+    expect(screen.getByText(/Widget: 20\/100/)).toBeInTheDocument();
+    expect(screen.queryByText(/Widget: 20\/100 \(3\/7\)/)).not.toBeInTheDocument();
+  });
 });
