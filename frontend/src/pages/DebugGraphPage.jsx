@@ -148,6 +148,7 @@ export default function DebugGraphPage() {
     (issues.intermediateNotUsedInAge?.length || 0) +
     (issues.recipesWithZeroQuantity?.length || 0) +
     (issues.recipeAgeIssues?.length || 0) +
+    (issues.recipeInputAgeIssues?.length || 0) +
     (issues.machineCycleIssues?.length || 0) +
     materialsMissingIcons.length;
 
@@ -231,6 +232,14 @@ export default function DebugGraphPage() {
       log += `Machine Age Mismatch (${issues.recipeAgeIssues.length}):\n`;
       issues.recipeAgeIssues.forEach(issue => {
         log += `  - ${issue.recipeId} (Age ${issue.recipeAge}): Needs Machine Age ${issue.minMachineAge} (${issue.machines})\n`;
+      });
+      log += '\n';
+    }
+
+    if (issues.recipeInputAgeIssues && issues.recipeInputAgeIssues.length > 0) {
+      log += `Input Age Mismatch (${issues.recipeInputAgeIssues.length}):\n`;
+      issues.recipeInputAgeIssues.forEach(issue => {
+        log += `  - ${issue.recipeId} (Age ${issue.recipeAge}) uses ${issue.inputId} (Age ${issue.inputAge})\n`;
       });
       log += '\n';
     }

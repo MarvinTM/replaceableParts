@@ -86,7 +86,7 @@ describe('State Migration', () => {
             recipeId: 'foundry',
             mode: 'slots',
             slots: [
-              { material: 'bricks', quantity: 20, filled: 10, isRaw: false },
+              { material: 'stone_bricks', quantity: 20, filled: 10, isRaw: false },
               { material: 'steel_beam', quantity: 8, filled: 3, isRaw: false },
             ],
           },
@@ -100,7 +100,7 @@ describe('State Migration', () => {
     expect(prototype.mode).toBe('slots');
     expect(prototype.slots.some(slot => slot.material === 'steel_beam')).toBe(false);
 
-    const bricksSlot = prototype.slots.find(slot => slot.material === 'bricks');
+    const bricksSlot = prototype.slots.find(slot => slot.material === 'stone_bricks');
     const ironPlateSlot = prototype.slots.find(slot => slot.material === 'iron_plate');
 
     expect(bricksSlot).toBeTruthy();

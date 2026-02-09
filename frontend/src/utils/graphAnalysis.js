@@ -181,6 +181,15 @@ function getIssuesForMaterial(materialId, issues) {
     });
   }
 
+  const inputAgeIssues = issues.recipeInputAgeIssues?.filter(issue => issue.inputId === materialId) || [];
+  if (inputAgeIssues.length > 0) {
+    const affectedRecipes = inputAgeIssues.map(issue => issue.recipeId).join(', ');
+    materialIssues.push({
+      type: 'inputAgeMismatch',
+      message: `Used too early by recipe age: ${affectedRecipes}`
+    });
+  }
+
   return materialIssues;
 }
 
@@ -328,6 +337,9 @@ export function analyzeIssues(rules, initialState = null) {
   // Find recipes requiring machines from subsequent ages
   const recipeAgeIssues = findRecipeAgeIssues(rules);
 
+  // Find recipes that use inputs from future ages
+  const recipeInputAgeIssues = findRecipeInputAgeIssues(rules);
+
   // Find machines with circular production dependencies
   const machineCycleIssues = findMachineCycleIssues(rules, initialState);
 
@@ -341,6 +353,7 @@ export function analyzeIssues(rules, initialState = null) {
     intermediateNotUsedInAge,
     recipesWithZeroQuantity,
     recipeAgeIssues,
+    recipeInputAgeIssues,
     machineCycleIssues,
     invalidAllowedRecipes,
   };
@@ -736,6 +749,52 @@ function findRecipeAgeIssues(rules) {
         machines: capableMachines.map(m => m.name || m.id).join(', ')
       });
     }
+  });
+
+  return issues;
+}
+
+function getRecipeDeclaredAge(recipe, materialMap) {
+  if (Number.isFinite(recipe?.age) && recipe.age > 0) {
+    return recipe.age;
+  }
+
+  let derivedAge = 1;
+  Object.keys(recipe?.outputs || {}).forEach((outputId) => {
+    const materialAge = materialMap.get(outputId)?.age;
+    if (Number.isFinite(materialAge) && materialAge > derivedAge) {
+      derivedAge = materialAge;
+    }
+  });
+
+  return derivedAge;
+}
+
+/**
+ * Find recipes that use input materials from later ages than the recipe itself.
+ */
+function findRecipeInputAgeIssues(rules) {
+  const issues = [];
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+
+  rules.recipes.forEach((recipe) => {
+    const recipeAge = getRecipeDeclaredAge(recipe, materialMap);
+
+    Object.keys(recipe.inputs || {}).forEach((inputId) => {
+      const inputMaterial = materialMap.get(inputId);
+      if (!inputMaterial) return;
+
+      const inputAge = Number.isFinite(inputMaterial.age) ? inputMaterial.age : 1;
+      if (inputAge > recipeAge) {
+        issues.push({
+          recipeId: recipe.id,
+          recipeAge,
+          inputId,
+          inputName: inputMaterial.name || inputId,
+          inputAge
+        });
+      }
+    });
   });
 
   return issues;

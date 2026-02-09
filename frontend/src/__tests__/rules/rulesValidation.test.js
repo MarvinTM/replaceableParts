@@ -49,6 +49,11 @@ describe('Game Rules Validation', () => {
     expect(issues.recipeAgeIssues, `Machine age mismatches: ${formatted.join('; ')}`).toEqual([]);
   });
 
+  it('should have no recipe input age mismatches', () => {
+    const formatted = issues.recipeInputAgeIssues.map(i => `Recipe ${i.recipeId} (Age ${i.recipeAge}) uses ${i.inputId} (Age ${i.inputAge})`);
+    expect(issues.recipeInputAgeIssues, `Recipe input age mismatches: ${formatted.join('; ')}`).toEqual([]);
+  });
+
   it('should have no invalid recipe IDs in machine allowedRecipes', () => {
     const formatted = issues.invalidAllowedRecipes.map(i => `${i.machineName} has invalid recipe '${i.recipeId}'`);
     expect(issues.invalidAllowedRecipes, `Invalid allowedRecipes: ${formatted.join('; ')}`).toEqual([]);

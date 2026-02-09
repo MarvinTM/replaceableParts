@@ -554,7 +554,7 @@ export const defaultRules = {
     { id: 'bathtub', inputs: { copper_sheet: 4, pipe: 2 }, outputs: { bathtub: 1 }, ticksToComplete: 7, age: 2 },
     { id: 'sink', inputs: { copper_sheet: 2, pipe: 1 }, outputs: { sink: 1 }, ticksToComplete: 4, age: 2 },
     { id: 'decorative_urn', inputs: { terracotta: 3 }, outputs: { decorative_urn: 1 }, ticksToComplete: 4, age: 2 },
-    { id: 'chimney', inputs: { bricks: 6, pipe: 1 }, outputs: { chimney: 1 }, ticksToComplete: 5, age: 2 },
+    { id: 'chimney', inputs: { stone_bricks: 6, pipe: 1 }, outputs: { chimney: 1 }, ticksToComplete: 5, age: 2 },
     { id: 'greenhouse_panel', inputs: { glass_pane: 4, iron_rod: 2 }, outputs: { greenhouse_panel: 1 }, ticksToComplete: 4, age: 2 },
     { id: 'church_bell', inputs: { brass_ingot: 3, iron_bracket: 1 }, outputs: { church_bell: 1 }, ticksToComplete: 7, age: 2 },
     { id: 'candelabra', inputs: { brass_sheet: 2, copper_rod: 1 }, outputs: { candelabra: 1 }, ticksToComplete: 4, age: 2 },
@@ -620,7 +620,7 @@ export const defaultRules = {
     { id: 'wrench', inputs: { steel_ingot: 1 }, outputs: { wrench: 1 }, ticksToComplete: 2, age: 3 },
     { id: 'pipe_organ', inputs: { steel_pipe: 8, planks: 4, bellows: 1 }, outputs: { pipe_organ: 1 }, ticksToComplete: 25, age: 3 },
     { id: 'industrial_boiler', inputs: { boiler: 2, steel_plate: 4, steel_pipe: 4 }, outputs: { industrial_boiler: 1 }, ticksToComplete: 15, age: 3 },
-    { id: 'conveyor_belt', inputs: { ball_bearing: 8, steel_chain: 4, steel_beam: 2, electric_motor: 1 }, outputs: { conveyor_belt: 1 }, ticksToComplete: 12, age: 3 },
+    { id: 'conveyor_belt', inputs: { ball_bearing: 8, steel_chain: 4, steel_beam: 2, drive_shaft: 1 }, outputs: { conveyor_belt: 1 }, ticksToComplete: 12, age: 3 },
     { id: 'pressure_cooker', inputs: { steel_plate: 2, pressure_gauge: 1, steam_valve: 1 }, outputs: { pressure_cooker: 1 }, ticksToComplete: 8, age: 3 },
     { id: 'plumbing_system', inputs: { steel_pipe: 6, coupling: 4, steam_valve: 2 }, outputs: { plumbing_system: 1 }, ticksToComplete: 10, age: 3 },
     { id: 'rotary_engine', inputs: { steel_ingot: 4, camshaft: 1, crankshaft: 1, ball_bearing: 4, gear: 3 }, outputs: { rotary_engine: 1 }, ticksToComplete: 20, age: 3 },
@@ -734,9 +734,9 @@ export const defaultRules = {
     { id: 'elevator_motor', inputs: { electric_motor: 2, steel_gear: 4, steel_beam: 2 }, outputs: { elevator_motor: 1 }, ticksToComplete: 12, age: 5 },
     { id: 'motor_housing_unit', inputs: { housing: 2, electric_motor: 1, aluminum_sheet: 1 }, outputs: { motor_housing_unit: 1 }, ticksToComplete: 6, age: 5 },
     { id: 'insulated_pipe', inputs: { steel_pipe: 2, insulation: 1 }, outputs: { insulated_pipe: 1 }, ticksToComplete: 4, age: 5 },
-    { id: 'relay_panel', inputs: { relay: 6, circuit_board: 1, steel_plate: 1 }, outputs: { relay_panel: 1 }, ticksToComplete: 8, age: 5 },
+    { id: 'relay_panel', inputs: { relay: 6, electric_switch: 2, steel_plate: 1 }, outputs: { relay_panel: 1 }, ticksToComplete: 8, age: 5 },
     { id: 'wire_spool', inputs: { steel_wire: 10, aluminum_rod: 1 }, outputs: { wire_spool: 1 }, ticksToComplete: 3, age: 5 },
-    { id: 'lamp_fixture', inputs: { bulb_socket: 3, aluminum_sheet: 1, steel_bracket: 2 }, outputs: { lamp_fixture: 1 }, ticksToComplete: 4, age: 5 },
+    { id: 'lamp_fixture', inputs: { bulb_socket: 3, aluminum_sheet: 1, iron_bracket: 2 }, outputs: { lamp_fixture: 1 }, ticksToComplete: 4, age: 5 },
 
     // --- AGE 6: DIGITAL ---
     // - Updated with new logic for Age 6
@@ -1306,7 +1306,7 @@ export const defaultRules = {
     glassblowers_workshop: {
       slots: [
         { label: 'Furnace Plating', material: 'iron_plate', quantity: 4 },
-        { label: 'Kiln Bricks', material: 'bricks', quantity: 12 },
+        { label: 'Kiln Bricks', material: 'stone_bricks', quantity: 12 },
         { label: 'Air System', material: 'copper_tubing', quantity: 2 }
       ]
     },
@@ -1319,7 +1319,7 @@ export const defaultRules = {
     },
     foundry: {
       slots: [
-        { label: 'Furnace Bricks', material: 'bricks', quantity: 10 },
+        { label: 'Furnace Bricks', material: 'stone_bricks', quantity: 10 },
         { label: 'Structural Frame', material: 'iron_plate', quantity: 4 }
       ]
     },
@@ -1365,7 +1365,7 @@ export const defaultRules = {
     },
     electronics_fab: {
       slots: [
-        { label: 'Cleanroom Frame', material: 'composite', quantity: 10 },
+        { label: 'Cleanroom Frame', material: 'steel_bracket', quantity: 10 },
         { label: 'Automation Motors', material: 'electric_motor', quantity: 5 },
         { label: 'Heating Units', material: 'heating_element', quantity: 10 },
         { label: 'Control Circuitry', material: 'resistor', quantity: 10 }
