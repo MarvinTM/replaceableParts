@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.6.1",
+      "date": "2024-02-09",
+      "highlights": "Balance changes and fixes",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Balance changes, adjusted cost, weight and consumption of several different recipes"
+        },
+        {
+          "type": "fix",
+          "text": "Now oil will be possible to be obtained in the map (swamps and desert biomes will appear)"
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2024-02-08",
       "highlights": "New Encyclopedia tab. New Inventory component. Fixed several factory visualization issues.",

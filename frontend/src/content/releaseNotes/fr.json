@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.6.1",
+      "date": "2024-02-09",
+      "highlights": "Ajustements d'équilibrage et corrections",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Ajustements d'équilibrage : le coût, le poids et la consommation de plusieurs recettes ont été modifiés"
+        },
+        {
+          "type": "fix",
+          "text": "Le pétrole peut désormais être obtenu sur la carte (des biomes marécageux et désertiques apparaîtront)"
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2024-02-08",
       "highlights": "Nouvel onglet Encyclopédie. Nouveau composant Inventaire. Correction de plusieurs problèmes de visualisation de l'usine.",

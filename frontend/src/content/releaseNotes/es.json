@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.6.1",
+      "date": "2024-02-09",
+      "highlights": "Cambios de balance y correcciones",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Se hicieron cambios de balance y se ajustaron el costo, el peso y el consumo de varias recetas diferentes"
+        },
+        {
+          "type": "fix",
+          "text": "Ahora será posible obtener petróleo en el mapa (aparecerán biomas de pantano y desierto)"
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2024-02-08",
       "highlights": "Nueva pestaña Enciclopedia. Nuevo componente de Inventario. Corregidos varios problemas de visualización en la fábrica.",

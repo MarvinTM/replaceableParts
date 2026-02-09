@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.6.1",
+      "date": "2024-02-09",
+      "highlights": "Modifiche al bilanciamento e correzioni",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Modifiche al bilanciamento: sono stati regolati costo, peso e consumo di diverse ricette"
+        },
+        {
+          "type": "fix",
+          "text": "Ora sarà possibile ottenere petrolio sulla mappa (appariranno biomi paludosi e desertici)"
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2024-02-08",
       "highlights": "Nuova scheda Enciclopedia. Nuovo componente Inventario. Corretti diversi problemi di visualizzazione della fabbrica.",

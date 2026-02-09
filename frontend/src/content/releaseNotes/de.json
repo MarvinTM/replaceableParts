@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "0.6.1",
+      "date": "2024-02-09",
+      "highlights": "Balance-Änderungen und Fehlerbehebungen",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Balance-Änderungen: Kosten, Gewicht und Verbrauch mehrerer verschiedener Rezepte wurden angepasst"
+        },
+        {
+          "type": "fix",
+          "text": "Öl kann jetzt auf der Karte gewonnen werden (Sumpf- und Wüstenbiome erscheinen)"
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "2024-02-08",
       "highlights": "Neuer Enzyklopädie-Tab. Neue Inventarkomponente. Mehrere Visualisierungsprobleme in der Fabrik behoben.",
