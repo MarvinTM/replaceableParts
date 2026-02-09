@@ -166,6 +166,7 @@ describe('State Migration', () => {
         { id: 'iron_active', resourceType: 'iron_ore', rate: 99, active: true }
       ],
       explorationMap: {
+        biomeGenerationVersion: 2,
         generatedWidth: 2,
         generatedHeight: 2,
         tiles: {
