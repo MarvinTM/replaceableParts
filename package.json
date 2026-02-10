@@ -10,6 +10,7 @@
     "build": "npm run build --prefix frontend && npm run build --prefix backend",
     "build:frontend": "npm run build --prefix frontend",
     "build:backend": "npm run build --prefix backend",
+    "loc": "find backend frontend -type f \\( -name '*.js' -o -name '*.jsx' -o -name '*.ts' -o -name '*.tsx' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.css' -o -name '*.html' -o -name '*.sql' -o -name '*.prisma' \\) ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/build/*' ! -path '*/coverage/*' ! -path '*/public/*' -print0 | xargs -0 wc -l | tail -n 1",
     "db:migrate": "npm run db:migrate --prefix backend",
     "db:generate": "npm run db:generate --prefix backend",
     "db:studio": "npm run db:studio --prefix backend"
