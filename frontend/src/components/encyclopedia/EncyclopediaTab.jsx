@@ -138,6 +138,22 @@ export default function EncyclopediaTab() {
   const selectedRecipe = selectedRecipeId
     ? visibleRecipes.find(r => r.id === selectedRecipeId)
     : null;
+  const generatorConfigById = useMemo(
+    () => new Map((rules?.generators || []).map(generator => [generator.id, generator])),
+    [rules?.generators]
+  );
+  const selectedFuelRequirement = useMemo(() => {
+    if (!selectedRecipe) return null;
+
+    const outputMaterialIds = Object.keys(selectedRecipe.outputs || {});
+    const matchingGenerator =
+      outputMaterialIds
+        .map((materialId) => generatorConfigById.get(materialId))
+        .find((generator) => generator?.fuelRequirement)
+      || generatorConfigById.get(selectedRecipe.id);
+
+    return matchingGenerator?.fuelRequirement || null;
+  }, [selectedRecipe, generatorConfigById]);
 
   if (!engineState || !rules) return null;
 
@@ -464,6 +480,30 @@ export default function EncyclopediaTab() {
                       {formatCredits(selectedRecipe.primaryOutputMat.basePrice)}
                     </Typography>
                   </Box>
+                )}
+                {selectedFuelRequirement && (
+                  <>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                      <Typography variant="body2">{t('encyclopedia.fuelType')}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+                        <MaterialIcon
+                          materialId={selectedFuelRequirement.materialId}
+                          materialName={getMaterialName(selectedFuelRequirement.materialId)}
+                          category={rules.materials?.find(m => m.id === selectedFuelRequirement.materialId)?.category}
+                          size={20}
+                        />
+                        <Typography variant="body2" fontWeight="bold" noWrap>
+                          {getMaterialName(selectedFuelRequirement.materialId)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography variant="body2">{t('encyclopedia.fuelConsumption')}</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {selectedFuelRequirement.consumptionRate} {t('game.factory.perTick', '/ tick')}
+                      </Typography>
+                    </Box>
+                  </>
                 )}
               </Box>
 

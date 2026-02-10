@@ -552,7 +552,9 @@
     "production": "Production",
     "ticksToComplete": "Ticks to complete",
     "basePrice": "Base price",
-    "producedBy": "Produced By"
+    "producedBy": "Produced By",
+    "fuelType": "Fuel type",
+    "fuelConsumption": "Fuel consumption"
   },
   "materialDescriptions": {
     "wood": "Timber cut for early structures, tools, and fuel.",

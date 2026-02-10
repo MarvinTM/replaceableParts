@@ -541,7 +541,9 @@
     "production": "Production",
     "ticksToComplete": "Ticks pour compléter",
     "basePrice": "Prix de base",
-    "producedBy": "Produit Par"
+    "producedBy": "Produit Par",
+    "fuelType": "Type de carburant",
+    "fuelConsumption": "Consommation de carburant"
   },
   "materialDescriptions": {
     "wood": "Bois coupé pour les premières structures, outils et combustible.",

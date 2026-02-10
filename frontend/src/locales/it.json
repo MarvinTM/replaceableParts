@@ -540,7 +540,9 @@
     "production": "Produzione",
     "ticksToComplete": "Tick per completare",
     "basePrice": "Prezzo base",
-    "producedBy": "Prodotto Da"
+    "producedBy": "Prodotto Da",
+    "fuelType": "Tipo di carburante",
+    "fuelConsumption": "Consumo di carburante"
   },
   "materialDescriptions": {
     "wood": "Legno tagliato per strutture iniziali, attrezzi e combustibile.",

@@ -544,7 +544,9 @@
     "production": "Produktion",
     "ticksToComplete": "Ticks bis zur Fertigstellung",
     "basePrice": "Grundpreis",
-    "producedBy": "Hergestellt Von"
+    "producedBy": "Hergestellt Von",
+    "fuelType": "Kraftstofftyp",
+    "fuelConsumption": "Kraftstoffverbrauch"
   },
   "materialDescriptions": {
     "wood": "Holz, das für frühe Bauten, Werkzeuge und Brennstoff gefällt wird.",

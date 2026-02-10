@@ -549,7 +549,9 @@
     "production": "Producción",
     "ticksToComplete": "Ticks para completar",
     "basePrice": "Precio base",
-    "producedBy": "Producido Por"
+    "producedBy": "Producido Por",
+    "fuelType": "Tipo de combustible",
+    "fuelConsumption": "Consumo de combustible"
   },
   "materialDescriptions": {
     "wood": "Madera cortada para estructuras tempranas, herramientas y combustible.",
