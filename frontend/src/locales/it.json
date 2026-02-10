@@ -399,7 +399,14 @@
     "energyLow": "L'energia è bassa. Costruisci o schiera più generatori prima che le tue macchine si fermino.",
     "energyNegative": "Non hai abbastanza energia. Alcune macchine sono bloccate finché non aumenti la produzione.",
     "rawProductionLow": "La produzione di materie prime è troppo bassa rispetto alla domanda attuale. Sblocca più giacimenti o riduci i consumi.",
-    "partsProductionLow": "La produzione di componenti è in ritardo rispetto alla domanda. Aggiungi o riconfigura le macchine per evitare colli di bottiglia."
+    "partsProductionLow": "La produzione di componenti è in ritardo rispetto alla domanda. Aggiungi o riconfigura le macchine per evitare colli di bottiglia.",
+    "machineNoRecipeAssigned": "Una macchina attiva non ha una ricetta assegnata. Assegna una ricetta per avviare la produzione.",
+    "generatorOutOfFuel": "Un generatore a combustibile si è fermato perché è finito il carburante. Ripristina il rifornimento per recuperare energia.",
+    "researchReadyIdle": "Hai abbastanza Punti Ricerca per avviare un esperimento. Usa la scheda Ricerca per sbloccare nuove ricette.",
+    "prototypeReadyForParts": "Un prototipo può avanzare ora. Hai già componenti in inventario per gli slot mancanti.",
+    "explorationNodeAffordable": "Puoi permetterti di sbloccare un giacimento di risorse. Espandere l'estrazione ora può evitare carenze.",
+    "marketSaturationWarning": "Un articolo venduto di recente è ora in un mercato saturo. Valuta di vendere altri prodotti.",
+    "marketDiversificationOpportunity": "Ti manca un solo tipo di articolo per il prossimo bonus di diversificazione. Vendi un nuovo tipo di prodotto."
   },
   "tutorial": {
     "skip": "Salta tutorial",

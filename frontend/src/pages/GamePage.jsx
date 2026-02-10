@@ -36,7 +36,13 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import { useGame } from '../contexts/GameContext';
 import { useAuth } from '../contexts/AuthContext';
 import useGameStore from '../stores/gameStore';
-import { getNextExpansionChunk, getNextExplorationExpansion, expandGeneratedMap, getNodeUnlockCost } from '../engine/engine.js';
+import {
+  getNextExpansionChunk,
+  getNextExplorationExpansion,
+  expandGeneratedMap,
+  getNodeUnlockCost,
+  calculateHighestUnlockedAge,
+} from '../engine/engine.js';
 import FactoryCanvas from '../components/factory/FactoryCanvas';
 import ExplorationCanvas from '../components/exploration/ExplorationCanvas';
 import RecipeDropdown from '../components/factory/RecipeDropdown';
@@ -60,10 +66,17 @@ import { formatCredits } from '../utils/currency';
 import { calculateRawMaterialBalance } from '../utils/rawMaterialBalance';
 import { calculateMaterialThroughput } from '../utils/materialThroughput';
 import { calculateRequestedEnergyConsumption } from '../utils/energyDemand';
+import { getExperimentCostForAge } from '../utils/researchCosts';
 import {
   getEnergyTipLevel,
   hasLowRawMaterialProduction,
   hasLowPartsProduction,
+  hasMachineWithoutRecipeAssigned,
+  hasGeneratorOutOfFuel,
+  hasPrototypeReadyForParts,
+  hasAffordableLockedExplorationNode,
+  hasMarketSaturationWarning,
+  hasMarketDiversificationOpportunity,
 } from '../utils/tipTriggers';
 
 function TabPanel({ children, value, index, ...other }) {
@@ -1018,6 +1031,13 @@ export default function GamePage() {
         energy: 'normal',
         rawMaterials: false,
         parts: false,
+        machineNoRecipeAssigned: false,
+        generatorOutOfFuel: false,
+        researchReadyButIdle: false,
+        prototypeReadyForParts: false,
+        explorationNodeAffordable: false,
+        marketSaturationWarning: false,
+        marketDiversificationOpportunity: false,
       };
     }
 
@@ -1042,10 +1062,69 @@ export default function GamePage() {
       recipes: rules.recipes,
     });
 
+    const highestUnlockedAge = calculateHighestUnlockedAge(engineState, rules);
+    const randomExperimentCost = getExperimentCostForAge(highestUnlockedAge, rules);
+    const researchPoints = Number(engineState.research?.researchPoints) || 0;
+    const undiscoveredCount = Math.max(0, rules.recipes.length - (engineState.discoveredRecipes?.length || 0));
+
+    const usedResources = new Set();
+    const recipeMap = new Map((rules.recipes || []).map(recipe => [recipe.id, recipe]));
+    for (const recipeId of [...(engineState.unlockedRecipes || []), ...(engineState.discoveredRecipes || [])]) {
+      const recipe = recipeMap.get(recipeId);
+      if (!recipe?.inputs) continue;
+      for (const resourceId of Object.keys(recipe.inputs)) {
+        usedResources.add(resourceId);
+      }
+    }
+
+    const inStockFinalGoodIds = Object.entries(engineState.inventory || {})
+      .filter(([, quantity]) => Number(quantity) > 0)
+      .map(([itemId]) => {
+        const material = rules.materials.find(m => m.id === itemId);
+        return material?.category === 'final' ? itemId : null;
+      })
+      .filter(Boolean);
+
     return {
       energy: getEnergyTipLevel({ produced, consumed }),
       rawMaterials: hasLowRawMaterialProduction(rawMaterialBalance),
       parts: hasLowPartsProduction(materialThroughput),
+      machineNoRecipeAssigned: hasMachineWithoutRecipeAssigned({
+        machines: engineState.machines,
+        machineConfigs: rules.machines,
+      }),
+      generatorOutOfFuel: hasGeneratorOutOfFuel({
+        generators: engineState.generators,
+        generatorConfigs: rules.generators,
+      }),
+      researchReadyButIdle: !engineState.research?.active &&
+        undiscoveredCount > 0 &&
+        researchPoints >= randomExperimentCost,
+      prototypeReadyForParts: hasPrototypeReadyForParts({
+        awaitingPrototype: engineState.research?.awaitingPrototype || [],
+        inventory: engineState.inventory,
+        materials: rules.materials,
+      }),
+      explorationNodeAffordable: hasAffordableLockedExplorationNode({
+        explorationMap: engineState.explorationMap,
+        extractionNodes: engineState.extractionNodes,
+        credits: engineState.credits,
+        relevantResourceIds: usedResources,
+        getUnlockCost: (resourceType, extractionNodes) => getNodeUnlockCost(resourceType, extractionNodes, rules),
+      }),
+      marketSaturationWarning: hasMarketSaturationWarning({
+        marketRecentSales: engineState.marketRecentSales || [],
+        marketPopularity: engineState.marketPopularity || {},
+        tick: engineState.tick,
+        recentTicks: 20,
+      }),
+      marketDiversificationOpportunity: hasMarketDiversificationOpportunity({
+        marketRecentSales: engineState.marketRecentSales || [],
+        tick: engineState.tick,
+        diversificationWindow: rules.market?.diversificationWindow || 100,
+        diversificationBonuses: rules.market?.diversificationBonuses || {},
+        inStockFinalGoodIds,
+      }),
     };
   }, [engineState, rules]);
 
@@ -1104,6 +1183,34 @@ export default function GamePage() {
 
     if (tipSignals.parts) {
       queueTip('event-parts-production-low', 'tips.partsProductionLow');
+    }
+
+    if (tipSignals.machineNoRecipeAssigned) {
+      queueTip('event-machine-no-recipe-assigned', 'tips.machineNoRecipeAssigned');
+    }
+
+    if (tipSignals.generatorOutOfFuel) {
+      queueTip('event-generator-out-of-fuel', 'tips.generatorOutOfFuel');
+    }
+
+    if (tipSignals.researchReadyButIdle) {
+      queueTip('event-research-ready-idle', 'tips.researchReadyIdle');
+    }
+
+    if (tipSignals.prototypeReadyForParts) {
+      queueTip('event-prototype-ready-for-parts', 'tips.prototypeReadyForParts');
+    }
+
+    if (tipSignals.explorationNodeAffordable) {
+      queueTip('event-exploration-node-affordable', 'tips.explorationNodeAffordable');
+    }
+
+    if (tipSignals.marketSaturationWarning) {
+      queueTip('event-market-saturation-warning', 'tips.marketSaturationWarning');
+    }
+
+    if (tipSignals.marketDiversificationOpportunity) {
+      queueTip('event-market-diversification-opportunity', 'tips.marketDiversificationOpportunity');
     }
   }, [engineState?.tutorialCompleted, tipSignals, queueTip]);
 

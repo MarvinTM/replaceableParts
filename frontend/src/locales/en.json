@@ -411,7 +411,14 @@
     "energyLow": "Energy is running low. Build or deploy more generators before your machines start shutting down.",
     "energyNegative": "You don't have enough energy. Some machines are blocked until you increase power generation.",
     "rawProductionLow": "Raw material production is too low for current demand. Unlock more extraction nodes or reduce consumption.",
-    "partsProductionLow": "Part production is lagging behind demand. Add or reconfigure machines to avoid bottlenecks."
+    "partsProductionLow": "Part production is lagging behind demand. Add or reconfigure machines to avoid bottlenecks.",
+    "machineNoRecipeAssigned": "An enabled machine has no recipe assigned. Assign a recipe so it can start producing.",
+    "generatorOutOfFuel": "A fuel generator has stopped because it ran out of fuel. Restore its fuel supply to recover power.",
+    "researchReadyIdle": "You have enough Research Points to run an experiment. Use the Research tab to unlock new recipes.",
+    "prototypeReadyForParts": "A prototype can be progressed now. You already have parts in inventory for missing slots.",
+    "explorationNodeAffordable": "You can afford to unlock a resource node. Expanding extraction now can prevent shortages.",
+    "marketSaturationWarning": "A recently sold item is now in a saturated market. Consider selling other products.",
+    "marketDiversificationOpportunity": "You are one item type away from the next diversification bonus. Sell one new product type."
   },
   "tutorial": {
     "skip": "Skip tutorial",

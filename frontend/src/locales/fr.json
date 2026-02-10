@@ -400,7 +400,14 @@
     "energyLow": "L'énergie est faible. Construisez ou déployez plus de générateurs avant que vos machines ne s'arrêtent.",
     "energyNegative": "Vous n'avez pas assez d'énergie. Certaines machines sont bloquées jusqu'à ce que vous augmentiez la production d'électricité.",
     "rawProductionLow": "La production de matières premières est trop faible pour la demande actuelle. Débloquez plus de gisements ou réduisez la consommation.",
-    "partsProductionLow": "La production de pièces est en retard sur la demande. Ajoutez ou reconfigurez des machines pour éviter les goulots d'étranglement."
+    "partsProductionLow": "La production de pièces est en retard sur la demande. Ajoutez ou reconfigurez des machines pour éviter les goulots d'étranglement.",
+    "machineNoRecipeAssigned": "Une machine active n'a aucune recette assignée. Assignez-lui une recette pour démarrer la production.",
+    "generatorOutOfFuel": "Un générateur à carburant s'est arrêté faute de carburant. Rétablissez l'approvisionnement pour récupérer de l'énergie.",
+    "researchReadyIdle": "Vous avez assez de Points de Recherche pour lancer une expérience. Utilisez l'onglet Recherche pour débloquer de nouvelles recettes.",
+    "prototypeReadyForParts": "Un prototype peut avancer maintenant. Vous avez déjà des pièces en inventaire pour les emplacements manquants.",
+    "explorationNodeAffordable": "Vous pouvez vous permettre de débloquer un gisement de ressources. Étendre l'extraction maintenant peut éviter des pénuries.",
+    "marketSaturationWarning": "Un objet vendu récemment est maintenant sur un marché saturé. Envisagez de vendre d'autres produits.",
+    "marketDiversificationOpportunity": "Il vous manque un seul type d'objet pour le prochain bonus de diversification. Vendez un nouveau type de produit."
   },
   "tutorial": {
     "skip": "Passer le tutoriel",

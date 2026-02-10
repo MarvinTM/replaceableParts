@@ -408,7 +408,14 @@
     "energyLow": "La energía está baja. Construye o despliega más generadores antes de que tus máquinas se detengan.",
     "energyNegative": "No tienes suficiente energía. Algunas máquinas están bloqueadas hasta que aumentes la generación.",
     "rawProductionLow": "La producción de materias primas es insuficiente para la demanda actual. Desbloquea más nodos de extracción o reduce el consumo.",
-    "partsProductionLow": "La producción de piezas va por detrás de la demanda. Añade o reconfigura máquinas para evitar cuellos de botella."
+    "partsProductionLow": "La producción de piezas va por detrás de la demanda. Añade o reconfigura máquinas para evitar cuellos de botella.",
+    "machineNoRecipeAssigned": "Hay una máquina activa sin receta asignada. Asigna una receta para que empiece a producir.",
+    "generatorOutOfFuel": "Un generador con combustible se detuvo por falta de combustible. Restaura su suministro para recuperar energía.",
+    "researchReadyIdle": "Tienes suficientes Puntos de Investigación para ejecutar un experimento. Usa la pestaña de Investigación para desbloquear nuevas recetas.",
+    "prototypeReadyForParts": "Ya puedes avanzar un prototipo. Ya tienes piezas en inventario para ranuras pendientes.",
+    "explorationNodeAffordable": "Puedes permitirte desbloquear un nodo de recursos. Expandir extracción ahora puede evitar escasez.",
+    "marketSaturationWarning": "Un artículo vendido recientemente está ahora en un mercado saturado. Considera vender otros productos.",
+    "marketDiversificationOpportunity": "Te falta un solo tipo de artículo para el próximo bonus de diversificación. Vende un nuevo tipo de producto."
   },
   "tutorial": {
     "skip": "Saltar tutorial",

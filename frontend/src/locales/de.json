@@ -403,7 +403,14 @@
     "energyLow": "Die Energie wird knapp. Bauen oder platzieren Sie mehr Generatoren, bevor Ihre Maschinen ausfallen.",
     "energyNegative": "Sie haben nicht genug Energie. Einige Maschinen sind blockiert, bis Sie mehr Strom erzeugen.",
     "rawProductionLow": "Die Rohstoffproduktion ist für die aktuelle Nachfrage zu niedrig. Schalten Sie mehr Vorkommen frei oder senken Sie den Verbrauch.",
-    "partsProductionLow": "Die Teileproduktion liegt hinter der Nachfrage. Fügen Sie Maschinen hinzu oder konfigurieren Sie sie um, um Engpässe zu vermeiden."
+    "partsProductionLow": "Die Teileproduktion liegt hinter der Nachfrage. Fügen Sie Maschinen hinzu oder konfigurieren Sie sie um, um Engpässe zu vermeiden.",
+    "machineNoRecipeAssigned": "Eine aktive Maschine hat kein Rezept zugewiesen. Weisen Sie ein Rezept zu, damit die Produktion startet.",
+    "generatorOutOfFuel": "Ein brennstoffbetriebener Generator ist wegen fehlendem Brennstoff ausgefallen. Stellen Sie die Versorgung wieder her.",
+    "researchReadyIdle": "Sie haben genug Forschungspunkte für ein Experiment. Nutzen Sie den Forschungs-Tab, um neue Rezepte freizuschalten.",
+    "prototypeReadyForParts": "Ein Prototyp kann jetzt vorangebracht werden. Für fehlende Slots sind bereits Teile im Inventar vorhanden.",
+    "explorationNodeAffordable": "Sie können ein Ressourcenvorkommen freischalten. Mehr Förderung jetzt kann Engpässe verhindern.",
+    "marketSaturationWarning": "Ein kürzlich verkauftes Produkt ist jetzt in einem gesättigten Markt. Verkaufen Sie andere Produkte.",
+    "marketDiversificationOpportunity": "Sie sind nur einen Produkttyp vom nächsten Diversifizierungsbonus entfernt. Verkaufen Sie einen neuen Produkttyp."
   },
   "tutorial": {
     "skip": "Tutorial überspringen",
