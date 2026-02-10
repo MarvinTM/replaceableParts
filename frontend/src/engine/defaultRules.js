@@ -454,7 +454,7 @@ export const defaultRules = {
     { id: 'planks', inputs: { wood: 2 }, outputs: { planks: 2 }, ticksToComplete: 1, age: 1 },
     { id: 'wooden_beam', inputs: { planks: 2 }, outputs: { wooden_beam: 1 }, ticksToComplete: 2, age: 1 },
     { id: 'stone_bricks', inputs: { stone: 2 }, outputs: { stone_bricks: 2 }, ticksToComplete: 2, age: 1 },
-    { id: 'iron_ingot', inputs: { iron_ore: 2 }, outputs: { iron_ingot: 1 }, ticksToComplete: 2, age: 1 },
+    { id: 'iron_ingot', inputs: { iron_ore: 1 }, outputs: { iron_ingot: 1 }, ticksToComplete: 2, age: 1 },
     { id: 'iron_plate', inputs: { iron_ingot: 2 }, outputs: { iron_plate: 1 }, ticksToComplete: 2, age: 1 },
     { id: 'iron_rod', inputs: { iron_ingot: 1 }, outputs: { iron_rod: 2 }, ticksToComplete: 1, age: 1 },
     { id: 'nails', inputs: { iron_rod: 1 }, outputs: { nails: 8 }, ticksToComplete: 1, age: 1 },
@@ -570,7 +570,7 @@ export const defaultRules = {
     // --- AGE 3: INDUSTRIAL ---
     // Intermediates
     { id: 'bricks', inputs: { clay: 2 }, outputs: { bricks: 3 }, ticksToComplete: 2, age: 3 },
-    { id: 'steel_ingot', inputs: { iron_ingot: 2, coal: 2 }, outputs: { steel_ingot: 1 }, ticksToComplete: 4, age: 3 },
+    { id: 'steel_ingot', inputs: { iron_ore: 1, coal: 1 }, outputs: { steel_ingot: 1 }, ticksToComplete: 4, age: 3 },
     { id: 'steel_beam', inputs: { steel_ingot: 1 }, outputs: { steel_beam: 1 }, ticksToComplete: 3, age: 3 },
     { id: 'steel_plate', inputs: { steel_ingot: 1 }, outputs: { steel_plate: 1 }, ticksToComplete: 3, age: 3 },
     { id: 'steel_rod', inputs: { steel_ingot: 1 }, outputs: { steel_rod: 2 }, ticksToComplete: 2, age: 3 },
@@ -1245,7 +1245,7 @@ export const defaultRules = {
       energyOutput: 800,
       disableAutoScale: true,
       animation: { frames: 4, speed: 0.02, separateFrames: true },
-      fuelRequirement: { materialId: 'diesel_fuel', consumptionRate: 1 }
+      fuelRequirement: { materialId: 'diesel_fuel', consumptionRate: 5}
     },
     {
       id: 'solar_array',
