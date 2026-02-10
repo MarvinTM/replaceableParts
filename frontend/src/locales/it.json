@@ -395,7 +395,11 @@
     "factory": "Trascina macchine e generatori dalla barra laterale sulla griglia. Clicca su una macchina per assegnare una ricetta, o clic destro per rimuoverla.",
     "exploration": "Clicca sulle caselle per vedere i dettagli. Sblocca i giacimenti di risorse per iniziare l'estrazione automatica delle materie prime.",
     "research": "Usa i Punti Ricerca per eseguire esperimenti e scoprire nuove ricette. Costruisci prototipi per sbloccare le ricette per la produzione.",
-    "market": "Seleziona oggetti dal tuo inventario da vendere. Osserva le tendenze del mercato e diversifica le tue vendite per crediti bonus."
+    "market": "Seleziona oggetti dal tuo inventario da vendere. Osserva le tendenze del mercato e diversifica le tue vendite per crediti bonus.",
+    "energyLow": "L'energia è bassa. Costruisci o schiera più generatori prima che le tue macchine si fermino.",
+    "energyNegative": "Non hai abbastanza energia. Alcune macchine sono bloccate finché non aumenti la produzione.",
+    "rawProductionLow": "La produzione di materie prime è troppo bassa rispetto alla domanda attuale. Sblocca più giacimenti o riduci i consumi.",
+    "partsProductionLow": "La produzione di componenti è in ritardo rispetto alla domanda. Aggiungi o riconfigura le macchine per evitare colli di bottiglia."
   },
   "tutorial": {
     "skip": "Salta tutorial",

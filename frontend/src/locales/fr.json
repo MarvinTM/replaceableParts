@@ -396,7 +396,11 @@
     "factory": "Glissez les machines et générateurs du panneau latéral sur la grille. Cliquez sur une machine pour assigner une recette, ou clic-droit pour la supprimer.",
     "exploration": "Cliquez sur les tuiles pour voir les détails. Débloquez les gisements de ressources pour commencer l'extraction automatique des matières premières.",
     "research": "Utilisez les Points de Recherche pour mener des expériences et découvrir de nouvelles recettes. Construisez des prototypes pour débloquer les recettes pour la production.",
-    "market": "Sélectionnez des objets de votre inventaire pour les vendre. Surveillez les tendances du marché et diversifiez vos ventes pour des crédits bonus."
+    "market": "Sélectionnez des objets de votre inventaire pour les vendre. Surveillez les tendances du marché et diversifiez vos ventes pour des crédits bonus.",
+    "energyLow": "L'énergie est faible. Construisez ou déployez plus de générateurs avant que vos machines ne s'arrêtent.",
+    "energyNegative": "Vous n'avez pas assez d'énergie. Certaines machines sont bloquées jusqu'à ce que vous augmentiez la production d'électricité.",
+    "rawProductionLow": "La production de matières premières est trop faible pour la demande actuelle. Débloquez plus de gisements ou réduisez la consommation.",
+    "partsProductionLow": "La production de pièces est en retard sur la demande. Ajoutez ou reconfigurez des machines pour éviter les goulots d'étranglement."
   },
   "tutorial": {
     "skip": "Passer le tutoriel",

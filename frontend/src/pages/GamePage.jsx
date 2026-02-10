@@ -60,6 +60,11 @@ import { formatCredits } from '../utils/currency';
 import { calculateRawMaterialBalance } from '../utils/rawMaterialBalance';
 import { calculateMaterialThroughput } from '../utils/materialThroughput';
 import { calculateRequestedEnergyConsumption } from '../utils/energyDemand';
+import {
+  getEnergyTipLevel,
+  hasLowRawMaterialProduction,
+  hasLowPartsProduction,
+} from '../utils/tipTriggers';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -959,6 +964,7 @@ export default function GamePage() {
   const { currentGame, isAutoRestoring, saveGame } = useGame();
 
   const engineState = useGameStore((state) => state.engineState);
+  const rules = useGameStore((state) => state.rules);
   const isRunning = useGameStore((state) => state.isRunning);
   const startGameLoop = useGameStore((state) => state.startGameLoop);
   const completeTutorial = useGameStore((state) => state.completeTutorial);
@@ -1006,6 +1012,43 @@ export default function GamePage() {
   // Track if we've already triggered the initial tab tip
   const initialTipTriggered = useRef(false);
 
+  const tipSignals = useMemo(() => {
+    if (!engineState || !rules) {
+      return {
+        energy: 'normal',
+        rawMaterials: false,
+        parts: false,
+      };
+    }
+
+    const requestedEnergyConsumption = calculateRequestedEnergyConsumption({
+      machines: engineState.machines,
+      machineConfigs: rules.machines,
+    });
+    const consumed = Math.max(Number(engineState.energy?.consumed) || 0, requestedEnergyConsumption);
+    const produced = Number(engineState.energy?.produced) || 0;
+
+    const rawMaterialBalance = calculateRawMaterialBalance({
+      machines: engineState.machines,
+      generators: engineState.generators,
+      extractionNodes: engineState.extractionNodes,
+      materials: rules.materials,
+      recipes: rules.recipes,
+      generatorConfigs: rules.generators,
+    });
+    const materialThroughput = calculateMaterialThroughput({
+      machines: engineState.machines,
+      materials: rules.materials,
+      recipes: rules.recipes,
+    });
+
+    return {
+      energy: getEnergyTipLevel({ produced, consumed }),
+      rawMaterials: hasLowRawMaterialProduction(rawMaterialBalance),
+      parts: hasLowPartsProduction(materialThroughput),
+    };
+  }, [engineState, rules]);
+
   // Manual save handler - must be before conditional returns
   const handleManualSave = useCallback(async () => {
     if (isSaving) return;
@@ -1045,6 +1088,24 @@ export default function GamePage() {
       return () => clearTimeout(timer);
     }
   }, [tabValue, engineState?.tutorialCompleted, queueTip]);
+
+  useEffect(() => {
+    if (!engineState?.tutorialCompleted) return;
+
+    if (tipSignals.energy === 'negative') {
+      queueTip('event-energy-negative', 'tips.energyNegative');
+    } else if (tipSignals.energy === 'low') {
+      queueTip('event-energy-low', 'tips.energyLow');
+    }
+
+    if (tipSignals.rawMaterials) {
+      queueTip('event-raw-production-low', 'tips.rawProductionLow');
+    }
+
+    if (tipSignals.parts) {
+      queueTip('event-parts-production-low', 'tips.partsProductionLow');
+    }
+  }, [engineState?.tutorialCompleted, tipSignals, queueTip]);
 
   // If no game is loaded and not auto-restoring, redirect to menu
   if ((!currentGame || !engineState) && !isAutoRestoring) {

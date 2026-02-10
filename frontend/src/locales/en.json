@@ -407,7 +407,11 @@
     "factory": "Drag machines and generators from the sidebar onto the grid. Click a machine to assign a recipe, or right-click to remove it.",
     "exploration": "Click on tiles to see details. Unlock resource nodes to start extracting raw materials automatically.",
     "research": "Use Research Points to run experiments and discover new recipes. Build prototypes to unlock recipes for production.",
-    "market": "Select items from your inventory to sell. Watch market trends and diversify your sales for bonus credits."
+    "market": "Select items from your inventory to sell. Watch market trends and diversify your sales for bonus credits.",
+    "energyLow": "Energy is running low. Build or deploy more generators before your machines start shutting down.",
+    "energyNegative": "You don't have enough energy. Some machines are blocked until you increase power generation.",
+    "rawProductionLow": "Raw material production is too low for current demand. Unlock more extraction nodes or reduce consumption.",
+    "partsProductionLow": "Part production is lagging behind demand. Add or reconfigure machines to avoid bottlenecks."
   },
   "tutorial": {
     "skip": "Skip tutorial",

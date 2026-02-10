@@ -399,7 +399,11 @@
     "factory": "Ziehen Sie Maschinen und Generatoren aus der Seitenleiste auf das Gitter. Klicken Sie auf eine Maschine, um ein Rezept zuzuweisen, oder rechtsklicken Sie, um sie zu entfernen.",
     "exploration": "Klicken Sie auf Kacheln, um Details zu sehen. Schalten Sie Ressourcenvorkommen frei, um automatisch Rohstoffe zu extrahieren.",
     "research": "Nutzen Sie Forschungspunkte, um Experimente durchzuführen und neue Rezepte zu entdecken. Bauen Sie Prototypen, um Rezepte für die Produktion freizuschalten.",
-    "market": "Wählen Sie Gegenstände aus Ihrem Inventar zum Verkauf. Beobachten Sie Markttrends und diversifizieren Sie Ihre Verkäufe für Bonus-Credits."
+    "market": "Wählen Sie Gegenstände aus Ihrem Inventar zum Verkauf. Beobachten Sie Markttrends und diversifizieren Sie Ihre Verkäufe für Bonus-Credits.",
+    "energyLow": "Die Energie wird knapp. Bauen oder platzieren Sie mehr Generatoren, bevor Ihre Maschinen ausfallen.",
+    "energyNegative": "Sie haben nicht genug Energie. Einige Maschinen sind blockiert, bis Sie mehr Strom erzeugen.",
+    "rawProductionLow": "Die Rohstoffproduktion ist für die aktuelle Nachfrage zu niedrig. Schalten Sie mehr Vorkommen frei oder senken Sie den Verbrauch.",
+    "partsProductionLow": "Die Teileproduktion liegt hinter der Nachfrage. Fügen Sie Maschinen hinzu oder konfigurieren Sie sie um, um Engpässe zu vermeiden."
   },
   "tutorial": {
     "skip": "Tutorial überspringen",

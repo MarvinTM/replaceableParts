@@ -404,7 +404,11 @@
     "factory": "Arrastra máquinas y generadores desde la barra lateral a la cuadrícula. Haz clic en una máquina para asignar una receta, o clic derecho para eliminarla.",
     "exploration": "Haz clic en las casillas para ver detalles. Desbloquea nodos de recursos para comenzar a extraer materias primas automáticamente.",
     "research": "Usa Puntos de Investigación para ejecutar experimentos y descubrir nuevas recetas. Construye prototipos para desbloquear recetas para producción.",
-    "market": "Selecciona artículos de tu inventario para vender. Observa las tendencias del mercado y diversifica tus ventas para obtener créditos bonus."
+    "market": "Selecciona artículos de tu inventario para vender. Observa las tendencias del mercado y diversifica tus ventas para obtener créditos bonus.",
+    "energyLow": "La energía está baja. Construye o despliega más generadores antes de que tus máquinas se detengan.",
+    "energyNegative": "No tienes suficiente energía. Algunas máquinas están bloqueadas hasta que aumentes la generación.",
+    "rawProductionLow": "La producción de materias primas es insuficiente para la demanda actual. Desbloquea más nodos de extracción o reduce el consumo.",
+    "partsProductionLow": "La producción de piezas va por detrás de la demanda. Añade o reconfigura máquinas para evitar cuellos de botella."
   },
   "tutorial": {
     "skip": "Saltar tutorial",
