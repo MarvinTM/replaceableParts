@@ -196,7 +196,9 @@
       "shipGoodsTooltip": "Vender todos los productos finales",
       "shipCooldown": "Próximo envío en {{ticks}} turnos",
       "nothingToShip": "No hay productos finales para enviar",
-      "shipped": "+{{credits}}"
+      "shipped": "+{{credits}}",
+      "expandInventory": "Ampliar Inventario",
+      "expandInventoryTooltip": "+{{amount}} capacidad ({{cost}})"
     },
     "exploration": {
       "title": "Mapa de Exploración",

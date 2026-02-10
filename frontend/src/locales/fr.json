@@ -187,7 +187,9 @@
       "shipGoodsTooltip": "Vendre tous les produits finis",
       "shipCooldown": "Prochain envoi dans {{ticks}} tours",
       "nothingToShip": "Aucun produit fini à expédier",
-      "shipped": "+{{credits}}"
+      "shipped": "+{{credits}}",
+      "expandInventory": "Agrandir l'inventaire",
+      "expandInventoryTooltip": "+{{amount}} capacité ({{cost}})"
     },
     "exploration": {
       "title": "Carte d'Exploration",

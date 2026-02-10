@@ -580,6 +580,7 @@ function FactoryTab() {
         inventoryCapacity={engineState.inventorySpace}
         lastShipmentTick={engineState.lastShipmentTick}
         shipmentCooldownTicks={rules.shipment?.cooldownTicks ?? 12}
+        credits={engineState.credits}
       />
 
       {/* Machine Info Popup */}

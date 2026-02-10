@@ -14,6 +14,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import AddIcon from '@mui/icons-material/Add';
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
 import TickProgressIndicator from '../common/TickProgressIndicator';
@@ -85,9 +86,11 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
   inventoryCapacity = null,
   lastShipmentTick = 0,
   shipmentCooldownTicks = 12,
+  credits = 0,
 }, ref) {
   const { t } = useTranslation();
   const shipGoods = useGameStore(state => state.shipGoods);
+  const buyInventorySpace = useGameStore(state => state.buyInventorySpace);
 
   const [shippedItems, setShippedItems] = useState(null);
   const [earnedCredits, setEarnedCredits] = useState(null);
@@ -149,6 +152,14 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
 
   const totalItems = Object.values(inventory).reduce((a, b) => a + b, 0);
   const hasBothCategories = finalGoodsEntries.length > 0 && partAndMaterialEntries.length > 0;
+
+  // Inventory upgrade cost calculation
+  const upgradeAmount = rules?.inventorySpace?.upgradeAmount ?? 100;
+  const currentLevel = Math.floor((inventoryCapacity || 0) / upgradeAmount);
+  const upgradeCost = Math.floor(
+    (rules?.inventorySpace?.baseCost ?? 50) * Math.pow(rules?.inventorySpace?.costGrowth ?? 1.5, currentLevel)
+  );
+  const canAffordUpgrade = credits >= upgradeCost;
 
   // Ship Goods state
   const ticksSinceShipment = tick - lastShipmentTick;
@@ -399,6 +410,18 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
               {totalItems}
             </Typography>
           )}
+          <Tooltip title={t('game.factory.expandInventoryTooltip', '+{{amount}} capacity ({{cost}})', { amount: upgradeAmount, cost: formatCredits(upgradeCost) })}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={!canAffordUpgrade}
+                onClick={buyInventorySpace}
+                sx={{ p: 0.25 }}
+              >
+                <AddIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </span>
+          </Tooltip>
         </Box>
 
         {/* Tick Progress and Play Controls */}

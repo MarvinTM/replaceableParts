@@ -493,6 +493,16 @@ function migrateGameState(state, rules) {
     migratedState.inventory = {};
   }
 
+  // Migrate old default inventory space (200) to new default (500)
+  if (migratedState.inventorySpace === 200) {
+    migratedState.inventorySpace = 500;
+  }
+
+  // Migrate lastShipmentTick for old saves
+  if (migratedState.lastShipmentTick === undefined) {
+    migratedState.lastShipmentTick = 0;
+  }
+
   if (shouldRegenerateLegacyExplorationMap(migratedState.explorationMap)) {
     rebuildLegacyExplorationMap(migratedState, rules);
   }
@@ -2198,9 +2208,8 @@ function toggleMachine(state, rules, payload) {
   return { state: newState, error: null };
 }
 
-function buyInventorySpace(state, rules, payload) {
+function buyInventorySpace(state, rules, payload = {}) {
   const newState = deepClone(state);
-  const { amount } = payload;
 
   // Exponential cost: base * (growth ^ currentLevel)
   const currentLevel = Math.floor(newState.inventorySpace / rules.inventorySpace.upgradeAmount);

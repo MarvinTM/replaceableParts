@@ -199,7 +199,9 @@
       "shipGoodsTooltip": "Sell all final goods",
       "shipCooldown": "Next shipment in {{ticks}} ticks",
       "nothingToShip": "No final goods to ship",
-      "shipped": "+{{credits}}"
+      "shipped": "+{{credits}}",
+      "expandInventory": "Expand Inventory",
+      "expandInventoryTooltip": "+{{amount}} capacity ({{cost}})"
     },
     "exploration": {
       "title": "Exploration Map",
