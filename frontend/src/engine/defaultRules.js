@@ -583,7 +583,7 @@ export const defaultRules = {
     { id: 'steel_chain', inputs: { steel_rod: 2 }, outputs: { steel_chain: 1 }, ticksToComplete: 3, age: 3 },
     { id: 'steel_pipe', inputs: { steel_plate: 1 }, outputs: { steel_pipe: 2 }, ticksToComplete: 3, age: 3 },
     { id: 'coupling', inputs: { steel_pipe: 1 }, outputs: { coupling: 2 }, ticksToComplete: 2, age: 3 },
-    { id: 'piston', inputs: { steel_ingot: 1, iron_rod: 1 }, outputs: { piston: 1 }, ticksToComplete: 3, age: 3 },
+    { id: 'piston', inputs: { steel_ingot: 1, iron_rod: 1 }, outputs: { piston: 2 }, ticksToComplete: 3, age: 3 },
     { id: 'steam_valve', inputs: { brass_ingot: 1, steel_rod: 1 }, outputs: { steam_valve: 1 }, ticksToComplete: 3, age: 3 },
     { id: 'drive_shaft', inputs: { steel_rod: 2, steel_ingot: 1 }, outputs: { drive_shaft: 1 }, ticksToComplete: 4, age: 3 },
     { id: 'flywheel', inputs: { steel_plate: 4 }, outputs: { flywheel: 1 }, ticksToComplete: 5, age: 3 },
@@ -1445,7 +1445,14 @@ export const defaultRules = {
   inventorySpace: {
     baseCost: 50,
     costGrowth: 1.5,
-    upgradeAmount: 50
+    upgradeAmount: 100
+  },
+
+  // ============================================================================
+  // Shipment (Sell-all final goods with cooldown)
+  // ============================================================================
+  shipment: {
+    cooldownTicks: 12   // ~60s at normal speed (5s/tick), ~36s at fast (3s/tick)
   },
 
   // ============================================================================

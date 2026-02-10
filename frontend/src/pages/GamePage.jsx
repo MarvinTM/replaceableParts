@@ -578,6 +578,8 @@ function FactoryTab() {
         tick={engineState.tick}
         materialThroughput={materialThroughput}
         inventoryCapacity={engineState.inventorySpace}
+        lastShipmentTick={engineState.lastShipmentTick}
+        shipmentCooldownTicks={rules.shipment?.cooldownTicks ?? 12}
       />
 
       {/* Machine Info Popup */}

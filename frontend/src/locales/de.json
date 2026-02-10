@@ -186,7 +186,12 @@
       "decreaseQuantity": "Menge verringern",
       "increaseQuantity": "Menge erhöhen",
       "build": "Bauen",
-      "buildMultiple": "{{count}}x Bauen"
+      "buildMultiple": "{{count}}x Bauen",
+      "shipGoods": "Waren versenden",
+      "shipGoodsTooltip": "Alle Endprodukte verkaufen",
+      "shipCooldown": "Nächste Lieferung in {{ticks}} Ticks",
+      "nothingToShip": "Keine Endprodukte zum Versenden",
+      "shipped": "+{{credits}}"
     },
     "exploration": {
       "title": "Erkundungskarte",

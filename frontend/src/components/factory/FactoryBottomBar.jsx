@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from 'react';
+import { forwardRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -6,15 +6,19 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import Button from '@mui/material/Button';
+import LinearProgress from '@mui/material/LinearProgress';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FastForwardIcon from '@mui/icons-material/FastForward';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import useGameStore from '../../stores/gameStore';
 import MaterialIcon from '../common/MaterialIcon';
 import TickProgressIndicator from '../common/TickProgressIndicator';
 import { getMaterialName } from '../../utils/translationHelpers';
+import { formatCredits } from '../../utils/currency';
 
 /**
  * PlayControls - Three-button play control group (pause, play, fast)
@@ -79,8 +83,30 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
   tick,
   materialThroughput = new Map(),
   inventoryCapacity = null,
+  lastShipmentTick = 0,
+  shipmentCooldownTicks = 12,
 }, ref) {
   const { t } = useTranslation();
+  const shipGoods = useGameStore(state => state.shipGoods);
+
+  const [shippedItems, setShippedItems] = useState(null);
+  const [earnedCredits, setEarnedCredits] = useState(null);
+
+  // Clear shipped items animation after delay
+  useEffect(() => {
+    if (shippedItems) {
+      const timer = setTimeout(() => setShippedItems(null), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [shippedItems]);
+
+  // Clear earned credits animation after delay
+  useEffect(() => {
+    if (earnedCredits !== null) {
+      const timer = setTimeout(() => setEarnedCredits(null), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [earnedCredits]);
 
   const materialsById = useMemo(
     () => new Map((rules?.materials || []).map((material) => [material.id, material])),
@@ -124,7 +150,32 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
   const totalItems = Object.values(inventory).reduce((a, b) => a + b, 0);
   const hasBothCategories = finalGoodsEntries.length > 0 && partAndMaterialEntries.length > 0;
 
-  const renderInventoryChip = ([itemId, quantity]) => {
+  // Ship Goods state
+  const ticksSinceShipment = tick - lastShipmentTick;
+  const isOnCooldown = ticksSinceShipment < shipmentCooldownTicks;
+  const cooldownRemaining = isOnCooldown ? shipmentCooldownTicks - ticksSinceShipment : 0;
+  const cooldownProgress = isOnCooldown ? (ticksSinceShipment / shipmentCooldownTicks) * 100 : 100;
+  const hasFinalGoods = finalGoodsEntries.length > 0;
+  const canShip = !isOnCooldown && hasFinalGoods;
+
+  const handleShipGoods = useCallback(() => {
+    if (!canShip) return;
+    // Capture current final goods for animation
+    const captured = finalGoodsEntries.map(([itemId, qty]) => ({ itemId, quantity: qty }));
+    const result = shipGoods();
+    if (!result.error && result.shipmentResult) {
+      setShippedItems(captured);
+      setEarnedCredits(result.shipmentResult.totalCredits);
+    }
+  }, [canShip, finalGoodsEntries, shipGoods]);
+
+  const shipButtonTooltip = isOnCooldown
+    ? t('game.factory.shipCooldown', 'Next shipment in {{ticks}} ticks', { ticks: cooldownRemaining })
+    : !hasFinalGoods
+      ? t('game.factory.nothingToShip', 'No final goods to ship')
+      : t('game.factory.shipGoodsTooltip', 'Sell all final goods');
+
+  const renderInventoryChip = ([itemId, quantity], isShipping = false) => {
     const material = materialsById.get(itemId);
     const isFinalGood = material?.category === 'final';
     const tp = materialThroughput.get(itemId);
@@ -179,6 +230,13 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
       backgroundImage: storageRatio !== null
         ? `linear-gradient(90deg, ${storageFillColor} 0%, ${storageFillColor} ${storagePercent}%, ${baseBackground} ${storagePercent}%, ${baseBackground} 100%)`
         : undefined,
+      ...(isShipping && {
+        '@keyframes shipOut': {
+          '0%': { opacity: 1, transform: 'translateY(0) scale(1)' },
+          '100%': { opacity: 0, transform: 'translateY(20px) scale(0.7)' },
+        },
+        animation: 'shipOut 600ms ease-in forwards',
+      }),
     };
 
     const labelNode = (
@@ -195,7 +253,7 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
 
     return (
       <Chip
-        key={itemId}
+        key={isShipping ? `shipping-${itemId}` : itemId}
         icon={
           <MaterialIcon
             materialId={itemId}
@@ -210,6 +268,88 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
         sx={chipSx}
       />
     );
+  };
+
+  const renderFinalGoodsHeader = (count) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, pt: 0.75, pb: 0.25 }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ fontWeight: 600 }}
+      >
+        {t('game.factory.finalGoods', 'Final Goods')} ({count})
+      </Typography>
+      <Box sx={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+        <Tooltip title={shipButtonTooltip}>
+          <span>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<LocalShippingIcon sx={{ fontSize: 14 }} />}
+              disabled={!canShip}
+              onClick={handleShipGoods}
+              sx={{
+                minWidth: 0,
+                py: 0,
+                px: 1,
+                fontSize: '0.7rem',
+                lineHeight: 1.6,
+                textTransform: 'none',
+                borderColor: canShip ? 'primary.main' : 'action.disabled',
+              }}
+            >
+              {t('game.factory.shipGoods', 'Ship Goods')}
+            </Button>
+          </span>
+        </Tooltip>
+        {isOnCooldown && (
+          <LinearProgress
+            variant="determinate"
+            value={cooldownProgress}
+            sx={{
+              position: 'absolute',
+              bottom: -2,
+              left: 0,
+              right: 0,
+              height: 2,
+              borderRadius: 1,
+            }}
+          />
+        )}
+        {earnedCredits !== null && (
+          <Typography
+            sx={{
+              position: 'absolute',
+              top: -24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              color: '#d4a017',
+              pointerEvents: 'none',
+              '@keyframes floatUp': {
+                '0%': { opacity: 1, transform: 'translateX(-50%) translateY(0)' },
+                '100%': { opacity: 0, transform: 'translateX(-50%) translateY(-40px)' },
+              },
+              animation: 'floatUp 1200ms ease-out forwards',
+            }}
+          >
+            +{formatCredits(earnedCredits)}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+
+  const renderFinalGoodsContent = () => {
+    // Show ghost chips for shipped items, or current inventory
+    if (shippedItems) {
+      return shippedItems.map((item) =>
+        renderInventoryChip([item.itemId, item.quantity], true)
+      );
+    }
+    return finalGoodsEntries.map((entry) => renderInventoryChip(entry));
   };
 
   return (
@@ -282,13 +422,13 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
           minHeight: 0,
         }}
       >
-        {inventoryEntries.length === 0 ? (
+        {inventoryEntries.length === 0 && !shippedItems ? (
           <Box sx={{ p: 1 }}>
             <Typography variant="body2" color="text.secondary">
               {t('game.factory.emptyInventory')}
             </Typography>
           </Box>
-        ) : hasBothCategories ? (
+        ) : hasBothCategories || shippedItems ? (
           <>
             {/* Final Goods column */}
             <Box
@@ -300,13 +440,7 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
                 minHeight: 0,
               }}
             >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontWeight: 600, px: 1, pt: 0.75, pb: 0.25 }}
-              >
-                {t('game.factory.finalGoods', 'Final Goods')} ({finalGoodsEntries.length})
-              </Typography>
+              {renderFinalGoodsHeader(shippedItems ? shippedItems.length : finalGoodsEntries.length)}
               <Box
                 sx={{
                   flex: 1,
@@ -321,7 +455,7 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
                   '&::-webkit-scrollbar-thumb': { backgroundColor: 'action.disabled', borderRadius: 3 },
                 }}
               >
-                {finalGoodsEntries.map((entry) => renderInventoryChip(entry))}
+                {renderFinalGoodsContent()}
               </Box>
             </Box>
             {/* Vertical divider */}
@@ -372,16 +506,18 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
               minHeight: 0,
             }}
           >
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600, px: 1, pt: 0.75, pb: 0.25 }}
-            >
-              {finalGoodsEntries.length > 0
-                ? `${t('game.factory.finalGoods', 'Final Goods')} (${finalGoodsEntries.length})`
-                : `${t('game.factory.parts', 'Parts')} (${partAndMaterialEntries.length})`
-              }
-            </Typography>
+            {finalGoodsEntries.length > 0
+              ? renderFinalGoodsHeader(finalGoodsEntries.length)
+              : (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, px: 1, pt: 0.75, pb: 0.25 }}
+                >
+                  {t('game.factory.parts', 'Parts')} ({partAndMaterialEntries.length})
+                </Typography>
+              )
+            }
             <Box
               sx={{
                 flex: 1,
@@ -396,8 +532,10 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
                 '&::-webkit-scrollbar-thumb': { backgroundColor: 'action.disabled', borderRadius: 3 },
               }}
             >
-              {(finalGoodsEntries.length > 0 ? finalGoodsEntries : partAndMaterialEntries)
-                .map((entry) => renderInventoryChip(entry))}
+              {finalGoodsEntries.length > 0
+                ? renderFinalGoodsContent()
+                : partAndMaterialEntries.map((entry) => renderInventoryChip(entry))
+              }
             </Box>
           </Box>
         )}

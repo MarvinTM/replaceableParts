@@ -194,7 +194,12 @@
       "decreaseQuantity": "Decrease quantity",
       "increaseQuantity": "Increase quantity",
       "build": "Build",
-      "buildMultiple": "Build x{{count}}"
+      "buildMultiple": "Build x{{count}}",
+      "shipGoods": "Ship Goods",
+      "shipGoodsTooltip": "Sell all final goods",
+      "shipCooldown": "Next shipment in {{ticks}} ticks",
+      "nothingToShip": "No final goods to ship",
+      "shipped": "+{{credits}}"
     },
     "exploration": {
       "title": "Exploration Map",

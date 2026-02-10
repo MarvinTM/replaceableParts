@@ -1988,6 +1988,138 @@ function sellGoods(state, rules, payload) {
   return { state: newState, error: null };
 }
 
+function shipGoods(state, rules) {
+  const newState = deepClone(state);
+
+  // Check cooldown
+  const cooldownTicks = rules.shipment?.cooldownTicks ?? 12;
+  if (newState.tick - (newState.lastShipmentTick || 0) < cooldownTicks) {
+    return { state: newState, error: 'Shipment on cooldown' };
+  }
+
+  // Find all final goods in inventory
+  const materialMap = new Map(rules.materials.map(m => [m.id, m]));
+  const finalGoods = Object.entries(newState.inventory)
+    .filter(([itemId, qty]) => qty > 0 && materialMap.get(itemId)?.category === 'final');
+
+  if (finalGoods.length === 0) {
+    return { state: newState, error: 'Nothing to ship' };
+  }
+
+  // Initialize market tracking if needed
+  if (!newState.marketRecentSales) {
+    newState.marketRecentSales = [];
+  }
+  if (!newState.marketDamage) {
+    newState.marketDamage = {};
+  }
+
+  let grandTotalCredits = 0;
+  const itemsSold = [];
+
+  for (const [itemId, quantity] of finalGoods) {
+    const material = materialMap.get(itemId);
+    if (!material) continue;
+
+    // Calculate diversification bonus (recalculates each iteration since sales accumulate)
+    const recentWindow = newState.tick - rules.market.diversificationWindow;
+    const recentSales = newState.marketRecentSales.filter(sale => sale.tick > recentWindow);
+    const uniqueItemsSold = new Set(recentSales.map(sale => sale.itemId)).size;
+
+    let diversificationBonus = 1.0;
+    const bonusThresholds = Object.keys(rules.market.diversificationBonuses)
+      .map(Number)
+      .sort((a, b) => b - a);
+
+    for (const threshold of bonusThresholds) {
+      if (uniqueItemsSold >= threshold) {
+        diversificationBonus = rules.market.diversificationBonuses[threshold];
+        break;
+      }
+    }
+
+    // Calculate obsolescence multiplier
+    const obsolescenceMultiplier = calculateObsolescence(
+      material.age,
+      newState.discoveredRecipes || [],
+      rules
+    );
+
+    // Get popularity multiplier
+    const popularity = newState.marketPopularity[itemId] || 1.0;
+
+    // Get event modifier
+    const eventModifier = newState.marketEvents?.[itemId]?.modifier || 1.0;
+
+    // Final price
+    const pricePerUnit = material.basePrice * popularity * diversificationBonus * obsolescenceMultiplier * eventModifier;
+    const totalCredits = Math.floor(pricePerUnit * quantity);
+
+    // Remove from inventory
+    newState.inventory[itemId] -= quantity;
+    if (newState.inventory[itemId] === 0) {
+      delete newState.inventory[itemId];
+    }
+
+    newState.credits += totalCredits;
+
+    // Initialize market tracking for this item
+    if (!newState.marketPopularity[itemId]) {
+      newState.marketPopularity[itemId] = rules.market.maxPopularity;
+    }
+    if (!newState.marketDamage[itemId]) {
+      newState.marketDamage[itemId] = 0;
+    }
+
+    // Calculate accelerating decay based on quantity sold
+    let totalDecay = 0;
+    let remainingQty = quantity;
+
+    if (remainingQty > 0) {
+      const qtyAtBaseRate = Math.min(remainingQty, 10);
+      totalDecay += qtyAtBaseRate * rules.market.decayRateBase;
+      remainingQty -= qtyAtBaseRate;
+    }
+    if (remainingQty > 0) {
+      const qtyAtMediumRate = Math.min(remainingQty, 15);
+      totalDecay += qtyAtMediumRate * rules.market.decayRateMedium;
+      remainingQty -= qtyAtMediumRate;
+    }
+    if (remainingQty > 0) {
+      totalDecay += remainingQty * rules.market.decayRateHigh;
+    }
+
+    newState.marketPopularity[itemId] = Math.max(
+      rules.market.minPopularity,
+      newState.marketPopularity[itemId] - totalDecay
+    );
+
+    if (newState.marketPopularity[itemId] < 1.0) {
+      newState.marketDamage[itemId] += quantity;
+    }
+
+    // Track this sale for diversification
+    newState.marketRecentSales.push({ tick: newState.tick, itemId });
+
+    grandTotalCredits += totalCredits;
+    itemsSold.push({ itemId, quantity, credits: totalCredits });
+  }
+
+  // Trim old sales outside the diversification window
+  const windowStart = newState.tick - rules.market.diversificationWindow;
+  newState.marketRecentSales = newState.marketRecentSales.filter(
+    sale => sale.tick > windowStart
+  );
+
+  newState.lastShipmentTick = newState.tick;
+
+  return {
+    state: newState,
+    error: null,
+    shipmentResult: { totalCredits: grandTotalCredits, itemsSold }
+  };
+}
+
 function toggleResearch(state, rules, payload) {
   const newState = deepClone(state);
   const { active } = payload;
@@ -2696,6 +2828,9 @@ export function engine(state, rules, action) {
 
     case 'SELL_GOODS':
       return sellGoods(state, rules, action.payload);
+
+    case 'SHIP_GOODS':
+      return shipGoods(state, rules);
 
     case 'TOGGLE_RESEARCH':
       return toggleResearch(state, rules, action.payload);

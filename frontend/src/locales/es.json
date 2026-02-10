@@ -191,7 +191,12 @@
       "machineDisabled": "Desactivada",
       "currentRecipeLabel": "Receta Actual:",
       "energyConsumption": "Energía:",
-      "perTick": "/ tick"
+      "perTick": "/ tick",
+      "shipGoods": "Enviar Mercancía",
+      "shipGoodsTooltip": "Vender todos los productos finales",
+      "shipCooldown": "Próximo envío en {{ticks}} turnos",
+      "nothingToShip": "No hay productos finales para enviar",
+      "shipped": "+{{credits}}"
     },
     "exploration": {
       "title": "Mapa de Exploración",

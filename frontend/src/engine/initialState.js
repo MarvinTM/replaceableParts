@@ -28,7 +28,7 @@ export const initialState = {
   },
 
   // Inventory space
-  inventorySpace: 200,
+  inventorySpace: 500,
 
   // Starter Inventory (no machines/generators here - they go in built pools)
   inventory: {},
@@ -85,6 +85,7 @@ export const initialState = {
     awaitingPrototype: []
   },
 
+  lastShipmentTick: 0,
   marketPopularity: {},
   marketDamage: {},  // Tracks overselling damage per item
   marketPriceHistory: [],  // Array of {tick, itemId: price, ...} sampled every N ticks

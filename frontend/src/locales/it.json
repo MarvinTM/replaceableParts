@@ -182,7 +182,12 @@
       "inInventory": "in inv.",
       "notEnoughMaterials": "Materiali insufficienti nell'inventario per costruire questo",
       "clickToRemove": "Clicca per rimuovere",
-      "build": "Costruisci"
+      "build": "Costruisci",
+      "shipGoods": "Spedisci Merci",
+      "shipGoodsTooltip": "Vendi tutti i prodotti finiti",
+      "shipCooldown": "Prossima spedizione tra {{ticks}} turni",
+      "nothingToShip": "Nessun prodotto finito da spedire",
+      "shipped": "+{{credits}}"
     },
     "exploration": {
       "title": "Mappa Esplorazione",

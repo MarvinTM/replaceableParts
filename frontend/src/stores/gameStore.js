@@ -144,6 +144,10 @@ const useGameStore = create(
         return get().dispatch({ type: 'SELL_GOODS', payload: { itemId, quantity } });
       },
 
+      shipGoods: () => {
+        return get().dispatch({ type: 'SHIP_GOODS' });
+      },
+
       toggleResearch: () => {
         return get().dispatch({ type: 'TOGGLE_RESEARCH' });
       },
