@@ -3,14 +3,38 @@ import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import prisma from '../db.js';
 import { authenticate } from '../middleware/auth.js';
+import { createRateLimiter } from '../middleware/rateLimit.js';
 import { sendWelcomeEmail } from '../services/email.js';
 
 const router = Router();
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleAuthRateLimit = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: 'Too many login attempts. Please try again later.'
+});
+
+const FIRST_USER_ORDER = [{ createdAt: 'asc' }, { id: 'asc' }];
+
+async function maybePromoteBootstrapAdmin(user) {
+  const firstUser = await prisma.user.findFirst({
+    select: { id: true },
+    orderBy: FIRST_USER_ORDER
+  });
+
+  if (!firstUser || firstUser.id !== user.id) {
+    return user;
+  }
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { role: 'ADMIN' }
+  });
+}
 
 // Verify Google token and create/login user
-router.post('/google', async (req, res, next) => {
+router.post('/google', googleAuthRateLimit, async (req, res, next) => {
   try {
     const { credential } = req.body;
 
@@ -27,10 +51,6 @@ router.post('/google', async (req, res, next) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
-    // Check if this is the first user (will be admin)
-    const userCount = await prisma.user.count();
-    const isFirstUser = userCount === 0;
-
     // Find or create user
     let user = await prisma.user.findUnique({
       where: { googleId }
@@ -43,10 +63,13 @@ router.post('/google', async (req, res, next) => {
           email,
           name,
           picture,
-          role: isFirstUser ? 'ADMIN' : 'USER',
+          role: 'USER',
+          lastLoginAt: new Date(),
           isApproved: true
         }
       });
+
+      user = await maybePromoteBootstrapAdmin(user);
 
       // Send welcome email (non-blocking)
       sendWelcomeEmail(user).catch(err => {

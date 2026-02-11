@@ -17,7 +17,13 @@ export function errorHandler(err, req, res, next) {
     return res.status(404).json({ error: 'Resource not found' });
   }
 
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error'
+  const status = Number.isInteger(err.status) ? err.status : 500;
+  const isServerError = status >= 500;
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  res.status(status).json({
+    error: isServerError && isProduction
+      ? 'Internal server error'
+      : (err.message || 'Internal server error')
   });
 }

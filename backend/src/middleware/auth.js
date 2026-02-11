@@ -4,12 +4,16 @@ import prisma from '../db.js';
 export async function authenticate(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
+    const isSessionEndBeacon =
+      req.baseUrl === '/api/sessions' &&
+      req.method === 'POST' &&
+      (req.path || '').startsWith('/end/');
 
     // Try Authorization header first, fall back to _token in body (for sendBeacon)
     let token;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
-    } else if (req.body && req.body._token) {
+    } else if (isSessionEndBeacon && req.body && req.body._token) {
       // Fallback for sendBeacon requests which can't set headers
       token = req.body._token;
       // Remove _token from body so it doesn't interfere with other processing

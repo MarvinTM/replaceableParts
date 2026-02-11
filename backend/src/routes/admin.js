@@ -3,6 +3,7 @@ import prisma from '../db.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
+const MAX_SESSION_PAGE_SIZE = 100;
 
 // All admin routes require authentication and admin role
 router.use(authenticate, requireAdmin);
@@ -189,8 +190,12 @@ router.get('/sessions/stats', async (req, res, next) => {
 // Get paginated sessions list
 router.get('/sessions', async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const rawPage = Number.parseInt(req.query.page, 10);
+    const rawLimit = Number.parseInt(req.query.limit, 10);
+    const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+    const limit = Number.isInteger(rawLimit) && rawLimit > 0
+      ? Math.min(rawLimit, MAX_SESSION_PAGE_SIZE)
+      : 20;
     const skip = (page - 1) * limit;
 
     const [sessions, total] = await Promise.all([

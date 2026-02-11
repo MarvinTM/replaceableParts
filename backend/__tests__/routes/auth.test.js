@@ -19,20 +19,22 @@ jest.unstable_mockModule('google-auth-library', () => ({
 }));
 
 // Create mock objects outside so they can be referenced
-const mockUserCreate = jest.fn().mockResolvedValue({
+const mockUserRecord = {
   id: 'user-id-123',
   googleId: 'google-id-123',
   email: 'test@example.com',
   name: 'Test User',
   picture: 'test.png',
-  role: 'ADMIN',
+  role: 'USER',
   isApproved: true
-});
+};
 
-const mockUserCount = jest.fn().mockResolvedValue(0);
+const mockUserCreate = jest.fn().mockResolvedValue({ ...mockUserRecord });
+
 const mockUserFindUnique = jest.fn().mockResolvedValue(null);
+const mockUserFindFirst = jest.fn().mockResolvedValue({ id: 'user-id-123' });
 const mockUserUpdate = jest.fn().mockImplementation(({ data }) => Promise.resolve({
-    id: 'user-id-123',
+    ...mockUserRecord,
     ...data
 }));
 
@@ -40,8 +42,8 @@ const mockUserUpdate = jest.fn().mockImplementation(({ data }) => Promise.resolv
 jest.unstable_mockModule('../../src/db.js', () => ({
   default: {
     user: {
-      count: mockUserCount,
       findUnique: mockUserFindUnique,
+      findFirst: mockUserFindFirst,
       create: mockUserCreate,
       update: mockUserUpdate
     }

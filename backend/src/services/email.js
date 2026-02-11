@@ -58,6 +58,22 @@ const getTransporter = () => {
   return transporter;
 };
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizeSubject(value, fallback) {
+  const cleaned = String(value ?? '')
+    .replace(/[\r\n]+/g, ' ')
+    .trim();
+  return cleaned || fallback;
+}
+
 /**
  * Send welcome email to new user
  * @param {Object} user - User object with email and name
@@ -92,7 +108,7 @@ export async function sendWelcomeEmail(user) {
 }
 
 function generateWelcomeEmailHtml(user) {
-  const name = user.name || 'Player';
+  const name = escapeHtml(user.name || 'Player');
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const colors = EMAIL_COLORS;
 
@@ -202,7 +218,7 @@ export async function sendFeedbackEmail(user, title, body) {
     from: `"replaceableParts Feedback" <${fromAddress}>`,
     to: feedbackRecipient,
     replyTo: user.email,
-    subject: `Feedback: ${title}`,
+    subject: `Feedback: ${sanitizeSubject(title, 'General feedback')}`,
     html: generateFeedbackEmailHtml(user, title, body),
     text: generateFeedbackEmailText(user, title, body),
     attachments: [getLogoAttachment()]
@@ -219,8 +235,10 @@ export async function sendFeedbackEmail(user, title, body) {
 }
 
 function generateFeedbackEmailHtml(user, title, body) {
-  const name = user.name || 'Anonymous';
-  const bodyHtml = body.replace(/\n/g, '<br>');
+  const name = escapeHtml(user.name || 'Anonymous');
+  const safeTitle = escapeHtml(title);
+  const safeEmail = escapeHtml(user.email);
+  const bodyHtml = escapeHtml(body).replace(/\n/g, '<br>');
   const colors = EMAIL_COLORS;
 
   return `
@@ -238,7 +256,7 @@ function generateFeedbackEmailHtml(user, title, body) {
 
   <div style="background: ${colors.cardBg}; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid ${colors.border}; border-top: none;">
     <h1 style="color: ${colors.textPrimary}; font-size: 22px; margin-top: 0; text-align: center;">User Feedback</h1>
-    <h2 style="color: ${colors.textSecondary}; font-size: 18px; margin: 10px 0 0;">${title}</h2>
+    <h2 style="color: ${colors.textSecondary}; font-size: 18px; margin: 10px 0 0;">${safeTitle}</h2>
 
     <div style="background: #fff; padding: 16px; border-radius: 8px; border-left: 4px solid ${colors.ctaButton}; margin: 20px 0; border-top: 1px solid ${colors.border}; border-right: 1px solid ${colors.border}; border-bottom: 1px solid ${colors.border};">
       <p style="margin: 0; white-space: pre-wrap; color: ${colors.textPrimary};">${bodyHtml}</p>
@@ -246,7 +264,7 @@ function generateFeedbackEmailHtml(user, title, body) {
 
     <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid ${colors.border};">
       <p style="margin: 5px 0; color: ${colors.textSecondary};"><strong>From:</strong> ${name}</p>
-      <p style="margin: 5px 0; color: ${colors.textSecondary};"><strong>Email:</strong> ${user.email}</p>
+      <p style="margin: 5px 0; color: ${colors.textSecondary};"><strong>Email:</strong> ${safeEmail}</p>
       <p style="margin: 5px 0; color: ${colors.textSecondary}; font-size: 12px;"><em>You can reply directly to this email to respond to the user.</em></p>
     </div>
   </div>
@@ -290,10 +308,12 @@ export async function sendInviteEmail(inviter, recipientEmail) {
 
   const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER;
 
+  const inviterName = sanitizeSubject(inviter.name || 'A friend', 'A friend');
+
   const mailOptions = {
     from: `"replaceableParts" <${fromAddress}>`,
     to: recipientEmail,
-    subject: `${inviter.name || 'A friend'} has invited you to play replaceableParts!`,
+    subject: `${inviterName} has invited you to play replaceableParts!`,
     html: generateInviteEmailHtml(inviter),
     text: generateInviteEmailText(inviter),
     attachments: [getLogoAttachment(), getPreviewAttachment()]
@@ -310,7 +330,7 @@ export async function sendInviteEmail(inviter, recipientEmail) {
 }
 
 function generateInviteEmailHtml(inviter) {
-  const inviterName = inviter.name || 'A friend';
+  const inviterName = escapeHtml(inviter.name || 'A friend');
   const gameUrl = 'https://replaceable.parts/';
 
   const colors = EMAIL_COLORS;

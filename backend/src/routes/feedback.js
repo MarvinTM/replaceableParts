@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.js';
+import { createRateLimiter } from '../middleware/rateLimit.js';
 import { sendFeedbackEmail } from '../services/email.js';
 
 const router = Router();
+const feedbackRateLimit = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: 'Too many feedback submissions. Please try again later.',
+  keyGenerator: req => req.user?.id || req.ip
+});
 
 // Send feedback email
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, feedbackRateLimit, async (req, res, next) => {
   try {
     const { title, body } = req.body;
 
