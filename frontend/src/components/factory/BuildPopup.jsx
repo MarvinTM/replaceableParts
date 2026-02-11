@@ -29,6 +29,7 @@ import { getMaterialDescription, getMaterialName, getSlotLabel } from '../../uti
 export default function BuildPopup({
   open,
   onClose,
+  onExited,
   type, // 'machine' or 'generator'
   itemType, // e.g., 'stone_furnace' or 'treadwheel'
   itemConfig, // The machine/generator config from rules
@@ -305,6 +306,7 @@ export default function BuildPopup({
     <Dialog
       open={open}
       onClose={handleClose}
+      TransitionProps={{ onExited }}
       maxWidth="sm"
       fullWidth
       PaperProps={{

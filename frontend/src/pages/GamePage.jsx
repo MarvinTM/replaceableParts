@@ -323,6 +323,9 @@ function FactoryTab() {
 
   const handleCloseBuildPopup = () => {
     setBuildPopupOpen(false);
+  };
+
+  const handleBuildPopupExited = () => {
     setBuildPopupType(null);
     setBuildPopupItemType(null);
   };
@@ -343,10 +346,14 @@ function FactoryTab() {
 
   const handleCloseBuildSelection = () => {
     setBuildSelectionOpen(false);
+  };
+
+  const handleBuildSelectionExited = () => {
     setBuildSelectionType(null);
   };
 
   const handleSelectItemToBuild = (item) => {
+    if (!buildSelectionType) return;
     // Close selection popup and open build popup
     handleCloseBuildSelection();
     handleOpenBuildPopup(buildSelectionType, item.id);
@@ -612,8 +619,15 @@ function FactoryTab() {
       <BuildSelectionPopup
         open={buildSelectionOpen}
         onClose={handleCloseBuildSelection}
+        onExited={handleBuildSelectionExited}
         onSelect={handleSelectItemToBuild}
-        items={buildSelectionType === 'generator' ? buildableGenerators : buildableMachines}
+        items={
+          buildSelectionType === 'generator'
+            ? buildableGenerators
+            : buildSelectionType === 'machine'
+              ? buildableMachines
+              : []
+        }
         itemType={buildSelectionType}
       />
 
@@ -621,6 +635,7 @@ function FactoryTab() {
       <BuildPopup
         open={buildPopupOpen}
         onClose={handleCloseBuildPopup}
+        onExited={handleBuildPopupExited}
         type={buildPopupType}
         itemType={buildPopupItemType}
         itemConfig={

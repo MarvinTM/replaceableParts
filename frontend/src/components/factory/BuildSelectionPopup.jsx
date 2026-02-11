@@ -16,6 +16,7 @@ import { getMaterialName } from '../../utils/translationHelpers';
 export default function BuildSelectionPopup({
   open,
   onClose,
+  onExited,
   onSelect,
   items,
   itemType, // 'machine' or 'generator'
@@ -36,6 +37,7 @@ export default function BuildSelectionPopup({
     <Dialog
       open={open}
       onClose={onClose}
+      TransitionProps={{ onExited }}
       maxWidth="sm"
       fullWidth
       PaperProps={{
