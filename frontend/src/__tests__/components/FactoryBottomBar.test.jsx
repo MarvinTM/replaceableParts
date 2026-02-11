@@ -61,6 +61,12 @@ vi.mock('../../stores/gameStore', () => ({
       stopGameLoop: mockStopGameLoop,
       shipGoods: mockShipGoods,
       buyInventorySpace: mockBuyInventorySpace,
+      engineState: {
+        marketPopularity: {},
+        marketEvents: {},
+        marketRecentSales: [],
+        discoveredRecipes: [],
+      },
     };
     return selector(state);
   }
@@ -68,10 +74,17 @@ vi.mock('../../stores/gameStore', () => ({
 
 const mockRules = {
   materials: [
-    { id: 'iron_ingot', name: 'Iron Ingot', category: 'intermediate' },
-    { id: 'wood', name: 'Wood', category: 'raw' },
-    { id: 'widget', name: 'Widget', category: 'final' }
-  ]
+    { id: 'iron_ingot', name: 'Iron Ingot', category: 'intermediate', basePrice: 5 },
+    { id: 'wood', name: 'Wood', category: 'raw', basePrice: 1 },
+    { id: 'widget', name: 'Widget', category: 'final', basePrice: 10, age: 1 }
+  ],
+  market: {
+    diversificationWindow: 50,
+    diversificationBonuses: {},
+    obsolescenceEnabled: false,
+    obsolescenceMaxDebuff: 0.5,
+  },
+  recipes: [],
 };
 
 describe('FactoryBottomBar', () => {
@@ -119,6 +132,25 @@ describe('FactoryBottomBar', () => {
 
     expect(screen.getAllByText(/Widget: 100\/100/).length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText('Storage full').length).toBeGreaterThan(0);
+  });
+
+  it('should show projected shipment credits in the button and tooltip breakdown', async () => {
+    const user = userEvent.setup();
+    render(
+      <FactoryBottomBar
+        inventory={{ widget: 2 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    const shipButton = screen.getByRole('button', { name: 'Ship Goods (+20₵)' });
+    expect(shipButton).toBeInTheDocument();
+
+    await user.hover(shipButton);
+    expect(await screen.findByText('Total: +20₵')).toBeInTheDocument();
+    expect(screen.getByText('Widget x2: +20₵')).toBeInTheDocument();
   });
 
   it('should not show throughput values for final goods', () => {

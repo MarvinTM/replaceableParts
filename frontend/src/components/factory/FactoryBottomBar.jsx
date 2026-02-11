@@ -67,6 +67,43 @@ const INVENTORY_HEIGHT = {
   sm: 220,
 };
 
+function calculateObsolescence(age, discoveredRecipes, rules) {
+  if (!rules?.market?.obsolescenceEnabled) {
+    return 1.0;
+  }
+
+  const nextAge = age + 1;
+  if (nextAge > 7) {
+    return 1.0;
+  }
+
+  const nextAgeFinalGoods = (rules?.recipes || []).filter((recipe) => {
+    const outputs = Object.keys(recipe.outputs || {});
+    return outputs.some((outputId) => {
+      const material = (rules?.materials || []).find((m) => m.id === outputId);
+      return material && material.category === 'final' && material.age === nextAge;
+    });
+  });
+
+  const totalNextAgeRecipes = nextAgeFinalGoods.length;
+  if (totalNextAgeRecipes === 0) {
+    return 1.0;
+  }
+
+  const discoveredSet = new Set(discoveredRecipes || []);
+  const discoveredNextAgeRecipes = nextAgeFinalGoods.filter((recipe) =>
+    discoveredSet.has(recipe.id)
+  ).length;
+
+  const progress = discoveredNextAgeRecipes / totalNextAgeRecipes;
+  const maxDebuff = Number.isFinite(rules?.market?.obsolescenceMaxDebuff)
+    ? rules.market.obsolescenceMaxDebuff
+    : 0;
+  const debuff = progress * maxDebuff;
+
+  return 1.0 - debuff;
+}
+
 function getMaxStack(material, inventoryCapacity) {
   if (!Number.isFinite(inventoryCapacity) || inventoryCapacity <= 0) {
     return null;
@@ -89,6 +126,10 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
   const { t } = useTranslation();
   const shipGoods = useGameStore(state => state.shipGoods);
   const buyInventorySpace = useGameStore(state => state.buyInventorySpace);
+  const marketPopularity = useGameStore(state => state.engineState?.marketPopularity);
+  const marketEvents = useGameStore(state => state.engineState?.marketEvents);
+  const marketRecentSales = useGameStore(state => state.engineState?.marketRecentSales);
+  const discoveredRecipes = useGameStore(state => state.engineState?.discoveredRecipes);
 
   const [shippedItems, setShippedItems] = useState(null);
   const [earnedCredits, setEarnedCredits] = useState(null);
@@ -177,6 +218,66 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
   const hasFinalGoods = readyToShipEntries.length > 0;
   const canShip = !isOnCooldown && hasFinalGoods;
 
+  const projectedShipment = useMemo(() => {
+    const finalGoods = Object.entries(inventory || {}).filter(([itemId, qty]) => {
+      const material = materialsById.get(itemId);
+      return qty > 0 && material?.category === 'final';
+    });
+
+    if (finalGoods.length === 0) {
+      return { totalCredits: 0, itemsSold: [] };
+    }
+
+    const marketRules = rules?.market || {};
+    const recentWindow = tick - (marketRules.diversificationWindow ?? 0);
+    const uniqueRecentSales = new Set(
+      (marketRecentSales || [])
+        .filter((sale) => sale.tick > recentWindow)
+        .map((sale) => sale.itemId)
+    );
+    const bonusThresholds = Object.keys(marketRules.diversificationBonuses || {})
+      .map(Number)
+      .sort((a, b) => b - a);
+
+    let totalCredits = 0;
+    const itemsSold = [];
+
+    for (const [itemId, quantity] of finalGoods) {
+      const material = materialsById.get(itemId);
+      if (!material) continue;
+
+      let diversificationBonus = 1.0;
+      for (const threshold of bonusThresholds) {
+        if (uniqueRecentSales.size >= threshold) {
+          diversificationBonus = marketRules.diversificationBonuses[threshold];
+          break;
+        }
+      }
+
+      const basePrice = Number(material.basePrice) || 0;
+      const popularity = marketPopularity?.[itemId] || 1.0;
+      const obsolescence = calculateObsolescence(material.age, discoveredRecipes, rules);
+      const eventModifier = marketEvents?.[itemId]?.modifier || 1.0;
+      const pricePerUnit = basePrice * popularity * diversificationBonus * obsolescence * eventModifier;
+      const credits = Math.floor(pricePerUnit * quantity);
+
+      itemsSold.push({ itemId, quantity, credits });
+      totalCredits += credits;
+      uniqueRecentSales.add(itemId);
+    }
+
+    return { totalCredits, itemsSold };
+  }, [
+    inventory,
+    materialsById,
+    rules,
+    tick,
+    marketRecentSales,
+    marketPopularity,
+    marketEvents,
+    discoveredRecipes,
+  ]);
+
   const handleShipGoods = useCallback(() => {
     if (!canShip || typeof shipGoods !== 'function') {
       return;
@@ -191,11 +292,31 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
     }
   }, [canShip, readyToShipEntries, shipGoods]);
 
-  const shipButtonTooltip = isOnCooldown
-    ? t('game.factory.shipCooldown', 'Next shipment in {{ticks}} ticks', { ticks: cooldownRemaining })
-    : !hasFinalGoods
-      ? t('game.factory.nothingToShip', 'No final goods to ship')
-      : t('game.factory.shipGoodsTooltip', 'Sell all final goods');
+  const shipButtonTooltip = !hasFinalGoods
+    ? t('game.factory.nothingToShip', 'No final goods to ship')
+    : (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+        <Typography variant="caption" sx={{ color: 'inherit', fontWeight: 600 }}>
+          {isOnCooldown
+            ? t('game.factory.shipCooldown', 'Next shipment in {{ticks}} ticks', { ticks: cooldownRemaining })
+            : t('game.factory.shipGoodsTooltip', 'Sell all final goods')}
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'inherit' }}>
+          {t('game.factory.shipTotalPreview', 'Total: +{{credits}}', {
+            credits: formatCredits(projectedShipment.totalCredits),
+          })}
+        </Typography>
+        {projectedShipment.itemsSold.map(({ itemId, quantity, credits: lineCredits }) => (
+          <Typography key={`ship-preview-${itemId}`} variant="caption" component="div" sx={{ color: 'inherit' }}>
+            {t('game.factory.shipBreakdownLine', '{{name}} x{{quantity}}: +{{credits}}', {
+              name: getMaterialName(itemId, materialsById.get(itemId)?.name),
+              quantity,
+              credits: formatCredits(lineCredits),
+            })}
+          </Typography>
+        ))}
+      </Box>
+    );
 
   const renderInventoryChip = ([itemId, quantity], isShipping = false) => {
     const material = materialsById.get(itemId);
@@ -397,7 +518,11 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
                 borderColor: canShip ? 'primary.main' : 'action.disabled',
               }}
             >
-              {t('game.factory.shipGoods', 'Ship Goods')}
+              {hasFinalGoods
+                ? t('game.factory.shipGoodsWithCredits', 'Ship Goods (+{{credits}})', {
+                  credits: formatCredits(projectedShipment.totalCredits),
+                })
+                : t('game.factory.shipGoods', 'Ship Goods')}
             </Button>
           </span>
         </Tooltip>
