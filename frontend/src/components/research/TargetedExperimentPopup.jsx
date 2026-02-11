@@ -50,8 +50,8 @@ export default function TargetedExperimentPopup({
   };
 
   const sortByAgeThenName = (a, b) => {
-    if (a.materialAge !== b.materialAge) {
-      return (a.materialAge || 0) - (b.materialAge || 0);
+    if (a.recipeAge !== b.recipeAge) {
+      return (a.recipeAge || 0) - (b.recipeAge || 0);
     }
     return a.materialName.localeCompare(b.materialName);
   };
@@ -215,6 +215,7 @@ function TargetListItem({ target, researchPoints, selectedRecipeId, onSelect, t 
     outputId,
     structureId,
     materialName,
+    recipeAge,
     materialAge,
     category,
     neededBy,
@@ -259,9 +260,9 @@ function TargetListItem({ target, researchPoints, selectedRecipeId, onSelect, t 
             <Typography component="span" variant="body1" fontWeight="medium">
               {getMaterialName(outputId, materialName)}
             </Typography>
-            {materialAge && (
+            {(recipeAge || materialAge) && (
               <Chip
-                label={t('research.age', { age: materialAge })}
+                label={t('research.age', { age: recipeAge || materialAge })}
                 size="small"
                 variant="outlined"
               />

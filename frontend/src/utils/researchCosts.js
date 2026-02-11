@@ -3,19 +3,24 @@
  */
 
 export function getRecipeAge(recipe, rules) {
+  const declaredAge = Number.isFinite(recipe?.age) && recipe.age > 0
+    ? recipe.age
+    : 1;
+
   if (!recipe?.outputs || !rules?.materials) {
-    return 1;
+    return declaredAge;
   }
 
-  let recipeAge = 1;
+  let derivedAge = 1;
   for (const outputId of Object.keys(recipe.outputs)) {
-    const material = rules.materials.find(m => m.id === outputId);
-    if (material && material.age > recipeAge) {
-      recipeAge = material.age;
+    const material = rules.materials.find((m) => m.id === outputId);
+    if (material && material.age > derivedAge) {
+      derivedAge = material.age;
     }
   }
 
-  return recipeAge;
+  // Respect explicit recipe age while still guarding against underspecified entries.
+  return Math.max(declaredAge, derivedAge);
 }
 
 export function getExperimentCostForAge(age, rules) {

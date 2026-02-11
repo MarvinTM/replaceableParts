@@ -974,7 +974,12 @@
     "coal_power_plant": "Large furnace that turns coal into steady grid power.",
     "diesel_gen": "Generator that burns diesel for reliable power.",
     "nuclear_fission_reactor": "Reactor that splits atoms for massive power output.",
-    "solar_array": "Large panel field that converts sunlight to power."
+    "solar_array": "Large panel field that converts sunlight to power.",
+    "iron_ingot_bulk": "High-throughput smelting batch that converts iron ore into iron ingots at industrial scale.",
+    "copper_ingot_bulk": "High-throughput smelting batch that converts copper ore into copper ingots at industrial scale.",
+    "iron_plate_bulk": "Industrial rolling batch that converts iron ingots into iron plates in large runs.",
+    "iron_rod_bulk": "Industrial shaping batch that converts iron ingots into iron rods in large runs.",
+    "steel_ingot_bulk": "High-throughput smelting batch that converts iron ore and coal into steel ingots at industrial scale."
   },
   "materials": {
     "wood": "Wood",
@@ -1348,7 +1353,12 @@
     "coal_power_plant": "Coal Power Plant",
     "diesel_gen": "Diesel Power Plant",
     "nuclear_fission_reactor": "Nuclear Reactor",
-    "solar_array": "Solar Array"
+    "solar_array": "Solar Array",
+    "iron_ingot_bulk": "Bulk Iron Ingots",
+    "copper_ingot_bulk": "Bulk Copper Ingots",
+    "iron_plate_bulk": "Bulk Iron Plates",
+    "iron_rod_bulk": "Bulk Iron Rods",
+    "steel_ingot_bulk": "Bulk Steel Ingots"
   },
   "slots": {
     "furnace_base": "Furnace Base",

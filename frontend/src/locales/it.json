@@ -962,7 +962,12 @@
     "coal_power_plant": "Grande impianto che trasforma il carbone in energia elettrica stabile.",
     "diesel_gen": "Generatore che brucia diesel per energia affidabile.",
     "nuclear_fission_reactor": "Reattore che scinde atomi per un'enorme produzione di energia.",
-    "solar_array": "Campo di pannelli che converte la luce solare in energia."
+    "solar_array": "Campo di pannelli che converte la luce solare in energia.",
+    "iron_ingot_bulk": "Lotto di fusione ad alta produttività che converte il minerale di ferro in lingotti di ferro su scala industriale.",
+    "copper_ingot_bulk": "Lotto di fusione ad alta produttività che converte il minerale di rame in lingotti di rame su scala industriale.",
+    "iron_plate_bulk": "Lotto di laminazione industriale che converte i lingotti di ferro in piastre di ferro in grandi serie.",
+    "iron_rod_bulk": "Lotto di formatura industriale che converte i lingotti di ferro in barre di ferro in grandi serie.",
+    "steel_ingot_bulk": "Lotto di fusione ad alta produttività che converte il minerale di ferro e il carbone in lingotti di acciaio su scala industriale."
   },
   "materials": {
     "wood": "Legno",
@@ -1336,7 +1341,12 @@
     "coal_power_plant": "Centrale a Carbone",
     "diesel_gen": "Centrale Diesel",
     "nuclear_fission_reactor": "Reattore a Fissione Nucleare",
-    "solar_array": "Impianto Solare"
+    "solar_array": "Impianto Solare",
+    "iron_ingot_bulk": "Lingotti di Ferro in Lotto",
+    "copper_ingot_bulk": "Lingotti di Rame in Lotto",
+    "iron_plate_bulk": "Piastre di Ferro in Lotto",
+    "iron_rod_bulk": "Barre di Ferro in Lotto",
+    "steel_ingot_bulk": "Lingotti d'Acciaio in Lotto"
   },
   "slots": {
     "furnace_base": "Base del Forno",

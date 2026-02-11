@@ -971,7 +971,12 @@
     "coal_power_plant": "Gran central que convierte carbón en energía eléctrica constante.",
     "diesel_gen": "Generador que quema diésel para energía fiable.",
     "nuclear_fission_reactor": "Reactor que divide átomos para una enorme producción de energía.",
-    "solar_array": "Campo de paneles que convierte la luz solar en energía."
+    "solar_array": "Campo de paneles que convierte la luz solar en energía.",
+    "iron_ingot_bulk": "Lote de fundición de alta capacidad que convierte mineral de hierro en lingotes de hierro a escala industrial.",
+    "copper_ingot_bulk": "Lote de fundición de alta capacidad que convierte mineral de cobre en lingotes de cobre a escala industrial.",
+    "iron_plate_bulk": "Lote de laminado industrial que convierte lingotes de hierro en placas de hierro en grandes tandas.",
+    "iron_rod_bulk": "Lote de conformado industrial que convierte lingotes de hierro en varillas de hierro en grandes tandas.",
+    "steel_ingot_bulk": "Lote de fundición de alta capacidad que convierte mineral de hierro y carbón en lingotes de acero a escala industrial."
   },
   "materials": {
     "wood": "Madera",
@@ -1345,7 +1350,12 @@
     "coal_power_plant": "Central de Carbón",
     "diesel_gen": "Planta de Diésel",
     "nuclear_fission_reactor": "Reactor de Fisión Nuclear",
-    "solar_array": "Panel Solar"
+    "solar_array": "Panel Solar",
+    "iron_ingot_bulk": "Lingotes de Hierro a Granel",
+    "copper_ingot_bulk": "Lingotes de Cobre a Granel",
+    "iron_plate_bulk": "Placas de Hierro a Granel",
+    "iron_rod_bulk": "Varillas de Hierro a Granel",
+    "steel_ingot_bulk": "Lingotes de Acero a Granel"
   },
   "slots": {
     "furnace_base": "Base del Horno",

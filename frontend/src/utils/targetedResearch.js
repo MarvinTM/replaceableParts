@@ -1,4 +1,4 @@
-import { getTargetedExperimentCostForRecipe } from './researchCosts.js';
+import { getRecipeAge, getTargetedExperimentCostForRecipe } from './researchCosts.js';
 
 /**
  * Build targeted-research candidates grouped by type:
@@ -10,6 +10,7 @@ export function getEligibleTargetedResearchOptions({
   rules,
   discoveredRecipes = [],
   unlockedRecipes = [],
+  maxRecipeAge = Infinity,
 }) {
   if (!rules?.recipes || !rules?.materials) {
     return { materialRecipes: [], productionEnablers: [] };
@@ -25,6 +26,7 @@ export function getEligibleTargetedResearchOptions({
     recipeMap,
     materialMap,
     discoveredOrUnlocked,
+    maxRecipeAge,
   });
 
   const productionEnablers = getProductionEnablerTargets({
@@ -33,12 +35,19 @@ export function getEligibleTargetedResearchOptions({
     materialMap,
     discoveredOrUnlocked,
     unlockedSet,
+    maxRecipeAge,
   });
 
   return { materialRecipes, productionEnablers };
 }
 
-function getMissingInputTargets({ rules, recipeMap, materialMap, discoveredOrUnlocked }) {
+function getMissingInputTargets({
+  rules,
+  recipeMap,
+  materialMap,
+  discoveredOrUnlocked,
+  maxRecipeAge,
+}) {
   const neededInputMaterials = new Set();
 
   for (const recipeId of discoveredOrUnlocked) {
@@ -54,6 +63,8 @@ function getMissingInputTargets({ rules, recipeMap, materialMap, discoveredOrUnl
 
   for (const recipe of recipeMap.values()) {
     if (discoveredOrUnlocked.has(recipe.id)) continue;
+    const recipeAge = getRecipeAge(recipe, rules);
+    if (recipeAge > maxRecipeAge) continue;
 
     const outputMaterialIds = Object.keys(recipe.outputs || {});
     const outputId = outputMaterialIds[0];
@@ -77,6 +88,7 @@ function getMissingInputTargets({ rules, recipeMap, materialMap, discoveredOrUnl
       recipe,
       outputId,
       materialName: material?.name || recipe.id,
+      recipeAge,
       materialAge: material?.age,
       category: material?.category || 'intermediate',
       neededBy,
@@ -93,6 +105,7 @@ function getProductionEnablerTargets({
   materialMap,
   discoveredOrUnlocked,
   unlockedSet,
+  maxRecipeAge,
 }) {
   const machinesByRecipeId = new Map();
 
@@ -136,6 +149,8 @@ function getProductionEnablerTargets({
 
     const recipe = recipeMap.get(machineId);
     if (!recipe) continue;
+    const recipeAge = getRecipeAge(recipe, rules);
+    if (recipeAge > maxRecipeAge) continue;
 
     const outputId = Object.keys(recipe.outputs || {})[0] || machineId;
     const material = materialMap.get(outputId);
@@ -147,6 +162,7 @@ function getProductionEnablerTargets({
       recipe,
       outputId,
       materialName: material?.name || machineId,
+      recipeAge,
       materialAge: material?.age,
       category: material?.category || 'equipment',
       neededBy,

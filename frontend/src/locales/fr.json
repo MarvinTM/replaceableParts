@@ -963,7 +963,12 @@
     "coal_power_plant": "Grande centrale qui transforme le charbon en électricité stable.",
     "diesel_gen": "Générateur qui brûle du diesel pour une énergie fiable.",
     "nuclear_fission_reactor": "Réacteur qui scinde les atomes pour une production d'énergie massive.",
-    "solar_array": "Champ de panneaux qui convertit la lumière solaire en énergie."
+    "solar_array": "Champ de panneaux qui convertit la lumière solaire en énergie.",
+    "iron_ingot_bulk": "Lot de fusion à haut débit qui transforme le minerai de fer en lingots de fer à l'échelle industrielle.",
+    "copper_ingot_bulk": "Lot de fusion à haut débit qui transforme le minerai de cuivre en lingots de cuivre à l'échelle industrielle.",
+    "iron_plate_bulk": "Lot de laminage industriel qui transforme les lingots de fer en plaques de fer en grande série.",
+    "iron_rod_bulk": "Lot de façonnage industriel qui transforme les lingots de fer en tiges de fer en grande série.",
+    "steel_ingot_bulk": "Lot de fusion à haut débit qui transforme le minerai de fer et le charbon en lingots d'acier à l'échelle industrielle."
   },
   "materials": {
     "wood": "Bois",
@@ -1337,7 +1342,12 @@
     "coal_power_plant": "Centrale à Charbon",
     "diesel_gen": "Centrale Diesel",
     "nuclear_fission_reactor": "Réacteur à Fission Nucléaire",
-    "solar_array": "Parc Solaire"
+    "solar_array": "Parc Solaire",
+    "iron_ingot_bulk": "Lingots de Fer en Lot",
+    "copper_ingot_bulk": "Lingots de Cuivre en Lot",
+    "iron_plate_bulk": "Plaques de Fer en Lot",
+    "iron_rod_bulk": "Tiges de Fer en Lot",
+    "steel_ingot_bulk": "Lingots d'Acier en Lot"
   },
   "slots": {
     "furnace_base": "Base du Four",

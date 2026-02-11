@@ -11,6 +11,7 @@ import TargetIcon from '@mui/icons-material/GpsFixed';
 import useGameStore from '../../stores/gameStore';
 import TargetedExperimentPopup from './TargetedExperimentPopup';
 import { getEligibleTargetedResearchOptions } from '../../utils/targetedResearch';
+import { calculateHighestUnlockedAge } from '../../engine/engine.js';
 
 export default function ExperimentChamber({
   researchPoints,
@@ -27,14 +28,19 @@ export default function ExperimentChamber({
   const canRunRandomExperiment = researchPoints >= experimentCost && undiscoveredCount > 0;
 
   const targetedMultiplier = rules.research.targetedExperimentMultiplier || 10;
+  const highestUnlockedAge = useMemo(
+    () => (engineState ? calculateHighestUnlockedAge(engineState, rules) : 1),
+    [engineState, rules]
+  );
 
   const targetedOptions = useMemo(() => (
     getEligibleTargetedResearchOptions({
       rules,
       discoveredRecipes: engineState?.discoveredRecipes || [],
       unlockedRecipes: engineState?.unlockedRecipes || [],
+      maxRecipeAge: highestUnlockedAge,
     })
-  ), [rules, engineState?.discoveredRecipes, engineState?.unlockedRecipes]);
+  ), [rules, engineState?.discoveredRecipes, engineState?.unlockedRecipes, highestUnlockedAge]);
 
   const allTargetedOptions = useMemo(
     () => [...targetedOptions.materialRecipes, ...targetedOptions.productionEnablers],

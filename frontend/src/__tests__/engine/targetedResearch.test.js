@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { defaultRules } from '../../engine/defaultRules.js';
 import { getEligibleTargetedResearchOptions } from '../../utils/targetedResearch';
-import { getTargetedExperimentCostForRecipe } from '../../utils/researchCosts.js';
+import { getRecipeAge, getTargetedExperimentCostForRecipe } from '../../utils/researchCosts.js';
 
 describe('targeted research eligibility', () => {
   it('includes missing-input material targets for discovered recipes', () => {
@@ -49,5 +49,32 @@ describe('targeted research eligibility', () => {
     expect(ironIngotTarget.targetedCost).toBe(
       getTargetedExperimentCostForRecipe(ironIngotTarget.recipe, defaultRules)
     );
+  });
+
+  it('uses declared recipe age when it is higher than the output material age', () => {
+    const recipe = defaultRules.recipes.find((r) => r.id === 'iron_ingot_bulk');
+    expect(recipe).toBeDefined();
+    expect(getRecipeAge(recipe, defaultRules)).toBe(3);
+  });
+
+  it('respects maxRecipeAge when listing missing-input material targets', () => {
+    const limitedOptions = getEligibleTargetedResearchOptions({
+      rules: defaultRules,
+      discoveredRecipes: ['iron_plate'],
+      unlockedRecipes: [],
+      maxRecipeAge: 1,
+    });
+    const limitedIds = limitedOptions.materialRecipes.map((target) => target.recipe.id);
+    expect(limitedIds).toContain('iron_ingot');
+    expect(limitedIds).not.toContain('iron_ingot_bulk');
+
+    const age3Options = getEligibleTargetedResearchOptions({
+      rules: defaultRules,
+      discoveredRecipes: ['iron_plate'],
+      unlockedRecipes: [],
+      maxRecipeAge: 3,
+    });
+    const age3Ids = age3Options.materialRecipes.map((target) => target.recipe.id);
+    expect(age3Ids).toContain('iron_ingot_bulk');
   });
 });

@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import useGameStore from '../../stores/gameStore';
 import { calculateHighestUnlockedAge } from '../../engine/engine.js';
+import { getRecipeAge } from '../../utils/researchCosts.js';
 import ExperimentChamber from './ExperimentChamber';
 import DonateSection from './DonateSection';
 import PrototypeWorkshop from './PrototypeWorkshop';
@@ -35,33 +36,21 @@ export default function ResearchTab() {
   // Count recipes by age
   const recipesByAge = useMemo(() => {
     const counts = {};
+    const recipeMap = new Map((rules.recipes || []).map((recipe) => [recipe.id, recipe]));
+
     for (let age = 1; age <= 7; age++) {
-      const total = rules.recipes.filter(r => {
-        for (const outputId of Object.keys(r.outputs)) {
-          const material = rules.materials.find(m => m.id === outputId);
-          if (material && material.age === age) return true;
-        }
-        return false;
+      const total = rules.recipes.filter((recipe) => getRecipeAge(recipe, rules) === age).length;
+
+      const discovered = discoveredRecipes.filter((recipeId) => {
+        const recipe = recipeMap.get(recipeId);
+        if (!recipe) return false;
+        return getRecipeAge(recipe, rules) === age;
       }).length;
 
-      const discovered = discoveredRecipes.filter(recipeId => {
-        const recipe = rules.recipes.find(r => r.id === recipeId);
+      const unlocked = unlockedRecipes.filter((recipeId) => {
+        const recipe = recipeMap.get(recipeId);
         if (!recipe) return false;
-        for (const outputId of Object.keys(recipe.outputs)) {
-          const material = rules.materials.find(m => m.id === outputId);
-          if (material && material.age === age) return true;
-        }
-        return false;
-      }).length;
-
-      const unlocked = unlockedRecipes.filter(recipeId => {
-        const recipe = rules.recipes.find(r => r.id === recipeId);
-        if (!recipe) return false;
-        for (const outputId of Object.keys(recipe.outputs)) {
-          const material = rules.materials.find(m => m.id === outputId);
-          if (material && material.age === age) return true;
-        }
-        return false;
+        return getRecipeAge(recipe, rules) === age;
       }).length;
 
       if (total > 0) {

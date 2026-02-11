@@ -966,7 +966,12 @@
     "coal_power_plant": "Große Anlage, die Kohle in stetige Stromleistung umwandelt.",
     "diesel_gen": "Generator, der Diesel für zuverlässige Energie verbrennt.",
     "nuclear_fission_reactor": "Reaktor, der Atome spaltet und enorme Energie liefert.",
-    "solar_array": "Großes Panel-Feld, das Sonnenlicht in Energie umwandelt."
+    "solar_array": "Großes Panel-Feld, das Sonnenlicht in Energie umwandelt.",
+    "iron_ingot_bulk": "Schmelzcharge mit hohem Durchsatz, die Eisenerz im industriellen Maßstab in Eisenbarren umwandelt.",
+    "copper_ingot_bulk": "Schmelzcharge mit hohem Durchsatz, die Kupfererz im industriellen Maßstab in Kupferbarren umwandelt.",
+    "iron_plate_bulk": "Industrielle Walzcharge, die Eisenbarren in großen Serien zu Eisenplatten umformt.",
+    "iron_rod_bulk": "Industrielle Formcharge, die Eisenbarren in großen Serien zu Eisenstangen umformt.",
+    "steel_ingot_bulk": "Schmelzcharge mit hohem Durchsatz, die Eisenerz und Kohle im industriellen Maßstab in Stahlbarren umwandelt."
   },
   "materials": {
     "wood": "Holz",
@@ -1340,7 +1345,12 @@
     "coal_power_plant": "Kohlekraftwerk",
     "diesel_gen": "Dieselkraftwerk",
     "nuclear_fission_reactor": "Kernspaltungsreaktor",
-    "solar_array": "Solaranlage"
+    "solar_array": "Solaranlage",
+    "iron_ingot_bulk": "Eisenbarren im Großlos",
+    "copper_ingot_bulk": "Kupferbarren im Großlos",
+    "iron_plate_bulk": "Eisenplatten im Großlos",
+    "iron_rod_bulk": "Eisenstangen im Großlos",
+    "steel_ingot_bulk": "Stahlbarren im Großlos"
   },
   "slots": {
     "furnace_base": "Ofenbasis",
