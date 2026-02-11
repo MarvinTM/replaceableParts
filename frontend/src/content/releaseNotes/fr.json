@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "2024-02-11",
+      "highlights": "Fonction de suppression de compte. Nouveau composant d'inventaire.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Fonction de suppression de compte (dans la page Paramètres)"
+        },
+        {
+          "type": "feature",
+          "text": "Nouveau composant d'inventaire. Divisé en trois parties, l'inventaire complet est affiché dans un panneau séparé."
+        },
+        {
+          "type": "improvement",
+          "text": "L'option Expédier les biens affichera désormais le nombre de crédits gagnés."
+        },
+        {
+          "type": "improvement",
+          "text": "La capacité de l'inventaire et son extension sont désormais mieux expliquées dans l'interface"
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de recettes \"en lot\" permettant de fabriquer certaines pièces de base en plus grand volume sur des machines plus avancées"
+        }
+      ]
+    },
+    {
       "version": "0.6.7",
       "date": "2024-02-11",
       "highlights": "Corrections supplémentaires",

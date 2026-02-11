@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "2024-02-11",
+      "highlights": "Funzione di eliminazione account. Nuovo componente Inventario.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Funzione di eliminazione account (nella pagina Impostazioni)"
+        },
+        {
+          "type": "feature",
+          "text": "Nuovo componente Inventario. Suddiviso in tre parti; l'inventario completo è mostrato in un pannello separato."
+        },
+        {
+          "type": "improvement",
+          "text": "L'opzione Spedisci beni ora mostrerà quanti crediti verranno guadagnati."
+        },
+        {
+          "type": "improvement",
+          "text": "Capacità ed espansione dell'inventario ora sono spiegate meglio nell'interfaccia"
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunte ricette \"in lotto\" che consentono di produrre alcuni componenti base in volumi maggiori con macchine più avanzate"
+        }
+      ]
+    },
+    {
       "version": "0.6.7",
       "date": "2024-02-11",
       "highlights": "Correzioni aggiuntive",

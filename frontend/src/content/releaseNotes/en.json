@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "2024-02-11",
+      "highlights": "Account deletion feature. New Inventory component.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Account deletion feature (in Settings page)"
+        },
+        {
+          "type": "feature",
+          "text": "New Inventory component. Divided in three parts, full inventory shown in separate panel."
+        },
+        {
+          "type": "improvement",
+          "text": "Ship goods option will now show how many credits will be earned."
+        },
+        {
+          "type": "improvement",
+          "text": "Inventory capacity and expansion are now better explained in the UI"
+        },
+        {
+          "type": "improvement",
+          "text": "Added 'bulk' recipes, that allow to manufacture some basic parts in higher volumes in more advanced machines"
+        }
+      ]
+    },
+    {
       "version": "0.6.7",
       "date": "2024-02-11",
       "highlights": "Additional fixes",

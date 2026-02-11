@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "2024-02-11",
+      "highlights": "Función de eliminación de cuenta. Nuevo componente de inventario.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Función de eliminación de cuenta (en la página de Configuración)"
+        },
+        {
+          "type": "feature",
+          "text": "Nuevo componente de inventario. Dividido en tres partes; el inventario completo se muestra en un panel separado."
+        },
+        {
+          "type": "improvement",
+          "text": "La opción Enviar Mercancía ahora mostrará cuántos créditos se obtendrán."
+        },
+        {
+          "type": "improvement",
+          "text": "La capacidad y la ampliación del inventario ahora están mejor explicadas en la interfaz"
+        },
+        {
+          "type": "improvement",
+          "text": "Se añadieron recetas \"a granel\" que permiten fabricar algunas piezas básicas en mayor volumen usando máquinas más avanzadas"
+        }
+      ]
+    },
+    {
       "version": "0.6.7",
       "date": "2024-02-11",
       "highlights": "Correcciones adicionales",

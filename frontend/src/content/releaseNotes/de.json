@@ -1,6 +1,33 @@
 {
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "2024-02-11",
+      "highlights": "Funktion zum Löschen des Kontos. Neue Inventarkomponente.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Funktion zum Löschen des Kontos (auf der Seite Einstellungen)"
+        },
+        {
+          "type": "feature",
+          "text": "Neue Inventarkomponente. In drei Bereiche aufgeteilt; das vollständige Inventar wird in einem separaten Panel angezeigt."
+        },
+        {
+          "type": "improvement",
+          "text": "Die Option Waren versenden zeigt jetzt an, wie viele Credits verdient werden."
+        },
+        {
+          "type": "improvement",
+          "text": "Inventarkapazität und -erweiterung werden nun in der Benutzeroberfläche besser erklärt"
+        },
+        {
+          "type": "improvement",
+          "text": "Es wurden \"Großlos\"-Rezepte hinzugefügt, mit denen einige grundlegende Teile in höheren Mengen auf fortgeschritteneren Maschinen gefertigt werden können"
+        }
+      ]
+    },
+    {
       "version": "0.6.7",
       "date": "2024-02-11",
       "highlights": "Zusätzliche Korrekturen",
