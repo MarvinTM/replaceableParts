@@ -100,7 +100,19 @@
       "collectThenFly": "Sammeln dann Fliegen"
     },
     "moreComingSoon": "Weitere Einstellungen folgen bald...",
-    "disableResearch": "Forschung Deaktivieren (alle Rezepte freischalten)"
+    "disableResearch": "Forschung Deaktivieren (alle Rezepte freischalten)",
+    "deleteAccount": {
+      "title": "Gefahrenbereich",
+      "description": "Löschen Sie Ihr Konto und entfernen Sie Ihre Daten dauerhaft aus dem Backend.",
+      "action": "Konto löschen",
+      "dialogTitle": "Konto dauerhaft löschen?",
+      "dialogBody": "Diese Aktion kann nicht rückgängig gemacht werden. Alle gespeicherten Daten dieses Kontos werden dauerhaft gelöscht.",
+      "typePrompt": "Geben Sie DELETE zur Bestätigung ein:",
+      "cancel": "Abbrechen",
+      "confirm": "Dauerhaft löschen",
+      "deleting": "Wird gelöscht...",
+      "deleteFailed": "Das Konto konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
+    }
   },
   "pending": {
     "title": "Konto Wartet auf Genehmigung",

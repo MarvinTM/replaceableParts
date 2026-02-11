@@ -99,7 +99,19 @@
       "collectThenFly": "Recolectar y Volar"
     },
     "moreComingSoon": "Más opciones próximamente...",
-    "disableResearch": "Desactivar Investigación (desbloquear todas las recetas)"
+    "disableResearch": "Desactivar Investigación (desbloquear todas las recetas)",
+    "deleteAccount": {
+      "title": "Zona de peligro",
+      "description": "Elimina tu cuenta y borra permanentemente tus datos del backend.",
+      "action": "Eliminar cuenta",
+      "dialogTitle": "¿Eliminar cuenta permanentemente?",
+      "dialogBody": "Esta acción no se puede deshacer. Todos los datos guardados de esta cuenta se eliminarán de forma permanente.",
+      "typePrompt": "Escribe DELETE para confirmar:",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar permanentemente",
+      "deleting": "Eliminando...",
+      "deleteFailed": "No se pudo eliminar la cuenta. Inténtalo de nuevo."
+    }
   },
   "pending": {
     "title": "Cuenta Pendiente de Aprobación",

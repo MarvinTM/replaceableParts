@@ -108,7 +108,19 @@
       "collectThenFly": "Collect then Fly"
     },
     "moreComingSoon": "More settings coming soon...",
-    "disableResearch": "Disable Research (unlock all recipes)"
+    "disableResearch": "Disable Research (unlock all recipes)",
+    "deleteAccount": {
+      "title": "Danger Zone",
+      "description": "Delete your account and permanently remove your data from the backend.",
+      "action": "Delete Account",
+      "dialogTitle": "Delete account permanently?",
+      "dialogBody": "This action cannot be undone. All saved data for this account will be permanently deleted.",
+      "typePrompt": "Type DELETE to confirm:",
+      "cancel": "Cancel",
+      "confirm": "Delete Permanently",
+      "deleting": "Deleting...",
+      "deleteFailed": "Failed to delete account. Please try again."
+    }
   },
   "pending": {
     "title": "Account Pending Approval",

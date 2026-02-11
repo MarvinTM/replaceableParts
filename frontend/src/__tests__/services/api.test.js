@@ -50,4 +50,19 @@ describe('api request headers', () => {
       })
     );
   });
+
+  it('sends delete request for profile deletion', async () => {
+    await api.deleteProfile();
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/users/profile',
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-token',
+          'Content-Type': 'application/json'
+        })
+      })
+    );
+  });
 });

@@ -99,6 +99,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    await api.deleteProfile();
+    localStorage.removeItem('token');
+    setUser(null);
+  }, []);
+
   const refreshUser = useCallback(async () => {
     try {
       const { user } = await api.getCurrentUser();
@@ -122,6 +128,7 @@ export function AuthProvider({ children }) {
     error,
     login,
     logout,
+    deleteAccount,
     refreshUser,
     enterGuestMode,
     exitGuestMode,

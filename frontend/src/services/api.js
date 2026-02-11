@@ -67,6 +67,12 @@ export const api = {
     });
   },
 
+  async deleteProfile() {
+    return request('/users/profile', {
+      method: 'DELETE'
+    });
+  },
+
   // Admin
   async getUsers() {
     return request('/admin/users');

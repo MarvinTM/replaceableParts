@@ -100,7 +100,19 @@
       "collectThenFly": "Raccogli poi Vola"
     },
     "moreComingSoon": "Altre impostazioni in arrivo...",
-    "disableResearch": "Disabilita Ricerca (sblocca tutte le ricette)"
+    "disableResearch": "Disabilita Ricerca (sblocca tutte le ricette)",
+    "deleteAccount": {
+      "title": "Zona pericolosa",
+      "description": "Elimina il tuo account e rimuovi definitivamente i tuoi dati dal backend.",
+      "action": "Elimina account",
+      "dialogTitle": "Eliminare l'account definitivamente?",
+      "dialogBody": "Questa azione non può essere annullata. Tutti i dati salvati per questo account verranno eliminati definitivamente.",
+      "typePrompt": "Digita DELETE per confermare:",
+      "cancel": "Annulla",
+      "confirm": "Elimina definitivamente",
+      "deleting": "Eliminazione...",
+      "deleteFailed": "Impossibile eliminare l'account. Riprova."
+    }
   },
   "pending": {
     "title": "Account In Attesa di Approvazione",

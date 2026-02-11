@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../db.js';
-import { authenticate, requireApproval } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -36,6 +36,19 @@ router.patch('/profile', authenticate, async (req, res, next) => {
     });
 
     res.json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete current user's account
+router.delete('/profile', authenticate, async (req, res, next) => {
+  try {
+    await prisma.user.delete({
+      where: { id: req.user.id }
+    });
+
+    res.status(204).send();
   } catch (error) {
     next(error);
   }

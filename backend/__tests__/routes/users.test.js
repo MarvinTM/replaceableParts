@@ -35,7 +35,8 @@ jest.unstable_mockModule('../../src/db.js', () => ({
           role: mockUser.role,
           isApproved: mockUser.isApproved,
           ...data 
-      }))
+      })),
+      delete: jest.fn().mockResolvedValue({ id: mockUser.id })
     }
   }
 }));
@@ -58,5 +59,14 @@ describe('PATCH /api/users/profile', () => {
       
     expect(res.statusCode).toEqual(200);
     expect(res.body.name).toEqual('New Name');
+  });
+});
+
+describe('DELETE /api/users/profile', () => {
+  it('should delete current user account', async () => {
+    const res = await request(app).delete('/api/users/profile');
+
+    expect(res.statusCode).toEqual(204);
+    expect(res.body).toEqual({});
   });
 });

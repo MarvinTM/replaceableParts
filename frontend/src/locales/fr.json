@@ -100,7 +100,19 @@
       "collectThenFly": "Collecte puis Vole"
     },
     "moreComingSoon": "Plus de paramètres bientôt disponibles...",
-    "disableResearch": "Désactiver la Recherche (débloquer toutes les recettes)"
+    "disableResearch": "Désactiver la Recherche (débloquer toutes les recettes)",
+    "deleteAccount": {
+      "title": "Zone dangereuse",
+      "description": "Supprimez votre compte et effacez définitivement vos données du backend.",
+      "action": "Supprimer le compte",
+      "dialogTitle": "Supprimer le compte définitivement ?",
+      "dialogBody": "Cette action est irréversible. Toutes les données enregistrées pour ce compte seront supprimées définitivement.",
+      "typePrompt": "Tapez DELETE pour confirmer :",
+      "cancel": "Annuler",
+      "confirm": "Supprimer définitivement",
+      "deleting": "Suppression...",
+      "deleteFailed": "Échec de la suppression du compte. Veuillez réessayer."
+    }
   },
   "pending": {
     "title": "Compte en Attente d'Approbation",
