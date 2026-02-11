@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "0.6.7",
+      "date": "2024-02-11",
+      "highlights": "Zusätzliche Korrekturen",
+      "changes": [
+        {
+          "type": "fix",
+          "text": "Mehrere potenzielle Sicherheitslücken wurden behoben"
+        }
+      ]
+    },
+    {
       "version": "0.6.6",
       "date": "2024-02-11",
       "highlights": "Kleine UX-/Darstellungskorrekturen",
