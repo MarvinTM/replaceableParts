@@ -241,7 +241,10 @@
       "inventoryStatusHealthy": "Estable",
       "noMatchingParts": "No hay piezas coincidentes",
       "expandInventory": "Ampliar Inventario",
-      "expandInventoryTooltip": "+{{amount}} capacidad ({{cost}})"
+      "expandInventoryAction": "Ampliar +{{amount}}",
+      "expandInventoryTooltip": "Aumenta la capacidad máxima en {{amount}} (costo: {{cost}})",
+      "inventoryCapacityStatus": "Capacidad: {{capacity}}",
+      "inventoryCapacityStatusTooltip": "Capacidad de inventario desbloqueada"
     },
     "exploration": {
       "title": "Mapa de Exploración",

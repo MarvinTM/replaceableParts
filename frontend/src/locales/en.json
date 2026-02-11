@@ -244,7 +244,10 @@
       "inventoryStatusHealthy": "Healthy",
       "noMatchingParts": "No matching parts",
       "expandInventory": "Expand Inventory",
-      "expandInventoryTooltip": "+{{amount}} capacity ({{cost}})"
+      "expandInventoryAction": "Expand +{{amount}}",
+      "expandInventoryTooltip": "Increase max inventory by {{amount}} (cost: {{cost}})",
+      "inventoryCapacityStatus": "Capacity: {{capacity}}",
+      "inventoryCapacityStatusTooltip": "Unlocked inventory capacity"
     },
     "exploration": {
       "title": "Exploration Map",

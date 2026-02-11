@@ -236,7 +236,10 @@
       "inventoryStatusHealthy": "Stabil",
       "noMatchingParts": "Keine passenden Teile",
       "expandInventory": "Inventar erweitern",
-      "expandInventoryTooltip": "+{{amount}} Kapazität ({{cost}})"
+      "expandInventoryAction": "Erweitern +{{amount}}",
+      "expandInventoryTooltip": "Erhöht das maximale Inventar um {{amount}} (Kosten: {{cost}})",
+      "inventoryCapacityStatus": "Kapazität: {{capacity}}",
+      "inventoryCapacityStatusTooltip": "Freigeschaltete Inventarkapazität"
     },
     "exploration": {
       "title": "Erkundungskarte",

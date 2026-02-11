@@ -202,8 +202,6 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
     [inventoryInsights.readyToShip]
   );
 
-  const totalItems = Object.values(inventory || {}).reduce((a, b) => a + b, 0);
-
   const upgradeAmount = rules?.inventorySpace?.upgradeAmount ?? 100;
   const currentLevel = Math.floor((inventoryCapacity || 0) / upgradeAmount);
   const upgradeCost = Math.floor(
@@ -653,30 +651,44 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
             <Typography variant="subtitle2" fontWeight={600}>
               {t('game.factory.inventory')}
             </Typography>
-            {totalItems > 0 && (
-              <Typography
-                variant="caption"
-                sx={{
-                  backgroundColor: 'action.selected',
-                  px: 1,
-                  py: 0.25,
-                  borderRadius: 1,
-                  fontWeight: 500,
-                }}
-              >
-                {totalItems}
-              </Typography>
+            {Number.isFinite(inventoryCapacity) && inventoryCapacity > 0 && (
+              <Tooltip title={t('game.factory.inventoryCapacityStatusTooltip', 'Unlocked inventory capacity')}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    backgroundColor: 'action.selected',
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 1,
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t('game.factory.inventoryCapacityStatus', 'Capacity: {{capacity}}', {
+                    capacity: inventoryCapacity.toLocaleString(),
+                  })}
+                </Typography>
+              </Tooltip>
             )}
-            <Tooltip title={t('game.factory.expandInventoryTooltip', '+{{amount}} capacity ({{cost}})', { amount: upgradeAmount, cost: formatCredits(upgradeCost) })}>
+            <Tooltip title={t('game.factory.expandInventoryTooltip', 'Increase max inventory by {{amount}} (cost: {{cost}})', { amount: upgradeAmount, cost: formatCredits(upgradeCost) })}>
               <span>
-                <IconButton
+                <Button
                   size="small"
+                  variant="outlined"
+                  startIcon={<AddIcon sx={{ fontSize: 14 }} />}
                   disabled={!canAffordUpgrade}
                   onClick={() => buyInventorySpace?.()}
-                  sx={{ p: 0.25 }}
+                  sx={{
+                    textTransform: 'none',
+                    whiteSpace: 'nowrap',
+                    minWidth: 0,
+                    px: 0.75,
+                    py: 0.25,
+                    fontSize: '0.72rem',
+                  }}
                 >
-                  <AddIcon sx={{ fontSize: 16 }} />
-                </IconButton>
+                  {t('game.factory.expandInventoryAction', 'Expand +{{amount}}', { amount: upgradeAmount })}
+                </Button>
               </span>
             </Tooltip>
             <Button

@@ -102,6 +102,19 @@ describe('FactoryBottomBar', () => {
     expect(screen.getByText(/game.tick: 1234/)).toBeInTheDocument();
   });
 
+  it('should show unlocked inventory capacity status in header', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ iron_ingot: 10, wood: 20 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    expect(screen.getByText('Capacity: 100')).toBeInTheDocument();
+  });
+
   it('should handle play controls interaction', async () => {
     const user = userEvent.setup();
     render(<FactoryBottomBar inventory={{ iron_ingot: 10 }} rules={mockRules} tick={100} />);
@@ -118,6 +131,28 @@ describe('FactoryBottomBar', () => {
 
     await user.click(fastBtn);
     expect(mockStartGameLoop).toHaveBeenCalledWith('fast');
+  });
+
+  it('should show a clear expand inventory action and handle clicks', async () => {
+    const user = userEvent.setup();
+    render(
+      <FactoryBottomBar
+        inventory={{ iron_ingot: 10 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+        credits={1000}
+      />
+    );
+
+    const expandButton = screen.getByRole('button', { name: 'Expand +100' });
+    expect(expandButton).toBeInTheDocument();
+
+    await user.hover(expandButton);
+    expect(await screen.findByText('Increase max inventory by 100 (cost: 75₵)')).toBeInTheDocument();
+
+    await user.click(expandButton);
+    expect(mockBuyInventorySpace).toHaveBeenCalled();
   });
 
   it('should show a full storage indicator when a final good reaches stack capacity', () => {

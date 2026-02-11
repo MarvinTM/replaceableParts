@@ -232,7 +232,10 @@
       "inventoryStatusHealthy": "Stabile",
       "noMatchingParts": "Nessuna parte corrispondente",
       "expandInventory": "Espandi Inventario",
-      "expandInventoryTooltip": "+{{amount}} capacità ({{cost}})"
+      "expandInventoryAction": "Espandi +{{amount}}",
+      "expandInventoryTooltip": "Aumenta la capacità massima di {{amount}} (costo: {{cost}})",
+      "inventoryCapacityStatus": "Capacità: {{capacity}}",
+      "inventoryCapacityStatusTooltip": "Capacità inventario sbloccata"
     },
     "exploration": {
       "title": "Mappa Esplorazione",
