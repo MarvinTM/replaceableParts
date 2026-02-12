@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { api } from '../services/api';
+import { api, AUTH_EXPIRED_EVENT } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   // Track if we just transitioned from guest to authenticated (for migration)
   const wasGuestRef = useRef(false);
@@ -43,8 +44,24 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleAuthExpired = () => {
+      localStorage.removeItem('token');
+      setUser(null);
+      setSessionExpired(true);
+    };
+
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => {
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
+  }, []);
+
   const enterGuestMode = useCallback(() => {
     localStorage.setItem(GUEST_MODE_KEY, 'true');
+    setSessionExpired(false);
     setIsGuest(true);
   }, []);
 
@@ -63,6 +80,7 @@ export function AuthProvider({ children }) {
     try {
       const { token, user } = await api.loginWithGoogle(credential);
       localStorage.setItem('token', token);
+      setSessionExpired(false);
 
       // Clear guest mode since we're now authenticated
       localStorage.removeItem(GUEST_MODE_KEY);
@@ -95,6 +113,7 @@ export function AuthProvider({ children }) {
       // Ignore logout errors
     } finally {
       localStorage.removeItem('token');
+      setSessionExpired(false);
       setUser(null);
     }
   }, []);
@@ -102,7 +121,12 @@ export function AuthProvider({ children }) {
   const deleteAccount = useCallback(async () => {
     await api.deleteProfile();
     localStorage.removeItem('token');
+    setSessionExpired(false);
     setUser(null);
+  }, []);
+
+  const clearSessionExpired = useCallback(() => {
+    setSessionExpired(false);
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -125,6 +149,7 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     isAdmin,
     isGuest,
+    sessionExpired,
     error,
     login,
     logout,
@@ -134,6 +159,7 @@ export function AuthProvider({ children }) {
     exitGuestMode,
     wasGuestBeforeLogin,
     clearWasGuestFlag,
+    clearSessionExpired,
   };
 
   return (

@@ -22,14 +22,14 @@ function RequireAssets({ children }) {
 
 // Route that requires authentication (for admin-only features)
 function ProtectedRoute({ children, requireAdmin = false, requireApproval = true }) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, sessionExpired } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={sessionExpired ? { reason: 'session_expired' } : undefined} />;
   }
 
   // If user needs approval and isn't admin, show pending page
@@ -47,7 +47,7 @@ function ProtectedRoute({ children, requireAdmin = false, requireApproval = true
 
 // Route that requires either authentication OR guest mode
 function GuestOrAuthRoute({ children }) {
-  const { isLoading, isAuthenticated, isGuest } = useAuth();
+  const { isLoading, isAuthenticated, isGuest, sessionExpired } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -55,6 +55,9 @@ function GuestOrAuthRoute({ children }) {
 
   // Allow if authenticated (and approved) or in guest mode
   if (!isAuthenticated && !isGuest) {
+    if (sessionExpired) {
+      return <Navigate to="/login" replace state={{ reason: 'session_expired' }} />;
+    }
     return <Navigate to="/menu" replace />;
   }
 

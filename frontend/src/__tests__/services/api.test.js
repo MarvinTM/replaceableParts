@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { api } from '../../services/api';
+import { api, AUTH_EXPIRED_EVENT } from '../../services/api';
 
 function createLocalStorageMock() {
   const store = {};
@@ -64,5 +64,39 @@ describe('api request headers', () => {
         })
       })
     );
+  });
+
+  it('clears local auth and emits auth-expired event on 401 when token exists', async () => {
+    const onAuthExpired = vi.fn();
+    window.addEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'Invalid token', code: 'INVALID_TOKEN' })
+    });
+
+    await expect(api.getSaves()).rejects.toMatchObject({ status: 401 });
+
+    expect(localStorage.removeItem).toHaveBeenCalledWith('token');
+    expect(onAuthExpired).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+  });
+
+  it('does not emit auth-expired event for logout 401', async () => {
+    const onAuthExpired = vi.fn();
+    window.addEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
+
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'Invalid token', code: 'INVALID_TOKEN' })
+    });
+
+    await expect(api.logout()).rejects.toMatchObject({ status: 401 });
+    expect(onAuthExpired).not.toHaveBeenCalled();
+
+    window.removeEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
   });
 });

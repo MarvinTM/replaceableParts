@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+export const AUTH_EXPIRED_EVENT = 'replaceableParts:auth-expired';
 
 class ApiError extends Error {
   constructor(message, status, code) {
@@ -28,6 +29,20 @@ async function request(endpoint, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    const shouldBroadcastAuthExpired =
+      response.status === 401 &&
+      !!token &&
+      endpoint !== '/auth/logout';
+
+    if (shouldBroadcastAuthExpired) {
+      localStorage.removeItem('token');
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT, {
+          detail: { endpoint }
+        }));
+      }
+    }
+
     throw new ApiError(
       data.error || 'An error occurred',
       response.status,

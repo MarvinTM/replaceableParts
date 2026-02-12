@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { GoogleLogin } from '@react-oauth/google';
 import Box from '@mui/material/Box';
@@ -18,15 +18,18 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
-  const { login, enterGuestMode } = useAuth();
+  const { login, enterGuestMode, sessionExpired, clearSessionExpired } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState(null);
   const [langAnchorEl, setLangAnchorEl] = useState(null);
+  const showSessionExpired = sessionExpired || location.state?.reason === 'session_expired';
 
   const handleSuccess = async (credentialResponse) => {
     try {
       setError(null);
       const user = await login(credentialResponse.credential);
+      clearSessionExpired();
 
       // Redirect based on approval status
       if (user.isApproved || user.role === 'ADMIN') {
@@ -44,6 +47,7 @@ export default function LoginPage() {
   };
 
   const handlePlayAsGuest = () => {
+    clearSessionExpired();
     enterGuestMode();
     navigate('/menu');
   };
@@ -123,6 +127,12 @@ export default function LoginPage() {
           {error && (
             <Alert severity="error" sx={{ width: '100%' }}>
               {error}
+            </Alert>
+          )}
+
+          {showSessionExpired && (
+            <Alert severity="warning" sx={{ width: '100%' }}>
+              {t('login.sessionExpired', 'Your session expired. Please sign in again.')}
             </Alert>
           )}
 
