@@ -588,7 +588,7 @@ export const defaultRules = {
     { id: 'iron_rod_bulk', inputs: { iron_ingot: 10 }, outputs: { iron_rod: 20 }, ticksToComplete: 2, age: 3 },
     { id: 'steel_ingot', inputs: { iron_ore: 1, coal: 1 }, outputs: { steel_ingot: 1 }, ticksToComplete: 4, age: 3 },
     { id: 'steel_beam', inputs: { steel_ingot: 1 }, outputs: { steel_beam: 1 }, ticksToComplete: 3, age: 3 },
-    { id: 'steel_plate', inputs: { steel_ingot: 1 }, outputs: { steel_plate: 1 }, ticksToComplete: 3, age: 3 },
+    { id: 'steel_plate', inputs: { steel_ingot: 4 }, outputs: { steel_plate: 4 }, ticksToComplete: 3, age: 3 },
     { id: 'steel_rod', inputs: { steel_ingot: 1 }, outputs: { steel_rod: 2 }, ticksToComplete: 2, age: 3 },
     { id: 'gear', inputs: { iron_plate: 1 }, outputs: { gear: 2 }, ticksToComplete: 2, age: 3 },
     { id: 'steel_gear', inputs: { steel_plate: 1 }, outputs: { steel_gear: 2 }, ticksToComplete: 3, age: 3 },
@@ -705,7 +705,7 @@ export const defaultRules = {
     // - Updated with new logic for Age 5
     // Intermediates
     { id: 'aluminum_ingot', inputs: { bauxite: 2 }, outputs: { aluminum_ingot: 1 }, ticksToComplete: 4, age: 5 },
-    { id: 'aluminum_sheet', inputs: { aluminum_ingot: 2 }, outputs: { aluminum_sheet: 1 }, ticksToComplete: 2, age: 5 },
+    { id: 'aluminum_sheet', inputs: { aluminum_ingot: 2 }, outputs: { aluminum_sheet: 4 }, ticksToComplete: 2, age: 5 },
     { id: 'aluminum_rod', inputs: { aluminum_ingot: 1 }, outputs: { aluminum_rod: 2 }, ticksToComplete: 2, age: 5 },
     { id: 'insulated_wire', inputs: { copper_wire: 1, plastic: 1 }, outputs: { insulated_wire: 2 }, ticksToComplete: 1, age: 5 },
     { id: 'electric_coil', inputs: { copper_wire: 2, iron_rod: 1 }, outputs: { electric_coil: 1 }, ticksToComplete: 2, age: 5 },
