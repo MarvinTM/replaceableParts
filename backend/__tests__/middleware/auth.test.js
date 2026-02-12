@@ -25,9 +25,13 @@ describe('Auth Middleware', () => {
   let req, res, next;
 
   beforeEach(() => {
+    process.env.JWT_SECRET = 'test-secret';
     req = {
       headers: {},
-      body: {}
+      body: {},
+      baseUrl: '',
+      method: 'GET',
+      path: ''
     };
     res = {
       status: jest.fn().mockReturnThis(),
@@ -54,6 +58,38 @@ describe('Auth Middleware', () => {
       await authenticate(req, res, next);
       expect(res.status).toHaveBeenCalledWith(401);
       expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should accept token from body for session end beacon', async () => {
+      req.baseUrl = '/api/sessions';
+      req.method = 'POST';
+      req.path = '/end/session-1';
+      req.body._token = 'beacon-token';
+      jwt.verify.mockReturnValue({ userId: 'user-123' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'user-123', name: 'Test' });
+
+      await authenticate(req, res, next);
+
+      expect(jwt.verify).toHaveBeenCalledWith('beacon-token', 'test-secret');
+      expect(req.body._token).toBeUndefined();
+      expect(req.user).toBeDefined();
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('should accept token from body for game save beacon', async () => {
+      req.baseUrl = '/api/game';
+      req.method = 'PUT';
+      req.path = '/saves/save-1';
+      req.body._token = 'beacon-token';
+      jwt.verify.mockReturnValue({ userId: 'user-123' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'user-123', name: 'Test' });
+
+      await authenticate(req, res, next);
+
+      expect(jwt.verify).toHaveBeenCalledWith('beacon-token', 'test-secret');
+      expect(req.body._token).toBeUndefined();
+      expect(req.user).toBeDefined();
+      expect(next).toHaveBeenCalled();
     });
   });
 

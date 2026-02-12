@@ -8,12 +8,16 @@ export async function authenticate(req, res, next) {
       req.baseUrl === '/api/sessions' &&
       req.method === 'POST' &&
       (req.path || '').startsWith('/end/');
+    const isGameSaveBeacon =
+      req.baseUrl === '/api/game' &&
+      req.method === 'PUT' &&
+      (req.path || '').startsWith('/saves/');
 
     // Try Authorization header first, fall back to _token in body (for sendBeacon)
     let token;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
-    } else if (isSessionEndBeacon && req.body && req.body._token) {
+    } else if ((isSessionEndBeacon || isGameSaveBeacon) && req.body && req.body._token) {
       // Fallback for sendBeacon requests which can't set headers
       token = req.body._token;
       // Remove _token from body so it doesn't interfere with other processing
