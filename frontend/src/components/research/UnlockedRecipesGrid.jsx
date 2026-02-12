@@ -15,6 +15,8 @@ const AGE_COLORS = {
   7: '#00CED1'  // Dark turquoise (future)
 };
 
+const VICTORY_COLOR = '#FFD700';
+
 export default function UnlockedRecipesGrid({ recipesByAge }) {
   const { t } = useTranslation();
 
@@ -29,11 +31,15 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
   };
   // Filter ages to only show those with at least one discovered recipe
   const ages = Object.keys(recipesByAge)
+    .filter(key => key !== 'victory')
     .map(Number)
     .sort((a, b) => a - b)
-    .filter(age => recipesByAge[age].discovered > 0);
+    .filter(age => recipesByAge[age]?.discovered > 0);
 
-  if (ages.length === 0) {
+  const victoryData = recipesByAge.victory;
+  const showVictory = victoryData && victoryData.discovered > 0;
+
+  if (ages.length === 0 && !showVictory) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography variant="body2" color="text.secondary">
@@ -132,6 +138,89 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
         );
       })}
 
+      {/* Victory row */}
+      {showVictory && (
+        <Box sx={{
+          p: 1,
+          borderRadius: 1,
+          bgcolor: 'rgba(255, 215, 0, 0.08)',
+          border: '1px solid rgba(255, 215, 0, 0.3)',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  bgcolor: VICTORY_COLOR,
+                  boxShadow: '0 0 6px rgba(255, 215, 0, 0.6)',
+                }}
+              />
+              <Typography variant="body2" fontWeight="bold" sx={{ color: VICTORY_COLOR }}>
+                {t('research.singularity', 'Singularity')}
+              </Typography>
+            </Box>
+            <Chip
+              label={`${victoryData.unlocked}/${victoryData.total}`}
+              size="small"
+              sx={{
+                bgcolor: VICTORY_COLOR,
+                color: '#000',
+                fontWeight: 'bold'
+              }}
+            />
+          </Box>
+
+          <Box sx={{ mb: 0.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('research.discovered')}
+              </Typography>
+              <Typography variant="caption">
+                {victoryData.discovered}/{victoryData.total} ({Math.round((victoryData.discovered / victoryData.total) * 100)}%)
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={Math.round((victoryData.discovered / victoryData.total) * 100)}
+              sx={{
+                height: 4,
+                borderRadius: 1,
+                bgcolor: 'action.disabledBackground',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: VICTORY_COLOR,
+                  opacity: 0.5
+                }
+              }}
+            />
+          </Box>
+
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.25 }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('research.unlocked')}
+              </Typography>
+              <Typography variant="caption">
+                {victoryData.unlocked}/{victoryData.total} ({Math.round((victoryData.unlocked / victoryData.total) * 100)}%)
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={Math.round((victoryData.unlocked / victoryData.total) * 100)}
+              sx={{
+                height: 6,
+                borderRadius: 1,
+                bgcolor: 'action.disabledBackground',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: VICTORY_COLOR
+                }
+              }}
+            />
+          </Box>
+        </Box>
+      )}
+
       {/* Summary */}
       <Box sx={{ mt: 1.5, p: 1, borderRadius: 1, bgcolor: 'info.dark' }}>
         <Typography variant="body2" fontWeight="bold" gutterBottom>
@@ -141,15 +230,15 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
           <Box>
             <Typography variant="caption" color="text.secondary">{t('research.discovered')}</Typography>
             <Typography variant="body1" fontWeight="bold">
-              {ages.reduce((sum, age) => sum + recipesByAge[age].discovered, 0)}/
-              {ages.reduce((sum, age) => sum + recipesByAge[age].total, 0)}
+              {Object.keys(recipesByAge).reduce((sum, key) => sum + (recipesByAge[key]?.discovered || 0), 0)}/
+              {Object.keys(recipesByAge).reduce((sum, key) => sum + (recipesByAge[key]?.total || 0), 0)}
             </Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">{t('research.unlocked')}</Typography>
             <Typography variant="body1" fontWeight="bold">
-              {ages.reduce((sum, age) => sum + recipesByAge[age].unlocked, 0)}/
-              {ages.reduce((sum, age) => sum + recipesByAge[age].total, 0)}
+              {Object.keys(recipesByAge).reduce((sum, key) => sum + (recipesByAge[key]?.unlocked || 0), 0)}/
+              {Object.keys(recipesByAge).reduce((sum, key) => sum + (recipesByAge[key]?.total || 0), 0)}
             </Typography>
           </Box>
         </Box>

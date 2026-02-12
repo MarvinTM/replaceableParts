@@ -446,7 +446,13 @@
     "recipeUnlocked": "Dieses Rezept wurde für die Produktion freigeschaltet.",
     "assignToMachines": "Sie können es jetzt Ihren Maschinen zuweisen.",
     "continue": "Fortsetzen",
-    "age": "Zeitalter {{age}}"
+    "age": "Zeitalter {{age}}",
+    "singularity": "Singularität"
+  },
+  "victory": {
+    "title": "Technologische Singularität Erreicht!",
+    "description": "Von einfachen Holzbrettern zum Gipfel der Technologie — Sie haben die Singularitätsmaschine gebaut und die Grenzen menschlicher Ingenieurskunst überschritten. Die Zukunft gehört Ihnen.",
+    "continuePlaying": "Weiterspielen"
   },
   "tips": {
     "factory": "Ziehen Sie Maschinen und Generatoren aus der Seitenleiste auf das Gitter. Klicken Sie auf eine Maschine, um ein Rezept zuzuweisen, oder rechtsklicken Sie, um sie zu entfernen.",
@@ -971,7 +977,12 @@
     "copper_ingot_bulk": "Schmelzcharge mit hohem Durchsatz, die Kupfererz im industriellen Maßstab in Kupferbarren umwandelt.",
     "iron_plate_bulk": "Industrielle Walzcharge, die Eisenbarren in großen Serien zu Eisenplatten umformt.",
     "iron_rod_bulk": "Industrielle Formcharge, die Eisenbarren in großen Serien zu Eisenstangen umformt.",
-    "steel_ingot_bulk": "Schmelzcharge mit hohem Durchsatz, die Eisenerz und Kohle im industriellen Maßstab in Stahlbarren umwandelt."
+    "steel_ingot_bulk": "Schmelzcharge mit hohem Durchsatz, die Eisenerz und Kohle im industriellen Maßstab in Stahlbarren umwandelt.",
+    "quantum_consciousness_core": "Das KI-Gehirn der Singularität, das Quantenverarbeitung mit Bewusstsein verschmilzt.",
+    "infinite_energy_matrix": "Eine unbegrenzte Energiequelle, die das Gefüge der Raumzeit nutzt.",
+    "reality_distortion_array": "Ein Gerät, das die Raumzeit auf fundamentaler Ebene manipulieren kann.",
+    "universal_replication_chamber": "Eine Kammer, die jede Form von Materie replizieren kann.",
+    "singularity_engine": "Der Höhepunkt aller Technologie — erreicht die technologische Singularität."
   },
   "materials": {
     "wood": "Holz",
@@ -1350,7 +1361,12 @@
     "copper_ingot_bulk": "Kupferbarren im Großlos",
     "iron_plate_bulk": "Eisenplatten im Großlos",
     "iron_rod_bulk": "Eisenstangen im Großlos",
-    "steel_ingot_bulk": "Stahlbarren im Großlos"
+    "steel_ingot_bulk": "Stahlbarren im Großlos",
+    "quantum_consciousness_core": "Quanten-Bewusstseinskern",
+    "infinite_energy_matrix": "Unendliche Energiematrix",
+    "reality_distortion_array": "Realitätsverzerrungsfeld",
+    "universal_replication_chamber": "Universelle Replikationskammer",
+    "singularity_engine": "Singularitätsmaschine"
   },
   "slots": {
     "furnace_base": "Ofenbasis",

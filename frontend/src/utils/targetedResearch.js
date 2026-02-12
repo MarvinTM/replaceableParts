@@ -1,6 +1,18 @@
 import { getRecipeAge, getTargetedExperimentCostForRecipe } from './researchCosts.js';
 
 /**
+ * Check if victory recipes are still locked (need >= 75% non-victory Age 7 discovered).
+ * Self-contained so targetedResearch doesn't depend on engine.js.
+ */
+function areVictoryRecipesLocked(rules, discoveredOrUnlocked) {
+  const nonVictoryAge7 = rules.recipes.filter(r => r.age === 7 && !r.victory);
+  const total = nonVictoryAge7.length;
+  if (total === 0) return false;
+  const discoveredCount = nonVictoryAge7.filter(r => discoveredOrUnlocked.has(r.id)).length;
+  return discoveredCount < Math.ceil(total * 0.75);
+}
+
+/**
  * Build targeted-research candidates grouped by type:
  * - materialRecipes: recipes that produce currently missing input materials.
  * - productionEnablers: machine blueprints that unblock discovered/unlocked recipes
@@ -20,6 +32,7 @@ export function getEligibleTargetedResearchOptions({
   const materialMap = new Map(rules.materials.map(material => [material.id, material]));
   const discoveredOrUnlocked = new Set([...(discoveredRecipes || []), ...(unlockedRecipes || [])]);
   const unlockedSet = new Set(unlockedRecipes || []);
+  const victoryLocked = areVictoryRecipesLocked(rules, discoveredOrUnlocked);
 
   const materialRecipes = getMissingInputTargets({
     rules,
@@ -27,6 +40,7 @@ export function getEligibleTargetedResearchOptions({
     materialMap,
     discoveredOrUnlocked,
     maxRecipeAge,
+    victoryLocked,
   });
 
   const productionEnablers = getProductionEnablerTargets({
@@ -36,6 +50,7 @@ export function getEligibleTargetedResearchOptions({
     discoveredOrUnlocked,
     unlockedSet,
     maxRecipeAge,
+    victoryLocked,
   });
 
   return { materialRecipes, productionEnablers };
@@ -47,6 +62,7 @@ function getMissingInputTargets({
   materialMap,
   discoveredOrUnlocked,
   maxRecipeAge,
+  victoryLocked,
 }) {
   const neededInputMaterials = new Set();
 
@@ -65,6 +81,8 @@ function getMissingInputTargets({
     if (discoveredOrUnlocked.has(recipe.id)) continue;
     const recipeAge = getRecipeAge(recipe, rules);
     if (recipeAge > maxRecipeAge) continue;
+    // Skip locked victory recipes
+    if (victoryLocked && recipe.victory) continue;
 
     const outputMaterialIds = Object.keys(recipe.outputs || {});
     const outputId = outputMaterialIds[0];
@@ -106,6 +124,7 @@ function getProductionEnablerTargets({
   discoveredOrUnlocked,
   unlockedSet,
   maxRecipeAge,
+  victoryLocked,
 }) {
   const machinesByRecipeId = new Map();
 

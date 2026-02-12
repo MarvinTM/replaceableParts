@@ -103,6 +103,23 @@ function isRecipeForDisabledStructure(recipeId, rules) {
   return false;
 }
 
+/**
+ * Check if a victory recipe is still locked behind the gating condition.
+ * Victory recipes require >= 75% of non-victory Age 7 recipes to be discovered or unlocked.
+ */
+export function isVictoryRecipeLocked(recipeId, state, rules) {
+  const recipe = rules.recipes.find(r => r.id === recipeId);
+  if (!recipe?.victory) return false;
+
+  const nonVictoryAge7 = rules.recipes.filter(r => r.age === 7 && !r.victory);
+  const total = nonVictoryAge7.length;
+  if (total === 0) return false;
+
+  const known = new Set([...(state.discoveredRecipes || []), ...(state.unlockedRecipes || [])]);
+  const discoveredCount = nonVictoryAge7.filter(r => known.has(r.id)).length;
+  return discoveredCount < Math.ceil(total * 0.75);
+}
+
 // ============================================================================
 // Research Helper Functions
 // ============================================================================
@@ -635,6 +652,11 @@ function applyPrototypeCompletionRewards(state, rules, recipeId) {
   // Add to boost (+100% per prototype) and reset duration to 30 ticks
   state.research.prototypeBoost.bonus += 100;
   state.research.prototypeBoost.ticksRemaining = 30;
+
+  // Victory: completing the Singularity Engine prototype triggers victory
+  if (recipe.victory && recipeId === 'singularity_engine') {
+    state.victory = { achieved: true, tick: state.tick };
+  }
 }
 
 // ============================================================================
@@ -1189,11 +1211,12 @@ function simulateTick(state, rules) {
     // Calculate discovery chance with proximity bonus
     let discoveryChance = rules.research.discoveryChance;
 
-    // Find undiscovered recipes (exclude already unlocked recipes and disabled machine/generator recipes)
+    // Find undiscovered recipes (exclude already unlocked recipes, disabled structures, and locked victory recipes)
     const undiscovered = rules.recipes.filter(r =>
       !newState.discoveredRecipes.includes(r.id) &&
       !newState.unlockedRecipes.includes(r.id) &&
-      !isRecipeForDisabledStructure(r.id, rules)
+      !isRecipeForDisabledStructure(r.id, rules) &&
+      !isVictoryRecipeLocked(r.id, newState, rules)
     );
 
     if (undiscovered.length > 0 && roll < discoveryChance) {
@@ -1260,7 +1283,8 @@ function simulateTick(state, rules) {
       const undiscoveredForPassive = rules.recipes.filter(r =>
         !newState.discoveredRecipes.includes(r.id) &&
         !newState.unlockedRecipes.includes(r.id) &&
-        !isRecipeForDisabledStructure(r.id, rules)
+        !isRecipeForDisabledStructure(r.id, rules) &&
+        !isVictoryRecipeLocked(r.id, newState, rules)
       );
       if (undiscoveredForPassive.length > 0) {
         // Use age-weighted selection for passive discovery too
@@ -2338,11 +2362,12 @@ function runExperiment(state, rules, payload) {
   initializeResearchState(newState, rules);
   const rng = createRNG(state.rngSeed);
 
-  // Find undiscovered recipes (exclude already unlocked recipes and disabled machine/generator recipes)
+  // Find undiscovered recipes (exclude already unlocked recipes, disabled structures, and locked victory recipes)
   const undiscovered = rules.recipes.filter(r =>
     !newState.discoveredRecipes.includes(r.id) &&
     !newState.unlockedRecipes.includes(r.id) &&
-    !isRecipeForDisabledStructure(r.id, rules)
+    !isRecipeForDisabledStructure(r.id, rules) &&
+    !isVictoryRecipeLocked(r.id, newState, rules)
   );
   if (undiscovered.length === 0) {
     return { state: newState, error: 'All recipes have been discovered' };
@@ -2397,6 +2422,11 @@ function runTargetedExperiment(state, rules, payload) {
   // Check if recipe is for a disabled machine/generator
   if (isRecipeForDisabledStructure(recipeId, rules)) {
     return { state: newState, error: 'Cannot target disabled machine/generator recipes' };
+  }
+
+  // Check if victory recipe is still locked
+  if (isVictoryRecipeLocked(recipeId, newState, rules)) {
+    return { state: newState, error: 'Victory recipes require 75% of Age 7 recipes to be discovered first' };
   }
 
   // Check if already discovered or unlocked

@@ -454,7 +454,13 @@
     "recipeUnlocked": "This recipe has been unlocked for production.",
     "assignToMachines": "You can now assign it to your machines.",
     "continue": "Continue",
-    "age": "Age {{age}}"
+    "age": "Age {{age}}",
+    "singularity": "Singularity"
+  },
+  "victory": {
+    "title": "Technological Singularity Achieved!",
+    "description": "From humble wooden planks to the pinnacle of technology — you have built the Singularity Engine and transcended the limits of human engineering. The future is now yours to shape.",
+    "continuePlaying": "Continue Playing"
   },
   "tips": {
     "factory": "Drag machines and generators from the sidebar onto the grid. Click a machine to assign a recipe, or right-click to remove it.",
@@ -979,7 +985,12 @@
     "copper_ingot_bulk": "High-throughput smelting batch that converts copper ore into copper ingots at industrial scale.",
     "iron_plate_bulk": "Industrial rolling batch that converts iron ingots into iron plates in large runs.",
     "iron_rod_bulk": "Industrial shaping batch that converts iron ingots into iron rods in large runs.",
-    "steel_ingot_bulk": "High-throughput smelting batch that converts iron ore and coal into steel ingots at industrial scale."
+    "steel_ingot_bulk": "High-throughput smelting batch that converts iron ore and coal into steel ingots at industrial scale.",
+    "quantum_consciousness_core": "The AI brain of the singularity, merging quantum processing with conscious awareness.",
+    "infinite_energy_matrix": "An unlimited power source that harnesses the fabric of spacetime itself.",
+    "reality_distortion_array": "A device capable of manipulating spacetime at a fundamental level.",
+    "universal_replication_chamber": "A chamber that can replicate any form of matter from base elements.",
+    "singularity_engine": "The culmination of all technology — achieves technological singularity."
   },
   "materials": {
     "wood": "Wood",
@@ -1358,7 +1369,12 @@
     "copper_ingot_bulk": "Bulk Copper Ingots",
     "iron_plate_bulk": "Bulk Iron Plates",
     "iron_rod_bulk": "Bulk Iron Rods",
-    "steel_ingot_bulk": "Bulk Steel Ingots"
+    "steel_ingot_bulk": "Bulk Steel Ingots",
+    "quantum_consciousness_core": "Quantum Consciousness Core",
+    "infinite_energy_matrix": "Infinite Energy Matrix",
+    "reality_distortion_array": "Reality Distortion Array",
+    "universal_replication_chamber": "Universal Replication Chamber",
+    "singularity_engine": "Singularity Engine"
   },
   "slots": {
     "furnace_base": "Furnace Base",

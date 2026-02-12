@@ -34,6 +34,8 @@ export default function FlowPrototypeNotifier() {
     // Find prototypes that were removed (completed)
     for (const prevProto of prevPrototypes) {
       if (!currentIds.has(prevProto.recipeId) && prevProto.mode === 'flow') {
+        // Skip singularity engine — victory screen handles it
+        if (prevProto.recipeId === 'singularity_engine') continue;
         // This flow-mode prototype was completed
         const recipe = rules?.recipes?.find(r => r.id === prevProto.recipeId);
         if (recipe) {

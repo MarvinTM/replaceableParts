@@ -33,23 +33,23 @@ export default function ResearchTab() {
 
   const experimentCost = rules.research.experimentCosts[highestAge] || rules.research.experimentCosts[1];
 
-  // Count recipes by age
+  // Count recipes by age (victory recipes separated into their own category)
   const recipesByAge = useMemo(() => {
     const counts = {};
     const recipeMap = new Map((rules.recipes || []).map((recipe) => [recipe.id, recipe]));
 
     for (let age = 1; age <= 7; age++) {
-      const total = rules.recipes.filter((recipe) => getRecipeAge(recipe, rules) === age).length;
+      const total = rules.recipes.filter((recipe) => getRecipeAge(recipe, rules) === age && !recipe.victory).length;
 
       const discovered = discoveredRecipes.filter((recipeId) => {
         const recipe = recipeMap.get(recipeId);
-        if (!recipe) return false;
+        if (!recipe || recipe.victory) return false;
         return getRecipeAge(recipe, rules) === age;
       }).length;
 
       const unlocked = unlockedRecipes.filter((recipeId) => {
         const recipe = recipeMap.get(recipeId);
-        if (!recipe) return false;
+        if (!recipe || recipe.victory) return false;
         return getRecipeAge(recipe, rules) === age;
       }).length;
 
@@ -57,6 +57,18 @@ export default function ResearchTab() {
         counts[age] = { total, discovered, unlocked };
       }
     }
+
+    // Victory recipes as a separate category
+    const victoryRecipes = rules.recipes.filter(r => r.victory);
+    if (victoryRecipes.length > 0) {
+      const victoryIds = new Set(victoryRecipes.map(r => r.id));
+      counts.victory = {
+        total: victoryRecipes.length,
+        discovered: discoveredRecipes.filter(id => victoryIds.has(id)).length,
+        unlocked: unlockedRecipes.filter(id => victoryIds.has(id)).length,
+      };
+    }
+
     return counts;
   }, [discoveredRecipes, unlockedRecipes, rules]);
 

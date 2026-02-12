@@ -443,7 +443,13 @@
     "recipeUnlocked": "Cette recette a été débloquée pour la production.",
     "assignToMachines": "Vous pouvez maintenant l'assigner à vos machines.",
     "continue": "Continuer",
-    "age": "Âge {{age}}"
+    "age": "Âge {{age}}",
+    "singularity": "Singularité"
+  },
+  "victory": {
+    "title": "Singularité Technologique Atteinte !",
+    "description": "De simples planches de bois au sommet de la technologie — vous avez construit le Moteur de Singularité et transcendé les limites de l'ingénierie humaine. L'avenir vous appartient.",
+    "continuePlaying": "Continuer à Jouer"
   },
   "tips": {
     "factory": "Glissez les machines et générateurs du panneau latéral sur la grille. Cliquez sur une machine pour assigner une recette, ou clic-droit pour la supprimer.",
@@ -968,7 +974,12 @@
     "copper_ingot_bulk": "Lot de fusion à haut débit qui transforme le minerai de cuivre en lingots de cuivre à l'échelle industrielle.",
     "iron_plate_bulk": "Lot de laminage industriel qui transforme les lingots de fer en plaques de fer en grande série.",
     "iron_rod_bulk": "Lot de façonnage industriel qui transforme les lingots de fer en tiges de fer en grande série.",
-    "steel_ingot_bulk": "Lot de fusion à haut débit qui transforme le minerai de fer et le charbon en lingots d'acier à l'échelle industrielle."
+    "steel_ingot_bulk": "Lot de fusion à haut débit qui transforme le minerai de fer et le charbon en lingots d'acier à l'échelle industrielle.",
+    "quantum_consciousness_core": "Le cerveau IA de la singularité, fusionnant traitement quantique et conscience.",
+    "infinite_energy_matrix": "Une source d'énergie illimitée exploitant le tissu de l'espace-temps.",
+    "reality_distortion_array": "Un dispositif capable de manipuler l'espace-temps à un niveau fondamental.",
+    "universal_replication_chamber": "Une chambre capable de répliquer toute forme de matière.",
+    "singularity_engine": "L'aboutissement de toute technologie — atteint la singularité technologique."
   },
   "materials": {
     "wood": "Bois",
@@ -1347,7 +1358,12 @@
     "copper_ingot_bulk": "Lingots de Cuivre en Lot",
     "iron_plate_bulk": "Plaques de Fer en Lot",
     "iron_rod_bulk": "Tiges de Fer en Lot",
-    "steel_ingot_bulk": "Lingots d'Acier en Lot"
+    "steel_ingot_bulk": "Lingots d'Acier en Lot",
+    "quantum_consciousness_core": "Noyau de Conscience Quantique",
+    "infinite_energy_matrix": "Matrice d'Énergie Infinie",
+    "reality_distortion_array": "Réseau de Distorsion de Réalité",
+    "universal_replication_chamber": "Chambre de Réplication Universelle",
+    "singularity_engine": "Moteur de Singularité"
   },
   "slots": {
     "furnace_base": "Base du Four",

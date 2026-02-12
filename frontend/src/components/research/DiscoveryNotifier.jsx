@@ -55,6 +55,7 @@ export default function DiscoveryNotifier() {
               materialName: material?.name || proto.recipeId,
               materialAge: material?.age,
               mode: proto.mode,
+              victory: recipe.victory || false,
             });
           }
         }
@@ -90,12 +91,13 @@ export default function DiscoveryNotifier() {
       materialName={currentDiscovery.materialName}
       materialAge={currentDiscovery.materialAge}
       mode={currentDiscovery.mode}
+      victory={currentDiscovery.victory}
     />
   );
 }
 
 // Dialog for recipe discovery
-function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, mode }) {
+function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, mode, victory }) {
   const { t } = useTranslation();
 
   // Auto-close after 4 seconds
@@ -109,6 +111,7 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
   }, [open, onClose]);
 
   const locationText = mode === 'flow' ? t('research.autoFillQueue') : t('research.prototypeWorkshop');
+  const accentColor = victory ? '#FFD700' : 'secondary.main';
 
   return (
     <Dialog
@@ -120,7 +123,9 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
         sx: {
           minHeight: 350,
           bgcolor: 'background.paper',
-          backgroundImage: 'linear-gradient(180deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0) 50%)',
+          backgroundImage: victory
+            ? 'linear-gradient(180deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0) 50%)'
+            : 'linear-gradient(180deg, rgba(156, 39, 176, 0.15) 0%, rgba(156, 39, 176, 0) 50%)',
         }
       }}
     >
@@ -136,14 +141,14 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
         }}>
           <AutoAwesomeIcon sx={{
             fontSize: 96,
-            color: 'secondary.main',
+            color: accentColor,
             animation: 'pulse 1.5s ease-in-out infinite',
             '@keyframes pulse': {
               '0%, 100%': { transform: 'scale(1)', opacity: 1 },
               '50%': { transform: 'scale(1.1)', opacity: 0.8 },
             }
           }} />
-          <Typography variant="h4" color="secondary.main" fontWeight="bold">
+          <Typography variant="h4" sx={{ color: accentColor }} fontWeight="bold">
             {t('research.newDiscovery')}
           </Typography>
           <Box sx={{
@@ -175,7 +180,7 @@ function DiscoveryDialog({ open, onClose, outputId, materialName, materialAge, m
           </Typography>
           <Button
             variant="contained"
-            color="secondary"
+            color={victory ? 'warning' : 'secondary'}
             onClick={onClose}
             sx={{ mt: 2 }}
           >

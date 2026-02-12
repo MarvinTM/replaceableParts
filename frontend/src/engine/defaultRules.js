@@ -416,6 +416,15 @@ export const defaultRules = {
     { id: 'neural_implant', name: 'Neural Implant', basePrice: 140000, category: 'final', weight: 0.5, age: 7, description: 'Implant that interfaces with the nervous system.' },
 
     // ========================
+    // VICTORY PARTS (Age 7)
+    // ========================
+    { id: 'quantum_consciousness_core', name: 'Quantum Consciousness Core', basePrice: 1200000, category: 'intermediate', weight: 10, age: 7, description: 'The AI brain of the singularity, merging quantum processing with conscious awareness.', victory: true },
+    { id: 'infinite_energy_matrix', name: 'Infinite Energy Matrix', basePrice: 1500000, category: 'intermediate', weight: 20, age: 7, description: 'An unlimited power source that harnesses the fabric of spacetime itself.', victory: true },
+    { id: 'reality_distortion_array', name: 'Reality Distortion Array', basePrice: 1800000, category: 'intermediate', weight: 15, age: 7, description: 'A device capable of manipulating spacetime at a fundamental level.', victory: true },
+    { id: 'universal_replication_chamber', name: 'Universal Replication Chamber', basePrice: 2000000, category: 'intermediate', weight: 25, age: 7, description: 'A chamber that can replicate any form of matter from base elements.', victory: true },
+    { id: 'singularity_engine', name: 'Singularity Engine', basePrice: 10000000, category: 'final', weight: 100, age: 7, description: 'The culmination of all technology — achieves technological singularity.', victory: true },
+
+    // ========================
     // EQUIPMENT (Machines & Generators)
     // ========================
     // Machines - Age 1
@@ -838,6 +847,13 @@ export const defaultRules = {
     { id: 'space_helmet', inputs: { helmet: 1, composite: 2, glass: 1 }, outputs: { space_helmet: 1 }, ticksToComplete: 15, age: 7 },
     { id: 'graphene_armor', inputs: { graphene_sheet: 8, composite: 4, nano_material: 2 }, outputs: { graphene_armor: 1 }, ticksToComplete: 40, age: 7 },
     { id: 'neural_implant', inputs: { neural_interface: 1, ai_core: 1, adv_battery: 1 }, outputs: { neural_implant: 1 }, ticksToComplete: 35, age: 7 },
+
+    // --- VICTORY RECIPES ---
+    { id: 'quantum_consciousness_core', inputs: { autonomous_vehicle: 1, personal_assistant_robot: 1, quantum_computer: 1 }, outputs: { quantum_consciousness_core: 1 }, ticksToComplete: 200, age: 7, victory: true },
+    { id: 'infinite_energy_matrix', inputs: { energy_shield: 2, fusion_core: 4, plasma_containment: 2 }, outputs: { infinite_energy_matrix: 1 }, ticksToComplete: 200, age: 7, victory: true },
+    { id: 'reality_distortion_array', inputs: { teleporter_pad: 1, flying_car: 1, anti_grav_unit: 4 }, outputs: { reality_distortion_array: 1 }, ticksToComplete: 200, age: 7, victory: true },
+    { id: 'universal_replication_chamber', inputs: { replicator: 1, weather_control: 1, nano_material: 30 }, outputs: { universal_replication_chamber: 1 }, ticksToComplete: 200, age: 7, victory: true },
+    { id: 'singularity_engine', inputs: { quantum_consciousness_core: 1, infinite_energy_matrix: 1, reality_distortion_array: 1, universal_replication_chamber: 1 }, outputs: { singularity_engine: 1 }, ticksToComplete: 500, age: 7, victory: true },
   ],
 
   // ============================================================================
@@ -1205,6 +1221,9 @@ export const defaultRules = {
         'medical_scanner', 'quantum_computer', 'teleporter_pad', 'energy_shield', 'weather_control', 'replicator',
         'cryogenic_chamber', 'space_helmet', 'graphene_armor', 'neural_implant',
 
+        // Victory recipes
+        'quantum_consciousness_core', 'infinite_energy_matrix', 'reality_distortion_array',
+        'universal_replication_chamber', 'singularity_engine',
       ]
     }
   ],

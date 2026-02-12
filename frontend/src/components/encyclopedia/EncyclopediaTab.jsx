@@ -28,6 +28,8 @@ const AGE_COLORS = {
   7: '#00CED1'
 };
 
+const VICTORY_COLOR = '#FFD700';
+
 export default function EncyclopediaTab() {
   const { t } = useTranslation();
 
@@ -302,11 +304,11 @@ export default function EncyclopediaTab() {
                         </Box>
                         <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                           <Chip
-                            label={`${t('encyclopedia.ageShort')}${age}`}
+                            label={recipe.victory ? t('research.singularity', 'Singularity') : `${t('encyclopedia.ageShort')}${age}`}
                             size="small"
                             sx={{
-                              bgcolor: AGE_COLORS[age],
-                              color: 'white',
+                              bgcolor: recipe.victory ? VICTORY_COLOR : AGE_COLORS[age],
+                              color: recipe.victory ? '#000' : 'white',
                               fontWeight: 'bold',
                               height: 20,
                               fontSize: '0.7rem',
@@ -366,11 +368,11 @@ export default function EncyclopediaTab() {
                   color={selectedRecipe.status === 'unlocked' ? 'success' : 'warning'}
                 />
                 <Chip
-                  label={`${t('encyclopedia.ageShort')}${selectedRecipe.age || 1}`}
+                  label={selectedRecipe.victory ? t('research.singularity', 'Singularity') : `${t('encyclopedia.ageShort')}${selectedRecipe.age || 1}`}
                   size="small"
                   sx={{
-                    bgcolor: AGE_COLORS[selectedRecipe.age || 1],
-                    color: 'white',
+                    bgcolor: selectedRecipe.victory ? VICTORY_COLOR : AGE_COLORS[selectedRecipe.age || 1],
+                    color: selectedRecipe.victory ? '#000' : 'white',
                     fontWeight: 'bold',
                   }}
                 />

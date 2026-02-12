@@ -58,6 +58,10 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
   const ageMultiplier = rules.research?.ageMultipliers?.[age] || 1.0;
   const rpBonus = Math.floor(50 * ageMultiplier);
   const isInfrastructureBlueprint = outputInfo?.material?.category === 'equipment';
+  const isVictoryRecipe = recipe?.victory === true;
+
+  // Determine special styling category
+  const specialStyle = isVictoryRecipe ? 'victory' : isInfrastructureBlueprint ? 'infra' : null;
 
   return (
     <Paper
@@ -74,15 +78,19 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
         overflow: 'hidden',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         border: '1px solid',
-        borderColor: isInfrastructureBlueprint ? '#FF9800' : 'divider',
-        bgcolor: isInfrastructureBlueprint ? '#1f1610' : 'background.paper',
-        backgroundImage: isInfrastructureBlueprint
-          ? 'linear-gradient(150deg, rgba(255, 179, 0, 0.34) 0%, rgba(255, 111, 0, 0.22) 45%, rgba(84, 47, 14, 0.92) 100%)'
-          : 'none',
-        boxShadow: isInfrastructureBlueprint
-          ? '0 0 0 1px rgba(255, 152, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 235, 180, 0.25)'
-          : undefined,
-        '&::before': isInfrastructureBlueprint ? {
+        borderColor: specialStyle === 'victory' ? '#FFD700' : specialStyle === 'infra' ? '#FF9800' : 'divider',
+        bgcolor: specialStyle === 'victory' ? '#1a1508' : specialStyle === 'infra' ? '#1f1610' : 'background.paper',
+        backgroundImage: specialStyle === 'victory'
+          ? 'linear-gradient(150deg, rgba(255, 215, 0, 0.30) 0%, rgba(255, 179, 0, 0.18) 45%, rgba(100, 70, 0, 0.90) 100%)'
+          : specialStyle === 'infra'
+            ? 'linear-gradient(150deg, rgba(255, 179, 0, 0.34) 0%, rgba(255, 111, 0, 0.22) 45%, rgba(84, 47, 14, 0.92) 100%)'
+            : 'none',
+        boxShadow: specialStyle === 'victory'
+          ? '0 0 0 1px rgba(255, 215, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 245, 200, 0.25)'
+          : specialStyle === 'infra'
+            ? '0 0 0 1px rgba(255, 152, 0, 0.55), 0 12px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 235, 180, 0.25)'
+            : undefined,
+        '&::before': specialStyle ? {
           content: '""',
           position: 'absolute',
           top: '-30%',
@@ -90,7 +98,9 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
           width: '52%',
           height: '180%',
           transform: 'rotate(23deg)',
-          background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,245,210,0.32) 50%, rgba(255,255,255,0) 100%)',
+          background: specialStyle === 'victory'
+            ? 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,245,180,0.35) 50%, rgba(255,255,255,0) 100%)'
+            : 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,245,210,0.32) 50%, rgba(255,255,255,0) 100%)',
           animation: 'infraShine 3.5s linear infinite',
           pointerEvents: 'none',
         } : undefined,
@@ -98,9 +108,11 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
           '0%': { left: '-65%' },
           '100%': { left: '140%' }
         },
-        '&:hover': isInfrastructureBlueprint ? {
+        '&:hover': specialStyle ? {
           transform: 'translateY(-2px)',
-          boxShadow: '0 0 0 1px rgba(255, 152, 0, 0.7), 0 14px 28px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 235, 180, 0.35)'
+          boxShadow: specialStyle === 'victory'
+            ? '0 0 0 1px rgba(255, 215, 0, 0.7), 0 14px 28px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 245, 200, 0.35)'
+            : '0 0 0 1px rgba(255, 152, 0, 0.7), 0 14px 28px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 235, 180, 0.35)'
         } : undefined,
       }}
     >
@@ -121,15 +133,31 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
         noWrap
         sx={{
           maxWidth: 150,
-          color: isInfrastructureBlueprint ? '#FFF4D6' : 'text.primary',
-          textShadow: isInfrastructureBlueprint ? '0 1px 2px rgba(0, 0, 0, 0.45)' : 'none',
-          fontWeight: isInfrastructureBlueprint ? 700 : 500,
+          color: specialStyle ? '#FFF4D6' : 'text.primary',
+          textShadow: specialStyle ? '0 1px 2px rgba(0, 0, 0, 0.45)' : 'none',
+          fontWeight: specialStyle ? 700 : 500,
         }}
       >
         {getMaterialName(outputInfo?.outputId, outputInfo?.material?.name || prototype.recipeId)}
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {isVictoryRecipe && (
+          <Chip
+            icon={<AutoAwesomeIcon sx={{ fontSize: 14 }} />}
+            label={t('research.singularity', 'Singularity')}
+            size="small"
+            sx={{
+              bgcolor: 'rgba(25, 20, 5, 0.72)',
+              color: '#FFD700',
+              border: '1px solid rgba(255, 215, 0, 0.8)',
+              '& .MuiChip-icon': {
+                color: '#FFD700',
+              }
+            }}
+            variant="filled"
+          />
+        )}
         {isInfrastructureBlueprint && (
           <Chip
             icon={<AutoAwesomeIcon sx={{ fontSize: 14 }} />}
@@ -149,8 +177,8 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
         <Chip
           label={`${t('market.age')} ${outputInfo?.material?.age || '?'}`}
           size="small"
-          variant={isInfrastructureBlueprint ? 'filled' : 'outlined'}
-          sx={isInfrastructureBlueprint ? {
+          variant={specialStyle ? 'filled' : 'outlined'}
+          sx={specialStyle ? {
             bgcolor: 'rgba(30, 20, 12, 0.75)',
             color: '#FFE9B8',
             border: '1px solid rgba(255, 213, 79, 0.65)',
@@ -159,9 +187,9 @@ export default function PrototypeCard({ prototype, recipe, rules, onBuildClick }
         <Chip
           label={t(isFlowMode ? 'research.flow' : 'research.slots')}
           size="small"
-          color={isInfrastructureBlueprint ? undefined : (isFlowMode ? 'info' : 'warning')}
-          variant={isInfrastructureBlueprint ? 'filled' : 'outlined'}
-          sx={isInfrastructureBlueprint ? {
+          color={specialStyle ? undefined : (isFlowMode ? 'info' : 'warning')}
+          variant={specialStyle ? 'filled' : 'outlined'}
+          sx={specialStyle ? {
             bgcolor: isFlowMode ? 'rgba(15, 48, 57, 0.82)' : 'rgba(60, 33, 12, 0.82)',
             color: isFlowMode ? '#B3ECFF' : '#FFD89E',
             border: `1px solid ${isFlowMode ? 'rgba(77, 208, 225, 0.65)' : 'rgba(255, 183, 77, 0.65)'}`,

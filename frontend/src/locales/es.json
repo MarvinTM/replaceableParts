@@ -451,7 +451,13 @@
     "recipeUnlocked": "Esta receta ha sido desbloqueada para producción.",
     "assignToMachines": "Ahora puedes asignarla a tus máquinas.",
     "continue": "Continuar",
-    "age": "Era {{age}}"
+    "age": "Era {{age}}",
+    "singularity": "Singularidad"
+  },
+  "victory": {
+    "title": "¡Singularidad Tecnológica Alcanzada!",
+    "description": "Desde humildes tablones de madera hasta la cúspide de la tecnología — has construido el Motor de Singularidad y trascendido los límites de la ingeniería humana. El futuro es tuyo.",
+    "continuePlaying": "Seguir Jugando"
   },
   "tips": {
     "factory": "Arrastra máquinas y generadores desde la barra lateral a la cuadrícula. Haz clic en una máquina para asignar una receta, o clic derecho para eliminarla.",
@@ -976,7 +982,12 @@
     "copper_ingot_bulk": "Lote de fundición de alta capacidad que convierte mineral de cobre en lingotes de cobre a escala industrial.",
     "iron_plate_bulk": "Lote de laminado industrial que convierte lingotes de hierro en placas de hierro en grandes tandas.",
     "iron_rod_bulk": "Lote de conformado industrial que convierte lingotes de hierro en varillas de hierro en grandes tandas.",
-    "steel_ingot_bulk": "Lote de fundición de alta capacidad que convierte mineral de hierro y carbón en lingotes de acero a escala industrial."
+    "steel_ingot_bulk": "Lote de fundición de alta capacidad que convierte mineral de hierro y carbón en lingotes de acero a escala industrial.",
+    "quantum_consciousness_core": "El cerebro IA de la singularidad, fusionando procesamiento cuántico con consciencia.",
+    "infinite_energy_matrix": "Una fuente de energía ilimitada que aprovecha el tejido del espaciotiempo.",
+    "reality_distortion_array": "Un dispositivo capaz de manipular el espaciotiempo a nivel fundamental.",
+    "universal_replication_chamber": "Una cámara que puede replicar cualquier forma de materia.",
+    "singularity_engine": "La culminación de toda la tecnología — alcanza la singularidad tecnológica."
   },
   "materials": {
     "wood": "Madera",
@@ -1355,7 +1366,12 @@
     "copper_ingot_bulk": "Lingotes de Cobre a Granel",
     "iron_plate_bulk": "Placas de Hierro a Granel",
     "iron_rod_bulk": "Varillas de Hierro a Granel",
-    "steel_ingot_bulk": "Lingotes de Acero a Granel"
+    "steel_ingot_bulk": "Lingotes de Acero a Granel",
+    "quantum_consciousness_core": "Núcleo de Consciencia Cuántica",
+    "infinite_energy_matrix": "Matriz de Energía Infinita",
+    "reality_distortion_array": "Matriz de Distorsión de Realidad",
+    "universal_replication_chamber": "Cámara de Replicación Universal",
+    "singularity_engine": "Motor de Singularidad"
   },
   "slots": {
     "furnace_base": "Base del Horno",
