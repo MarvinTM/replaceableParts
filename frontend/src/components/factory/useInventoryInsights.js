@@ -24,7 +24,15 @@ export default function useInventoryInsights({
   inventoryCapacity,
 }) {
   return useMemo(() => {
-    const rows = Object.entries(inventory || {}).map(([itemId, quantity]) => {
+    const inventoryById = inventory || {};
+    const itemIds = new Set(Object.keys(inventoryById));
+
+    for (const itemId of materialThroughput.keys()) {
+      itemIds.add(itemId);
+    }
+
+    const rows = [...itemIds].map((itemId) => {
+      const quantity = Number(inventoryById[itemId]) || 0;
       const material = materialsById.get(itemId);
       const category = material?.category || 'unknown';
       const name = getMaterialName(itemId, material?.name);
@@ -60,7 +68,11 @@ export default function useInventoryInsights({
     const bottlenecks = rows
       .filter((row) => row.category !== 'final')
       .filter((row) => row.deficit || (row.consumed > 0 && row.fillRatio !== null && row.fillRatio <= 0.15))
-      .sort((a, b) => b.severity - a.severity || a.name.localeCompare(b.name));
+      .sort((a, b) =>
+        Number(b.deficit) - Number(a.deficit)
+        || b.severity - a.severity
+        || a.name.localeCompare(b.name)
+      );
 
     const stockpile = rows
       .filter((row) => row.fillRatio !== null && row.fillRatio >= 0.85)

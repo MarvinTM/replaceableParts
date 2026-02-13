@@ -221,6 +221,67 @@ describe('FactoryBottomBar', () => {
     expect(chip).toHaveAttribute('data-border-color', 'rgba(244, 67, 54, 0.4)');
   });
 
+  it('should show bottlenecks for deficit items that are not in inventory', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ widget: 20 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+        materialThroughput={new Map([['iron_ingot', { consumed: 5, produced: 2 }]])}
+      />
+    );
+
+    expect(screen.getByText('Bottlenecks (1)')).toBeInTheDocument();
+    expect(screen.getByText(/Iron Ingot: 0\/100 \(5\/2\)/)).toBeInTheDocument();
+  });
+
+  it('should prioritize deficit bottlenecks over non-deficit low-stock items', () => {
+    const rulesWithLowStockNoise = {
+      ...mockRules,
+      materials: [
+        ...mockRules.materials,
+        ...Array.from({ length: 8 }, (_, index) => ({
+          id: `part_${index}`,
+          name: `Part ${index}`,
+          category: 'intermediate',
+          basePrice: 1,
+          weight: 1,
+        })),
+        {
+          id: 'engine_block',
+          name: 'Combustion Engine',
+          category: 'intermediate',
+          basePrice: 100,
+          weight: 25,
+        },
+      ],
+    };
+
+    const inventory = {
+      engine_block: 10,
+      ...Object.fromEntries(Array.from({ length: 8 }, (_, index) => [`part_${index}`, 1])),
+    };
+
+    const materialThroughput = new Map([
+      ...Array.from({ length: 8 }, (_, index) => [`part_${index}`, { consumed: 1, produced: 1 }]),
+      ['engine_block', { consumed: 1, produced: 0 }],
+    ]);
+
+    render(
+      <FactoryBottomBar
+        inventory={inventory}
+        rules={rulesWithLowStockNoise}
+        tick={100}
+        inventoryCapacity={1000}
+        materialThroughput={materialThroughput}
+      />
+    );
+
+    expect(screen.getByText('Bottlenecks (9)')).toBeInTheDocument();
+    expect(screen.getByText(/Combustion Engine: 10\/40 \(1\/0\)/)).toBeInTheDocument();
+  });
+
   it('should show summary sections by default in the new inventory layout', () => {
     render(
       <FactoryBottomBar
