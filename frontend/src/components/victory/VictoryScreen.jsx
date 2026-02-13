@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import useGameStore from '../../stores/gameStore';
+import { useGame } from '../../contexts/GameContext';
 
 const GOLD = '#FFD700';
 
@@ -16,15 +20,33 @@ const GOLD = '#FFD700';
  */
 export default function VictoryScreen() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { exitToMenu } = useGame();
   const victory = useGameStore((state) => state.engineState?.victory);
   const [dismissed, setDismissed] = useState(false);
+  const [returningToMenu, setReturningToMenu] = useState(false);
 
   // Reset dismissed if victory is cleared (new game)
   useEffect(() => {
-    if (!victory) setDismissed(false);
+    if (!victory) {
+      setDismissed(false);
+      setReturningToMenu(false);
+    }
   }, [victory]);
 
   const show = victory?.achieved && !dismissed;
+
+  const handleBackToMenu = async () => {
+    if (returningToMenu) return;
+    setReturningToMenu(true);
+    try {
+      await exitToMenu();
+      navigate('/menu');
+    } catch (error) {
+      console.error('Failed to return to main menu from victory screen:', error);
+      setReturningToMenu(false);
+    }
+  };
 
   if (!show) return null;
 
@@ -133,25 +155,56 @@ export default function VictoryScreen() {
             {t('victory.description', 'From humble wooden planks to the pinnacle of technology — you have built the Singularity Engine and transcended the limits of human engineering. The future is now yours to shape.')}
           </Typography>
 
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => setDismissed(true)}
-            sx={{
-              mt: 2,
-              px: 4,
-              py: 1.5,
-              bgcolor: GOLD,
-              color: '#000',
-              fontWeight: 'bold',
-              fontSize: '1.1rem',
-              '&:hover': {
-                bgcolor: '#FFC400',
-              },
-            }}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            sx={{ mt: 2, width: { xs: '100%', sm: 'auto' } }}
           >
-            {t('victory.continuePlaying', 'Continue Playing')}
-          </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={handleBackToMenu}
+              disabled={returningToMenu}
+              sx={{
+                borderColor: 'rgba(255, 215, 0, 0.6)',
+                color: 'rgba(255, 235, 170, 0.95)',
+                fontWeight: 700,
+                '&:hover': {
+                  borderColor: GOLD,
+                  bgcolor: 'rgba(255, 215, 0, 0.08)',
+                },
+              }}
+            >
+              {returningToMenu ? (
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={16} sx={{ color: 'inherit' }} />
+                  {t('victory.returningToMenu', 'Returning to Main Menu...')}
+                </Box>
+              ) : (
+                t('victory.backToMenu', 'Back to Main Menu')
+              )}
+            </Button>
+
+            <Button
+              variant="contained"
+              size="large"
+              onClick={() => setDismissed(true)}
+              disabled={returningToMenu}
+              sx={{
+                px: 4,
+                py: 1.5,
+                bgcolor: GOLD,
+                color: '#000',
+                fontWeight: 'bold',
+                fontSize: '1.1rem',
+                '&:hover': {
+                  bgcolor: '#FFC400',
+                },
+              }}
+            >
+              {t('victory.continuePlaying', 'Continue Playing')}
+            </Button>
+          </Stack>
         </Box>
       </DialogContent>
     </Dialog>
