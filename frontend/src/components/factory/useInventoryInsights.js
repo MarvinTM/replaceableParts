@@ -41,6 +41,8 @@ export default function useInventoryInsights({
       const consumed = Number(tp?.consumed) || 0;
       const hasThroughput = produced > 0 || consumed > 0;
       const deficit = consumed > produced;
+      const isFinalUsedAsPart = category === 'final' && consumed > 0;
+      const isBottleneckEligible = category !== 'final' || isFinalUsedAsPart;
       const maxStack = getMaxStack(material, inventoryCapacity);
       const fillRatio = maxStack ? Math.min((Number(quantity) || 0) / maxStack, 1) : null;
       const severity = calculateSeverity({ fillRatio, consumed, produced });
@@ -55,6 +57,8 @@ export default function useInventoryInsights({
         consumed,
         hasThroughput,
         deficit,
+        isFinalUsedAsPart,
+        isBottleneckEligible,
         maxStack,
         fillRatio,
         severity,
@@ -66,7 +70,7 @@ export default function useInventoryInsights({
       .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
 
     const bottlenecks = rows
-      .filter((row) => row.category !== 'final')
+      .filter((row) => row.isBottleneckEligible)
       .filter((row) => row.deficit || (row.consumed > 0 && row.fillRatio !== null && row.fillRatio <= 0.15))
       .sort((a, b) =>
         Number(b.deficit) - Number(a.deficit)

@@ -188,19 +188,34 @@ describe('FactoryBottomBar', () => {
     expect(screen.getByText('Widget x2: +20₵')).toBeInTheDocument();
   });
 
-  it('should not show throughput values for final goods', () => {
+  it('should not show throughput values for final goods that are not consumed as parts', () => {
     render(
       <FactoryBottomBar
         inventory={{ widget: 20 }}
         rules={mockRules}
         tick={100}
         inventoryCapacity={100}
-        materialThroughput={new Map([['widget', { consumed: 3, produced: 7 }]])}
+        materialThroughput={new Map([['widget', { consumed: 0, produced: 7 }]])}
       />
     );
 
     expect(screen.getByText(/Widget: 20\/100/)).toBeInTheDocument();
-    expect(screen.queryByText(/Widget: 20\/100 \(3\/7\)/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Widget: 20\/100 \(0\/7\)/)).not.toBeInTheDocument();
+  });
+
+  it('should include final goods in bottlenecks when they are consumed by active recipes', () => {
+    render(
+      <FactoryBottomBar
+        inventory={{ iron_ingot: 10 }}
+        rules={mockRules}
+        tick={100}
+        inventoryCapacity={100}
+        materialThroughput={new Map([['widget', { consumed: 5, produced: 2 }]])}
+      />
+    );
+
+    expect(screen.getByText('Bottlenecks (1)')).toBeInTheDocument();
+    expect(screen.getByText(/Widget: 0\/100 \(5\/2\)/)).toBeInTheDocument();
   });
 
   it('should color non-final deficits red when consumption is higher than production', () => {

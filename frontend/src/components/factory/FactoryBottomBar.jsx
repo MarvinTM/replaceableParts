@@ -321,7 +321,8 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
     const material = materialsById.get(itemId);
     const isFinalGood = material?.category === 'final';
     const tp = materialThroughput.get(itemId);
-    const hasTP = !isFinalGood && tp && (tp.produced > 0 || tp.consumed > 0);
+    const isFinalUsedAsPart = isFinalGood && tp && tp.consumed > 0;
+    const hasTP = tp && (tp.produced > 0 || tp.consumed > 0) && (!isFinalGood || isFinalUsedAsPart);
     const hasDeficit = hasTP && tp.consumed > tp.produced;
     const name = getMaterialName(itemId, material?.name);
     const maxStack = getMaxStack(material, inventoryCapacity);

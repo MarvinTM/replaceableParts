@@ -22,11 +22,12 @@ function getFillPercent(fillRatio) {
 function getRowStatus(row, t) {
   const fillRatio = row.fillRatio ?? null;
   const isFinal = row.category === 'final';
+  const isFinalUsedAsPart = isFinal && row.isFinalUsedAsPart;
   const isNearFull = fillRatio !== null && fillRatio >= 0.85;
   const isFull = fillRatio !== null && fillRatio >= 1;
   const isLow = fillRatio !== null && fillRatio <= 0.2;
 
-  if (!isFinal && row.deficit) {
+  if ((!isFinal || isFinalUsedAsPart) && row.deficit) {
     return {
       label: t('game.factory.inventoryStatusDeficit', 'Deficit'),
       color: 'error',
@@ -35,7 +36,7 @@ function getRowStatus(row, t) {
     };
   }
 
-  if (!isFinal && row.hasThroughput && isLow) {
+  if ((!isFinal || isFinalUsedAsPart) && row.hasThroughput && isLow) {
     return {
       label: t('game.factory.inventoryStatusLow', 'Low'),
       color: 'warning',
@@ -62,7 +63,7 @@ function getRowStatus(row, t) {
     };
   }
 
-  if (!isFinal && row.hasThroughput && !isLow) {
+  if ((!isFinal || isFinalUsedAsPart) && row.hasThroughput && !isLow) {
     return {
       label: t('game.factory.inventoryStatusHealthy', 'Healthy'),
       color: 'success',
