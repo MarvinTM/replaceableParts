@@ -653,7 +653,7 @@ export const defaultRules = {
     { id: 'rubber', inputs: { oil: 1 }, outputs: { rubber: 2 }, ticksToComplete: 2, age: 4 },
     { id: 'asphalt', inputs: { stone: 1, oil: 1 }, outputs: { asphalt: 2 }, ticksToComplete: 2, age: 4 },
     { id: 'concrete', inputs: { stone: 1, sand: 1 }, outputs: { concrete: 2 }, ticksToComplete: 2, age: 4 },
-    { id: 'plastic_sheet', inputs: { plastic: 2 }, outputs: { plastic_sheet: 1 }, ticksToComplete: 2, age: 4 },
+    { id: 'plastic_sheet', inputs: { plastic: 2 }, outputs: { plastic_sheet: 2 }, ticksToComplete: 2, age: 4 },
     { id: 'vinyl', inputs: { plastic: 2 }, outputs: { vinyl: 2 }, ticksToComplete: 2, age: 4 },
     { id: 'fiberglass', inputs: { plastic: 1, glass: 1 }, outputs: { fiberglass: 2 }, ticksToComplete: 3, age: 4 },
     { id: 'synthetic_fabric', inputs: { plastic: 1 }, outputs: { synthetic_fabric: 2 }, ticksToComplete: 2, age: 4 },
