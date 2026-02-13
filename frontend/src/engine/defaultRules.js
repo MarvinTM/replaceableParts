@@ -585,6 +585,7 @@ export const defaultRules = {
     { id: 'steel_ingot_bulk', inputs: { iron_ore: 10, coal: 10 }, outputs: { steel_ingot: 10 }, ticksToComplete: 4, age: 3 },
     { id: 'aluminum_ingot_bulk', inputs: { bauxite: 20 }, outputs: { aluminum_ingot: 10 }, ticksToComplete: 4, age: 5 },
     { id: 'silicon_bulk', inputs: { sand: 20 }, outputs: { silicon: 10 }, ticksToComplete: 5, age: 6 },
+    { id: 'plastic_bulk', inputs: { oil: 10 }, outputs: { plastic: 30 }, ticksToComplete: 5, age: 6 },
     { id: 'iron_plate_bulk', inputs: { iron_ingot: 10 }, outputs: { iron_plate: 5 }, ticksToComplete: 2, age: 3 },
     { id: 'iron_rod_bulk', inputs: { iron_ingot: 10 }, outputs: { iron_rod: 20 }, ticksToComplete: 2, age: 3 },
     { id: 'steel_ingot', inputs: { iron_ore: 1, coal: 1 }, outputs: { steel_ingot: 1 }, ticksToComplete: 4, age: 3 },
@@ -709,7 +710,7 @@ export const defaultRules = {
     { id: 'aluminum_sheet', inputs: { aluminum_ingot: 2 }, outputs: { aluminum_sheet: 4 }, ticksToComplete: 2, age: 5 },
     { id: 'aluminum_rod', inputs: { aluminum_ingot: 1 }, outputs: { aluminum_rod: 2 }, ticksToComplete: 2, age: 5 },
     { id: 'insulated_wire', inputs: { copper_wire: 1, plastic: 1 }, outputs: { insulated_wire: 2 }, ticksToComplete: 1, age: 5 },
-    { id: 'electric_coil', inputs: { copper_wire: 2, iron_rod: 1 }, outputs: { electric_coil: 1 }, ticksToComplete: 2, age: 5 },
+    { id: 'electric_coil', inputs: { copper_wire: 2, iron_rod: 1 }, outputs: { electric_coil: 2 }, ticksToComplete: 2, age: 5 },
     { id: 'electric_motor', inputs: { electric_coil: 2, steel_ingot: 1 }, outputs: { electric_motor: 1 }, ticksToComplete: 5, age: 5 },
     { id: 'heating_element', inputs: { iron_rod: 1, copper_wire: 2 }, outputs: { heating_element: 1 }, ticksToComplete: 2, age: 5 },
     { id: 'electric_switch', inputs: { plastic: 1, copper_sheet: 1 }, outputs: { electric_switch: 2 }, ticksToComplete: 1, age: 5 },
@@ -1132,6 +1133,8 @@ export const defaultRules = {
         // Age 4 Chemical
         'gasoline', 'diesel_fuel', 'lubricant', 'plastic', 'rubber', 'asphalt', 'concrete',
         'plastic_sheet', 'vinyl', 'fiberglass', 'synthetic_fabric', 'glass_bottle', 'leather',
+        // Age 6 bulk throughput
+        'plastic_bulk',
         // Age 5
         'insulation',
         // Age 7 advanced chem
