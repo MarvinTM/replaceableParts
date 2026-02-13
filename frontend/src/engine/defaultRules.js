@@ -852,7 +852,7 @@ export const defaultRules = {
     { id: 'neural_implant', inputs: { neural_interface: 1, ai_core: 1, adv_battery: 1 }, outputs: { neural_implant: 1 }, ticksToComplete: 35, age: 7 },
 
     // --- VICTORY RECIPES ---
-    { id: 'quantum_consciousness_core', inputs: { autonomous_vehicle: 1, personal_assistant_robot: 1, quantum_computer: 1 }, outputs: { quantum_consciousness_core: 1 }, ticksToComplete: 200, age: 7, victory: true },
+    { id: 'quantum_consciousness_core', inputs: { holographic_display: 1, personal_assistant_robot: 1, quantum_computer: 1 }, outputs: { quantum_consciousness_core: 1 }, ticksToComplete: 200, age: 7, victory: true },
     { id: 'infinite_energy_matrix', inputs: { energy_shield: 2, fusion_core: 4, plasma_containment: 2 }, outputs: { infinite_energy_matrix: 1 }, ticksToComplete: 200, age: 7, victory: true },
     { id: 'reality_distortion_array', inputs: { teleporter_pad: 1, nano_material: 20, anti_grav_unit: 4 }, outputs: { reality_distortion_array: 1 }, ticksToComplete: 200, age: 7, victory: true },
     { id: 'universal_replication_chamber', inputs: { replicator: 1, weather_control: 1, nano_material: 30 }, outputs: { universal_replication_chamber: 1 }, ticksToComplete: 200, age: 7, victory: true },
