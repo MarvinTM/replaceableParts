@@ -66,6 +66,7 @@ const INVENTORY_HEIGHT = {
   xs: 180,
   sm: 220,
 };
+const READY_TO_SHIP_VISIBLE_LIMIT = 14;
 
 function calculateObsolescence(age, discoveredRecipes, rules) {
   if (!rules?.market?.obsolescenceEnabled) {
@@ -493,8 +494,8 @@ const FactoryBottomBar = forwardRef(function FactoryBottomBar({
     const displayedBottlenecks = bottleneckEntries.slice(0, 8);
     const displayedStockpile = stockpileEntries.slice(0, 6);
     const displayedReadyToShip = shippedItems
-      ? shippedItems.slice(0, 8).map((item) => [item.itemId, item.quantity])
-      : readyToShipEntries.slice(0, 8);
+      ? shippedItems.slice(0, READY_TO_SHIP_VISIBLE_LIMIT).map((item) => [item.itemId, item.quantity])
+      : readyToShipEntries.slice(0, READY_TO_SHIP_VISIBLE_LIMIT);
 
     const shipActions = (
       <Box sx={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>

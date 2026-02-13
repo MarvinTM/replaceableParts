@@ -305,6 +305,39 @@ describe('FactoryBottomBar', () => {
     expect(bottlenecks.compareDocumentPosition(stockpile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('should display up to fourteen ready-to-ship items in the panel', () => {
+    const finalMaterials = Array.from({ length: 15 }, (_, index) => {
+      const suffix = String(index).padStart(2, '0');
+      return {
+        id: `final_${suffix}`,
+        name: `Final ${suffix}`,
+        category: 'final',
+        basePrice: 10,
+      };
+    });
+
+    const rulesWithManyFinalGoods = {
+      ...mockRules,
+      materials: [...mockRules.materials, ...finalMaterials],
+    };
+
+    const inventory = Object.fromEntries(finalMaterials.map((material) => [material.id, 1]));
+
+    render(
+      <FactoryBottomBar
+        inventory={inventory}
+        rules={rulesWithManyFinalGoods}
+        tick={100}
+        inventoryCapacity={100}
+      />
+    );
+
+    expect(screen.getByText('Ready to Ship (15)')).toBeInTheDocument();
+    expect(screen.getByText(/Final 00: 1\/100/)).toBeInTheDocument();
+    expect(screen.getByText(/Final 13: 1\/100/)).toBeInTheDocument();
+    expect(screen.queryByText(/Final 14: 1\/100/)).not.toBeInTheDocument();
+  });
+
   it('should show stockpile items by default', () => {
     render(
       <FactoryBottomBar
