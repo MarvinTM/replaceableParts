@@ -134,6 +134,7 @@ function FactoryTab() {
 
   // State for recipe selector (opened from machine info popup)
   const [showRecipeSelector, setShowRecipeSelector] = useState(false);
+  const [recentRecipesByMachineType, setRecentRecipesByMachineType] = useState({});
 
   // State for build popup
   const [buildPopupOpen, setBuildPopupOpen] = useState(false);
@@ -282,6 +283,21 @@ function FactoryTab() {
 
   // Select a recipe (close everything after selection)
   const handleRecipeSelect = (machineId, recipeId) => {
+    if (recipeId) {
+      const machineToAssign = machines.find((m) => m.id === machineId);
+      const machineType = machineToAssign?.type;
+      if (machineType) {
+        setRecentRecipesByMachineType((prev) => {
+          const previousForType = prev[machineType] || [];
+          const nextForType = [recipeId, ...previousForType.filter((id) => id !== recipeId)].slice(0, 10);
+          return {
+            ...prev,
+            [machineType]: nextForType,
+          };
+        });
+      }
+    }
+
     assignRecipe(machineId, recipeId, cheatMode);
     setSelectedMachineId(null);
     setMachinePopupPosition(null);
@@ -609,6 +625,7 @@ function FactoryTab() {
           machine={selectedMachine}
           position={machinePopupPosition}
           unlockedRecipes={unlockedRecipes}
+          recentRecipeIds={recentRecipesByMachineType[selectedMachine.type] || []}
           rules={rules}
           onSelectRecipe={handleRecipeSelect}
           onClose={handleCloseRecipeSelector}
