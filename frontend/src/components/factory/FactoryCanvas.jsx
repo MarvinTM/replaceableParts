@@ -2560,6 +2560,18 @@ export default function FactoryCanvas({
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
+    // During native HTML drag-and-drop, mousemove does not reliably fire,
+    // so update hover state from drag events to keep wall transparency in sync.
+    if (containerRef.current && worldRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const world = worldRef.current;
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+      const worldX = (canvasX - world.x) / world.scale.x;
+      const worldY = (canvasY - world.y) / world.scale.y;
+      setIsHovering(isPointOverFactory(worldX, worldY));
+    }
+
     const gridPos = screenToGridCoords(e.clientX, e.clientY);
     if (gridPos) {
       // Only update if position changed to avoid excessive re-renders
@@ -2568,7 +2580,7 @@ export default function FactoryCanvas({
         setHoverGridPos(gridPos);
       }
     }
-  }, [screenToGridCoords]);
+  }, [screenToGridCoords, isPointOverFactory]);
 
   // Handle drop to place machine/generator
   const handleDrop = useCallback((e) => {
@@ -2601,12 +2613,14 @@ export default function FactoryCanvas({
 
     lastHoverGridPosRef.current = { x: -1, y: -1 };
     setHoverGridPos({ x: -1, y: -1 });
+    setIsHovering(false);
   }, [screenToGridCoords, onDrop]);
 
   // Handle drag leave to clear hover
   const handleDragLeave = useCallback(() => {
     lastHoverGridPosRef.current = { x: -1, y: -1 };
     setHoverGridPos({ x: -1, y: -1 });
+    setIsHovering(false);
   }, []);
 
   // Extract alpha data from a texture (cached for performance)
