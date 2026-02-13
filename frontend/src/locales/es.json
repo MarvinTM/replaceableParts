@@ -266,7 +266,9 @@
       "noIncome": "No hay nodos de recursos desbloqueados",
       "unlock": "Desbloquear Nodo",
       "active": "Activo",
-      "clickToSelect": "Haz clic en una casilla para ver detalles"
+      "clickToSelect": "Haz clic en una casilla para ver detalles",
+      "findLockedNode": "Encontrar un nodo bloqueado de {{material}} en el mapa",
+      "noLockedNodeInArea": "No hay nodos bloqueados de {{material}} en el área explorada"
     }
   },
   "admin": {

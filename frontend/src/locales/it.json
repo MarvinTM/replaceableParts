@@ -257,7 +257,9 @@
       "noIncome": "Nessun giacimento sbloccato",
       "unlock": "Sblocca Giacimento",
       "active": "Attivo",
-      "clickToSelect": "Clicca su una casella per i dettagli"
+      "clickToSelect": "Clicca su una casella per i dettagli",
+      "findLockedNode": "Trova un giacimento bloccato di {{material}} sulla mappa",
+      "noLockedNodeInArea": "Nessun giacimento bloccato di {{material}} nell'area esplorata"
     }
   },
   "admin": {

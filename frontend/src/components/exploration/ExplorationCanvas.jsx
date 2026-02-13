@@ -137,7 +137,7 @@ function drawNodeIndicatorFallback(graphics, screenX, screenY, color) {
   graphics.stroke({ color: 0xffffff, width: 2, alpha: 0.9 });
 }
 
-export default function ExplorationCanvas({ explorationMap, rules, unlockedRecipes, discoveredRecipes, onTileClick }) {
+export default function ExplorationCanvas({ explorationMap, rules, unlockedRecipes, discoveredRecipes, focusTile, onTileClick }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const worldRef = useRef(null);
@@ -396,6 +396,23 @@ export default function ExplorationCanvas({ explorationMap, rules, unlockedRecip
       render();
     }
   }, [explorationMap, texturesLoaded, appInitialized, usedResources, resourceIconsLoaded]);
+
+  // Allow external requests to center the camera on a specific tile (used by sidebar "find node" action).
+  useEffect(() => {
+    if (!focusTile || !appInitialized || !appRef.current || !worldRef.current) return;
+
+    const tileX = Number(focusTile.x);
+    const tileY = Number(focusTile.y);
+    if (!Number.isFinite(tileX) || !Number.isFinite(tileY)) return;
+
+    const app = appRef.current;
+    const world = worldRef.current;
+    const targetScreenPos = gridToScreen(tileX, tileY);
+    const currentScale = world.scale.x || 1;
+
+    world.x = app.screen.width / 2 - targetScreenPos.x * currentScale;
+    world.y = app.screen.height / 2 - targetScreenPos.y * currentScale;
+  }, [focusTile, appInitialized]);
 
   // Initialize PixiJS Application
   useEffect(() => {

@@ -269,7 +269,9 @@
       "noIncome": "No unlocked resource nodes",
       "unlock": "Unlock Node",
       "active": "Active",
-      "clickToSelect": "Click a tile to view details"
+      "clickToSelect": "Click a tile to view details",
+      "findLockedNode": "Find a locked {{material}} node on the map",
+      "noLockedNodeInArea": "No locked {{material}} nodes in explored area"
     }
   },
   "admin": {

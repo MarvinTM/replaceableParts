@@ -25,6 +25,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import GridViewIcon from '@mui/icons-material/GridView';
 import InfoIcon from '@mui/icons-material/Info';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 import BuildIcon from '@mui/icons-material/Build';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
@@ -683,6 +684,9 @@ function ExplorationTab() {
   const unlockExplorationNode = useGameStore((state) => state.unlockExplorationNode);
 
   const [selectedTile, setSelectedTile] = useState(null);
+  const [focusTileRequest, setFocusTileRequest] = useState(null);
+  const locateNodeIndicesRef = useRef({});
+  const focusRequestIdRef = useRef(0);
 
   // Compute which resources are used by discovered or unlocked recipes (same logic as ExplorationCanvas)
   const usedResources = useMemo(() => {
@@ -736,9 +740,31 @@ function ExplorationTab() {
       .sort((a, b) => a.materialName.localeCompare(b.materialName));
   }, [engineState?.extractionNodes, rules?.materials, materialsById, i18n.language]);
 
-  if (!engineState?.explorationMap) return null;
+  const explorationMap = engineState?.explorationMap;
+  const lockedNodesByMaterial = useMemo(() => {
+    const nodesByMaterial = new Map();
+    const mapTiles = explorationMap?.tiles || {};
 
-  const { explorationMap, credits } = engineState;
+    for (const tile of Object.values(mapTiles)) {
+      if (!tile?.explored || !tile?.extractionNode || tile.extractionNode.unlocked) continue;
+      const materialId = tile.extractionNode.resourceType;
+      if (!materialId || !usedResources.has(materialId)) continue;
+
+      const materialNodes = nodesByMaterial.get(materialId) || [];
+      materialNodes.push(tile);
+      nodesByMaterial.set(materialId, materialNodes);
+    }
+
+    for (const materialNodes of nodesByMaterial.values()) {
+      materialNodes.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+    }
+
+    return nodesByMaterial;
+  }, [explorationMap?.tiles, usedResources]);
+
+  if (!explorationMap) return null;
+
+  const { credits } = engineState;
   const requestedEnergyConsumption = calculateRequestedEnergyConsumption({
     machines: engineState.machines,
     machineConfigs: rules.machines,
@@ -785,6 +811,25 @@ function ExplorationTab() {
     }
   };
 
+  const handleFindLockedNode = (materialId) => {
+    const materialNodes = lockedNodesByMaterial.get(materialId) || [];
+    if (materialNodes.length === 0) return;
+
+    const currentIndex = locateNodeIndicesRef.current[materialId] ?? -1;
+    const nextIndex = (currentIndex + 1) % materialNodes.length;
+    const targetTile = materialNodes[nextIndex];
+
+    locateNodeIndicesRef.current[materialId] = nextIndex;
+    focusRequestIdRef.current += 1;
+
+    setSelectedTile(targetTile);
+    setFocusTileRequest({
+      x: targetTile.x,
+      y: targetTile.y,
+      requestId: focusRequestIdRef.current
+    });
+  };
+
   // Sidebar sections for Exploration
   const sidebarSections = [
     {
@@ -823,20 +868,46 @@ function ExplorationTab() {
               key={materialId}
               sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
-                <MaterialIcon
-                  materialId={materialId}
-                  materialName={materialName}
-                  category={category}
-                  size={20}
-                />
-                <Typography variant="body2" noWrap>
-                  {materialName}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="success.main" sx={{ fontFamily: 'monospace', flexShrink: 0 }}>
-                +{rate}{t('game.exploration.perTick', '/ tick')}
-              </Typography>
+              {(() => {
+                const hasLockedNode = (lockedNodesByMaterial.get(materialId)?.length || 0) > 0;
+                const findNodeTooltip = hasLockedNode
+                  ? t('game.exploration.findLockedNode', { material: materialName })
+                  : t('game.exploration.noLockedNodeInArea', { material: materialName });
+
+                return (
+                  <>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+                      <MaterialIcon
+                        materialId={materialId}
+                        materialName={materialName}
+                        category={category}
+                        size={20}
+                      />
+                      <Typography variant="body2" noWrap>
+                        {materialName}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                      <Tooltip title={findNodeTooltip}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleFindLockedNode(materialId)}
+                            disabled={!hasLockedNode}
+                            aria-label={findNodeTooltip}
+                            sx={{ p: 0.25 }}
+                          >
+                            <MyLocationIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Typography variant="body2" color="success.main" sx={{ fontFamily: 'monospace', flexShrink: 0 }}>
+                        +{rate}{t('game.exploration.perTick', '/ tick')}
+                      </Typography>
+                    </Box>
+                  </>
+                );
+              })()}
             </Box>
           ))}
         </Box>
@@ -952,6 +1023,7 @@ function ExplorationTab() {
                 rules={rules}
                 unlockedRecipes={engineState.unlockedRecipes}
                 discoveredRecipes={engineState.discoveredRecipes}
+                focusTile={focusTileRequest}
                 onTileClick={handleTileClick}
               />
             </Box>

@@ -261,7 +261,9 @@
       "noIncome": "Keine freigeschalteten Vorkommen",
       "unlock": "Vorkommen Freischalten",
       "active": "Aktiv",
-      "clickToSelect": "Klicken Sie auf eine Kachel für Details"
+      "clickToSelect": "Klicken Sie auf eine Kachel für Details",
+      "findLockedNode": "Finde ein gesperrtes {{material}}-Vorkommen auf der Karte",
+      "noLockedNodeInArea": "Keine gesperrten {{material}}-Vorkommen im erkundeten Gebiet"
     }
   },
   "admin": {

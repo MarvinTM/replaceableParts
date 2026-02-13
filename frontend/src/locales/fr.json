@@ -257,7 +257,9 @@
       "noIncome": "Aucun gisement débloqué",
       "unlock": "Débloquer le Gisement",
       "active": "Actif",
-      "clickToSelect": "Cliquez sur une tuile pour voir les détails"
+      "clickToSelect": "Cliquez sur une tuile pour voir les détails",
+      "findLockedNode": "Trouver un gisement verrouillé de {{material}} sur la carte",
+      "noLockedNodeInArea": "Aucun gisement verrouillé de {{material}} dans la zone explorée"
     },
     "explorationDescription": "Découvrez de nouvelles ressources et territoires"
   },
