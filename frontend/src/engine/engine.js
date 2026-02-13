@@ -3,7 +3,12 @@
  * A pure functional game engine for manufacturing simulation
  */
 
-import { getNextExplorationExpansion, expandGeneratedMap, generateExplorationMap } from './mapGenerator.js';
+import {
+  BIOME_GENERATION_VERSION,
+  getNextExplorationExpansion,
+  expandGeneratedMap,
+  generateExplorationMap
+} from './mapGenerator.js';
 import { expandStateFromSave } from '../utils/saveCompression.js';
 import { normalizeExtractionNodeRatesInState, getStandardizedNodeRate } from './extractionNodeRates.js';
 import {
@@ -12,8 +17,8 @@ import {
   getTargetedExperimentCostForRecipe
 } from '../utils/researchCosts.js';
 
-const BIOME_GENERATION_VERSION = 2;
 const REQUIRED_EXPLORATION_BIOMES = ['desert', 'swamp'];
+const FULL_EXPLORATION_REGEN_VERSION = 3;
 
 // ============================================================================
 // PRNG - Mulberry32 (deterministic random number generator)
@@ -289,7 +294,14 @@ function hasRequiredExplorationBiomes(explorationMap) {
 
 function shouldRegenerateLegacyExplorationMap(explorationMap) {
   if (!explorationMap?.tiles) return false;
-  if ((explorationMap.biomeGenerationVersion || 0) >= BIOME_GENERATION_VERSION) return false;
+  const version = explorationMap.biomeGenerationVersion || 0;
+
+  if (version >= BIOME_GENERATION_VERSION) return false;
+
+  // Exploration v3 rebalances rare-earth generation and node rates.
+  // Force one-time regeneration for all older maps while preserving unlock counts.
+  if (version < FULL_EXPLORATION_REGEN_VERSION) return true;
+
   return !hasRequiredExplorationBiomes(explorationMap);
 }
 

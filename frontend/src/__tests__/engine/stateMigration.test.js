@@ -62,7 +62,7 @@ describe('State Migration', () => {
 
     expect(terrains.has('desert')).toBe(true);
     expect(terrains.has('swamp')).toBe(true);
-    expect(migrated.explorationMap.biomeGenerationVersion).toBe(2);
+    expect(migrated.explorationMap.biomeGenerationVersion).toBe(3);
     expect(migratedExploredCount).toBe(oldExploredCount);
     expect(migrated.explorationMap.exploredChunks.length).toBe(legacyState.explorationMap.exploredChunks.length);
     expect(migratedResourceCounts).toEqual(oldResourceCounts);
@@ -71,6 +71,33 @@ describe('State Migration', () => {
     const legacyTerrains = new Set(Object.values(legacyState.explorationMap.tiles).map(tile => tile.terrain));
     expect(legacyTerrains.has('desert')).toBe(false);
     expect(legacyTerrains.has('swamp')).toBe(false);
+  });
+
+  it('should regenerate pre-v3 exploration maps and preserve unlocked resource counts', () => {
+    const legacyMap = generateExplorationMap(444444, 64, 64, defaultRules);
+    legacyMap.biomeGenerationVersion = 2;
+
+    const legacyState = createTestState({
+      extractionNodes: [
+        { id: 'node_wood_1', resourceType: 'wood', rate: 2, active: true },
+        { id: 'node_stone_1', resourceType: 'stone', rate: 2, active: true },
+        { id: 'node_iron_1', resourceType: 'iron_ore', rate: 2, active: true },
+        { id: 'exp_node_coal_29_29', resourceType: 'coal', rate: 2, active: true },
+        { id: 'exp_node_sand_30_29', resourceType: 'sand', rate: 2, active: true },
+        { id: 'exp_node_rare_earth_ore_31_29', resourceType: 'rare_earth_ore', rate: 2, active: true }
+      ],
+      explorationMap: legacyMap
+    });
+
+    const oldResourceCounts = countByResource(legacyState.extractionNodes);
+    const oldExploredCount = Object.values(legacyState.explorationMap.tiles).filter(tile => tile.explored).length;
+    const migrated = migrateGameState(legacyState, defaultRules);
+    const migratedResourceCounts = countByResource(migrated.extractionNodes);
+    const migratedExploredCount = Object.values(migrated.explorationMap.tiles).filter(tile => tile.explored).length;
+
+    expect(migrated.explorationMap.biomeGenerationVersion).toBe(3);
+    expect(migratedResourceCounts).toEqual(oldResourceCounts);
+    expect(migratedExploredCount).toBe(oldExploredCount);
   });
 
   it('should migrate stale foundry prototype slots to current recipe inputs and refund removed fills', () => {
@@ -166,7 +193,7 @@ describe('State Migration', () => {
         { id: 'iron_active', resourceType: 'iron_ore', rate: 99, active: true }
       ],
       explorationMap: {
-        biomeGenerationVersion: 2,
+        biomeGenerationVersion: 3,
         generatedWidth: 2,
         generatedHeight: 2,
         tiles: {

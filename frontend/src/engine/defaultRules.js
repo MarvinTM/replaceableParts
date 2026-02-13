@@ -1500,7 +1500,10 @@ export const defaultRules = {
     nodeSpawnChance: 0.20,
     nodeRateRange: { min: 1, max: 2 },
     // All nodes are standardized to the interval max to avoid hidden node-roll penalties.
-    fixedNodeRatesByResource: {},
+    // Rare earth uses a higher fixed rate to support Age 7 throughput.
+    fixedNodeRatesByResource: {
+      rare_earth_ore: 4
+    },
     terrainScale: 10,
     moistureScale: 8,
 
@@ -1521,8 +1524,8 @@ export const defaultRules = {
       grassland: { clay: 0.4 },
       forest:    { wood: 0.8 },
       jungle:    { wood: 0.6, bauxite: 0.4 },
-      hills:     { stone: 0.4, iron_ore: 0.3, copper_ore: 0.3, coal: 0.2 },
-      mountain:  { stone: 0.2, iron_ore: 0.3, coal: 0.3, rare_earth_ore: 0.1 },
+      hills:     { stone: 0.4, iron_ore: 0.3, copper_ore: 0.3, coal: 0.2, rare_earth_ore: 0.03 },
+      mountain:  { stone: 0.2, iron_ore: 0.3, coal: 0.3, rare_earth_ore: 0.15 },
       desert:    { sand: 0.8, oil: 0.3 },
       swamp:     { oil: 0.5, clay: 0.3 },
       water:     { }
@@ -1561,7 +1564,7 @@ export const defaultRules = {
       oil: 0.18,
       bauxite: 0.15,
       wood: 0.08,
-      rare_earth_ore: 0.06,
+      rare_earth_ore: 0.10,
       clay: 0.02,
       stone: 0.02
     },

@@ -6,7 +6,7 @@
  */
 import { getStandardizedNodeRate } from './extractionNodeRates.js';
 
-const BIOME_GENERATION_VERSION = 2;
+export const BIOME_GENERATION_VERSION = 3;
 
 /**
  * Mulberry32 PRNG - same as used in engine.js for consistency

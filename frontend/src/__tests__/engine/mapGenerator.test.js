@@ -19,7 +19,7 @@ describe('Map Generator Node Rates', () => {
 
   it('marks newly generated maps with biome generation version', () => {
     const map = generateExplorationMap(12345, 64, 64, defaultRules);
-    expect(map.biomeGenerationVersion).toBe(2);
+    expect(map.biomeGenerationVersion).toBe(3);
   });
 
   it('uses a fixed per-resource rate (interval max) for generated nodes', () => {
@@ -44,7 +44,7 @@ describe('Map Generator Node Rates', () => {
     const expectedRate = defaultRules.exploration.nodeRateRange.max;
 
     expect(expandedMap).toBeTruthy();
-    expect(expandedMap.biomeGenerationVersion).toBe(2);
+    expect(expandedMap.biomeGenerationVersion).toBe(3);
     expect(rates.length).toBeGreaterThan(0);
     expect(new Set(rates)).toEqual(new Set([expectedRate]));
   });
