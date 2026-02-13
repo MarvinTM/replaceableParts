@@ -66,6 +66,95 @@ function deepClone(obj) {
   return structuredClone(obj);
 }
 
+function clonePrototypeForSimulation(prototype) {
+  if (!prototype || typeof prototype !== 'object') {
+    return prototype;
+  }
+
+  const clonedPrototype = { ...prototype };
+
+  if (prototype.requiredAmounts && typeof prototype.requiredAmounts === 'object') {
+    clonedPrototype.requiredAmounts = { ...prototype.requiredAmounts };
+  }
+
+  if (prototype.prototypeProgress && typeof prototype.prototypeProgress === 'object') {
+    clonedPrototype.prototypeProgress = { ...prototype.prototypeProgress };
+  }
+
+  if (Array.isArray(prototype.slots)) {
+    clonedPrototype.slots = prototype.slots.map(slot => ({ ...slot }));
+  }
+
+  return clonedPrototype;
+}
+
+function cloneResearchForSimulation(research) {
+  const baseResearch = (research && typeof research === 'object')
+    ? research
+    : { active: false, researchPoints: 0, awaitingPrototype: [] };
+
+  const clonedResearch = {
+    ...baseResearch,
+    awaitingPrototype: Array.isArray(baseResearch.awaitingPrototype)
+      ? baseResearch.awaitingPrototype.map(clonePrototypeForSimulation)
+      : []
+  };
+
+  if (baseResearch.prototypeBoost && typeof baseResearch.prototypeBoost === 'object') {
+    clonedResearch.prototypeBoost = { ...baseResearch.prototypeBoost };
+  }
+
+  if (typeof clonedResearch.researchPoints !== 'number') {
+    clonedResearch.researchPoints = 0;
+  }
+
+  return clonedResearch;
+}
+
+function cloneStateForSimulation(state) {
+  // Preserve mutable mode behavior for balancing scripts/benchmarks.
+  if (mutableMode) {
+    return state;
+  }
+
+  const marketEvents = {};
+  if (state.marketEvents && typeof state.marketEvents === 'object') {
+    for (const [itemId, event] of Object.entries(state.marketEvents)) {
+      marketEvents[itemId] = (event && typeof event === 'object') ? { ...event } : event;
+    }
+  }
+
+  return {
+    ...state,
+    machines: Array.isArray(state.machines)
+      ? state.machines.map(machine => ({
+        ...machine,
+        internalBuffer: { ...(machine.internalBuffer || {}) }
+      }))
+      : [],
+    generators: Array.isArray(state.generators)
+      ? state.generators.map(generator => ({ ...generator }))
+      : [],
+    inventory: (state.inventory && typeof state.inventory === 'object')
+      ? { ...state.inventory }
+      : {},
+    energy: (state.energy && typeof state.energy === 'object')
+      ? { ...state.energy }
+      : { produced: 0, consumed: 0 },
+    research: cloneResearchForSimulation(state.research),
+    discoveredRecipes: Array.isArray(state.discoveredRecipes) ? [...state.discoveredRecipes] : [],
+    unlockedRecipes: Array.isArray(state.unlockedRecipes) ? [...state.unlockedRecipes] : [],
+    marketPopularity: (state.marketPopularity && typeof state.marketPopularity === 'object')
+      ? { ...state.marketPopularity }
+      : {},
+    marketDamage: (state.marketDamage && typeof state.marketDamage === 'object')
+      ? { ...state.marketDamage }
+      : {},
+    marketEvents,
+    marketPriceHistory: Array.isArray(state.marketPriceHistory) ? [...state.marketPriceHistory] : []
+  };
+}
+
 function getItemWeight(itemId, rules) {
   const material = rules.materials.find(m => m.id === itemId);
   return material ? material.weight : 1;
@@ -1003,7 +1092,7 @@ function calculateEnergy(state, rules) {
 // ============================================================================
 
 function simulateTick(state, rules) {
-  const newState = deepClone(state);
+  const newState = cloneStateForSimulation(state);
   const rng = createRNG(state.rngSeed);
 
   // Initialize research state for backward compatibility with old saves

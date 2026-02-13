@@ -15,6 +15,20 @@ import {
 } from '../testHelpers';
 
 describe('Engine: SIMULATE - Basic Production', () => {
+  it('should not mutate input state during simulation', () => {
+    const state = createProductionState({
+      machineType: 'stone_furnace',
+      recipeId: 'iron_ingot',
+      rawMaterials: { iron_ore: 100, coal: 100, wood: 100 }
+    });
+    const before = structuredClone(state);
+
+    const result = engine(state, defaultRules, { type: 'SIMULATE' });
+
+    expect(result.error).toBeNull();
+    expect(state).toEqual(before);
+  });
+
   it('should advance tick counter', () => {
     const state = createTestState();
     const initialTick = state.tick;
