@@ -759,7 +759,7 @@ export const defaultRules = {
     // - Updated with new logic for Age 6
     // Intermediates
     { id: 'silicon', inputs: { sand: 4 }, outputs: { silicon: 1 }, ticksToComplete: 5, age: 6 },
-    { id: 'circuit_board', inputs: { plastic_sheet: 1, copper_wire: 2 }, outputs: { circuit_board: 2 }, ticksToComplete: 3, age: 6 },
+    { id: 'circuit_board', inputs: { plastic_sheet: 1, copper_wire: 2 }, outputs: { circuit_board: 3 }, ticksToComplete: 3, age: 6 },
     { id: 'cpu', inputs: { silicon: 2, circuit_board: 1 }, outputs: { cpu: 1 }, ticksToComplete: 8, age: 6 },
     { id: 'led', inputs: { plastic: 1, silicon: 1 }, outputs: { led: 4 }, ticksToComplete: 2, age: 6 },
     { id: 'screen', inputs: { glass: 2, plastic: 1, led: 4 }, outputs: { screen: 1 }, ticksToComplete: 5, age: 6 },
