@@ -1,6 +1,45 @@
 {
   "releases": [
     {
+      "version": "0.8.0",
+      "date": "2024-02-14",
+      "highlights": "Condizioni di vittoria. Prestazioni migliorate. Ricerca e selezione ricette migliorate.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Aggiunte le condizioni di vittoria! Costruisci il Motore di Singolarità per vincere la partita."
+        },
+        {
+          "type": "improvement",
+          "text": "Le prestazioni del gioco sono state migliorate in modo significativo, soprattutto con fabbriche più grandi."
+        },
+        {
+          "type": "improvement",
+          "text": "Ora la scheda Ricerca può essere filtrata e ordinata."
+        },
+        {
+          "type": "improvement",
+          "text": "Ora il popup di selezione ricette può essere filtrato."
+        },
+        {
+          "type": "improvement",
+          "text": "Sono state regolate molte ricette nelle Ere 6 e 7."
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunte diverse ricette in lotto"
+        },
+        {
+          "type": "fix",
+          "text": "Ora l'utente verrà reindirizzato alla pagina di login quando la sessione scade"
+        },
+        {
+          "type": "fix",
+          "text": "I muri diventano trasparenti quando l'utente sta posizionando un edificio sul pavimento della fabbrica"
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2024-02-11",
       "highlights": "Funzione di eliminazione account. Nuovo componente Inventario.",

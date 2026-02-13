@@ -1,6 +1,45 @@
 {
   "releases": [
     {
+      "version": "0.8.0",
+      "date": "2024-02-14",
+      "highlights": "Conditions de victoire. Performances améliorées. Recherche et sélection de recettes améliorées.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Ajout des conditions de victoire ! Construisez le Moteur de Singularité pour gagner la partie."
+        },
+        {
+          "type": "improvement",
+          "text": "Les performances du jeu ont été nettement améliorées, en particulier avec les grandes usines."
+        },
+        {
+          "type": "improvement",
+          "text": "L'onglet Recherche peut désormais être filtré et trié."
+        },
+        {
+          "type": "improvement",
+          "text": "La fenêtre de sélection des recettes peut désormais être filtrée."
+        },
+        {
+          "type": "improvement",
+          "text": "De nombreuses recettes des Âges 6 et 7 ont été ajustées."
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout de plusieurs recettes en lot"
+        },
+        {
+          "type": "fix",
+          "text": "L'utilisateur est désormais redirigé vers la page de connexion lorsque la session expire"
+        },
+        {
+          "type": "fix",
+          "text": "Les murs deviennent transparents lorsque l'utilisateur place un bâtiment sur le sol de l'usine"
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2024-02-11",
       "highlights": "Fonction de suppression de compte. Nouveau composant d'inventaire.",

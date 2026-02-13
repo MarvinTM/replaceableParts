@@ -1,6 +1,45 @@
 {
   "releases": [
     {
+      "version": "0.8.0",
+      "date": "2024-02-14",
+      "highlights": "Siegbedingungen. Verbesserte Performance. Verbesserte Forschung und Rezeptauswahl.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Siegbedingungen hinzugefügt! Baue die Singularitätsmaschine, um das Spiel zu gewinnen."
+        },
+        {
+          "type": "improvement",
+          "text": "Die Performance des Spiels wurde deutlich verbessert, besonders bei größeren Fabriken."
+        },
+        {
+          "type": "improvement",
+          "text": "Der Forschungs-Tab kann jetzt gefiltert und sortiert werden."
+        },
+        {
+          "type": "improvement",
+          "text": "Das Rezeptauswahl-Popup kann jetzt gefiltert werden."
+        },
+        {
+          "type": "improvement",
+          "text": "Viele Rezepte in den Zeitaltern 6 und 7 wurden angepasst."
+        },
+        {
+          "type": "improvement",
+          "text": "Mehrere Großlos-Rezepte wurden hinzugefügt"
+        },
+        {
+          "type": "fix",
+          "text": "Der Benutzer wird jetzt zur Login-Seite weitergeleitet, wenn die Sitzung abläuft"
+        },
+        {
+          "type": "fix",
+          "text": "Wände werden transparent, wenn der Benutzer ein Gebäude auf der Fabrikfläche platziert"
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2024-02-11",
       "highlights": "Funktion zum Löschen des Kontos. Neue Inventarkomponente.",

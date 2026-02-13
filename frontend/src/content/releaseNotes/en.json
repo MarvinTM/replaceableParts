@@ -1,6 +1,45 @@
 {
   "releases": [
     {
+      "version": "0.8.0",
+      "date": "2024-02-14",
+      "highlights": "Victory conditions. Improved performance. Improved research and recipe selection.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "Added victory conditions! Build the Singularity Engine to win the game."
+        },
+        {
+          "type": "improvement",
+          "text": "Significantly improved the performance of the game, particularly with bigger factories."
+        },
+        {
+          "type": "improvement",
+          "text": "Now research tab can be filtered and sorted."
+        },
+        {
+          "type": "improvement",
+          "text": "Now recipe selection popup can be filtered."
+        },
+        {
+          "type": "improvement",
+          "text": "Adjusted many recipes in Ages 6 and 7."
+        },
+        {
+          "type": "improvement",
+          "text": "Added several bulk recipes"
+        },
+        {
+          "type": "fix",
+          "text": "Now user will be moved to the login page when the session expires"
+        },
+        {
+          "type": "fix",
+          "text": "Walls will become transparent if the user is deploying a building on the factory floor"
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2024-02-11",
       "highlights": "Account deletion feature. New Inventory component.",

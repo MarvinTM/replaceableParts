@@ -1,6 +1,45 @@
 {
   "releases": [
     {
+      "version": "0.8.0",
+      "date": "2024-02-14",
+      "highlights": "Condiciones de victoria. Rendimiento mejorado. Mejoras en investigación y selección de recetas.",
+      "changes": [
+        {
+          "type": "feature",
+          "text": "¡Se añadieron condiciones de victoria! Construye el Motor de Singularidad para ganar la partida."
+        },
+        {
+          "type": "improvement",
+          "text": "Se mejoró significativamente el rendimiento del juego, especialmente con fábricas más grandes."
+        },
+        {
+          "type": "improvement",
+          "text": "Ahora la pestaña de Investigación se puede filtrar y ordenar."
+        },
+        {
+          "type": "improvement",
+          "text": "Ahora la ventana emergente de selección de recetas se puede filtrar."
+        },
+        {
+          "type": "improvement",
+          "text": "Se ajustaron muchas recetas en las Eras 6 y 7."
+        },
+        {
+          "type": "improvement",
+          "text": "Se añadieron varias recetas a granel"
+        },
+        {
+          "type": "fix",
+          "text": "Ahora el usuario será redirigido a la página de inicio de sesión cuando la sesión expire"
+        },
+        {
+          "type": "fix",
+          "text": "Las paredes se volverán transparentes cuando el usuario esté desplegando un edificio en la fábrica"
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "2024-02-11",
       "highlights": "Función de eliminación de cuenta. Nuevo componente de inventario.",
