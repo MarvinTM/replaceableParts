@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import PrototypeWorkshop from '../../components/research/PrototypeWorkshop';
 
 vi.mock('react-i18next', () => ({
+  initReactI18next: {
+    type: '3rdParty',
+    init: () => {},
+  },
   useTranslation: () => ({
     t: (key) => key,
   }),
