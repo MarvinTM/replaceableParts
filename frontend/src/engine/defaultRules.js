@@ -584,6 +584,7 @@ export const defaultRules = {
     { id: 'copper_ingot_bulk', inputs: { copper_ore: 20 }, outputs: { copper_ingot: 10 }, ticksToComplete: 2, age: 3 },
     { id: 'steel_ingot_bulk', inputs: { iron_ore: 10, coal: 10 }, outputs: { steel_ingot: 10 }, ticksToComplete: 4, age: 3 },
     { id: 'aluminum_ingot_bulk', inputs: { bauxite: 20 }, outputs: { aluminum_ingot: 10 }, ticksToComplete: 4, age: 5 },
+    { id: 'silicon_bulk', inputs: { sand: 20 }, outputs: { silicon: 10 }, ticksToComplete: 5, age: 6 },
     { id: 'iron_plate_bulk', inputs: { iron_ingot: 10 }, outputs: { iron_plate: 5 }, ticksToComplete: 2, age: 3 },
     { id: 'iron_rod_bulk', inputs: { iron_ingot: 10 }, outputs: { iron_rod: 20 }, ticksToComplete: 2, age: 3 },
     { id: 'steel_ingot', inputs: { iron_ore: 1, coal: 1 }, outputs: { steel_ingot: 1 }, ticksToComplete: 4, age: 3 },
@@ -1115,7 +1116,7 @@ export const defaultRules = {
       disableAutoScale: true,
       allowedRecipes: [
         'steel_ingot', 'aluminum_ingot', 'silicon', 'brass_ingot', 'bronze_ingot',
-        'iron_ingot_bulk', 'copper_ingot_bulk', 'steel_ingot_bulk', 'aluminum_ingot_bulk' // Consolidating all ingot/hot processing
+        'iron_ingot_bulk', 'copper_ingot_bulk', 'steel_ingot_bulk', 'aluminum_ingot_bulk', 'silicon_bulk' // Consolidating all ingot/hot processing
       ]
     },
     {
