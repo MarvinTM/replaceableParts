@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react';
 import { Application, Graphics, Container, Sprite, Assets, AnimatedSprite, Texture, Text, TextStyle, TilingSprite } from 'pixi.js';
 import {
   TILE_WIDTH,
@@ -830,6 +830,7 @@ export default function FactoryCanvas({
   const activeProductionAnimsRef = useRef([]);
   const inventoryPanelRefInternal = useRef(inventoryPanelRef);
   const [isHovering, setIsHovering] = useState(false);
+  const isHoveringRef = useRef(isHovering);
 
   // Force re-render when animation states change
   const [, setAnimationTrigger] = useState(0);
@@ -866,12 +867,37 @@ export default function FactoryCanvas({
   // Store latest machines/generators for ticker access
   const machinesRef = useRef(machines);
   const generatorsRef = useRef(generators);
+  const floorSpaceRef = useRef(floorSpace);
+  const engineStateRef = useRef(engineState);
 
-  // Update refs when machines/generators change
+  // Trigger full factory redraw only when visual machine/generator attributes change.
+  // This avoids rebuilding tens of thousands of floor/wall sprites every simulation tick.
+  const machineVisualSignature = useMemo(() => (machines || [])
+    .map(machine => `${machine.id}:${machine.type}:${machine.x}:${machine.y}:${machine.enabled ? 1 : 0}:${machine.status || ''}:${machine.recipeId || ''}`)
+    .join('|'), [machines]);
+
+  const generatorVisualSignature = useMemo(() => (generators || [])
+    .map(generator => `${generator.id}:${generator.type}:${generator.x}:${generator.y}:${generator.powered === false ? 0 : 1}`)
+    .join('|'), [generators]);
+
+  const floorSpaceSignature = useMemo(() => {
+    if (!floorSpace) return 'none';
+    const chunks = floorSpace.chunks || [];
+    const chunksSignature = chunks.map(chunk => `${chunk.x},${chunk.y},${chunk.width},${chunk.height}`).join('|');
+    return `${floorSpace.width}x${floorSpace.height}:${chunksSignature}`;
+  }, [floorSpace]);
+
+  // Update refs used by ticker and render callbacks.
   useEffect(() => {
     machinesRef.current = machines;
     generatorsRef.current = generators;
-  }, [machines, generators]);
+    floorSpaceRef.current = floorSpace;
+    engineStateRef.current = engineState;
+  }, [machines, generators, floorSpace, engineState]);
+
+  useEffect(() => {
+    isHoveringRef.current = isHovering;
+  }, [isHovering]);
 
   // Update animationsEnabled and machineAnimationMode refs when they change
   useEffect(() => {
@@ -1063,10 +1089,13 @@ export default function FactoryCanvas({
   }, [pendingProductionEvents, animationsEnabled, productionAnimationStyle, spawnProductionAnimation, clearProductionEvents]);
 
   const render = useCallback(() => {
-    if (!worldRef.current || !floorSpace) return;
+    const currentFloorSpace = floorSpaceRef.current;
+    if (!worldRef.current || !currentFloorSpace) return;
 
     const world = worldRef.current;
     const assets = assetsRef.current;
+    const currentMachines = machinesRef.current || [];
+    const currentGenerators = generatorsRef.current || [];
 
     // Clear previous content and destroy non-reusable children to prevent memory leaks
     const removedChildren = world.removeChildren();
@@ -1088,8 +1117,8 @@ export default function FactoryCanvas({
 
     // Clean up animated sprite refs for removed machines/generators
     const currentKeys = new Set([
-      ...(machines || []).map(m => `machine-${m.id}`),
-      ...(generators || []).map(g => `generator-${g.id}`)
+      ...currentMachines.map(m => `machine-${m.id}`),
+      ...currentGenerators.map(g => `generator-${g.id}`)
     ]);
     Object.keys(animatedSpritesRef.current).forEach(key => {
       if (!currentKeys.has(key)) {
@@ -1105,16 +1134,16 @@ export default function FactoryCanvas({
       }
     });
 
-    const { width, height } = floorSpace;
+    const { width, height } = currentFloorSpace;
 
     // Store dimensions for hover detection
     floorDimensionsRef.current = { width, height };
 
     // Helper to check if a tile is a valid factory floor tile
     const isTileValid = (tx, ty) => {
-      if (!floorSpace.chunks) return tx >= 0 && tx < width && ty >= 0 && ty < height;
+      if (!currentFloorSpace.chunks) return tx >= 0 && tx < width && ty >= 0 && ty < height;
       // Check if (tx, ty) is inside any factory chunk
-      return floorSpace.chunks.some(c =>
+      return currentFloorSpace.chunks.some(c =>
         tx >= c.x && tx < c.x + c.width &&
         ty >= c.y && ty < c.y + c.height
       );
@@ -1305,7 +1334,7 @@ export default function FactoryCanvas({
     // Internal seam walls are rendered in the sortable structures layer for depth-correct overlap.
     const wallHeight = assets?.walls.segment ? assets.walls.segment.height - WALL_CONFIG.wallRowVerticalOffset : 0;
     const numberOfRows = getWallRowCount(width, height);
-    const lowerWallAlpha = isHovering ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
+    const lowerWallAlpha = isHoveringRef.current ? WALL_CONFIG.lowerWallAlphaHover : WALL_CONFIG.lowerWallAlphaDefault;
     const lowerWallSprites = [];
 
     if (assets?.walls.segment) {
@@ -1433,7 +1462,7 @@ export default function FactoryCanvas({
     }
 
     // Render generators
-    generators?.forEach((gen) => {
+    currentGenerators.forEach((gen) => {
       // Skip if generator type is not set (backwards compatibility)
       if (!gen.type) return;
 
@@ -1607,7 +1636,7 @@ export default function FactoryCanvas({
     });
 
     // Render machines
-    machines?.forEach((machine) => {
+    currentMachines.forEach((machine) => {
       // Skip if machine type is not set (backwards compatibility)
       if (!machine.type) return;
 
@@ -1680,7 +1709,7 @@ export default function FactoryCanvas({
             displayObject.loop = false; // Always play once, ticker handles restarts
             displayObject.stop(); // Don't auto-play
 
-            const isContinuousMode = machineAnimationMode === 'continuous';
+            const isContinuousMode = machineAnimationModeRef.current === 'continuous';
 
             displayObject.onComplete = () => {
               if (isContinuousMode) {
@@ -1917,7 +1946,15 @@ export default function FactoryCanvas({
       updateDragOverlayRef.current();
     }
 
-  }, [floorSpace, machines, generators, assetsLoaded, isHovering, engineState, rules]);
+  }, [
+    assetsLoaded,
+    animationsEnabled,
+    animationSpeedMultiplier,
+    floorSpaceSignature,
+    generatorVisualSignature,
+    machineVisualSignature,
+    rules
+  ]);
 
   // Lightweight function to update only the drag overlay without re-rendering the entire factory
   const updateDragOverlay = useCallback(() => {
@@ -1945,17 +1982,18 @@ export default function FactoryCanvas({
 
     // Check if placement is valid
     let isValid = false;
-    if (engineState) {
+    const currentEngineState = engineStateRef.current;
+    if (currentEngineState) {
       if (movingStructureId) {
         // When moving a structure, exclude it from collision detection
-        const placementsWithoutThis = engineState.floorSpace.placements.filter(p => p.id !== movingStructureId);
+        const placementsWithoutThis = currentEngineState.floorSpace.placements.filter(p => p.id !== movingStructureId);
         const tempState = {
-          ...engineState,
-          floorSpace: { ...engineState.floorSpace, placements: placementsWithoutThis }
+          ...currentEngineState,
+          floorSpace: { ...currentEngineState.floorSpace, placements: placementsWithoutThis }
         };
         isValid = canPlaceAt(tempState, currentHoverPos.x, currentHoverPos.y, sizeX, sizeY, rules).valid;
       } else {
-        isValid = canPlaceAt(engineState, currentHoverPos.x, currentHoverPos.y, sizeX, sizeY, rules).valid;
+        isValid = canPlaceAt(currentEngineState, currentHoverPos.x, currentHoverPos.y, sizeX, sizeY, rules).valid;
       }
     }
 
@@ -2060,7 +2098,7 @@ export default function FactoryCanvas({
       overlayGraphics.alpha = 0.4;
       overlayContainer.addChild(overlayGraphics);
     }
-  }, [engineState, rules]);
+  }, [rules]);
 
   // Keep the updateDragOverlay ref in sync so render can call it
   useEffect(() => {
@@ -2427,12 +2465,12 @@ export default function FactoryCanvas({
 
   // Preload material icons for recipes used by placed machines
   useEffect(() => {
-    if (!machines || !rules) return;
-    preloadRecipeIcons(machines, rules).then(() => {
+    if (!rules) return;
+    preloadRecipeIcons(machinesRef.current || [], rules).then(() => {
       // Re-render after icons are loaded
       render();
     });
-  }, [machines, rules, render]);
+  }, [machineVisualSignature, rules, render]);
 
   // Re-center view when floor space dimensions change or when assets finish loading
   useEffect(() => {
