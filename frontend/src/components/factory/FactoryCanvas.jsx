@@ -69,9 +69,6 @@ const ANIM_CONFIG = {
   }
 };
 
-// Idle pause duration between animation cycles in continuous mode (milliseconds)
-const CONTINUOUS_MODE_IDLE_PAUSE = 1000;
-
 // Text style for machine labels
 const MACHINE_LABEL_STYLE = new TextStyle({
   fontFamily: 'Arial, sans-serif',
@@ -833,8 +830,17 @@ export default function FactoryCanvas({
   const isHoveringRef = useRef(isHovering);
 
   // Force re-render when animation states change
-  const [animationTrigger, setAnimationTrigger] = useState(0);
-  const forceRender = useCallback(() => setAnimationTrigger(t => t + 1), []);
+  const renderRef = useRef(null);
+  const forceRenderScheduledRef = useRef(false);
+  const forceRender = useCallback(() => {
+    if (forceRenderScheduledRef.current) return;
+    forceRenderScheduledRef.current = true;
+
+    requestAnimationFrame(() => {
+      forceRenderScheduledRef.current = false;
+      renderRef.current?.();
+    });
+  }, []);
   const forceRenderRef = useRef(forceRender);
   forceRenderRef.current = forceRender;
 
@@ -857,9 +863,6 @@ export default function FactoryCanvas({
 
   // Track which machines/generators are currently playing animation
   const currentlyAnimatingRef = useRef({});
-
-  // Track restart times for continuous mode (when animation should restart after idle pause)
-  const continuousRestartTimesRef = useRef({});
 
   // Cache for texture alpha data (for pixel-perfect hit detection)
   const textureAlphaCacheRef = useRef(new Map());
@@ -1129,7 +1132,6 @@ export default function FactoryCanvas({
         }
         delete animatedSpritesRef.current[key];
         delete currentlyAnimatingRef.current[key];
-        delete continuousRestartTimesRef.current[key];
         delete animationStateRef.current[key.split('-')[1]];
       }
     });
@@ -1673,15 +1675,26 @@ export default function FactoryCanvas({
       // Check if this machine is currently animating
       const machineKey = `machine-${machine.id}`;
       const isAnimating = currentlyAnimatingRef.current[machineKey];
+      const isContinuousMode = machineAnimationModeRef.current === 'continuous';
+      const shouldUseMachineAnimation = (
+        animationsEnabled &&
+        status === 'working' &&
+        machineAssets?.workingAnim &&
+        (isContinuousMode || isAnimating)
+      );
 
-      // For working machines that are currently animating, use animation (if animations enabled)
-      if (animationsEnabled && status === 'working' && isAnimating && machineAssets?.workingAnim) {
+      // In continuous mode: always use animated sprite while working.
+      // In sometimes mode: use animated sprite only while a cycle is active.
+      if (shouldUseMachineAnimation) {
         // Reuse existing sprite if available, otherwise create new one
         let existingSprite = animatedSpritesRef.current[machineKey];
 
         if (existingSprite) {
           // Reuse existing sprite to preserve animation state
           displayObject = existingSprite;
+          if (isContinuousMode && !displayObject.playing) {
+            displayObject.play();
+          }
         } else {
           // Create new animated sprite
           let framesToUse = ANIM_CONFIG.machine.frames;
@@ -1706,22 +1719,18 @@ export default function FactoryCanvas({
           if (frames) {
             displayObject = new AnimatedSprite(frames);
             displayObject.animationSpeed = speedToUse * animationSpeedMultiplier;
-            displayObject.loop = false; // Always play once, ticker handles restarts
-            displayObject.stop(); // Don't auto-play
-
-            const isContinuousMode = machineAnimationModeRef.current === 'continuous';
-
-            displayObject.onComplete = () => {
-              if (isContinuousMode) {
-                // In continuous mode, schedule restart after idle pause (adjusted for simulation speed)
-                const adjustedPause = CONTINUOUS_MODE_IDLE_PAUSE / animationSpeedMultiplierRef.current;
-                continuousRestartTimesRef.current[machineKey] = Date.now() + adjustedPause;
-              }
-              // Mark as not animating and clean up sprite
-              currentlyAnimatingRef.current[machineKey] = false;
-              delete animatedSpritesRef.current[machineKey];
-              forceRenderRef.current(); // Re-render to show idle sprite
-            };
+            if (isContinuousMode) {
+              displayObject.loop = true;
+              displayObject.play();
+            } else {
+              displayObject.loop = false; // Play once, then swap back to idle via render
+              displayObject.stop(); // Don't auto-play
+              displayObject.onComplete = () => {
+                currentlyAnimatingRef.current[machineKey] = false;
+                delete animatedSpritesRef.current[machineKey];
+                forceRenderRef.current(); // Re-render to show idle sprite
+              };
+            }
 
             // Store reference for ticker control
             animatedSpritesRef.current[machineKey] = displayObject;
@@ -1732,7 +1741,7 @@ export default function FactoryCanvas({
       // Try static sprite based on status (or idle if working but not animating)
       if (!displayObject) {
         let texture;
-        if (status === 'working' && !isAnimating) {
+        if (status === 'working' && !isContinuousMode && !isAnimating) {
           // Working but not animating: show idle
           texture = machineAssets?.idle;
         } else if (status === 'blocked') {
@@ -1955,6 +1964,11 @@ export default function FactoryCanvas({
     machineVisualSignature,
     rules
   ]);
+
+  // Keep latest render callback accessible from ticker/onComplete handlers
+  useEffect(() => {
+    renderRef.current = render;
+  }, [render]);
 
   // Lightweight function to update only the drag overlay without re-rendering the entire factory
   const updateDragOverlay = useCallback(() => {
@@ -2180,39 +2194,19 @@ export default function FactoryCanvas({
         const machines = machinesRef.current || [];
 
         if (currentMode === 'continuous') {
-          // In continuous mode, animate working machines with idle pauses between cycles
-          const now = Date.now();
-          let needsRerender = false;
-
+          // Continuous mode reuses animated sprites directly while a machine is working.
+          // Avoid forcing full-canvas re-renders on every animation cycle.
           machines.forEach(m => {
             const key = `machine-${m.id}`;
             const isWorking = m.enabled && m.status === 'working';
-
-            if (isWorking) {
-              if (!currentlyAnimatingRef.current[key]) {
-                // Check if we have a scheduled restart time
-                const restartTime = continuousRestartTimesRef.current[key];
-                if (!restartTime || now >= restartTime) {
-                  // Either first time or idle pause is over, start animating
-                  currentlyAnimatingRef.current[key] = true;
-                  delete continuousRestartTimesRef.current[key];
-                  needsRerender = true;
-                }
+            if (!isWorking) {
+              currentlyAnimatingRef.current[key] = false;
+              const sprite = animatedSpritesRef.current[key];
+              if (sprite?.playing) {
+                sprite.stop();
               }
-            } else {
-              // Machine stopped working, clean up
-              if (currentlyAnimatingRef.current[key]) {
-                currentlyAnimatingRef.current[key] = false;
-                delete animatedSpritesRef.current[key];
-                needsRerender = true;
-              }
-              delete continuousRestartTimesRef.current[key];
             }
           });
-
-          if (needsRerender) {
-            forceRenderRef.current();
-          }
         } else {
           // 'sometimes' mode: random animation triggers
           const machineItems = machines.map(m => ({
@@ -2234,7 +2228,10 @@ export default function FactoryCanvas({
 
         // Play any machine sprites that are marked as animating
         Object.entries(animatedSpritesRef.current).forEach(([key, sprite]) => {
-          if (key.startsWith('machine-') && currentlyAnimatingRef.current[key] && !sprite.playing) {
+          const shouldPlay = currentMode === 'continuous'
+            ? true
+            : currentlyAnimatingRef.current[key];
+          if (key.startsWith('machine-') && shouldPlay && !sprite.playing) {
             sprite.gotoAndPlay(0);
           }
         });
@@ -2461,7 +2458,7 @@ export default function FactoryCanvas({
   // Re-render when game state changes
   useEffect(() => {
     render();
-  }, [render, animationTrigger]);
+  }, [render]);
 
   // Preload material icons for recipes used by placed machines
   useEffect(() => {
