@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import TablePagination from '@mui/material/TablePagination';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import Card from '@mui/material/Card';
@@ -16,7 +18,12 @@ import CardContent from '@mui/material/CardContent';
 import Grid from '@mui/material/Grid';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import Pagination from '@mui/material/Pagination';
+import TextField from '@mui/material/TextField';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import TimerIcon from '@mui/icons-material/Timer';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -102,37 +109,96 @@ export default function SessionsTab() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [sessions, setSessions] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalSessions, setTotalSessions] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [filters, setFilters] = useState({
+    user: '',
+    sessionType: 'all',
+    startDate: '',
+    endDate: ''
+  });
+  const [debouncedUserFilter, setDebouncedUserFilter] = useState('');
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadData();
+    const timerId = setTimeout(() => {
+      setDebouncedUserFilter(filters.user.trim());
+    }, 300);
+
+    return () => clearTimeout(timerId);
+  }, [filters.user]);
+
+  useEffect(() => {
+    loadStats();
   }, []);
 
-  const loadData = async (page = 1) => {
+  useEffect(() => {
+    loadSessions();
+  }, [page, rowsPerPage, debouncedUserFilter, filters.sessionType, filters.startDate, filters.endDate]);
+
+  const loadStats = async () => {
     try {
-      setLoading(true);
-      const [statsRes, sessionsRes] = await Promise.all([
-        api.getSessionStats(),
-        api.getSessions(page, 20)
-      ]);
+      setStatsLoading(true);
+      const statsRes = await api.getSessionStats();
       setStats(statsRes.stats);
-      setSessions(sessionsRes.sessions);
-      setPagination({
-        page: sessionsRes.pagination.page,
-        totalPages: sessionsRes.pagination.totalPages
-      });
       setError(null);
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setStatsLoading(false);
     }
   };
 
-  const handlePageChange = (event, page) => {
-    loadData(page);
+  const loadSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const sessionsRes = await api.getSessions(page, rowsPerPage, {
+        user: debouncedUserFilter,
+        sessionType: filters.sessionType !== 'all' ? filters.sessionType : undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined
+      });
+      setSessions(sessionsRes.sessions);
+      setTotalSessions(sessionsRes.pagination.total);
+      setTotalPages(sessionsRes.pagination.totalPages || 1);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const handlePageChange = (event, nextPage) => {
+    setPage(nextPage + 1);
+  };
+
+  const handleRowsPerPageChange = (event) => {
+    const nextRowsPerPage = Number.parseInt(event.target.value, 10);
+    setRowsPerPage(nextRowsPerPage);
+    setPage(1);
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilters((previous) => ({
+      ...previous,
+      [field]: value
+    }));
+    setPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      user: '',
+      sessionType: 'all',
+      startDate: '',
+      endDate: ''
+    });
+    setPage(1);
   };
 
   const formatDate = (dateString) => {
@@ -146,7 +212,7 @@ export default function SessionsTab() {
     });
   };
 
-  if (loading && !stats) {
+  if ((statsLoading || sessionsLoading) && !stats) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
         <CircularProgress />
@@ -211,8 +277,76 @@ export default function SessionsTab() {
       <Typography variant="h6" gutterBottom>
         {t('admin.sessions.recentSessions')}
       </Typography>
-      <TableContainer component={Paper}>
-        <Table>
+
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              label={t('admin.sessions.filterUser', 'Filter by user')}
+              value={filters.user}
+              onChange={(event) => handleFilterChange('user', event.target.value)}
+              placeholder={t('admin.sessions.filterUserPlaceholder', 'Name or email')}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel id="session-type-filter-label">
+                {t('admin.sessions.filterType', 'Type')}
+              </InputLabel>
+              <Select
+                labelId="session-type-filter-label"
+                label={t('admin.sessions.filterType', 'Type')}
+                value={filters.sessionType}
+                onChange={(event) => handleFilterChange('sessionType', event.target.value)}
+              >
+                <MenuItem value="all">{t('admin.sessions.allTypes', 'All')}</MenuItem>
+                <MenuItem value="new">{t('admin.sessions.typeNew', 'New')}</MenuItem>
+                <MenuItem value="load">{t('admin.sessions.typeLoad', 'Load')}</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              fullWidth
+              label={t('admin.sessions.filterStartDate', 'From')}
+              type="date"
+              value={filters.startDate}
+              onChange={(event) => handleFilterChange('startDate', event.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <TextField
+              fullWidth
+              label={t('admin.sessions.filterEndDate', 'To')}
+              type="date"
+              value={filters.endDate}
+              onChange={(event) => handleFilterChange('endDate', event.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <Stack direction="row" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+              <Button
+                variant="outlined"
+                onClick={handleClearFilters}
+                disabled={
+                  !filters.user &&
+                  filters.sessionType === 'all' &&
+                  !filters.startDate &&
+                  !filters.endDate
+                }
+              >
+                {t('admin.sessions.clearFilters', 'Clear')}
+              </Button>
+            </Stack>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      <TableContainer component={Paper} sx={{ maxHeight: 560, overflow: 'auto' }}>
+        <Table stickyHeader size="small" sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
               <TableCell>{t('admin.sessions.user')}</TableCell>
@@ -226,7 +360,16 @@ export default function SessionsTab() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sessions.map((session) => (
+            {sessionsLoading && (
+              <TableRow>
+                <TableCell colSpan={8} align="center">
+                  <Box sx={{ py: 4 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                </TableCell>
+              </TableRow>
+            )}
+            {!sessionsLoading && sessions.map((session) => (
               <TableRow key={session.id}>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -271,11 +414,11 @@ export default function SessionsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {sessions.length === 0 && (
+            {!sessionsLoading && sessions.length === 0 && (
               <TableRow>
                 <TableCell colSpan={8} align="center">
                   <Typography color="text.secondary" sx={{ py: 4 }}>
-                    No sessions found
+                    {t('admin.sessions.noSessionsFound', 'No sessions found')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -284,17 +427,26 @@ export default function SessionsTab() {
         </Table>
       </TableContainer>
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-          <Pagination
-            count={pagination.totalPages}
-            page={pagination.page}
-            onChange={handlePageChange}
-            color="primary"
-          />
-        </Box>
-      )}
+      <Paper sx={{ mt: 2 }}>
+        <TablePagination
+          component="div"
+          count={totalSessions}
+          page={Math.max(page - 1, 0)}
+          onPageChange={handlePageChange}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleRowsPerPageChange}
+          rowsPerPageOptions={[10, 20, 50]}
+          labelRowsPerPage={t('admin.sessions.rowsPerPage', 'Rows per page')}
+          labelDisplayedRows={({ from, to, count }) =>
+            t('admin.sessions.rowsDisplayed', '{{from}}-{{to}} of {{count}}', {
+              from,
+              to,
+              count
+            })
+          }
+          nextIconButtonProps={{ disabled: page >= totalPages }}
+        />
+      </Paper>
     </Box>
   );
 }

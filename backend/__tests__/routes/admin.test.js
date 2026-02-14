@@ -111,5 +111,37 @@ describe('Admin Routes', () => {
         expect.objectContaining({ page: 2, limit: 10, total: 40, totalPages: 4 })
       );
     });
+
+    it('should apply user, type and date filters', async () => {
+      mockPrisma.session.findMany.mockResolvedValueOnce([]);
+      mockPrisma.session.count.mockResolvedValueOnce(2);
+
+      const res = await request(app).get(
+        '/api/admin/sessions?page=1&limit=25&user=alice&sessionType=load&startDate=2026-01-01&endDate=2026-01-31'
+      );
+
+      expect(res.statusCode).toBe(200);
+
+      const findManyArg = mockPrisma.session.findMany.mock.calls[0][0];
+      const countArg = mockPrisma.session.count.mock.calls[0][0];
+
+      expect(findManyArg.where).toEqual({
+        user: {
+          OR: [
+            { name: { contains: 'alice', mode: 'insensitive' } },
+            { email: { contains: 'alice', mode: 'insensitive' } }
+          ]
+        },
+        sessionType: 'load',
+        startedAt: {
+          gte: new Date('2026-01-01T00:00:00.000Z'),
+          lt: new Date('2026-02-01T00:00:00.000Z')
+        }
+      });
+      expect(countArg).toEqual({ where: findManyArg.where });
+      expect(res.body.pagination).toEqual(
+        expect.objectContaining({ page: 1, limit: 25, total: 2, totalPages: 1 })
+      );
+    });
   });
 });

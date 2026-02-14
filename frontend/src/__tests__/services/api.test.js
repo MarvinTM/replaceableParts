@@ -99,4 +99,23 @@ describe('api request headers', () => {
 
     window.removeEventListener(AUTH_EXPIRED_EVENT, onAuthExpired);
   });
+
+  it('builds session list query params with filters', async () => {
+    await api.getSessions(2, 50, {
+      user: 'alice@example.com',
+      sessionType: 'load',
+      startDate: '2026-01-01',
+      endDate: '2026-01-31'
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/admin/sessions?page=2&limit=50&user=alice%40example.com&sessionType=load&startDate=2026-01-01&endDate=2026-01-31',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-token',
+          'Content-Type': 'application/json'
+        })
+      })
+    );
+  });
 });

@@ -224,8 +224,30 @@ export const api = {
     return request('/admin/sessions/stats');
   },
 
-  async getSessions(page = 1, limit = 20) {
-    return request(`/admin/sessions?page=${page}&limit=${limit}`);
+  async getSessions(page = 1, limit = 20, filters = {}) {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit)
+    });
+
+    const userFilter = filters.user?.trim();
+    if (userFilter) {
+      params.set('user', userFilter);
+    }
+
+    if (filters.sessionType) {
+      params.set('sessionType', filters.sessionType);
+    }
+
+    if (filters.startDate) {
+      params.set('startDate', filters.startDate);
+    }
+
+    if (filters.endDate) {
+      params.set('endDate', filters.endDate);
+    }
+
+    return request(`/admin/sessions?${params.toString()}`);
   }
 };
 
