@@ -386,7 +386,10 @@
     "news": "Actualités",
     "releaseNotes": "Notes de Version",
     "noNews": "Pas d'actualités pour le moment",
-    "noReleaseNotes": "Pas de notes de version disponibles"
+    "noReleaseNotes": "Pas de notes de version disponibles",
+    "donateTitle": "Soutenir le Jeu",
+    "donateDescription": "replaceableParts sera toujours gratuit. Cependant, si vous l'aimez et souhaitez soutenir son développement, vous pouvez faire un don ici.",
+    "donateButton": "Faire un don sur Buy Me a Coffee"
   },
   "news": {
     "categories": {

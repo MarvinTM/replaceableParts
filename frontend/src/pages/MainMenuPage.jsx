@@ -39,6 +39,7 @@ import SaveImportDialog from '../components/SaveImportDialog';
 import FeedbackDialog from '../components/FeedbackDialog';
 import InviteFriendDialog from '../components/InviteFriendDialog';
 import NewsPanel from '../components/mainMenu/NewsPanel';
+import DonatePanel from '../components/mainMenu/DonatePanel';
 import ReleaseNotesPanel from '../components/mainMenu/ReleaseNotesPanel';
 
 export default function MainMenuPage() {
@@ -317,8 +318,16 @@ export default function MainMenuPage() {
       </Box>
 
       {/* Left Panel - News (hidden on small screens) */}
-      <Box sx={{ display: { xs: 'none', lg: 'block' }, alignSelf: 'center' }}>
+      <Box
+        sx={{
+          display: { xs: 'none', lg: 'flex' },
+          flexDirection: 'column',
+          alignSelf: 'center',
+          gap: 2,
+        }}
+      >
         <NewsPanel />
+        <DonatePanel />
       </Box>
 
       {/* Center - Main Menu Card */}

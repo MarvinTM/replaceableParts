@@ -21,6 +21,7 @@ const COLLAPSED_WIDTH = 48;
  * @param {React.ReactNode} props.children - Panel content
  * @param {boolean} [props.hasNew] - Show "new" badge indicator
  * @param {boolean} [props.defaultCollapsed] - Start collapsed
+ * @param {number} [props.minHeight] - Minimum panel height in pixels
  */
 export default function InfoPanel({
   title,
@@ -29,6 +30,7 @@ export default function InfoPanel({
   children,
   hasNew = false,
   defaultCollapsed = false,
+  minHeight = 300,
 }) {
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
 
@@ -41,7 +43,7 @@ export default function InfoPanel({
       elevation={0}
       sx={{
         width: collapsed ? COLLAPSED_WIDTH : PANEL_WIDTH,
-        minHeight: 300,
+        minHeight,
         maxHeight: 500,
         display: 'flex',
         flexDirection: 'column',

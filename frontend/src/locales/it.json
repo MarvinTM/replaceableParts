@@ -385,7 +385,10 @@
     "news": "Notizie",
     "releaseNotes": "Note di Rilascio",
     "noNews": "Nessuna notizia al momento",
-    "noReleaseNotes": "Nessuna nota di rilascio disponibile"
+    "noReleaseNotes": "Nessuna nota di rilascio disponibile",
+    "donateTitle": "Supporta il Gioco",
+    "donateDescription": "replaceableParts sarà sempre gratuito. Tuttavia, se ti piace e vuoi supportarne lo sviluppo, puoi donare qui.",
+    "donateButton": "Dona su Buy Me a Coffee"
   },
   "news": {
     "categories": {

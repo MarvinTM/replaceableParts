@@ -385,7 +385,10 @@
     "news": "News",
     "releaseNotes": "Release Notes",
     "noNews": "No news at the moment",
-    "noReleaseNotes": "No release notes available"
+    "noReleaseNotes": "No release notes available",
+    "donateTitle": "Support the Game",
+    "donateDescription": "replaceableParts will always be free. However, if you like it and want to support its development, you can donate here.",
+    "donateButton": "Donate on Buy Me a Coffee"
   },
   "news": {
     "categories": {
