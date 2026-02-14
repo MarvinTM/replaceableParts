@@ -61,6 +61,7 @@ import EncyclopediaTab from '../components/encyclopedia/EncyclopediaTab';
 import ResearchTab from '../components/research/ResearchTab';
 import FlowPrototypeNotifier from '../components/research/FlowPrototypeNotifier';
 import DiscoveryNotifier from '../components/research/DiscoveryNotifier';
+import AgeCompletionNotifier from '../components/research/AgeCompletionNotifier';
 import VictoryScreen from '../components/victory/VictoryScreen';
 import TutorialOverlay from '../components/tutorial/TutorialOverlay';
 import TipSnackbar from '../components/tips/TipSnackbar';
@@ -1433,6 +1434,9 @@ export default function GamePage() {
 
       {/* Global notifier for recipe discoveries */}
       <DiscoveryNotifier />
+
+      {/* Global notifier for age completion celebrations */}
+      <AgeCompletionNotifier />
 
       {/* Victory screen when Singularity Engine is completed */}
       <VictoryScreen />

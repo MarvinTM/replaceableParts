@@ -466,6 +466,10 @@
     "recipeUnlocked": "This recipe has been unlocked for production.",
     "assignToMachines": "You can now assign it to your machines.",
     "continue": "Continue",
+    "replayAnimation": "Replay animation",
+    "ageCompleteTitle": "Age {{age}} Complete!",
+    "ageCompleteSubtitle": "All recipes in this age are now unlocked.",
+    "ageCompleteProgress": "{{unlocked}} / {{total}} recipes unlocked",
     "age": "Age {{age}}",
     "singularity": "Singularity"
   },

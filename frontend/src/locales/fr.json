@@ -455,6 +455,10 @@
     "recipeUnlocked": "Cette recette a été débloquée pour la production.",
     "assignToMachines": "Vous pouvez maintenant l'assigner à vos machines.",
     "continue": "Continuer",
+    "replayAnimation": "Relancer l'animation",
+    "ageCompleteTitle": "Âge {{age}} Terminé !",
+    "ageCompleteSubtitle": "Toutes les recettes de cet âge sont désormais débloquées.",
+    "ageCompleteProgress": "{{unlocked}} / {{total}} recettes débloquées",
     "age": "Âge {{age}}",
     "singularity": "Singularité"
   },

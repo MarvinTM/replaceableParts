@@ -463,6 +463,10 @@
     "recipeUnlocked": "Esta receta ha sido desbloqueada para producción.",
     "assignToMachines": "Ahora puedes asignarla a tus máquinas.",
     "continue": "Continuar",
+    "replayAnimation": "Repetir animación",
+    "ageCompleteTitle": "¡Era {{age}} completada!",
+    "ageCompleteSubtitle": "Todas las recetas de esta era están desbloqueadas.",
+    "ageCompleteProgress": "{{unlocked}} / {{total}} recetas desbloqueadas",
     "age": "Era {{age}}",
     "singularity": "Singularidad"
   },

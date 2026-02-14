@@ -458,6 +458,10 @@
     "recipeUnlocked": "Dieses Rezept wurde für die Produktion freigeschaltet.",
     "assignToMachines": "Sie können es jetzt Ihren Maschinen zuweisen.",
     "continue": "Fortsetzen",
+    "replayAnimation": "Animation wiederholen",
+    "ageCompleteTitle": "Zeitalter {{age}} abgeschlossen!",
+    "ageCompleteSubtitle": "Alle Rezepte dieses Zeitalters sind jetzt freigeschaltet.",
+    "ageCompleteProgress": "{{unlocked}} / {{total}} Rezepte freigeschaltet",
     "age": "Zeitalter {{age}}",
     "singularity": "Singularität"
   },

@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import Chip from '@mui/material/Chip';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 // Age-based colors
 const AGE_COLORS = {
@@ -38,6 +39,7 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
 
   const victoryData = recipesByAge.victory;
   const showVictory = victoryData && victoryData.discovered > 0;
+  const victoryComplete = showVictory && victoryData.unlocked >= victoryData.total;
 
   if (ages.length === 0 && !showVictory) {
     return (
@@ -55,9 +57,28 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
         const { total, discovered, unlocked } = recipesByAge[age];
         const discoveredPercent = Math.round((discovered / total) * 100);
         const unlockedPercent = Math.round((unlocked / total) * 100);
+        const isComplete = unlocked >= total;
 
         return (
-          <Box key={age} sx={{ p: 1, borderRadius: 1, bgcolor: 'action.hover' }}>
+          <Box
+            key={age}
+            sx={{
+              p: 1,
+              borderRadius: 1,
+              bgcolor: isComplete ? 'rgba(76, 175, 80, 0.12)' : 'action.hover',
+              border: '1px solid',
+              borderColor: isComplete ? 'rgba(76, 175, 80, 0.45)' : 'transparent',
+              boxShadow: isComplete ? '0 6px 18px rgba(76, 175, 80, 0.16)' : 'none',
+              animation: isComplete ? 'ageCompleteGlow 3200ms ease-in-out infinite' : 'none',
+              '@keyframes ageCompleteGlow': {
+                '0%, 100%': { boxShadow: '0 6px 18px rgba(76, 175, 80, 0.12)' },
+                '50%': { boxShadow: '0 8px 22px rgba(76, 175, 80, 0.24)' },
+              },
+              '@media (prefers-reduced-motion: reduce)': {
+                animation: 'none',
+              },
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box
@@ -74,13 +95,16 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
                 <Typography variant="caption" color="text.secondary">
                   {AGE_NAMES[age]}
                 </Typography>
+                {isComplete && (
+                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                )}
               </Box>
               <Chip
                 label={`${unlocked}/${total}`}
                 size="small"
                 sx={{
-                  bgcolor: AGE_COLORS[age],
-                  color: 'white',
+                  bgcolor: isComplete ? 'success.main' : AGE_COLORS[age],
+                  color: '#fff',
                   fontWeight: 'bold'
                 }}
               />
@@ -143,8 +167,9 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
         <Box sx={{
           p: 1,
           borderRadius: 1,
-          bgcolor: 'rgba(255, 215, 0, 0.08)',
-          border: '1px solid rgba(255, 215, 0, 0.3)',
+          bgcolor: victoryComplete ? 'rgba(255, 215, 0, 0.16)' : 'rgba(255, 215, 0, 0.08)',
+          border: victoryComplete ? '1px solid rgba(255, 215, 0, 0.55)' : '1px solid rgba(255, 215, 0, 0.3)',
+          boxShadow: victoryComplete ? '0 8px 22px rgba(255, 215, 0, 0.18)' : 'none',
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -160,6 +185,9 @@ export default function UnlockedRecipesGrid({ recipesByAge }) {
               <Typography variant="body2" fontWeight="bold" sx={{ color: VICTORY_COLOR }}>
                 {t('research.singularity', 'Singularity')}
               </Typography>
+              {victoryComplete && (
+                <CheckCircleIcon sx={{ fontSize: 16, color: VICTORY_COLOR }} />
+              )}
             </Box>
             <Chip
               label={`${victoryData.unlocked}/${victoryData.total}`}
