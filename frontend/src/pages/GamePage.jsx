@@ -115,6 +115,7 @@ function FactoryTab() {
   const moveGenerator = useGameStore((state) => state.moveGenerator);
   const buildMachineAction = useGameStore((state) => state.buildMachine);
   const buildGeneratorAction = useGameStore((state) => state.buildGenerator);
+  const setFactoryCameraDragging = useGameStore((state) => state.setFactoryCameraDragging);
 
   // Admin cheat mode - only visible to admins
   const [cheatMode, setCheatMode] = useState(false);
@@ -371,6 +372,12 @@ function FactoryTab() {
     setBuildSelectionType(null);
   };
 
+  useEffect(() => {
+    return () => {
+      setFactoryCameraDragging(false);
+    };
+  }, [setFactoryCameraDragging]);
+
   const handleSelectItemToBuild = (item) => {
     if (!buildSelectionType) return;
     // Close selection popup and open build popup
@@ -574,6 +581,7 @@ function FactoryTab() {
                 machineAnimationMode={machineAnimationMode}
                 simulationSpeed={currentSpeed}
                 inventoryPanelRef={inventoryPanelRef}
+                onCameraPanChange={setFactoryCameraDragging}
               />
               {/* Floating Expand Factory Button */}
               <Tooltip title={t('game.factory.expandInfo', { width: expansion.newWidth, height: expansion.newHeight })}>

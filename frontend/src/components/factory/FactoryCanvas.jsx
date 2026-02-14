@@ -797,7 +797,8 @@ export default function FactoryCanvas({
   engineState,
   machineAnimationMode = 'continuous', // 'disabled' | 'sometimes' | 'continuous'
   simulationSpeed = 'normal', // 'paused' | 'normal' | 'fast'
-  inventoryPanelRef = null
+  inventoryPanelRef = null,
+  onCameraPanChange = null
 }) {
   // Derive animationsEnabled from machineAnimationMode
   const animationsEnabled = machineAnimationMode !== 'disabled';
@@ -854,6 +855,7 @@ export default function FactoryCanvas({
 
   // Structure drag tracking (machines and generators)
   const structureDragRef = useRef({ type: null, item: null, startX: 0, startY: 0, hasMoved: false });
+  const cameraPanActiveRef = useRef(false);
 
   // Animation state tracking: stores nextTriggerTime for each machine/generator by ID
   const animationStateRef = useRef({});
@@ -978,6 +980,12 @@ export default function FactoryCanvas({
 
     return false;
   }, []);
+
+  const setCameraPanActive = useCallback((active) => {
+    if (cameraPanActiveRef.current === active) return;
+    cameraPanActiveRef.current = active;
+    onCameraPanChange?.(active);
+  }, [onCameraPanChange]);
 
   // Spawn a production animation for a given event
   const spawnProductionAnimation = useCallback((event, style, inventoryTargetPos) => {
@@ -2405,6 +2413,13 @@ export default function FactoryCanvas({
 
       const handleMouseUp = () => {
         dragRef.current.isDragging = false;
+        setCameraPanActive(false);
+        canvas.style.cursor = 'grab';
+      };
+
+      const handleWindowBlur = () => {
+        dragRef.current.isDragging = false;
+        setCameraPanActive(false);
         canvas.style.cursor = 'grab';
       };
 
@@ -2420,14 +2435,16 @@ export default function FactoryCanvas({
       canvas.addEventListener('mouseleave', handleMouseLeave);
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('blur', handleWindowBlur);
 
-      app._cleanupHandlers = { handleWheel, handleMouseMove, handleMouseUp, handleMouseLeave };
+      app._cleanupHandlers = { handleWheel, handleMouseMove, handleMouseUp, handleMouseLeave, handleWindowBlur };
     };
 
     initPixi();
 
     return () => {
       isMounted = false;
+      setCameraPanActive(false);
       if (appRef.current) {
         const app = appRef.current;
         const canvas = app.canvas;
@@ -2441,6 +2458,7 @@ export default function FactoryCanvas({
           canvas.removeEventListener('mouseleave', handlers.handleMouseLeave);
           window.removeEventListener('mousemove', handlers.handleMouseMove);
           window.removeEventListener('mouseup', handlers.handleMouseUp);
+          window.removeEventListener('blur', handlers.handleWindowBlur);
         }
 
         // Remove ticker callback before destroying app
@@ -2453,7 +2471,7 @@ export default function FactoryCanvas({
         worldRef.current = null;
       }
     };
-  }, []);
+  }, [setCameraPanActive]);
 
   // Re-render when game state changes
   useEffect(() => {
@@ -2940,6 +2958,7 @@ export default function FactoryCanvas({
     // Check for Middle Click (Button 1) -> Always Pan
     if (e.button === 1) {
       dragRef.current = { isDragging: true, lastX: e.clientX, lastY: e.clientY };
+      setCameraPanActive(true);
       if (appRef.current && appRef.current.canvas) {
         appRef.current.canvas.style.cursor = 'grabbing';
       }
@@ -2964,12 +2983,13 @@ export default function FactoryCanvas({
     } else if (!isInsideFactory) {
       // Priority 2: Camera Pan (Left click OUTSIDE factory)
       dragRef.current = { isDragging: true, lastX: e.clientX, lastY: e.clientY };
+      setCameraPanActive(true);
       if (appRef.current && appRef.current.canvas) {
         appRef.current.canvas.style.cursor = 'grabbing';
       }
     }
     // Else: Left click on factory (floor or wall) -> Do Nothing (prevent pan)
-  }, [findStructureAtWorldPos, isPointOverFactory, onMachineRightClick, onGeneratorRightClick]);
+  }, [findStructureAtWorldPos, isPointOverFactory, onMachineRightClick, onGeneratorRightClick, setCameraPanActive]);
 
   // Handle mouse move for structure drag
   const handleMouseMove = useCallback((e) => {

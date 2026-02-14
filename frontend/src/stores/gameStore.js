@@ -28,6 +28,7 @@ const useGameStore = create(
       isRunning: false,
       currentSpeed: 'paused',  // 'paused' | 'normal' | 'fast'
       tickInterval: null,
+      isFactoryCameraDragging: false,
 
       // UI preferences
       machineAnimationMode: 'continuous', // 'disabled' | 'sometimes' | 'continuous'
@@ -48,7 +49,8 @@ const useGameStore = create(
           saveId: null,
           saveName: 'New Game',
           lastError: null,
-          isRunning: false
+          isRunning: false,
+          isFactoryCameraDragging: false
         }, false, 'initNewGame');
         return newState;
       },
@@ -62,7 +64,8 @@ const useGameStore = create(
           saveId,
           saveName,
           lastError: null,
-          isRunning: false
+          isRunning: false,
+          isFactoryCameraDragging: false
         }, false, 'loadGame');
       },
 
@@ -298,6 +301,11 @@ const useGameStore = create(
         set({ pendingProductionEvents: [] }, false, 'clearProductionEvents');
       },
 
+      setFactoryCameraDragging: (isDragging) => {
+        if (get().isFactoryCameraDragging === isDragging) return;
+        set({ isFactoryCameraDragging: isDragging }, false, 'setFactoryCameraDragging');
+      },
+
       // Game loop controls
       startGameLoop: (speed = 'normal') => {
         const { isRunning, tickInterval } = get();
@@ -310,6 +318,7 @@ const useGameStore = create(
         const tickMs = speed === 'fast' ? FAST_TICK_MS : NORMAL_TICK_MS;
 
         const interval = setInterval(() => {
+          if (get().isFactoryCameraDragging) return;
           get().simulate();
         }, tickMs);
 
@@ -321,7 +330,7 @@ const useGameStore = create(
         if (tickInterval) {
           clearInterval(tickInterval);
         }
-        set({ isRunning: false, currentSpeed: 'paused', tickInterval: null }, false, 'stopGameLoop');
+        set({ isRunning: false, currentSpeed: 'paused', tickInterval: null, isFactoryCameraDragging: false }, false, 'stopGameLoop');
       },
 
       // Clear game (return to menu)
@@ -337,7 +346,8 @@ const useGameStore = create(
           lastError: null,
           isRunning: false,
           currentSpeed: 'paused',
-          tickInterval: null
+          tickInterval: null,
+          isFactoryCameraDragging: false
         }, false, 'clearGame');
       },
 
@@ -369,7 +379,8 @@ const useGameStore = create(
             saveId: null,
             saveName: data.name || 'Imported Game',
             lastError: null,
-            isRunning: false
+            isRunning: false,
+            isFactoryCameraDragging: false
           }, false, 'importGameState');
           return { success: true };
         } catch (error) {
