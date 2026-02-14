@@ -58,7 +58,7 @@ describe('InventoryPanel (FactoryBottomBar)', () => {
 
     expect(screen.getByText('Ready to Ship (1)')).toBeInTheDocument();
     expect(screen.getByText('Bottlenecks (1)')).toBeInTheDocument();
-    expect(screen.getByText('Stockpile (0)')).toBeInTheDocument();
+    expect(screen.getByText('Stockpile (1)')).toBeInTheDocument();
   });
 
   it('shows stockpile items when inventory is near full', () => {

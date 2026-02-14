@@ -79,8 +79,17 @@ export default function useInventoryInsights({
       );
 
     const stockpile = rows
-      .filter((row) => row.fillRatio !== null && row.fillRatio >= 0.85)
-      .sort((a, b) => (b.fillRatio - a.fillRatio) || (b.quantity - a.quantity) || a.name.localeCompare(b.name));
+      .filter((row) => row.quantity > 0 && (row.category !== 'final' || row.isFinalUsedAsPart))
+      .sort((a, b) => {
+        const fillRatioA = Number.isFinite(a.fillRatio) ? a.fillRatio : -1;
+        const fillRatioB = Number.isFinite(b.fillRatio) ? b.fillRatio : -1;
+        const isHighStockA = fillRatioA >= 0.85;
+        const isHighStockB = fillRatioB >= 0.85;
+        return Number(isHighStockB) - Number(isHighStockA)
+          || (fillRatioB - fillRatioA)
+          || (b.quantity - a.quantity)
+          || a.name.localeCompare(b.name);
+      });
 
     return {
       rows,

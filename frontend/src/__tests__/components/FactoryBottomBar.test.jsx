@@ -229,7 +229,7 @@ describe('FactoryBottomBar', () => {
       />
     );
 
-    const label = screen.getByText(/Iron Ingot: 10\/100 \(5\/2\)/);
+    const label = screen.getAllByText(/Iron Ingot: 10\/100 \(5\/2\)/)[0];
     const chip = label.closest('[data-testid="mock-chip"]');
 
     expect(chip).toHaveAttribute('data-background-color', 'rgba(244, 67, 54, 0.08)');
@@ -294,7 +294,7 @@ describe('FactoryBottomBar', () => {
     );
 
     expect(screen.getByText('Bottlenecks (9)')).toBeInTheDocument();
-    expect(screen.getByText(/Combustion Engine: 10\/40 \(1\/0\)/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Combustion Engine: 10\/40 \(1\/0\)/).length).toBeGreaterThan(0);
   });
 
   it('should show summary sections by default in the new inventory layout', () => {
@@ -310,11 +310,11 @@ describe('FactoryBottomBar', () => {
 
     expect(screen.getByText('Ready to Ship (1)')).toBeInTheDocument();
     expect(screen.getByText('Bottlenecks (1)')).toBeInTheDocument();
-    expect(screen.getByText('Stockpile (0)')).toBeInTheDocument();
+    expect(screen.getByText('Stockpile (1)')).toBeInTheDocument();
 
     const ready = screen.getByText('Ready to Ship (1)');
     const bottlenecks = screen.getByText('Bottlenecks (1)');
-    const stockpile = screen.getByText('Stockpile (0)');
+    const stockpile = screen.getByText('Stockpile (1)');
 
     expect(ready.compareDocumentPosition(bottlenecks) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(bottlenecks.compareDocumentPosition(stockpile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
