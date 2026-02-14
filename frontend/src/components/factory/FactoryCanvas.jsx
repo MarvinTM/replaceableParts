@@ -833,7 +833,7 @@ export default function FactoryCanvas({
   const isHoveringRef = useRef(isHovering);
 
   // Force re-render when animation states change
-  const [, setAnimationTrigger] = useState(0);
+  const [animationTrigger, setAnimationTrigger] = useState(0);
   const forceRender = useCallback(() => setAnimationTrigger(t => t + 1), []);
   const forceRenderRef = useRef(forceRender);
   forceRenderRef.current = forceRender;
@@ -2461,7 +2461,7 @@ export default function FactoryCanvas({
   // Re-render when game state changes
   useEffect(() => {
     render();
-  }, [render]);
+  }, [render, animationTrigger]);
 
   // Preload material icons for recipes used by placed machines
   useEffect(() => {
