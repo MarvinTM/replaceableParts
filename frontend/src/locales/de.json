@@ -25,7 +25,8 @@
     "signIn": "Anmelden",
     "playAsGuest": "Als Gast Spielen",
     "guestMode": "Gastmodus",
-    "guestSaveWarning": "Ihr Fortschritt wird nur lokal auf diesem Gerät gespeichert"
+    "guestSaveWarning": "Ihr Fortschritt wird nur lokal auf diesem Gerät gespeichert",
+    "importSave": "Spielstand importieren"
   },
   "feedback": {
     "title": "Feedback Senden",
@@ -74,14 +75,23 @@
     "defaultGameName": "Mein Spiel",
     "createGame": "Spiel Erstellen",
     "overwriteAndCreate": "Überschreiben & Erstellen",
-    "overwriteWarning": "Dies wird den bestehenden Spielstand auf diesem Platz überschreiben."
+    "overwriteWarning": "Dies wird den bestehenden Spielstand auf diesem Platz überschreiben.",
+    "chooseFile": "Datei auswählen",
+    "dropFileHere": "Spielstanddatei hier ablegen",
+    "export": "Exportieren",
+    "importAcceptedFormats": "Akzeptiert: .json, .rpsave",
+    "importDescription": "Wähle eine exportierte Spielstanddatei von deinem Computer und anschließend einen Slot zum Schreiben aus.",
+    "importFileTooLarge": "Die ausgewählte Datei ist zu groß.",
+    "importInvalidFile": "Ungültige Spielstanddatei. Bitte wähle eine gültige Exportdatei.",
+    "importTitle": "Spielstanddatei importieren"
   },
   "login": {
     "title": "Willkommen bei replaceableParts",
     "subtitle": "Melden Sie sich an, um Ihren Fortschritt geräteübergreifend zu speichern",
     "googleButton": "Mit Google anmelden",
     "error": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "or": "oder"
+    "or": "oder",
+    "sessionExpired": "Deine Sitzung ist abgelaufen. Bitte melde dich erneut an."
   },
   "settings": {
     "title": "Einstellungen",
@@ -239,7 +249,26 @@
       "expandInventoryAction": "Erweitern +{{amount}}",
       "expandInventoryTooltip": "Erhöht das maximale Inventar um {{amount}} (Kosten: {{cost}})",
       "inventoryCapacityStatus": "Kapazität: {{capacity}}",
-      "inventoryCapacityStatusTooltip": "Freigeschaltete Inventarkapazität"
+      "inventoryCapacityStatusTooltip": "Freigeschaltete Inventarkapazität",
+      "allAges": "Alle",
+      "currentRecipeLabel": "Aktuelles Rezept:",
+      "energyConsumption": "Energie:",
+      "inputsCount": "{{count}} Eingaben",
+      "machineDisabled": "Deaktiviert",
+      "machineEnabled": "Aktiviert",
+      "noGeneratorsAvailable": "Keine Generatoren zum Bauen verfügbar",
+      "noMachinesAvailable": "Keine Maschinen zum Bauen verfügbar",
+      "noRecipesMatchFilter": "Keine Rezepte entsprechen den aktuellen Filtern",
+      "outputs": "Ausgaben",
+      "perTick": "/ Tick",
+      "productionMachine": "Produktionsmaschine",
+      "recentRecipes": "Zuletzt",
+      "recipeCount": "{{count}} Rezepte verfügbar",
+      "searchRecipes": "Rezepte suchen",
+      "searchRecipesPlaceholder": "Name, ID, Eingabe, Ausgabe",
+      "selectGenerator": "Generator zum Bauen auswählen",
+      "selectMachine": "Maschine zum Bauen auswählen",
+      "storageFull": "Lager voll"
     },
     "exploration": {
       "title": "Erkundungskarte",
@@ -322,7 +351,19 @@
       "factorySize": "Fabrikgröße",
       "status": "Status",
       "active": "Aktiv",
-      "ended": "Beendet"
+      "ended": "Beendet",
+      "allTypes": "Alle",
+      "clearFilters": "Zurücksetzen",
+      "filterEndDate": "Bis",
+      "filterStartDate": "Von",
+      "filterType": "Typ",
+      "filterUser": "Nach Benutzer filtern",
+      "filterUserPlaceholder": "Name oder E-Mail",
+      "noSessionsFound": "Keine Sitzungen gefunden",
+      "rowsDisplayed": "{{from}}-{{to}} von {{count}}",
+      "rowsPerPage": "Zeilen pro Seite",
+      "typeLoad": "Geladen",
+      "typeNew": "Neu"
     }
   },
   "common": {
@@ -463,12 +504,19 @@
     "ageCompleteSubtitle": "Alle Rezepte dieses Zeitalters sind jetzt freigeschaltet.",
     "ageCompleteProgress": "{{unlocked}} / {{total}} Rezepte freigeschaltet",
     "age": "Zeitalter {{age}}",
-    "singularity": "Singularität"
+    "singularity": "Singularität",
+    "descriptionComingSoon": "Beschreibung folgt...",
+    "infrastructureUnlock": "Infrastruktur-Freischaltung",
+    "overallProgress": "Gesamtfortschritt",
+    "rawMaterialsAutoFill": "Rohstoff-Slots werden automatisch aus der Produktion aufgefüllt.",
+    "waitingForRawMaterials": "Warte auf Rohstoffe, die automatisch aus der Produktion aufgefüllt werden..."
   },
   "victory": {
     "title": "Technologische Singularität Erreicht!",
     "description": "Von einfachen Holzbrettern zum Gipfel der Technologie — Sie haben die Singularitätsmaschine gebaut und die Grenzen menschlicher Ingenieurskunst überschritten. Die Zukunft gehört Ihnen.",
-    "continuePlaying": "Weiterspielen"
+    "continuePlaying": "Weiterspielen",
+    "backToMenu": "Zurück zum Hauptmenü",
+    "returningToMenu": "Zurück zum Hauptmenü..."
   },
   "tips": {
     "factory": "Ziehen Sie Maschinen und Generatoren aus der Seitenleiste auf das Gitter. Klicken Sie auf eine Maschine, um ein Rezept zuzuweisen, oder rechtsklicken Sie, um sie zu entfernen.",

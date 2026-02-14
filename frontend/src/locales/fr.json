@@ -25,7 +25,8 @@
     "signIn": "Se Connecter",
     "playAsGuest": "Jouer en tant qu'Invité",
     "guestMode": "Mode Invité",
-    "guestSaveWarning": "Votre progression est sauvegardée localement sur cet appareil uniquement"
+    "guestSaveWarning": "Votre progression est sauvegardée localement sur cet appareil uniquement",
+    "importSave": "Importer une sauvegarde"
   },
   "feedback": {
     "title": "Envoyer des Commentaires",
@@ -74,14 +75,23 @@
     "defaultGameName": "Ma Partie",
     "createGame": "Créer la Partie",
     "overwriteAndCreate": "Écraser & Créer",
-    "overwriteWarning": "Ceci écrasera la sauvegarde existante dans cet emplacement."
+    "overwriteWarning": "Ceci écrasera la sauvegarde existante dans cet emplacement.",
+    "chooseFile": "Choisir un fichier",
+    "dropFileHere": "Déposez le fichier de sauvegarde ici",
+    "export": "Exporter",
+    "importAcceptedFormats": "Accepté : .json, .rpsave",
+    "importDescription": "Choisissez un fichier de sauvegarde exporté depuis votre ordinateur, puis sélectionnez un emplacement où l'écrire.",
+    "importFileTooLarge": "Le fichier sélectionné est trop volumineux.",
+    "importInvalidFile": "Fichier de sauvegarde invalide. Veuillez sélectionner un fichier d'export valide.",
+    "importTitle": "Importer un fichier de sauvegarde"
   },
   "login": {
     "title": "Bienvenue sur replaceableParts",
     "subtitle": "Connectez-vous pour commencer à jouer",
     "googleButton": "Se connecter avec Google",
     "error": "La connexion a échoué. Veuillez réessayer.",
-    "or": "ou"
+    "or": "ou",
+    "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter."
   },
   "settings": {
     "title": "Paramètres",
@@ -235,7 +245,30 @@
       "expandInventoryAction": "Agrandir +{{amount}}",
       "expandInventoryTooltip": "Augmente l'inventaire maximal de {{amount}} (coût : {{cost}})",
       "inventoryCapacityStatus": "Capacité : {{capacity}}",
-      "inventoryCapacityStatusTooltip": "Capacité d'inventaire débloquée"
+      "inventoryCapacityStatusTooltip": "Capacité d'inventaire débloquée",
+      "allAges": "Tous",
+      "quantity": "Quantité",
+      "decreaseQuantity": "Diminuer la quantité",
+      "increaseQuantity": "Augmenter la quantité",
+      "currentRecipeLabel": "Recette actuelle :",
+      "energyConsumption": "Énergie :",
+      "inputsCount": "{{count}} entrées",
+      "machineDisabled": "Désactivée",
+      "machineEnabled": "Activée",
+      "noGeneratorsAvailable": "Aucun générateur disponible à construire",
+      "noMachinesAvailable": "Aucune machine disponible à construire",
+      "noRecipesMatchFilter": "Aucune recette ne correspond aux filtres actuels",
+      "outputs": "Sorties",
+      "perTick": "/ tick",
+      "productionMachine": "Machine de production",
+      "recentRecipes": "Récentes",
+      "recipeCount": "{{count}} recettes disponibles",
+      "searchRecipes": "Rechercher des recettes",
+      "searchRecipesPlaceholder": "Nom, id, entrée, sortie",
+      "selectGenerator": "Sélectionner un générateur à construire",
+      "selectMachine": "Sélectionner une machine à construire",
+      "storageFull": "Stockage plein",
+      "buildMultiple": "Construire x{{count}}"
     },
     "exploration": {
       "title": "Carte d'Exploration",
@@ -319,7 +352,19 @@
       "factorySize": "Taille Usine",
       "status": "Statut",
       "active": "Actif",
-      "ended": "Terminé"
+      "ended": "Terminé",
+      "allTypes": "Tous",
+      "clearFilters": "Effacer",
+      "filterEndDate": "Jusqu'au",
+      "filterStartDate": "Du",
+      "filterType": "Type",
+      "filterUser": "Filtrer par utilisateur",
+      "filterUserPlaceholder": "Nom ou e-mail",
+      "noSessionsFound": "Aucune session trouvée",
+      "rowsDisplayed": "{{from}}-{{to}} sur {{count}}",
+      "rowsPerPage": "Lignes par page",
+      "typeLoad": "Chargement",
+      "typeNew": "Nouvelle"
     }
   },
   "common": {
@@ -460,12 +505,19 @@
     "ageCompleteSubtitle": "Toutes les recettes de cet âge sont désormais débloquées.",
     "ageCompleteProgress": "{{unlocked}} / {{total}} recettes débloquées",
     "age": "Âge {{age}}",
-    "singularity": "Singularité"
+    "singularity": "Singularité",
+    "descriptionComingSoon": "Description à venir...",
+    "infrastructureUnlock": "Déverrouillage d'infrastructure",
+    "overallProgress": "Progression globale",
+    "rawMaterialsAutoFill": "Les emplacements de matières premières se remplissent automatiquement depuis la production.",
+    "waitingForRawMaterials": "En attente de remplissage automatique des matières premières depuis la production..."
   },
   "victory": {
     "title": "Singularité Technologique Atteinte !",
     "description": "De simples planches de bois au sommet de la technologie — vous avez construit le Moteur de Singularité et transcendé les limites de l'ingénierie humaine. L'avenir vous appartient.",
-    "continuePlaying": "Continuer à Jouer"
+    "continuePlaying": "Continuer à Jouer",
+    "backToMenu": "Retour au menu principal",
+    "returningToMenu": "Retour au menu principal..."
   },
   "tips": {
     "factory": "Glissez les machines et générateurs du panneau latéral sur la grille. Cliquez sur une machine pour assigner une recette, ou clic-droit pour la supprimer.",

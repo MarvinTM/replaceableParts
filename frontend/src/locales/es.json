@@ -25,7 +25,8 @@
     "signIn": "Iniciar Sesión",
     "playAsGuest": "Jugar como Invitado",
     "guestMode": "Modo Invitado",
-    "guestSaveWarning": "Tu progreso se guarda localmente solo en este dispositivo"
+    "guestSaveWarning": "Tu progreso se guarda localmente solo en este dispositivo",
+    "importSave": "Importar partida"
   },
   "feedback": {
     "title": "Enviar Comentarios",
@@ -74,13 +75,23 @@
     "defaultGameName": "Mi Partida",
     "createGame": "Crear Partida",
     "overwriteAndCreate": "Sobrescribir y Crear",
-    "overwriteWarning": "Esto sobrescribirá la partida existente en esta ranura."
+    "overwriteWarning": "Esto sobrescribirá la partida existente en esta ranura.",
+    "chooseFile": "Elegir archivo",
+    "dropFileHere": "Suelta el archivo de partida aquí",
+    "export": "Exportar",
+    "importAcceptedFormats": "Aceptado: .json, .rpsave",
+    "importDescription": "Elige un archivo de exportación de partida desde tu ordenador y luego selecciona una ranura donde escribirlo.",
+    "importFileTooLarge": "El archivo seleccionado es demasiado grande.",
+    "importInvalidFile": "Archivo de partida no válido. Selecciona un archivo de exportación válido.",
+    "importTitle": "Importar archivo de partida"
   },
   "login": {
     "title": "Bienvenido a replaceableParts",
     "subtitle": "Inicia sesión para comenzar a jugar",
     "googleButton": "Iniciar sesión con Google",
-    "error": "Error al iniciar sesión. Inténtalo de nuevo."
+    "error": "Error al iniciar sesión. Inténtalo de nuevo.",
+    "or": "O",
+    "sessionExpired": "Tu sesión expiró. Inicia sesión de nuevo."
   },
   "settings": {
     "title": "Configuración",
@@ -244,7 +255,20 @@
       "expandInventoryAction": "Ampliar +{{amount}}",
       "expandInventoryTooltip": "Aumenta la capacidad máxima en {{amount}} (costo: {{cost}})",
       "inventoryCapacityStatus": "Capacidad: {{capacity}}",
-      "inventoryCapacityStatusTooltip": "Capacidad de inventario desbloqueada"
+      "inventoryCapacityStatusTooltip": "Capacidad de inventario desbloqueada",
+      "allAges": "Todas",
+      "quantity": "Cantidad",
+      "decreaseQuantity": "Disminuir cantidad",
+      "increaseQuantity": "Aumentar cantidad",
+      "buildMultiple": "Construir x{{count}}",
+      "inputsCount": "{{count}} entradas",
+      "noRecipesMatchFilter": "Ninguna receta coincide con los filtros actuales",
+      "outputs": "Salidas",
+      "recentRecipes": "Recientes",
+      "recipeCount": "{{count}} recetas disponibles",
+      "searchRecipes": "Buscar recetas",
+      "searchRecipesPlaceholder": "Nombre, id, entrada, salida",
+      "storageFull": "Almacenamiento lleno"
     },
     "exploration": {
       "title": "Mapa de Exploración",
@@ -327,7 +351,19 @@
       "factorySize": "Tamaño Fábrica",
       "status": "Estado",
       "active": "Activa",
-      "ended": "Terminada"
+      "ended": "Terminada",
+      "allTypes": "Todos",
+      "clearFilters": "Limpiar",
+      "filterEndDate": "Hasta",
+      "filterStartDate": "Desde",
+      "filterType": "Tipo",
+      "filterUser": "Filtrar por usuario",
+      "filterUserPlaceholder": "Nombre o correo electrónico",
+      "noSessionsFound": "No se encontraron sesiones",
+      "rowsDisplayed": "{{from}}-{{to}} de {{count}}",
+      "rowsPerPage": "Filas por página",
+      "typeLoad": "Cargar",
+      "typeNew": "Nueva"
     }
   },
   "common": {
@@ -468,12 +504,19 @@
     "ageCompleteSubtitle": "Todas las recetas de esta era están desbloqueadas.",
     "ageCompleteProgress": "{{unlocked}} / {{total}} recetas desbloqueadas",
     "age": "Era {{age}}",
-    "singularity": "Singularidad"
+    "singularity": "Singularidad",
+    "descriptionComingSoon": "Descripción próximamente...",
+    "infrastructureUnlock": "Desbloqueo de infraestructura",
+    "overallProgress": "Progreso general",
+    "rawMaterialsAutoFill": "Las ranuras de materias primas se rellenan automáticamente desde la producción.",
+    "waitingForRawMaterials": "Esperando a que las materias primas se rellenen automáticamente desde la producción..."
   },
   "victory": {
     "title": "¡Singularidad Tecnológica Alcanzada!",
     "description": "Desde humildes tablones de madera hasta la cúspide de la tecnología — has construido el Motor de Singularidad y trascendido los límites de la ingeniería humana. El futuro es tuyo.",
-    "continuePlaying": "Seguir Jugando"
+    "continuePlaying": "Seguir Jugando",
+    "backToMenu": "Volver al menú principal",
+    "returningToMenu": "Volviendo al menú principal..."
   },
   "tips": {
     "factory": "Arrastra máquinas y generadores desde la barra lateral a la cuadrícula. Haz clic en una máquina para asignar una receta, o clic derecho para eliminarla.",

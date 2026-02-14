@@ -89,7 +89,9 @@
     "title": "Welcome to replaceableParts",
     "subtitle": "Sign in to start playing",
     "googleButton": "Sign in with Google",
-    "error": "Login failed. Please try again."
+    "error": "Login failed. Please try again.",
+    "or": "OR",
+    "sessionExpired": "Your session expired. Please sign in again."
   },
   "settings": {
     "title": "Settings",
@@ -247,7 +249,26 @@
       "expandInventoryAction": "Expand +{{amount}}",
       "expandInventoryTooltip": "Increase max inventory by {{amount}} (cost: {{cost}})",
       "inventoryCapacityStatus": "Capacity: {{capacity}}",
-      "inventoryCapacityStatusTooltip": "Unlocked inventory capacity"
+      "inventoryCapacityStatusTooltip": "Unlocked inventory capacity",
+      "allAges": "All",
+      "currentRecipeLabel": "Current Recipe:",
+      "energyConsumption": "Energy:",
+      "inputsCount": "{{count}} inputs",
+      "machineDisabled": "Disabled",
+      "machineEnabled": "Enabled",
+      "noGeneratorsAvailable": "No generators available to build",
+      "noMachinesAvailable": "No machines available to build",
+      "noRecipesMatchFilter": "No recipes match the current filters",
+      "outputs": "Outputs",
+      "perTick": "/ tick",
+      "productionMachine": "Production Machine",
+      "recentRecipes": "Recent",
+      "recipeCount": "{{count}} recipes available",
+      "searchRecipes": "Search recipes",
+      "searchRecipesPlaceholder": "Name, id, input, output",
+      "selectGenerator": "Select Generator to Build",
+      "selectMachine": "Select Machine to Build",
+      "storageFull": "Storage full"
     },
     "exploration": {
       "title": "Exploration Map",
@@ -330,7 +351,19 @@
       "factorySize": "Factory Size",
       "status": "Status",
       "active": "Active",
-      "ended": "Ended"
+      "ended": "Ended",
+      "allTypes": "All",
+      "clearFilters": "Clear",
+      "filterEndDate": "To",
+      "filterStartDate": "From",
+      "filterType": "Type",
+      "filterUser": "Filter by user",
+      "filterUserPlaceholder": "Name or email",
+      "noSessionsFound": "No sessions found",
+      "rowsDisplayed": "{{from}}-{{to}} of {{count}}",
+      "rowsPerPage": "Rows per page",
+      "typeLoad": "Load",
+      "typeNew": "New"
     }
   },
   "common": {
@@ -471,12 +504,19 @@
     "ageCompleteSubtitle": "All recipes in this age are now unlocked.",
     "ageCompleteProgress": "{{unlocked}} / {{total}} recipes unlocked",
     "age": "Age {{age}}",
-    "singularity": "Singularity"
+    "singularity": "Singularity",
+    "descriptionComingSoon": "Description coming soon...",
+    "infrastructureUnlock": "Infrastructure Unlock",
+    "overallProgress": "Overall Progress",
+    "rawMaterialsAutoFill": "Raw material slots auto-fill from production.",
+    "waitingForRawMaterials": "Waiting for raw materials to auto-fill from production..."
   },
   "victory": {
     "title": "Technological Singularity Achieved!",
     "description": "From humble wooden planks to the pinnacle of technology — you have built the Singularity Engine and transcended the limits of human engineering. The future is now yours to shape.",
-    "continuePlaying": "Continue Playing"
+    "continuePlaying": "Continue Playing",
+    "backToMenu": "Back to Main Menu",
+    "returningToMenu": "Returning to Main Menu..."
   },
   "tips": {
     "factory": "Drag machines and generators from the sidebar onto the grid. Click a machine to assign a recipe, or right-click to remove it.",
