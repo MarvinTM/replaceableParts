@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "replaceableParts",
-    "tagline": "Manufacturing Simulation Game"
+    "tagline": "Build stuff. Reach the singularity."
   },
   "landing": {
     "clickToContinue": "Click anywhere or press any key to continue",
