@@ -5,7 +5,7 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import useGameStore from '../../stores/gameStore';
-import { calculateHighestUnlockedAge } from '../../engine/engine.js';
+import { calculateHighestUnlockedAge, calculatePassiveDiscoveryChanceDetails } from '../../engine/engine.js';
 import { getRecipeAge } from '../../utils/researchCosts.js';
 import ExperimentChamber from './ExperimentChamber';
 import DonateSection from './DonateSection';
@@ -75,30 +75,10 @@ export default function ResearchTab() {
   // Count undiscovered recipes
   const undiscoveredCount = rules.recipes.length - discoveredRecipes.length;
 
-  // Calculate research laboratory bonus
-  const researchLabBonus = useMemo(() => {
-    let bonus = 0;
-    const machines = engineState.machines || [];
-    for (const machine of machines) {
-      if (machine.enabled && machine.status !== 'blocked') {
-        const machineConfig = rules.machines.find(m => m.id === machine.type);
-        if (machineConfig && machineConfig.isResearchFacility && machineConfig.passiveDiscoveryBonus) {
-          bonus += machineConfig.passiveDiscoveryBonus;
-        }
-      }
-    }
-    return bonus;
-  }, [engineState.machines, rules.machines]);
-
-  // Count active research labs for display
-  const activeLabCount = useMemo(() => {
-    const machines = engineState.machines || [];
-    return machines.filter(machine => {
-      if (!machine.enabled || machine.status === 'blocked') return false;
-      const machineConfig = rules.machines.find(m => m.id === machine.type);
-      return machineConfig && machineConfig.isResearchFacility;
-    }).length;
-  }, [engineState.machines, rules.machines]);
+  const passiveDiscoveryDetails = useMemo(
+    () => calculatePassiveDiscoveryChanceDetails(engineState, rules),
+    [engineState, rules]
+  );
 
   return (
     <Box sx={{ display: 'flex', height: '100%', minHeight: 0, gap: 2, p: 2, overflow: 'hidden' }}>
@@ -144,8 +124,10 @@ export default function ResearchTab() {
       <Paper sx={{ width: 350, p: 2, display: 'flex', flexDirection: 'column' }}>
         <PassiveDiscoveryPanel
           baseChance={rules.research.passiveDiscoveryChance}
-          labBonus={researchLabBonus}
-          activeLabCount={activeLabCount}
+          effectiveChance={passiveDiscoveryDetails.effectiveChance}
+          effectivePrototypeBoostPercent={passiveDiscoveryDetails.effectivePrototypeBoostPercent}
+          labBonus={passiveDiscoveryDetails.researchLabBonus}
+          activeLabCount={passiveDiscoveryDetails.activeLabCount}
           prototypeBoost={prototypeBoost}
         />
         <Divider sx={{ my: 2 }} />

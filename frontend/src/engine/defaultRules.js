@@ -910,6 +910,10 @@ export const defaultRules = {
     creditsToRPRatio: 2,            // 2 credits = 1 RP (very efficient early game)
     ageMultipliers: { 1: 1.0, 2: 1.5, 3: 2.0, 4: 3.0, 5: 5.0, 6: 8.0, 7: 12.0 },
     passiveDiscoveryChance: 0.005,  // 1/200 per tick
+    passiveDiscoveryMaxChance: 0.08, // Hard cap to prevent runaway passive chain discovery
+    prototypeBoostMaxPercent: 300,   // Max effective prototype boost after diminishing returns
+    prototypeBoostDiminishingFactor: 0.006, // Lower values = slower ramp toward max boost
+    prototypeBoostConsumeOnPassiveSuccess: 0.6, // Consume 60% of stored boost on passive success
     ageWeighting: { floor: 0.30, ceiling: 0.85 },
     // Keep early pacing similar, ease advanced-age research costs.
     experimentCosts: { 1: 15, 2: 35, 3: 75, 4: 140, 5: 280, 6: 460, 7: 900 },

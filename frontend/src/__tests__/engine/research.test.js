@@ -3,9 +3,9 @@ import { describe, it, expect } from 'vitest';
 import {
   engine,
   defaultRules,
-  createTestState,
-  simulateTicks
+  createTestState
 } from '../testHelpers';
+import { calculatePassiveDiscoveryChanceDetails } from '../../engine/engine';
 import { getRecipeAge, getTargetedExperimentCostForRecipe } from '../../utils/researchCosts';
 
 describe('Research: DONATE_CREDITS', () => {
@@ -284,5 +284,49 @@ describe('Research: TOGGLE_RESEARCH', () => {
     });
 
     expect(result.state.research.active).toBe(true);
+  });
+});
+
+describe('Research: PASSIVE_DISCOVERY_BALANCING', () => {
+  it('should apply diminishing returns and hard-cap passive discovery chance', () => {
+    const state = createTestState({
+      research: {
+        active: false,
+        researchPoints: 0,
+        awaitingPrototype: [],
+        prototypeBoost: { bonus: 5000, ticksRemaining: 30 }
+      }
+    });
+
+    const rules = structuredClone(defaultRules);
+    rules.research.passiveDiscoveryMaxChance = 0.01;
+
+    const details = calculatePassiveDiscoveryChanceDetails(state, rules);
+
+    expect(details.effectivePrototypeBoostPercent).toBeLessThanOrEqual(rules.research.prototypeBoostMaxPercent);
+    expect(details.effectiveChance).toBeCloseTo(rules.research.passiveDiscoveryMaxChance, 8);
+  });
+
+  it('should consume stored prototype boost on passive discovery success', () => {
+    const rules = structuredClone(defaultRules);
+    rules.research.passiveDiscoveryChance = 1;
+    rules.research.passiveDiscoveryMaxChance = 1;
+    rules.research.prototypeBoostConsumeOnPassiveSuccess = 0.6;
+
+    const state = createTestState({
+      rngSeed: 12345,
+      research: {
+        active: false,
+        researchPoints: 0,
+        awaitingPrototype: [],
+        prototypeBoost: { bonus: 1000, ticksRemaining: 10 }
+      }
+    });
+
+    const result = engine(state, rules, { type: 'SIMULATE' });
+
+    expect(result.error).toBeNull();
+    expect(result.state.discoveredRecipes.length).toBe(state.discoveredRecipes.length + 1);
+    expect(result.state.research.prototypeBoost.bonus).toBe(400);
   });
 });

@@ -7,7 +7,14 @@ import ScienceIcon from '@mui/icons-material/Science';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, activeLabCount = 0, prototypeBoost = null }) {
+export default function PassiveDiscoveryPanel({
+  baseChance,
+  labBonus = 0,
+  activeLabCount = 0,
+  prototypeBoost = null,
+  effectiveChance = null,
+  effectivePrototypeBoostPercent = null
+}) {
   const { t } = useTranslation();
 
   // Calculate prototype boost multiplier
@@ -15,10 +22,14 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
   const boostMultiplier = hasBoost ? 1 + (prototypeBoost.bonus / 100) : 1;
 
   const baseEffectiveChance = baseChance + labBonus;
-  const effectiveChance = baseEffectiveChance * boostMultiplier;
+  const fallbackEffectiveChance = baseEffectiveChance * boostMultiplier;
+  const displayedChance = typeof effectiveChance === 'number' ? effectiveChance : fallbackEffectiveChance;
+  const displayedBoostPercent = hasBoost
+    ? (typeof effectivePrototypeBoostPercent === 'number' ? effectivePrototypeBoostPercent : prototypeBoost.bonus)
+    : 0;
 
   // Convert chance to "1 in X" format
-  const oneInX = effectiveChance > 0 ? Math.round(1 / effectiveChance) : 0;
+  const oneInX = displayedChance > 0 ? Math.round(1 / displayedChance) : 0;
   const baseOneInX = baseChance > 0 ? Math.round(1 / baseChance) : 0;
 
   return (
@@ -47,7 +58,7 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
           </Typography>
         </Box>
         <Chip
-          label={`${(effectiveChance * 100).toFixed(1)}%`}
+          label={`${(displayedChance * 100).toFixed(1)}%`}
           color="info"
           size="small"
         />
@@ -95,7 +106,7 @@ export default function PassiveDiscoveryPanel({ baseChance, labBonus = 0, active
               {t('research.prototypeBoost')}
             </Typography>
             <Typography variant="caption" display="block" color="text.secondary">
-              +{prototypeBoost.bonus}% ({prototypeBoost.ticksRemaining} {t('research.ticksRemaining')})
+              +{displayedBoostPercent.toFixed(0)}% ({prototypeBoost.ticksRemaining} {t('research.ticksRemaining')})
             </Typography>
           </Box>
         </Box>

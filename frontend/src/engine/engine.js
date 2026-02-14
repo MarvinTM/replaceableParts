@@ -232,6 +232,90 @@ function calculateHighestUnlockedAge(state, rules) {
   return highestAge;
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getResearchLabPassiveBonus(state, rules) {
+  let bonus = 0;
+  let activeLabCount = 0;
+  for (const machine of state.machines || []) {
+    if (!machine.enabled || machine.status === 'blocked') continue;
+    const machineConfig = rules.machines.find(m => m.id === machine.type);
+    if (machineConfig?.isResearchFacility) {
+      activeLabCount += 1;
+      bonus += machineConfig.passiveDiscoveryBonus || 0;
+    }
+  }
+  return { bonus, activeLabCount };
+}
+
+function calculateEffectivePrototypeBoost(rawBonusPercent, maxBoostPercent, diminishingFactor) {
+  const raw = Math.max(0, Number(rawBonusPercent) || 0);
+  const maxBoost = Math.max(0, Number(maxBoostPercent) || 0);
+  const k = Math.max(0, Number(diminishingFactor) || 0);
+
+  if (raw <= 0 || maxBoost <= 0) return 0;
+  if (k <= 0) return Math.min(raw, maxBoost);
+
+  return maxBoost * (1 - Math.exp(-k * raw));
+}
+
+export function calculatePassiveDiscoveryChanceDetails(state, rules) {
+  const researchRules = rules?.research || {};
+  const { bonus: researchLabBonus, activeLabCount } = getResearchLabPassiveBonus(state, rules);
+
+  const hasPrototypeBoost = (
+    state?.research?.prototypeBoost?.ticksRemaining > 0 &&
+    state?.research?.prototypeBoost?.bonus > 0
+  );
+  const rawPrototypeBoostPercent = hasPrototypeBoost
+    ? (Number(state.research.prototypeBoost.bonus) || 0)
+    : 0;
+
+  const prototypeBoostMaxPercent = Math.max(
+    0,
+    Number(researchRules.prototypeBoostMaxPercent ?? 300) || 0
+  );
+  const prototypeBoostDiminishingFactor = Math.max(
+    0,
+    Number(researchRules.prototypeBoostDiminishingFactor ?? 0.006) || 0
+  );
+  const effectivePrototypeBoostPercent = calculateEffectivePrototypeBoost(
+    rawPrototypeBoostPercent,
+    prototypeBoostMaxPercent,
+    prototypeBoostDiminishingFactor
+  );
+
+  const prototypeBoostMultiplier = 1 + (effectivePrototypeBoostPercent / 100);
+  const basePassiveChance = (researchRules.passiveDiscoveryChance || 0) + researchLabBonus;
+  const uncappedChance = basePassiveChance * prototypeBoostMultiplier;
+  const passiveDiscoveryMaxChance = clamp(
+    Number(researchRules.passiveDiscoveryMaxChance ?? 0.08) || 0,
+    0,
+    1
+  );
+  const effectiveChance = Math.min(uncappedChance, passiveDiscoveryMaxChance);
+  const prototypeBoostConsumeOnPassiveSuccess = clamp(
+    Number(researchRules.prototypeBoostConsumeOnPassiveSuccess ?? 0.6) || 0,
+    0,
+    1
+  );
+
+  return {
+    activeLabCount,
+    researchLabBonus,
+    basePassiveChance,
+    rawPrototypeBoostPercent,
+    effectivePrototypeBoostPercent,
+    prototypeBoostMultiplier,
+    uncappedChance,
+    passiveDiscoveryMaxChance,
+    effectiveChance,
+    prototypeBoostConsumeOnPassiveSuccess
+  };
+}
+
 /**
  * Select a recipe using cascading age-weighted randomization
  * The lowest age with missing recipes gets priority.
@@ -723,7 +807,7 @@ function getPrototypeMultiplierForRecipe(recipe, rules) {
 /**
  * Apply rewards when a prototype is completed:
  * - RP bonus: 50 × ageMultiplier
- * - Discovery boost: +100% for 30 ticks (stacks additively, resets duration)
+ * - Discovery boost: +100 raw boost for 30 ticks (stacked, then diminished/capped at use-time)
  */
 function applyPrototypeCompletionRewards(state, rules, recipeId) {
   const recipe = rules.recipes.find(r => r.id === recipeId);
@@ -750,7 +834,7 @@ function applyPrototypeCompletionRewards(state, rules, recipeId) {
     state.research.prototypeBoost = { bonus: 0, ticksRemaining: 0 };
   }
 
-  // Add to boost (+100% per prototype) and reset duration to 30 ticks
+  // Add raw boost (+100 per prototype) and reset duration to 30 ticks
   state.research.prototypeBoost.bonus += 100;
   state.research.prototypeBoost.ticksRemaining = 30;
 
@@ -1357,27 +1441,9 @@ function simulateTick(state, rules) {
     }
   }
 
-  // 4b. Passive Discovery (1/500 chance per tick, independent of active research)
-  // Calculate bonus from research laboratories
-  let researchLabBonus = 0;
-  for (const machine of newState.machines) {
-    if (machine.enabled && machine.status !== 'blocked') {
-      const machineConfig = rules.machines.find(m => m.id === machine.type);
-      if (machineConfig && machineConfig.isResearchFacility && machineConfig.passiveDiscoveryBonus) {
-        researchLabBonus += machineConfig.passiveDiscoveryBonus;
-      }
-    }
-  }
-
-  // Calculate prototype boost (from completing prototypes)
-  let prototypeBoostMultiplier = 1.0;
-  if (newState.research?.prototypeBoost?.ticksRemaining > 0) {
-    // Convert bonus percentage to multiplier (100% bonus = 2x multiplier)
-    prototypeBoostMultiplier = 1 + (newState.research.prototypeBoost.bonus / 100);
-  }
-
-  const basePassiveChance = (rules.research.passiveDiscoveryChance || 0) + researchLabBonus;
-  const effectivePassiveChance = basePassiveChance * prototypeBoostMultiplier;
+  // 4b. Passive Discovery (independent of active research)
+  const passiveDiscovery = calculatePassiveDiscoveryChanceDetails(newState, rules);
+  const effectivePassiveChance = passiveDiscovery.effectiveChance;
   if (effectivePassiveChance > 0) {
     const passiveRoll = rng.next();
     if (passiveRoll < effectivePassiveChance) {
@@ -1394,6 +1460,19 @@ function simulateTick(state, rules) {
         // Create prototype entry for passive discovery
         const passivePrototype = createPrototypeEntry(passiveRecipe, rules);
         newState.research.awaitingPrototype.push(passivePrototype);
+
+        // Consume part of the stored prototype boost to prevent chain procs.
+        if (
+          newState.research?.prototypeBoost?.ticksRemaining > 0 &&
+          newState.research?.prototypeBoost?.bonus > 0 &&
+          passiveDiscovery.prototypeBoostConsumeOnPassiveSuccess > 0
+        ) {
+          const retainedFraction = 1 - passiveDiscovery.prototypeBoostConsumeOnPassiveSuccess;
+          newState.research.prototypeBoost.bonus = Math.max(
+            0,
+            Math.round(newState.research.prototypeBoost.bonus * retainedFraction)
+          );
+        }
       }
     }
   }
