@@ -39,9 +39,11 @@ jest.unstable_mockModule('../../src/db.js', () => ({
 }));
 
 const { default: app } = await import('../../src/app.js');
+const { resetInviteRecipientCooldownForTests } = await import('../../src/routes/invite.js');
 
 beforeEach(() => {
   mockSendInviteEmail.mockClear();
+  resetInviteRecipientCooldownForTests();
 });
 
 describe('POST /api/invite', () => {
@@ -52,8 +54,8 @@ describe('POST /api/invite', () => {
 
     expect(res.statusCode).toEqual(200);
     expect(mockSendInviteEmail).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'user@example.com' }),
-        'friend@example.com'
+      expect.objectContaining({ email: 'user@example.com' }),
+      'friend@example.com'
     );
   });
 
@@ -73,5 +75,34 @@ describe('POST /api/invite', () => {
 
     expect(res.statusCode).toEqual(400);
     expect(mockSendInviteEmail).not.toHaveBeenCalled();
+  });
+
+  it('should block repeated invites to the same recipient during cooldown', async () => {
+    const first = await request(app)
+      .post('/api/invite')
+      .send({ email: 'friend@example.com' });
+
+    const second = await request(app)
+      .post('/api/invite')
+      .send({ email: 'FRIEND@example.com' });
+
+    expect(first.statusCode).toEqual(200);
+    expect(second.statusCode).toEqual(429);
+    expect(second.body.error).toMatch(/already invited/i);
+    expect(mockSendInviteEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('should allow invites to different recipients', async () => {
+    const first = await request(app)
+      .post('/api/invite')
+      .send({ email: 'friend1@example.com' });
+
+    const second = await request(app)
+      .post('/api/invite')
+      .send({ email: 'friend2@example.com' });
+
+    expect(first.statusCode).toEqual(200);
+    expect(second.statusCode).toEqual(200);
+    expect(mockSendInviteEmail).toHaveBeenCalledTimes(2);
   });
 });

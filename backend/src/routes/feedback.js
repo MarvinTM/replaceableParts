@@ -5,9 +5,9 @@ import { sendFeedbackEmail } from '../services/email.js';
 
 const router = Router();
 const feedbackRateLimit = createRateLimiter({
-  windowMs: 60 * 60 * 1000,
-  max: 20,
-  message: 'Too many feedback submissions. Please try again later.',
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 5,
+  message: 'Feedback daily limit reached. Please try again tomorrow.',
   keyGenerator: req => req.user?.id || req.ip
 });
 
