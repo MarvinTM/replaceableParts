@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.8.1",
+      "date": "2024-02-14",
+      "highlights": "Hinweis zum Abschluss eines Zeitalters hinzugefügt. Passive Forschung angepasst.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Hinweis zum Abschluss eines Zeitalters hinzugefügt"
+        },
+        {
+          "type": "improvement",
+          "text": "Filterung, Sortierung und Scrollen im Sitzungsfenster hinzugefügt."
+        },
+        {
+          "type": "fix",
+          "text": "Die Lagerbestand-Komponente zeigt jetzt immer Teile mit Bestand an"
+        },
+        {
+          "type": "fix",
+          "text": "Mechanik der passiven Forschung angepasst"
+        }
+      ]
+    },
+    {
       "version": "0.8.0",
       "date": "2024-02-14",
       "highlights": "Siegbedingungen. Verbesserte Performance. Verbesserte Forschung und Rezeptauswahl.",

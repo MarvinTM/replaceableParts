@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.8.1",
+      "date": "2024-02-14",
+      "highlights": "Se añadió el notificador de finalización de Era. Se ajustó la investigación pasiva.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Se añadió el notificador de finalización de Era"
+        },
+        {
+          "type": "improvement",
+          "text": "Se añadieron filtrado, ordenación y desplazamiento a la ventana de Sesiones."
+        },
+        {
+          "type": "fix",
+          "text": "El componente Stock ahora siempre mostrará las piezas que tengan existencias"
+        },
+        {
+          "type": "fix",
+          "text": "Se ajustó la mecánica de investigación pasiva"
+        }
+      ]
+    },
+    {
       "version": "0.8.0",
       "date": "2024-02-14",
       "highlights": "Condiciones de victoria. Rendimiento mejorado. Mejoras en investigación y selección de recetas.",

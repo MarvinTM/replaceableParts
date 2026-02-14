@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.8.1",
+      "date": "2024-02-14",
+      "highlights": "Added Age completion notifier. Adjusted passive research.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Added Age completion notifier"
+        },
+        {
+          "type": "improvement",
+          "text": "Added filtering, sorting and scrolling to Sessions window."
+        },
+        {
+          "type": "fix",
+          "text": "Stockpile component will now always show parts that have stock"
+        },
+        {
+          "type": "fix",
+          "text": "Adjusted passive research mechanic"
+        }
+      ]
+    },
+    {
       "version": "0.8.0",
       "date": "2024-02-14",
       "highlights": "Victory conditions. Improved performance. Improved research and recipe selection.",

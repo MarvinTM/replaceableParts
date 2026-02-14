@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.8.1",
+      "date": "2024-02-14",
+      "highlights": "Aggiunto il notificatore di completamento Era. Ricerca passiva regolata.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Aggiunto il notificatore di completamento Era"
+        },
+        {
+          "type": "improvement",
+          "text": "Aggiunti filtro, ordinamento e scorrimento alla finestra Sessioni."
+        },
+        {
+          "type": "fix",
+          "text": "Il componente Scorte ora mostrerà sempre i componenti disponibili in stock"
+        },
+        {
+          "type": "fix",
+          "text": "Regolata la meccanica della ricerca passiva"
+        }
+      ]
+    },
+    {
       "version": "0.8.0",
       "date": "2024-02-14",
       "highlights": "Condizioni di vittoria. Prestazioni migliorate. Ricerca e selezione ricette migliorate.",

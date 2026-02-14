@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "0.8.1",
+      "date": "2024-02-14",
+      "highlights": "Ajout du notifier de fin d'Âge. Recherche passive ajustée.",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Ajout du notifier de fin d'Âge"
+        },
+        {
+          "type": "improvement",
+          "text": "Ajout du filtrage, du tri et du défilement dans la fenêtre Sessions."
+        },
+        {
+          "type": "fix",
+          "text": "Le composant Stock affichera désormais toujours les pièces en stock"
+        },
+        {
+          "type": "fix",
+          "text": "Mécanique de recherche passive ajustée"
+        }
+      ]
+    },
+    {
       "version": "0.8.0",
       "date": "2024-02-14",
       "highlights": "Conditions de victoire. Performances améliorées. Recherche et sélection de recettes améliorées.",
