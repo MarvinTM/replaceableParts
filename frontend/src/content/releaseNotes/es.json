@@ -11,7 +11,7 @@
         },
         {
           "type": "improvement",
-          "text": "Ahora la simulación no se detiene mientras el usuario arrastra el diseño"
+          "text": "Ahora la simulación no se detiene mientras el usuario arrastra la interfaz"
         }
       ]
     },

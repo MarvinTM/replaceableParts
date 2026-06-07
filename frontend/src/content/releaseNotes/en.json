@@ -10,7 +10,7 @@
         },
         {
           "type": "improvement",
-          "text": "Now simulation won't stop while the user drags the layout around"
+          "text": "Now simulation won't stop while the user drags the interface around"
         }
       ]
     },
