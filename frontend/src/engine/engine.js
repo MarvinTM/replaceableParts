@@ -1175,8 +1175,12 @@ function calculateEnergy(state, rules) {
 // Simulation Logic
 // ============================================================================
 
-function simulateTick(state, rules) {
+function simulateTick(state, rules, timings) {
+  let t = timings ? performance.now() : 0;
+
   const newState = cloneStateForSimulation(state);
+  if (timings) { timings.clone = performance.now() - t; t = performance.now(); }
+
   const rng = createRNG(state.rngSeed);
 
   // Initialize research state for backward compatibility with old saves
@@ -1241,6 +1245,8 @@ function simulateTick(state, rules) {
     }
   }
 
+  if (timings) { timings.generators = performance.now() - t; t = performance.now(); }
+
   // 3. Energy Calculation (respects generator powered state)
   let energy = calculateEnergy(newState, rules);
 
@@ -1278,6 +1284,8 @@ function simulateTick(state, rules) {
     // Recalculate energy after blocking
     newState.energy = calculateEnergy(newState, rules);
   }
+
+  if (timings) { timings.energy = performance.now() - t; t = performance.now(); }
 
   // 4. Machine Processing
   for (const machine of newState.machines) {
@@ -1386,6 +1394,8 @@ function simulateTick(state, rules) {
       // If can't produce, buffer stays intact - machine waits for space
     }
   }
+
+  if (timings) { timings.machines = performance.now() - t; t = performance.now(); }
 
   // 4. Research Phase
   // Research runs if active AND there's enough spare energy after machines
@@ -1581,6 +1591,8 @@ function simulateTick(state, rules) {
     }
   }
 
+  if (timings) { timings.research = performance.now() - t; t = performance.now(); }
+
   // 5. Market Recovery (for items not sold this tick)
   // Initialize marketDamage if it doesn't exist (for old saves)
   if (!newState.marketDamage) {
@@ -1714,6 +1726,8 @@ function simulateTick(state, rules) {
       newState.marketPriceHistory.shift();
     }
   }
+
+  if (timings) { timings.market = performance.now() - t; t = performance.now(); }
 
   // 7. Advance State
   newState.tick += 1;
@@ -3014,7 +3028,7 @@ function unlockExplorationNode(state, rules, payload) {
 export function engine(state, rules, action) {
   switch (action.type) {
     case 'SIMULATE': {
-      const result = simulateTick(state, rules);
+      const result = simulateTick(state, rules, action.timings);
       return { state: result.newState, error: null, productionEvents: result.productionEvents };
     }
 
