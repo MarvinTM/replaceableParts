@@ -318,7 +318,6 @@ const useGameStore = create(
         const tickMs = speed === 'fast' ? FAST_TICK_MS : NORMAL_TICK_MS;
 
         const interval = setInterval(() => {
-          if (get().isFactoryCameraDragging) return;
           get().simulate();
         }, tickMs);
 

@@ -877,19 +877,40 @@ export default function FactoryCanvas({
 
   // Trigger full factory redraw only when visual machine/generator attributes change.
   // This avoids rebuilding tens of thousands of floor/wall sprites every simulation tick.
-  const machineVisualSignature = useMemo(() => (machines || [])
-    .map(machine => `${machine.id}:${machine.type}:${machine.x}:${machine.y}:${machine.enabled ? 1 : 0}:${machine.status || ''}:${machine.recipeId || ''}`)
-    .join('|'), [machines]);
+  // Use refs for stable reference comparison: the engine returns new arrays/objects every tick,
+  // but the visual content is often unchanged. Only return a new reference when content differs.
+  const prevMachineSigRef = useRef('');
+  const machineVisualSignature = useMemo(() => {
+    const sig = (machines || [])
+      .map(machine => `${machine.id}:${machine.type}:${machine.x}:${machine.y}:${machine.enabled ? 1 : 0}:${machine.status || ''}:${machine.recipeId || ''}`)
+      .join('|');
+    if (sig !== prevMachineSigRef.current) {
+      prevMachineSigRef.current = sig;
+    }
+    return prevMachineSigRef.current;
+  }, [machines]);
 
-  const generatorVisualSignature = useMemo(() => (generators || [])
-    .map(generator => `${generator.id}:${generator.type}:${generator.x}:${generator.y}:${generator.powered === false ? 0 : 1}`)
-    .join('|'), [generators]);
+  const prevGeneratorSigRef = useRef('');
+  const generatorVisualSignature = useMemo(() => {
+    const sig = (generators || [])
+      .map(generator => `${generator.id}:${generator.type}:${generator.x}:${generator.y}:${generator.powered === false ? 0 : 1}`)
+      .join('|');
+    if (sig !== prevGeneratorSigRef.current) {
+      prevGeneratorSigRef.current = sig;
+    }
+    return prevGeneratorSigRef.current;
+  }, [generators]);
 
+  const prevFloorSigRef = useRef('');
   const floorSpaceSignature = useMemo(() => {
     if (!floorSpace) return 'none';
     const chunks = floorSpace.chunks || [];
     const chunksSignature = chunks.map(chunk => `${chunk.x},${chunk.y},${chunk.width},${chunk.height}`).join('|');
-    return `${floorSpace.width}x${floorSpace.height}:${chunksSignature}`;
+    const sig = `${floorSpace.width}x${floorSpace.height}:${chunksSignature}`;
+    if (sig !== prevFloorSigRef.current) {
+      prevFloorSigRef.current = sig;
+    }
+    return prevFloorSigRef.current;
   }, [floorSpace]);
 
   // Update refs used by ticker and render callbacks.
