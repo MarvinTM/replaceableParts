@@ -1,8 +1,22 @@
 {
-  "releases": [
+  "releases": [{
+      "version": "0.8.2",
+      "date": "2026-06-07",
+      "highlights": "Performance improvements",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Several performance improvements in the UI render"
+        },
+        {
+          "type": "improvement",
+          "text": "Now simulation won't stop while the user drags the layout around"
+        }
+      ]
+    },
     {
       "version": "0.8.1",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Added Age completion notifier. Adjusted passive research.",
       "changes": [
         {
@@ -25,7 +39,7 @@
     },
     {
       "version": "0.8.0",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Victory conditions. Improved performance. Improved research and recipe selection.",
       "changes": [
         {
@@ -64,7 +78,7 @@
     },
     {
       "version": "0.7.0",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Account deletion feature. New Inventory component.",
       "changes": [
         {
@@ -91,7 +105,7 @@
     },
     {
       "version": "0.6.7",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Additional fixes",
       "changes": [
         {
@@ -102,7 +116,7 @@
     },
     {
       "version": "0.6.6",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Small UX/visualization fixes",
       "changes": [
         {
@@ -117,7 +131,7 @@
     },
     {
       "version": "0.6.5",
-      "date": "2024-02-10",
+      "date": "2026-02-10",
       "highlights": "Ship Goods option. Inventory extension. Additional tips. Game balance changes.",
       "changes": [
         {
@@ -144,7 +158,7 @@
     },
     {
       "version": "0.6.1",
-      "date": "2024-02-09",
+      "date": "2026-02-09",
       "highlights": "Balance changes and fixes",
       "changes": [
         {
@@ -159,7 +173,7 @@
     },
     {
       "version": "0.6.0",
-      "date": "2024-02-08",
+      "date": "2026-02-08",
       "highlights": "New Encyclopedia tab. New Inventory component. Fixed several factory visualization issues.",
       "changes": [
         {
@@ -178,7 +192,7 @@
     },
     {
       "version": "0.5.5",
-      "date": "2024-02-07",
+      "date": "2026-02-07",
       "highlights": "Fixed machine research, and circular dependencies. Improved visualization of raw material and parts input and consumption.",
       "changes": [
         {
@@ -209,7 +223,7 @@
     },
     {
       "version": "0.5.0",
-      "date": "2024-02-06",
+      "date": "2026-02-06",
       "highlights": "Significant game mechanics rebalance. New Solar Array design.",
       "changes": [
         {
@@ -228,7 +242,7 @@
     },
     {
       "version": "0.4.6",
-      "date": "2024-02-04",
+      "date": "2026-02-04",
       "highlights": "Added descriptions for items. Adjusted email format. New tick progress indicator with two gears.",
       "changes": [
         {
@@ -247,7 +261,7 @@
     },
     {
       "version": "0.4.5",
-      "date": "2024-02-03",
+      "date": "2026-02-03",
       "highlights": "Translations for French, German and Italian added. New Market tab and Research tab adjustments.",
       "changes": [
         {
@@ -270,7 +284,7 @@
     },
     {
       "version": "0.4.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Invite to Game. Huge performance improvements in Factory construction.",
       "changes": [
         {
@@ -293,7 +307,7 @@
     },
     {
       "version": "0.3.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Significant mechanics rebalance.",
       "changes": [
         {
@@ -312,7 +326,7 @@
     },
     {
       "version": "0.2.0",
-      "date": "2024-01-31",
+      "date": "2026-01-31",
       "highlights": "Exploration map visual improvements. Factory layout redesign. User audit info.",
       "changes": [
         {
@@ -343,7 +357,7 @@
     },
     {
       "version": "0.1.6",
-      "date": "2024-01-29",
+      "date": "2026-01-29",
       "highlights": "Asset loading visualization. New Factory layout. New power generators",
       "changes": [
         {
@@ -366,7 +380,7 @@
     },
     {
       "version": "0.1.5",
-      "date": "2024-01-25",
+      "date": "2026-01-25",
       "highlights": "Tutorial and tips. New generators.",
       "changes": [
         {
@@ -397,7 +411,7 @@
     },
     {
       "version": "0.1.0",
-      "date": "2024-01-20",
+      "date": "2026-01-20",
       "highlights": "New UI look&feel. Research improvements.",
       "changes": [
         {

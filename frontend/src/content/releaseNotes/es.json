@@ -1,8 +1,23 @@
 {
   "releases": [
     {
+      "version": "0.8.2",
+      "date": "2026-06-07",
+      "highlights": "Mejoras de rendimiento",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Varias mejoras de rendimiento en la representación de la interfaz"
+        },
+        {
+          "type": "improvement",
+          "text": "Ahora la simulación no se detiene mientras el usuario arrastra el diseño"
+        }
+      ]
+    },
+    {
       "version": "0.8.1",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Se añadió el notificador de finalización de Era. Se ajustó la investigación pasiva.",
       "changes": [
         {
@@ -25,7 +40,7 @@
     },
     {
       "version": "0.8.0",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Condiciones de victoria. Rendimiento mejorado. Mejoras en investigación y selección de recetas.",
       "changes": [
         {
@@ -64,7 +79,7 @@
     },
     {
       "version": "0.7.0",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Función de eliminación de cuenta. Nuevo componente de inventario.",
       "changes": [
         {
@@ -91,7 +106,7 @@
     },
     {
       "version": "0.6.7",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Correcciones adicionales",
       "changes": [
         {
@@ -102,7 +117,7 @@
     },
     {
       "version": "0.6.6",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Pequeñas correcciones de UX/visualización",
       "changes": [
         {
@@ -117,7 +132,7 @@
     },
     {
       "version": "0.6.5",
-      "date": "2024-02-10",
+      "date": "2026-02-10",
       "highlights": "Opción Enviar Mercancía. Ampliación de inventario. Consejos adicionales. Cambios de balance del juego.",
       "changes": [
         {
@@ -144,7 +159,7 @@
     },
     {
       "version": "0.6.1",
-      "date": "2024-02-09",
+      "date": "2026-02-09",
       "highlights": "Cambios de balance y correcciones",
       "changes": [
         {
@@ -159,7 +174,7 @@
     },
     {
       "version": "0.6.0",
-      "date": "2024-02-08",
+      "date": "2026-02-08",
       "highlights": "Nueva pestaña Enciclopedia. Nuevo componente de Inventario. Corregidos varios problemas de visualización en la fábrica.",
       "changes": [
         {
@@ -178,7 +193,7 @@
     },
     {
       "version": "0.5.5",
-      "date": "2024-02-07",
+      "date": "2026-02-07",
       "highlights": "Corregida la investigación de máquinas y las dependencias circulares. Mejorada la visualización de producción y consumo de materias primas y piezas.",
       "changes": [
         {
@@ -209,7 +224,7 @@
     },
     {
       "version": "0.5.0",
-      "date": "2024-02-06",
+      "date": "2026-02-06",
       "highlights": "Reequilibrio significativo de las mecánicas del juego. Nuevo diseño del panel solar.",
       "changes": [
         {
@@ -228,7 +243,7 @@
     },
     {
       "version": "0.4.6",
-      "date": "2024-02-04",
+      "date": "2026-02-04",
       "highlights": "Se añadieron descripciones para los objetos. Se ajustó el formato de correo electrónico. Nuevo indicador de progreso del tick con dos engranajes.",
       "changes": [
         {
@@ -247,7 +262,7 @@
     },
     {
       "version": "0.4.5",
-      "date": "2024-02-03",
+      "date": "2026-02-03",
       "highlights": "Añadidas traducciones a francés, alemán e italiano. Nueva pestaña de Mercado y ajustes en Investigación.",
       "changes": [
         {
@@ -270,7 +285,7 @@
     },
     {
       "version": "0.4.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Invitar al Juego. Enormes mejoras de rendimiento en la construcción de la Fábrica.",
       "changes": [
         {
@@ -293,7 +308,7 @@
     },
     {
       "version": "0.3.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Reequilibrio significativo de mecánicas.",
       "changes": [
         {
@@ -312,7 +327,7 @@
     },
     {
       "version": "0.2.0",
-      "date": "2024-01-31",
+      "date": "2026-01-31",
       "highlights": "Mejoras visuales del mapa de exploración. Rediseño del diseño de la fábrica. Info de auditoría de usuario.",
       "changes": [
         {
@@ -343,7 +358,7 @@
     },
     {
       "version": "0.1.6",
-      "date": "2024-01-29",
+      "date": "2026-01-29",
       "highlights": "Visualización de carga de recursos. Nuevo diseño de Fábrica. Nuevos generadores de energía",
       "changes": [
         {
@@ -366,7 +381,7 @@
     },
     {
       "version": "0.1.5",
-      "date": "2024-01-25",
+      "date": "2026-01-25",
       "highlights": "Tutorial y consejos. Nuevos generadores.",
       "changes": [
         {
@@ -397,7 +412,7 @@
     },
     {
       "version": "0.1.0",
-      "date": "2024-01-20",
+      "date": "2026-01-20",
       "highlights": "Nueva apariencia de la IU. Mejoras en la investigación.",
       "changes": [
         {

@@ -1,8 +1,23 @@
 {
   "releases": [
     {
+      "version": "0.8.2",
+      "date": "2026-06-07",
+      "highlights": "Améliorations des performances",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Plusieurs améliorations des performances dans le rendu de l'interface"
+        },
+        {
+          "type": "improvement",
+          "text": "La simulation ne s'arrête plus lorsque l'utilisateur fait glisser la disposition"
+        }
+      ]
+    },
+    {
       "version": "0.8.1",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Ajout du notifier de fin d'Âge. Recherche passive ajustée.",
       "changes": [
         {
@@ -25,7 +40,7 @@
     },
     {
       "version": "0.8.0",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Conditions de victoire. Performances améliorées. Recherche et sélection de recettes améliorées.",
       "changes": [
         {
@@ -64,7 +79,7 @@
     },
     {
       "version": "0.7.0",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Fonction de suppression de compte. Nouveau composant d'inventaire.",
       "changes": [
         {
@@ -91,7 +106,7 @@
     },
     {
       "version": "0.6.7",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Corrections supplémentaires",
       "changes": [
         {
@@ -102,7 +117,7 @@
     },
     {
       "version": "0.6.6",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Petites corrections UX/visualisation",
       "changes": [
         {
@@ -117,7 +132,7 @@
     },
     {
       "version": "0.6.5",
-      "date": "2024-02-10",
+      "date": "2026-02-10",
       "highlights": "Option Expédier les biens. Extension de l'inventaire. Conseils supplémentaires. Ajustements d'équilibrage du jeu.",
       "changes": [
         {
@@ -144,7 +159,7 @@
     },
     {
       "version": "0.6.1",
-      "date": "2024-02-09",
+      "date": "2026-02-09",
       "highlights": "Ajustements d'équilibrage et corrections",
       "changes": [
         {
@@ -159,7 +174,7 @@
     },
     {
       "version": "0.6.0",
-      "date": "2024-02-08",
+      "date": "2026-02-08",
       "highlights": "Nouvel onglet Encyclopédie. Nouveau composant Inventaire. Correction de plusieurs problèmes de visualisation de l'usine.",
       "changes": [
         {
@@ -178,7 +193,7 @@
     },
     {
       "version": "0.5.5",
-      "date": "2024-02-07",
+      "date": "2026-02-07",
       "highlights": "Recherche des machines et dépendances circulaires corrigées. Visualisation de la production et de la consommation de matières premières et de pièces améliorée.",
       "changes": [
         {
@@ -209,7 +224,7 @@
     },
     {
       "version": "0.5.0",
-      "date": "2024-02-06",
+      "date": "2026-02-06",
       "highlights": "Rééquilibrage significatif des mécaniques de jeu. Nouveau design du parc solaire.",
       "changes": [
         {
@@ -228,7 +243,7 @@
     },
     {
       "version": "0.4.6",
-      "date": "2024-02-04",
+      "date": "2026-02-04",
       "highlights": "Ajout de descriptions pour les objets. Format d’e-mail ajusté. Nouvel indicateur de progression du tick avec deux engrenages.",
       "changes": [
         {
@@ -247,7 +262,7 @@
     },
     {
       "version": "0.4.5",
-      "date": "2024-02-03",
+      "date": "2026-02-03",
       "highlights": "Ajout des traductions en français, allemand et italien. Nouvel onglet Marché et ajustements de la Recherche.",
       "changes": [
         {
@@ -270,7 +285,7 @@
     },
     {
       "version": "0.4.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Inviter au Jeu. Améliorations énormes des performances dans la construction d'Usine.",
       "changes": [
         {
@@ -293,7 +308,7 @@
     },
     {
       "version": "0.3.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Rééquilibrage significatif des mécaniques.",
       "changes": [
         {
@@ -312,7 +327,7 @@
     },
     {
       "version": "0.2.0",
-      "date": "2024-01-31",
+      "date": "2026-01-31",
       "highlights": "Améliorations visuelles de la carte d'exploration. Refonte de la disposition de l'Usine. Infos d'audit utilisateur.",
       "changes": [
         {
@@ -343,7 +358,7 @@
     },
     {
       "version": "0.1.6",
-      "date": "2024-01-29",
+      "date": "2026-01-29",
       "highlights": "Visualisation du chargement des ressources. Nouvelle disposition d'Usine. Nouveaux générateurs d'énergie",
       "changes": [
         {
@@ -366,7 +381,7 @@
     },
     {
       "version": "0.1.5",
-      "date": "2024-01-25",
+      "date": "2026-01-25",
       "highlights": "Tutoriel et astuces. Nouveaux générateurs.",
       "changes": [
         {
@@ -397,7 +412,7 @@
     },
     {
       "version": "0.1.0",
-      "date": "2024-01-20",
+      "date": "2026-01-20",
       "highlights": "Nouveau look&feel de l'IU. Améliorations de la recherche.",
       "changes": [
         {

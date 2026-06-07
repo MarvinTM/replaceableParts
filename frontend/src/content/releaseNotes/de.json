@@ -1,8 +1,23 @@
 {
   "releases": [
     {
+      "version": "0.8.2",
+      "date": "2026-06-07",
+      "highlights": "Leistungsverbesserungen",
+      "changes": [
+        {
+          "type": "improvement",
+          "text": "Mehrere Leistungsverbesserungen im UI-Rendering"
+        },
+        {
+          "type": "improvement",
+          "text": "Die Simulation stoppt jetzt nicht mehr, während der Benutzer das Layout verschiebt"
+        }
+      ]
+    },
+    {
       "version": "0.8.1",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Hinweis zum Abschluss eines Zeitalters hinzugefügt. Passive Forschung angepasst.",
       "changes": [
         {
@@ -25,7 +40,7 @@
     },
     {
       "version": "0.8.0",
-      "date": "2024-02-14",
+      "date": "2026-02-14",
       "highlights": "Siegbedingungen. Verbesserte Performance. Verbesserte Forschung und Rezeptauswahl.",
       "changes": [
         {
@@ -64,7 +79,7 @@
     },
     {
       "version": "0.7.0",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Funktion zum Löschen des Kontos. Neue Inventarkomponente.",
       "changes": [
         {
@@ -91,7 +106,7 @@
     },
     {
       "version": "0.6.7",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Zusätzliche Korrekturen",
       "changes": [
         {
@@ -102,7 +117,7 @@
     },
     {
       "version": "0.6.6",
-      "date": "2024-02-11",
+      "date": "2026-02-11",
       "highlights": "Kleine UX-/Darstellungskorrekturen",
       "changes": [
         {
@@ -117,7 +132,7 @@
     },
     {
       "version": "0.6.5",
-      "date": "2024-02-10",
+      "date": "2026-02-10",
       "highlights": "Versandoption für Waren. Inventarerweiterung. Zusätzliche Tipps. Balance-Änderungen im Spiel.",
       "changes": [
         {
@@ -144,7 +159,7 @@
     },
     {
       "version": "0.6.1",
-      "date": "2024-02-09",
+      "date": "2026-02-09",
       "highlights": "Balance-Änderungen und Fehlerbehebungen",
       "changes": [
         {
@@ -159,7 +174,7 @@
     },
     {
       "version": "0.6.0",
-      "date": "2024-02-08",
+      "date": "2026-02-08",
       "highlights": "Neuer Enzyklopädie-Tab. Neue Inventarkomponente. Mehrere Visualisierungsprobleme in der Fabrik behoben.",
       "changes": [
         {
@@ -178,7 +193,7 @@
     },
     {
       "version": "0.5.5",
-      "date": "2024-02-07",
+      "date": "2026-02-07",
       "highlights": "Maschinenforschung und zirkuläre Abhängigkeiten behoben. Visualisierung von Rohstoff- und Teileproduktion sowie -verbrauch verbessert.",
       "changes": [
         {
@@ -209,7 +224,7 @@
     },
     {
       "version": "0.5.0",
-      "date": "2024-02-06",
+      "date": "2026-02-06",
       "highlights": "Signifikante Neuausrichtung der Spielmechaniken. Neues Design der Solaranlage.",
       "changes": [
         {
@@ -228,7 +243,7 @@
     },
     {
       "version": "0.4.6",
-      "date": "2024-02-04",
+      "date": "2026-02-04",
       "highlights": "Beschreibungen für Gegenstände hinzugefügt. E-Mail-Format angepasst. Neuer Tick-Fortschrittsindikator mit zwei Zahnrädern.",
       "changes": [
         {
@@ -247,7 +262,7 @@
     },
     {
       "version": "0.4.5",
-      "date": "2024-02-03",
+      "date": "2026-02-03",
       "highlights": "Übersetzungen für Französisch, Deutsch und Italienisch hinzugefügt. Neuer Markt-Tab und Anpassungen im Forschungs-Tab.",
       "changes": [
         {
@@ -270,7 +285,7 @@
     },
     {
       "version": "0.4.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Zum Spiel einladen. Riesige Leistungsverbesserungen beim Fabrikbau.",
       "changes": [
         {
@@ -293,7 +308,7 @@
     },
     {
       "version": "0.3.0",
-      "date": "2024-02-01",
+      "date": "2026-02-01",
       "highlights": "Signifikante Mechanik-Rebalance.",
       "changes": [
         {
@@ -312,7 +327,7 @@
     },
     {
       "version": "0.2.0",
-      "date": "2024-01-31",
+      "date": "2026-01-31",
       "highlights": "Visuelle Verbesserungen der Erkundungskarte. Neugestaltung des Fabriklayouts. Benutzer-Audit-Infos.",
       "changes": [
         {
@@ -343,7 +358,7 @@
     },
     {
       "version": "0.1.6",
-      "date": "2024-01-29",
+      "date": "2026-01-29",
       "highlights": "Visualisierung des Ressourcenladens. Neues Fabriklayout. Neue Stromgeneratoren",
       "changes": [
         {
@@ -366,7 +381,7 @@
     },
     {
       "version": "0.1.5",
-      "date": "2024-01-25",
+      "date": "2026-01-25",
       "highlights": "Tutorial und Tipps. Neue Generatoren.",
       "changes": [
         {
@@ -397,7 +412,7 @@
     },
     {
       "version": "0.1.0",
-      "date": "2024-01-20",
+      "date": "2026-01-20",
       "highlights": "Neues UI-Look&Feel. Forschungsverbesserungen.",
       "changes": [
         {
