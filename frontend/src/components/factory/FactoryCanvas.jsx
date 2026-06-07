@@ -2183,11 +2183,13 @@ export default function FactoryCanvas({
 
       // Create world container for zoom/pan
       const world = new Container();
+      world.eventMode = 'none';
       app.stage.addChild(world);
       worldRef.current = world;
 
       // Create production animation container (renders above world for visibility)
       const productionAnimContainer = new Container();
+      productionAnimContainer.eventMode = 'none';
       app.stage.addChild(productionAnimContainer);
       productionAnimContainerRef.current = productionAnimContainer;
 
